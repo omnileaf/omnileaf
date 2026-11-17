@@ -72,25 +72,46 @@ class LaunchRequestsTest {
     fun `keeps the route a rebuilt screen saved`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
 
-        assertEquals(SAVED_ROUTE, requests.takeRoute())
+        val route = requests.takeRoute()
+
+        assertEquals(SAVED_ROUTE, route)
     }
 
     @Test
-    fun `saves the route taken until the page shows it`() {
+    fun `saves the route taken while the page has not shown it`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
         requests.takeRoute()
-        val savedBeforeShown = requests.routeToSave(ROOT_PAGE_URL)
 
-        requests.openingPageShown()
+        val route = requests.routeToSave(ROOT_PAGE_URL)
 
-        assertEquals(listOf(SAVED_ROUTE, "/"), listOf(savedBeforeShown, requests.routeToSave(ROOT_PAGE_URL)))
+        assertEquals(SAVED_ROUTE, route)
     }
 
     @Test
-    fun `ignores the intent that created a rebuilt screen`() {
+    fun `saves the page shown once the opening page shows`() {
+        requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
+        requests.takeRoute()
+        requests.openingPageShown()
+
+        val route = requests.routeToSave(ROOT_PAGE_URL)
+
+        assertEquals("/", route)
+    }
+
+    @Test
+    fun `ignores the request of the intent that created a rebuilt screen`() {
         requests.takeCreating(SEARCH_REQUEST, REBUILT_SCREEN)
 
-        assertEquals(Pair(emptyList<IconAction>(), SAVED_ROUTE), Pair(iconActions.chosen, requests.takeRoute()))
+        assertEquals(emptyList<IconAction>(), iconActions.chosen)
+    }
+
+    @Test
+    fun `keeps the saved route despite the intent that created a rebuilt screen`() {
+        requests.takeCreating(SEARCH_REQUEST, REBUILT_SCREEN)
+
+        val route = requests.takeRoute()
+
+        assertEquals(SAVED_ROUTE, route)
     }
 
     @Test
@@ -101,29 +122,41 @@ class LaunchRequestsTest {
     }
 
     @Test
-    fun `drops the saved route for a shortcut chosen later`() {
+    fun `takes a shortcut chosen after a rebuild`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
 
         requests.take(SEARCH_REQUEST)
 
-        assertEquals(Pair(listOf(IconAction.SEARCH_LIBRARY), null), Pair(iconActions.chosen, requests.takeRoute()))
+        assertEquals(listOf(IconAction.SEARCH_LIBRARY), iconActions.chosen)
+    }
+
+    @Test
+    fun `drops the saved route for a shortcut chosen later`() {
+        requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
+        requests.take(SEARCH_REQUEST)
+
+        val route = requests.takeRoute()
+
+        assertNull(route)
     }
 
     @Test
     fun `drops the saved route for a document handed over later`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
-
         requests.take(DOCUMENT_REQUEST)
 
-        assertNull(requests.takeRoute())
+        val route = requests.takeRoute()
+
+        assertNull(route)
     }
 
     @Test
     fun `keeps the saved route for a later intent with no request`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
-
         requests.take(PLAIN_LAUNCH)
 
-        assertEquals(SAVED_ROUTE, requests.takeRoute())
+        val route = requests.takeRoute()
+
+        assertEquals(SAVED_ROUTE, route)
     }
 }
