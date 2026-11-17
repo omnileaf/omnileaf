@@ -1,3 +1,4 @@
+import { flushSync } from "svelte";
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
@@ -39,6 +40,12 @@ function swipedRow(container: HTMLElement): HTMLElement {
     throw new Error("the row has no swiped layer");
   }
   return row;
+}
+
+function openGap(row: HTMLElement): number {
+  flushSync();
+  const strip = row.nextElementSibling?.getBoundingClientRect().width;
+  return Number.parseFloat(row.style.translate) + (strip ?? Number.NaN);
 }
 
 function swipeAcross(target: Element, share: number): void {
@@ -130,4 +137,18 @@ test("keeps an open row open when it is swiped a little further toward the start
   swipeAcross(swipedRow(container), -NUDGE);
 
   expect(acted).toEqual([]);
+  expect(openGap(swipedRow(container))).toBeCloseTo(0);
+});
+
+test("runs the full-swipe action when an open row is swiped on past its actions", async () => {
+  const { actions, acted } = renameAndDelete(true);
+  const { container } = await render(SwipeActionsHarness, {
+    actions,
+    dir: "ltr",
+  });
+  swipeAcross(swipedRow(container), -SHORT_SWIPE);
+
+  swipeAcross(swipedRow(container), -SHORT_SWIPE);
+
+  expect(acted).toEqual(["delete"]);
 });

@@ -16,6 +16,7 @@ const FIRST_TAGS: readonly LibraryTag[] = [
 ];
 const SHORT_SWIPE = 0.25;
 const FULL_SWIPE = 0.75;
+const NUDGE = 0.08;
 
 let tags: LibraryTag[] = [...FIRST_TAGS];
 
@@ -167,5 +168,20 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
     await undo.click();
 
     await expect(rowOf(page, "Seinen")).toBeVisible();
+  });
+
+  test("keeps an open row open on a nudge toward the start and deletes on a swipe past its actions", async ({
+    page,
+  }) => {
+    await swipeTowardStart(swipedOf(page, "Seinen"), SHORT_SWIPE);
+    await settle(rowOf(page, "Seinen"));
+
+    await swipeTowardStart(swipedOf(page, "Seinen"), NUDGE);
+    await settle(rowOf(page, "Seinen"));
+    await expectOpenAtItsActions(swipedOf(page, "Seinen"));
+
+    await swipeTowardStart(swipedOf(page, "Seinen"), SHORT_SWIPE);
+    await expect(rowOf(page, "Seinen")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
   });
 });
