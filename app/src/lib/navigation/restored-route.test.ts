@@ -1,4 +1,4 @@
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { takeRestoredRoute, tellRestoredRouteShown } from "./restored-route";
 
@@ -7,6 +7,10 @@ const SETTINGS_PAGE = "/settings/appearance";
 function saved(route: string | null) {
   return vi.fn(() => Promise.resolve({ status: "ok" as const, data: route }));
 }
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 test("hands over the route Android saved for the rebuilt screen", async () => {
   const route = await takeRestoredRoute("android", saved(SETTINGS_PAGE));
