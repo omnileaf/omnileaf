@@ -14,8 +14,8 @@ class UpdateCheckJob : JobService() {
             BackgroundUpdateCheck(SystemUpdateCheckJobs(this)).sync(state)
             return false
         }
-        val daily = DailyUpdateCheck(state, PackageInstalledRelease(this))
-        run = Thread({ runToEnd(daily, params) }, "daily-update-check").apply { start() }
+        val check = NotifyingUpdateCheck(state, PackageInstalledRelease(this), UpdateNotifications(this))
+        run = Thread({ runToEnd(check, params) }, "daily-update-check").apply { start() }
         return true
     }
 
@@ -25,11 +25,11 @@ class UpdateCheckJob : JobService() {
     }
 
     private fun runToEnd(
-        daily: DailyUpdateCheck,
+        check: NotifyingUpdateCheck,
         params: JobParameters,
     ) {
         try {
-            daily.runIfDue(Instant.now())
+            check.run(Instant.now())
         } catch (_: InterruptedException) {
             return
         }

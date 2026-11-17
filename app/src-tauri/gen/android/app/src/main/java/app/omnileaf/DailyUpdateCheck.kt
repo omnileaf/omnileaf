@@ -22,7 +22,7 @@ internal sealed interface DailyRun {
 internal class DailyUpdateCheck(
     private val state: UpdateState,
     private val installed: InstalledRelease,
-    private val feedFor: (ReleaseVersion) -> ReleaseFeed = { GitHubReleaseFeed(it) },
+    private val feedFor: (ReleaseVersion) -> ReleaseFeed,
 ) {
     fun runIfDue(now: Instant): DailyRun {
         ONE_CHECK_AT_A_TIME.lockInterruptibly()
