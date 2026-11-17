@@ -39,6 +39,10 @@ function rowOf(page: Page, tag: string): Locator {
     .filter({ hasText: tag });
 }
 
+function swipedOf(page: Page, tag: string): Locator {
+  return rowOf(page, tag).locator("[data-swiped]");
+}
+
 async function swipeTowardStart(target: Locator, share: number): Promise<void> {
   const box = await boxOf(target);
   const across = -box.width * share;
@@ -75,6 +79,18 @@ async function isUncovered(control: Locator): Promise<boolean> {
   });
 }
 
+async function expectSettledOpen(swiped: Locator): Promise<void> {
+  await expect
+    .poll(() =>
+      swiped.evaluate((row) => {
+        const shift = Number.parseFloat(getComputedStyle(row).translate);
+        const strip = row.nextElementSibling?.getBoundingClientRect().width;
+        return shift + (strip ?? Number.NaN);
+      }),
+    )
+    .toBeCloseTo(0);
+}
+
 test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
   test.beforeEach(async ({ page, platform }) => {
     test.skip(platform !== "ios", "iOS's swipe actions");
@@ -99,13 +115,11 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
       name: "Delete Seinen",
     });
 
-    await swipeTowardStart(
-      rowOf(page, "Seinen").locator("[data-swiped]"),
-      SHORT_SWIPE,
-    );
+    await swipeTowardStart(swipedOf(page, "Seinen"), SHORT_SWIPE);
 
-    await expect.poll(() => isUncovered(rename)).toBe(true);
-    await expect.poll(() => isUncovered(remove)).toBe(true);
+    await expectSettledOpen(swipedOf(page, "Seinen"));
+    expect(await isUncovered(rename)).toBe(true);
+    expect(await isUncovered(remove)).toBe(true);
     await expect(rename).toHaveCSS(
       "background-color",
       await tokenColour(page, "--native-color-button-primary"),
@@ -119,14 +133,14 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
   test("deletes a tag from its swipe action and offers Undo", async ({
     page,
   }) => {
-    await swipeTowardStart(
-      rowOf(page, "Seinen").locator("[data-swiped]"),
-      SHORT_SWIPE,
-    );
+    const remove = rowOf(page, "Seinen").getByRole("button", {
+      name: "Delete Seinen",
+    });
 
-    await tap(
-      rowOf(page, "Seinen").getByRole("button", { name: "Delete Seinen" }),
-    );
+    await swipeTowardStart(swipedOf(page, "Seinen"), SHORT_SWIPE);
+    await expectSettledOpen(swipedOf(page, "Seinen"));
+    expect(await isUncovered(remove)).toBe(true);
+    await tap(remove);
 
     await expect(rowOf(page, "Seinen")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
