@@ -1,8 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
+import {
+  CommandFailure,
+  emitFakeEvent,
+  type FakeBackend,
+} from "./fake-backend.ts";
 import { boxOf, expect, setTextScale, test, tokenColour } from "./fixtures.ts";
-import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
+import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 import { fitPhoneToShowRow } from "./show-row-fit.ts";
 
 const TONAL_BAR = "rgb(233, 240, 232)";
@@ -30,6 +34,8 @@ const EMPTY_STACK_GAP = 16;
 const EMPTY_INSET = 24;
 const ERROR_LIFT = 64;
 const READ = { state: "read" } as const;
+const NOT_STARTED = { state: "notStarted" } as const;
+const LIBRARY_CHANGED = "library-changed";
 
 async function openSeries(page: Page): Promise<void> {
   await page.addInitScript(
@@ -241,6 +247,50 @@ test.describe(
         expect(outlined.y - (filled.y + filled.height)).toBe(EMPTY_STACK_GAP);
         expect(filled.x + filled.width / 2).toBeCloseTo(
           outlined.x + outlined.width / 2,
+          0,
+        );
+      });
+    });
+
+    test.describe("a series a rescan empties while it is open", () => {
+      let isEmptied = false;
+      const filled = new FakeShelf([NOT_STARTED, NOT_STARTED]).backend();
+      const emptied = new FakeShelf([]).backend();
+      const shelf = (): FakeBackend => (isEmptied ? emptied : filled);
+      test.use({
+        backend: {
+          ...filled,
+          seriesOverview: (id) => shelf().seriesOverview(id),
+          seriesBooks: (id, listing, after) =>
+            shelf().seriesBooks(id, listing, after),
+        },
+      });
+
+      test.beforeEach(() => {
+        isEmptied = false;
+      });
+
+      test("turns into the empty state, offering Rescan the folder", async ({
+        page,
+      }) => {
+        await openSeries(page);
+        await expect(
+          page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
+        ).toBeVisible();
+
+        isEmptied = true;
+        await emitFakeEvent(page, LIBRARY_CHANGED);
+
+        await expect(
+          page.getByRole("heading", {
+            level: 2,
+            name: "No books in this series",
+          }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: "Rescan the folder" }),
+        ).toBeVisible();
+        await expect(page.getByRole("button", { name: /^Start / })).toHaveCount(
           0,
         );
       });
