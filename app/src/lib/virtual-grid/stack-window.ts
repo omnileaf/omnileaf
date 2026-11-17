@@ -24,8 +24,14 @@ export interface StackWindow {
   readonly size: number;
 }
 
-export function rowHeights(layout: RowLayout): RowHeights {
-  return laidOut(layout, new Map());
+export function rowHeights(
+  layout: RowLayout,
+  measurements: ReadonlyMap<number, number> = new Map(),
+): RowHeights {
+  return laidOut(
+    layout,
+    new Map([...measurements].filter(([index]) => isRowOf(layout, index))),
+  );
 }
 
 export function remeasured(
@@ -35,11 +41,15 @@ export function remeasured(
   const { layout, measured } = heights;
   const changes = [...measurements].filter(
     ([index, height]) =>
-      index >= 0 && index < layout.count && measured.get(index) !== height,
+      isRowOf(layout, index) && measured.get(index) !== height,
   );
   return changes.length === 0
     ? heights
     : laidOut(layout, new Map([...measured, ...changes]));
+}
+
+function isRowOf(layout: RowLayout, index: number): boolean {
+  return index >= 0 && index < layout.count;
 }
 
 function laidOut(
