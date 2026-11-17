@@ -30,7 +30,7 @@
   import IconActionsSync from "#lib/icon-actions/IconActionsSync.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
   import { followHistoryForBack } from "#lib/navigation/android-back.ts";
-  import { tellRestoredRouteShown } from "#lib/navigation/restored-route.ts";
+  import { tellOpeningPageShown } from "#lib/navigation/restored-route.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
     languageSettingForDocument,
@@ -150,14 +150,18 @@
   setPreviousScreens(new PreviousScreens());
   followHistoryForBack(() => data.appInfo.platform);
   afterNavigate(({ type }) => {
-    if (type === "enter" && data.pageToRestore !== undefined) {
-      void restorePage(data.pageToRestore);
+    if (type === "enter") {
+      void showOpeningPage(data.pageToRestore);
     }
   });
 
-  async function restorePage(restored: ResolvedPathname): Promise<void> {
-    await goto(restored);
-    await tellRestoredRouteShown();
+  async function showOpeningPage(
+    restored: ResolvedPathname | undefined,
+  ): Promise<void> {
+    if (restored !== undefined) {
+      await goto(restored);
+    }
+    await tellOpeningPageShown(data.appInfo.platform);
   }
 
   function settleScreenshotMode(): void {

@@ -32,9 +32,13 @@ export async function takeRestoredRoute(
     : resolvedPathOf(new URL(taken.data, location.href));
 }
 
-export async function tellRestoredRouteShown(
+export async function tellOpeningPageShown(
+  platform: Platform,
   tell: TellRouteShown = () => commands.restoredRouteShown(),
 ): Promise<void> {
+  if (!KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN[platform]) {
+    return;
+  }
   const told = await tell();
   if (told.status === "error") {
     reportError(told.error);

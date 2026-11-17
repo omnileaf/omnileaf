@@ -96,6 +96,12 @@ test.describe("when Android rebuilt the screen while the library has a problem",
     ).toBeVisible();
     expect(taken.count).toBe(1);
   });
+
+  test("tells Android the app shows its own page instead", async ({ page }) => {
+    await page.goto("/");
+
+    await expect.poll(() => shown.count).toBe(1);
+  });
 });
 
 test.describe("when Android rebuilt the screen during first launch", () => {
@@ -110,5 +116,11 @@ test.describe("when Android rebuilt the screen during first launch", () => {
       page.getByRole("button", { name: "Get started" }),
     ).toBeVisible();
     expect(taken.count).toBeGreaterThan(0);
+  });
+
+  test("tells Android the app shows its own page instead", async ({ page }) => {
+    await page.goto("/");
+
+    await expect.poll(() => shown.count).toBe(1);
   });
 });

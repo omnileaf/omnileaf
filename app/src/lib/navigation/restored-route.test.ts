@@ -1,11 +1,15 @@
 import { afterEach, expect, test, vi } from "vitest";
 
-import { takeRestoredRoute, tellRestoredRouteShown } from "./restored-route";
+import { takeRestoredRoute, tellOpeningPageShown } from "./restored-route";
 
 const SETTINGS_PAGE = "/settings/appearance";
 
 function saved(route: string | null) {
   return vi.fn(() => Promise.resolve({ status: "ok" as const, data: route }));
+}
+
+function told() {
+  return vi.fn(() => Promise.resolve({ status: "ok" as const, data: null }));
 }
 
 afterEach(() => {
@@ -58,21 +62,31 @@ test("doesn't ask anywhere but Android", async () => {
   expect(ask).not.toHaveBeenCalled();
 });
 
-test("tells Android the restored page shows", async () => {
-  const tell = vi.fn(() =>
-    Promise.resolve({ status: "ok" as const, data: null }),
-  );
+test("tells Android the opening page shows", async () => {
+  const tell = told();
 
-  await tellRestoredRouteShown(tell);
+  await tellOpeningPageShown("android", tell);
 
   expect(tell).toHaveBeenCalledTimes(1);
 });
 
-test("reports Android not hearing that the restored page shows", async () => {
+test("doesn't tell anywhere but Android that the opening page shows", async () => {
+  const tell = told();
+
+  await Promise.all(
+    (["ios", "linux", "macos", "windows"] as const).map((platform) =>
+      tellOpeningPageShown(platform, tell),
+    ),
+  );
+
+  expect(tell).not.toHaveBeenCalled();
+});
+
+test("reports Android not hearing that the opening page shows", async () => {
   const reported = vi.spyOn(window, "reportError").mockReturnValue(undefined);
   const error = { code: "internal", message: "timed out" } as const;
 
-  await tellRestoredRouteShown(() =>
+  await tellOpeningPageShown("android", () =>
     Promise.resolve({ status: "error", error }),
   );
 
