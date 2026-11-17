@@ -2342,6 +2342,21 @@
   "reader_auto_scroll_my_pace": "⟦Ṁý þáçé···⟧",
   "reader_auto_scroll_set_speed": "⟦Šéţ šþééð····⟧",
   "reader_auto_scroll_help": "⟦Ķééþš šçŕöļļíñĝ ŵíţĥ ŕéðûçéð ɱöţíöñ öñ, šíñçé ýöû šţáŕţéð íţ.·························⟧",
+  "reader_auto_scroll_speed_title": "⟦Áûţö šçŕöļļ šþééð·······⟧",
+  "reader_auto_scroll_speed_readout": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Áûţö šçŕöļļ šþééð, {formattedCount} šçŕééñ á ɱíñûţé·····················⟧",
+        "countPlural=other": "⟦Áûţö šçŕöļļ šþééð, {formattedCount} šçŕééñš á ɱíñûţé·····················⟧"
+      }
+    }
+  ],
   "reader_auto_scroll_rate": "⟦Šçŕééñš á ɱíñûţé·······⟧",
   "reader_auto_scroll_rate_value": "⟦Šçŕééñš á ɱíñûţé: {count}··········⟧",
   "reader_save_speed_for": "⟦Šáṽé ţĥé šþééð ƒöŕ········⟧",
