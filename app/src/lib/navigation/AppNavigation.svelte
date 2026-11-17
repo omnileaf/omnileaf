@@ -76,6 +76,7 @@
 </script>
 
 <nav
+  data-app-navigation
   bind:this={navigation}
   aria-label={m.navigation_label()}
   data-sidebar-hidden={sidebar.isHidden || undefined}

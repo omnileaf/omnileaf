@@ -1,8 +1,10 @@
+const APP_NAVIGATION = "[data-app-navigation]";
+
 export function focusedTabHref(): string | undefined {
   const focused = document.activeElement;
   if (
     !(focused instanceof HTMLAnchorElement) ||
-    focused.closest("nav") === null
+    focused.closest(APP_NAVIGATION) === null
   ) {
     return undefined;
   }
@@ -10,8 +12,11 @@ export function focusedTabHref(): string | undefined {
 }
 
 export function focusTab(href: string): void {
-  const tab = [...document.querySelectorAll<HTMLAnchorElement>("nav a")].find(
-    (link) => link.getAttribute("href") === href,
+  const tab = Array.from(
+    document.querySelectorAll<HTMLAnchorElement>(`${APP_NAVIGATION} a`),
+  ).find(
+    (link) =>
+      link.getAttribute("href") === href && link.getClientRects().length > 0,
   );
   tab?.focus();
 }

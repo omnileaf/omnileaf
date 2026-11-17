@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { goto, preloadCode } from "$app/navigation";
@@ -158,20 +158,18 @@
   const isTabBarAfterPage = $derived(
     isPhone(data.appInfo.platform, width.current),
   );
-  let navigationPlace = untrack(() => isTabBarAfterPage);
-  let tabToRefocus: string | undefined;
+  let wasTabBarAfterPage = untrack(() => isTabBarAfterPage);
 
   $effect.pre(() => {
-    if (isTabBarAfterPage !== navigationPlace) {
-      navigationPlace = isTabBarAfterPage;
-      tabToRefocus = focusedTabHref();
+    if (isTabBarAfterPage === wasTabBarAfterPage) {
+      return;
     }
-  });
-
-  $effect(() => {
-    if (isTabBarAfterPage === navigationPlace && tabToRefocus !== undefined) {
-      focusTab(tabToRefocus);
-      tabToRefocus = undefined;
+    wasTabBarAfterPage = isTabBarAfterPage;
+    const href = focusedTabHref();
+    if (href !== undefined) {
+      void tick().then(() => {
+        focusTab(href);
+      });
     }
   });
   const isSearchViewOpen = $derived(
