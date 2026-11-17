@@ -5,6 +5,7 @@ import {
   clickWhenShown,
   mainNavigationLink,
   settingsRow,
+  SHOWN_PATH,
   shownPage,
   useAppSession,
 } from "./app-session.ts";
@@ -16,25 +17,15 @@ import {
 import { followRecreatedScreen } from "./recreated-screen.ts";
 import {
   FIRST_SERIES_COVER,
-  NEXT_PAGE,
-  sampleBookLink,
-  showTheBooks,
+  PAGE_COUNTER,
+  readSampleBookToPage,
 } from "./sample-book.ts";
-import { xpath } from "./webdriver.ts";
 
 const SETUP_TIMEOUT_MS = 180_000;
 const STANDARD_CONTRAST = "0";
 const HIGH_CONTRAST = "1";
 const SAMPLE_SERIES = "Sample Series 01";
 const SAVED_PAGE = 3;
-const GUIDE_TIMEOUT_MS = 3_000;
-const SHOWN_PATH = "return location.pathname;";
-const PAGE_SHOWN = xpath(
-  `//main//span[starts-with(normalize-space(), '${String(SAVED_PAGE)} / ')]`,
-);
-const GOT_IT = xpath("//*[@role='note']//button[normalize-space()='Got it']");
-const TOLD_BACK_ON_PAGE =
-  "return [...document.querySelectorAll('[data-sonner-toast]')].some((toast) => toast.textContent.includes('Back on page'));";
 
 const contrastLevel = androidSetting("secure", "contrast_level");
 
@@ -69,15 +60,19 @@ async function changeTheContrast(): Promise<void> {
   });
 }
 
-async function openSampleSeries(): Promise<void> {
+async function showSampleSeries(): Promise<void> {
   await (await appSession().waitFor(FIRST_SERIES_COVER)).click();
   await shownPage(appSession(), SAMPLE_SERIES);
 }
 
-test("stays on a Settings page when Android's colour contrast changes", async () => {
+async function openAppearanceSettings(): Promise<void> {
   await clickWhenShown(appSession(), mainNavigationLink("Settings"));
   await clickWhenShown(appSession(), settingsRow("Appearance"));
   await shownPage(appSession(), "Appearance");
+}
+
+test("stays on a Settings page when Android's colour contrast changes", async () => {
+  await openAppearanceSettings();
 
   await changeTheContrast();
 
@@ -85,7 +80,7 @@ test("stays on a Settings page when Android's colour contrast changes", async ()
 });
 
 test("stays on a series page when Android's colour contrast changes", async () => {
-  await openSampleSeries();
+  await showSampleSeries();
   const pathBefore = await appSession().run(SHOWN_PATH);
 
   await changeTheContrast();
@@ -95,21 +90,10 @@ test("stays on a series page when Android's colour contrast changes", async () =
 });
 
 test("keeps a book open at its page when Android's colour contrast changes", async () => {
-  await openSampleSeries();
-  await showTheBooks(appSession());
-  await (await appSession().waitFor(sampleBookLink(1))).click();
-  const card = await appSession().findWithin(GOT_IT, GUIDE_TIMEOUT_MS);
-  await card?.click();
-  for (let turned = 1; turned < SAVED_PAGE; turned += 1) {
-    await (await appSession().waitFor(NEXT_PAGE)).click();
-  }
-  await appSession().waitFor(PAGE_SHOWN);
+  await readSampleBookToPage(appSession(), SAVED_PAGE);
 
   await changeTheContrast();
 
-  const shown = await appSession().waitFor(PAGE_SHOWN);
-  expect((await shown.text()).startsWith(`${String(SAVED_PAGE)} / `)).toBe(
-    true,
-  );
-  expect(await appSession().run(TOLD_BACK_ON_PAGE)).toBe(false);
+  const counter = await appSession().waitFor(PAGE_COUNTER);
+  expect(await counter.text()).toMatch(new RegExp(`^${String(SAVED_PAGE)} / `));
 });

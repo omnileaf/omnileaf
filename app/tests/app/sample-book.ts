@@ -2,6 +2,9 @@ import { addSampleLibrary } from "./app-session.ts";
 import { type Locator, type Session, xpath } from "./webdriver.ts";
 
 export const NEXT_PAGE = xpath("//button[@aria-label='Next page']");
+export const PAGE_COUNTER = xpath(
+  "//main//span[contains(normalize-space(), ' / ')]",
+);
 export const BACK_TO_THE_LIBRARY = xpath(
   "//main//a[@href='/'] | //nav//a[normalize-space()='Library']",
 );
@@ -11,6 +14,9 @@ export const BACK_TO_THE_SERIES = xpath(
 export const FIRST_SERIES_COVER = xpath(
   "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
 );
+
+const GUIDE_TIMEOUT_MS = 3_000;
+const GOT_IT = xpath("//*[@role='note']//button[normalize-space()='Got it']");
 
 export const SHOWS_VOLUMES_AS_COVERS =
   process.platform === "linux" || process.platform === "darwin";
@@ -77,4 +83,25 @@ export function shownPageCount(page: number, count: number): Locator {
   return xpath(
     `//main//span[normalize-space()='${String(page)} / ${String(count)}']`,
   );
+}
+
+function pageCounterAt(page: number): Locator {
+  return xpath(
+    `//main//span[starts-with(normalize-space(), '${String(page)} / ')]`,
+  );
+}
+
+export async function readSampleBookToPage(
+  session: Session,
+  page: number,
+): Promise<void> {
+  await (await session.waitFor(FIRST_SERIES_COVER)).click();
+  await showTheBooks(session);
+  await (await session.waitFor(sampleBookLink(1))).click();
+  const guide = await session.findWithin(GOT_IT, GUIDE_TIMEOUT_MS);
+  await guide?.click();
+  for (let turned = 1; turned < page; turned += 1) {
+    await (await session.waitFor(NEXT_PAGE)).click();
+  }
+  await session.waitFor(pageCounterAt(page));
 }

@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 
 import { expect, test } from "vitest";
 
-import { useAppSession } from "./app-session.ts";
+import { SHOWN_PATH, useAppSession } from "./app-session.ts";
 import {
   chooseOnTheIcon,
   NEW_TASK,
@@ -24,7 +24,6 @@ const SHORTCUT_LABELS = [
   "Search the library",
 ];
 const ON_LIBRARY_SEARCH = "return location.pathname === '/search';";
-const SHOWN_PATH = "return location.pathname;";
 const TOLD_SCREENSHOT_MODE_CHANGED =
   "return [...document.querySelectorAll('[aria-live], [data-sonner-toast]')].some((element) => /Screenshot mode is (on|off)/.test(element.textContent));";
 const MAIN_NAVIGATION = xpath("//nav[@aria-label='Main']");

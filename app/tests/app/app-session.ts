@@ -59,6 +59,7 @@ export const FINISHED_SCAN_REPORT = xpath(
   "//*[@data-sonner-toast or @data-info-bar]//p[starts-with(normalize-space(), 'Added ')]",
 );
 const ON_LIBRARY_PAGE = "return location.pathname === '/';";
+export const SHOWN_PATH = "return location.pathname;";
 
 async function stepTowardsTheLibrary(
   session: Session,
