@@ -1,9 +1,9 @@
 import type { SystemContrast } from "#lib/ipc/bindings.ts";
+import { ChoiceOverSystem } from "#lib/preferences/choice-over-system.svelte.ts";
 import {
   browserPreferenceStore,
-  type PreferenceStore,
+  type ForgettingPreferenceStore,
 } from "#lib/preferences/stored-preference.ts";
-import { StoredSwitch } from "#lib/preferences/stored-switch.ts";
 
 import { type Contrast, followContrast } from "./display-modes";
 
@@ -16,35 +16,34 @@ const DRAWN_CONTRAST = {
 } satisfies Record<SystemContrast, Contrast | undefined>;
 
 export class ContrastChoice {
-  system: SystemContrast = $state("standard");
-  #chosen: boolean | undefined = $state();
+  #system: SystemContrast = $state("standard");
 
-  readonly #stored: StoredSwitch;
+  readonly #choice: ChoiceOverSystem;
 
-  constructor(store: PreferenceStore | undefined) {
-    this.#stored = new StoredSwitch(store, PREFERENCE_KEY);
-    this.#chosen = this.#stored.read();
+  constructor(store: ForgettingPreferenceStore | undefined) {
+    this.#choice = new ChoiceOverSystem(store, PREFERENCE_KEY);
   }
 
   get isHigher(): boolean {
-    return this.#chosen ?? this.system !== "standard";
+    return this.#choice.isOn;
   }
 
   get drawn(): Contrast | undefined {
-    if (this.#chosen === undefined) {
-      return DRAWN_CONTRAST[this.system];
+    const { chosen } = this.#choice;
+    if (chosen === undefined) {
+      return DRAWN_CONTRAST[this.#system];
     }
-    return this.#chosen ? "high" : undefined;
+    return chosen ? "high" : undefined;
   }
 
   followSystem(contrast: SystemContrast): void {
-    this.system = contrast;
+    this.#system = contrast;
+    this.#choice.followSystem(contrast !== "standard");
     followContrast(this.drawn);
   }
 
   choose(isHigher: boolean): void {
-    this.#chosen = isHigher;
-    this.#stored.writeIfPossible(isHigher);
+    this.#choice.choose(isHigher);
     followContrast(this.drawn);
   }
 }
