@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 
-import { androidSetting } from "./android-settings.ts";
+import { androidSetting, ANDROID_APP_ID } from "./android-settings.ts";
 import {
   clickWhenShown,
   mainNavigationLink,
@@ -26,6 +26,8 @@ const STANDARD_CONTRAST = "0";
 const HIGH_CONTRAST = "1";
 const SAMPLE_SERIES = "Sample Series 01";
 const SAVED_PAGE = 3;
+const BACK_KEY = 4;
+const RUNNING_IN_FOREGROUND = 4;
 
 const contrastLevel = androidSetting("secure", "contrast_level");
 
@@ -71,12 +73,33 @@ async function openAppearanceSettings(): Promise<void> {
   await shownPage(appSession(), "Appearance");
 }
 
+async function pressBack(): Promise<void> {
+  await appSession().runMobileCommand("pressKey", { keycode: BACK_KEY });
+}
+
+async function appState(): Promise<unknown> {
+  return appSession().runMobileCommand("queryAppState", {
+    appId: ANDROID_APP_ID,
+  });
+}
+
 test("stays on a Settings page when Android's colour contrast changes", async () => {
   await openAppearanceSettings();
 
   await changeTheContrast();
 
   expect(await shownPage(appSession(), "Appearance")).toBe("Appearance");
+});
+
+test("keeps Back inside the app on a page kept through a contrast change", async () => {
+  await openAppearanceSettings();
+  await changeTheContrast();
+  await shownPage(appSession(), "Appearance");
+
+  await pressBack();
+
+  expect(await shownPage(appSession(), "Library")).toBe("Library");
+  expect(await appState()).toBe(RUNNING_IN_FOREGROUND);
 });
 
 test("stays on a series page when Android's colour contrast changes", async () => {
