@@ -219,6 +219,10 @@
     return pageElements[reported]?.offsetHeight ?? 0;
   }
 
+  export function shownScreenHeight(): number {
+    return scroller?.clientHeight ?? 0;
+  }
+
   $effect(() => {
     const target = shown;
     untrack(() => {

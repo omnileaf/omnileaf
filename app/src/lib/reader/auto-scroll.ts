@@ -1,42 +1,68 @@
-import type { AutoScrollChoice } from "./reader-settings.svelte.ts";
+import { assertNever } from "#lib/assert-never.ts";
 
-export interface AutoScrollSpeed {
-  readonly pagesPerMinute: number;
-  readonly isMyPace: boolean;
+import {
+  type AutoScrollChoice,
+  SCREENS_PER_MINUTE,
+} from "./reader-settings.svelte.ts";
+
+export type AutoScrollSpeed =
+  | { readonly kind: "myPace"; readonly pagesPerMinute: number }
+  | { readonly kind: "set"; readonly screensPerMinute: number };
+
+export interface StripHeights {
+  readonly page: number;
+  readonly screen: number;
 }
 
 const SECONDS_IN_A_MINUTE = 60;
 const MS_IN_A_MINUTE = 60_000;
-export const SPEED_STEP = 0.5;
-export const SLOWEST_SPEED = 0.5;
-export const FASTEST_SPEED = 10;
 
 export function autoScrollSpeed({
   choice,
-  pagesPerMinute,
+  screensPerMinute,
   secondsPerPage,
 }: {
   choice: AutoScrollChoice;
-  pagesPerMinute: number;
+  screensPerMinute: number;
   secondsPerPage: number | null;
 }): AutoScrollSpeed {
   return choice === "myPace" && secondsPerPage !== null && secondsPerPage > 0
-    ? { pagesPerMinute: SECONDS_IN_A_MINUTE / secondsPerPage, isMyPace: true }
-    : { pagesPerMinute, isMyPace: false };
+    ? { kind: "myPace", pagesPerMinute: SECONDS_IN_A_MINUTE / secondsPerPage }
+    : { kind: "set", screensPerMinute };
+}
+
+function pixelsPerMinute(
+  speed: AutoScrollSpeed,
+  heights: StripHeights,
+): number {
+  switch (speed.kind) {
+    case "myPace":
+      return heights.page * speed.pagesPerMinute;
+    case "set":
+      return heights.screen * speed.screensPerMinute;
+    default:
+      return assertNever(speed);
+  }
 }
 
 export function pixelsScrolled(
   elapsedMs: number,
-  pagesPerMinute: number,
-  pageHeight: number,
+  speed: AutoScrollSpeed,
+  heights: StripHeights,
 ): number {
-  return (pageHeight * pagesPerMinute * elapsedMs) / MS_IN_A_MINUTE;
+  return (pixelsPerMinute(speed, heights) * elapsedMs) / MS_IN_A_MINUTE;
 }
 
-export function fasterSpeed(pagesPerMinute: number): number {
-  return Math.min(FASTEST_SPEED, pagesPerMinute + SPEED_STEP);
+export function fasterSpeed(screensPerMinute: number): number {
+  return Math.min(
+    SCREENS_PER_MINUTE.fastest,
+    screensPerMinute + SCREENS_PER_MINUTE.step,
+  );
 }
 
-export function slowerSpeed(pagesPerMinute: number): number {
-  return Math.max(SLOWEST_SPEED, pagesPerMinute - SPEED_STEP);
+export function slowerSpeed(screensPerMinute: number): number {
+  return Math.max(
+    SCREENS_PER_MINUTE.slowest,
+    screensPerMinute - SCREENS_PER_MINUTE.step,
+  );
 }

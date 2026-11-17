@@ -33,7 +33,7 @@ export interface ReaderLook {
   readonly pageTurn: PageTurnStyle;
   readonly tapToScroll: TapToScroll;
   readonly autoScrollSpeed: AutoScrollChoice;
-  readonly pagesPerMinute: number;
+  readonly screensPerMinute: number;
   readonly pausesAtEnd: boolean;
 }
 
@@ -51,7 +51,6 @@ export const AUTO_SCROLL_CHOICES: readonly AutoScrollChoice[] = [
   "myPace",
   "set",
 ];
-const PAGES_PER_MINUTE = { lowest: 0.5, highest: 10 };
 export const CONTROLS_LOOKS: readonly ReaderControlsLook[] = [
   "dark",
   "matchApp",
@@ -70,7 +69,7 @@ export const DEFAULT_LOOK: ReaderLook = {
   pageTurn: "instant",
   tapToScroll: "topAndBottom",
   autoScrollSpeed: "myPace",
-  pagesPerMinute: 2,
+  screensPerMinute: 3,
   pausesAtEnd: true,
 };
 
@@ -78,6 +77,7 @@ const ALL_KEY = "omnileaf.readerSettings.all";
 const SERIES_KEY_PREFIX = "omnileaf.readerSettings.series.";
 const SCOPE_KEY_PREFIX = "omnileaf.readerSettings.scope.";
 const PERCENT = { lowest: 0, highest: 100 };
+export const SCREENS_PER_MINUTE = { slowest: 1, fastest: 12, step: 1 } as const;
 
 function oneOf<T>(choices: readonly T[], value: unknown): T | undefined {
   return choices.find((choice) => choice === value);
@@ -104,10 +104,13 @@ function lightIn(value: unknown): ReaderLight | undefined {
     : undefined;
 }
 
-function pagesPerMinute(value: unknown): number | undefined {
+function screensPerMinute(value: unknown): number | undefined {
   return typeof value === "number" &&
-    value >= PAGES_PER_MINUTE.lowest &&
-    value <= PAGES_PER_MINUTE.highest
+    Number.isInteger(
+      (value - SCREENS_PER_MINUTE.slowest) / SCREENS_PER_MINUTE.step,
+    ) &&
+    value >= SCREENS_PER_MINUTE.slowest &&
+    value <= SCREENS_PER_MINUTE.fastest
     ? value
     : undefined;
 }
@@ -141,7 +144,7 @@ function lookIn(text: string | null): Partial<ReaderLook> {
     pageTurn: oneOf(PAGE_TURN_STYLES, stored.pageTurn),
     tapToScroll: oneOf(TAP_TO_SCROLL, stored.tapToScroll),
     autoScrollSpeed: oneOf(AUTO_SCROLL_CHOICES, stored.autoScrollSpeed),
-    pagesPerMinute: pagesPerMinute(stored.pagesPerMinute),
+    screensPerMinute: screensPerMinute(stored.screensPerMinute),
     pausesAtEnd: flag(stored.pausesAtEnd),
   };
   return Object.fromEntries(

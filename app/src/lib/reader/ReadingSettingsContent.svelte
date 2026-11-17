@@ -4,7 +4,6 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import ApplyToChoice from "./ApplyToChoice.svelte";
-  import { FASTEST_SPEED, SLOWEST_SPEED, SPEED_STEP } from "./auto-scroll.ts";
   import CropBordersSwitch from "./CropBordersSwitch.svelte";
   import KeepScreenOnSwitch from "./KeepScreenOnSwitch.svelte";
   import LightSliders from "./LightSliders.svelte";
@@ -12,17 +11,18 @@
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import { readingSettingsContentLook } from "./reading-settings-content-look.ts";
   import ReadingModeSelect from "./ReadingModeSelect.svelte";
-  import type {
-    PageFit,
-    PageLayout,
-    PageTurnStyle,
-    ReaderBackground,
-    ReaderControlsLook,
-    TapZones,
-    TapToScroll,
-    AutoScrollChoice,
-    ReaderLight,
-    ReaderSettings,
+  import {
+    type AutoScrollChoice,
+    type PageFit,
+    type PageLayout,
+    type PageTurnStyle,
+    type ReaderBackground,
+    type ReaderControlsLook,
+    type ReaderLight,
+    type ReaderSettings,
+    SCREENS_PER_MINUTE,
+    type TapToScroll,
+    type TapZones,
   } from "./reader-settings.svelte.ts";
   import SettingChoice from "./SettingChoice.svelte";
   import SkipUpNextSwitch from "./SkipUpNextSwitch.svelte";
@@ -146,20 +146,20 @@
           >
             <p id="{id}-rate" class="text-small font-medium">
               {m.reader_auto_scroll_rate_value({
-                count: look.pagesPerMinute,
+                count: look.screensPerMinute,
               })}
             </p>
             <Slider
               aria-labelledby="{id}-rate"
               aria-label={m.reader_auto_scroll_rate()}
               class="inline-setting-control"
-              min={SLOWEST_SPEED}
-              max={FASTEST_SPEED}
-              step={SPEED_STEP}
+              min={SCREENS_PER_MINUTE.slowest}
+              max={SCREENS_PER_MINUTE.fastest}
+              step={SCREENS_PER_MINUTE.step}
               bind:value={
-                () => look.pagesPerMinute,
-                (pages: number) => {
-                  settings.change("pagesPerMinute", pages);
+                () => look.screensPerMinute,
+                (screens: number) => {
+                  settings.change("screensPerMinute", screens);
                 }
               }
             />

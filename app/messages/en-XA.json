@@ -2343,12 +2343,12 @@
   "reader_auto_scroll_my_pace": "⟦Ṁý þáçé···⟧",
   "reader_auto_scroll_set_speed": "⟦Šéţ šþééð····⟧",
   "reader_auto_scroll_help": "⟦Ķééþš šçŕöļļíñĝ ŵíţĥ ŕéðûçéð ɱöţíöñ öñ, šíñçé ýöû šţáŕţéð íţ.·························⟧",
-  "reader_auto_scroll_rate": "⟦Þáĝéš á ɱíñûţé······⟧",
-  "reader_auto_scroll_rate_value": "⟦Þáĝéš á ɱíñûţé: {count}··········⟧",
+  "reader_auto_scroll_rate": "⟦Šçŕééñš á ɱíñûţé·······⟧",
+  "reader_auto_scroll_rate_value": "⟦Šçŕééñš á ɱíñûţé: {count}··········⟧",
   "reader_pause_at_end": "⟦Þáûšé áûţö šçŕöļļ áţ ţĥé éñð öƒ á ƀööķ················⟧",
   "reader_auto_scroll_pace": "⟦Áûţö šçŕöļļ áţ ɱý þáçé·········⟧",
   "reader_auto_scroll_pace_help": "⟦Šţáŕţš áûţö šçŕöļļ áţ ýöûŕ öŵñ šþééð.···············⟧",
-  "reader_pages_a_minute": [
+  "reader_screens_a_minute": [
     {
       "declarations": [
         "input count",
@@ -2357,8 +2357,8 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "⟦{formattedCount} þáĝé á ɱíñûţé············⟧",
-        "countPlural=other": "⟦{formattedCount} þáĝéš á ɱíñûţé·············⟧"
+        "countPlural=one": "⟦{formattedCount} šçŕééñ á ɱíñûţé·············⟧",
+        "countPlural=other": "⟦{formattedCount} šçŕééñš á ɱíñûţé··············⟧"
       }
     }
   ],
