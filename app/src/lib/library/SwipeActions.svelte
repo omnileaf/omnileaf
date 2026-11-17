@@ -35,7 +35,7 @@
   const opensOnActions: OpenAction = {
     revealPx: () => strip?.getBoundingClientRect().width ?? 0,
     actPastOpenPx: ACT_PAST_OPEN_PX,
-    actPastRevealPx: ACT_PAST_OPEN_PX,
+    closedRowClearsItsActions: true,
   };
 
   const isOpen = $derived(swipe.sideOf(key) !== undefined);

@@ -90,10 +90,25 @@ test("acts on a closed row only past the least distance it asks for", () => {
   const leastPx = 234;
 
   expect(
-    [200, 240].map(
+    [233, 234].map(
       (travel) =>
         swipeOutcome({ travel, ...closed, closedActPx: leastPx }, EITHER_SIDE)
           .kind,
     ),
   ).toEqual(["reveal", "act"]);
+});
+
+test("caps how far a closed narrow row must travel to act short of its width", () => {
+  const narrow = { rowWidth: 320, openPx: 0, actPastOpenPx: 48 };
+  const widerThanTheRowPx = 330;
+
+  expect(
+    [200, 271, 272].map(
+      (travel) =>
+        swipeOutcome(
+          { travel, ...narrow, closedActPx: widerThanTheRowPx },
+          EITHER_SIDE,
+        ).kind,
+    ),
+  ).toEqual(["reveal", "reveal", "act"]);
 });

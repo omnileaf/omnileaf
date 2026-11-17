@@ -8,6 +8,7 @@ export type SwipeOutcome =
 
 const REVEAL_PX = 48;
 const ACT_SHARE = 0.5;
+const FARTHEST_ACT_SHARE = 0.85;
 const DRAG_SLOP_PX = 10;
 
 export interface SwipeEnd {
@@ -31,7 +32,13 @@ export function swipeOutcome(
   const halfRow = swiped.rowWidth * ACT_SHARE;
   const actAt =
     swiped.openPx === 0
-      ? Math.max(halfRow, swiped.closedActPx ?? 0)
+      ? Math.max(
+          halfRow,
+          Math.min(
+            swiped.closedActPx ?? 0,
+            swiped.rowWidth * FARTHEST_ACT_SHARE,
+          ),
+        )
       : Math.max(halfRow, swiped.openPx + swiped.actPastOpenPx);
   return distance >= actAt ? { kind: "act", side } : { kind: "reveal", side };
 }
