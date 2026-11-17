@@ -12,12 +12,24 @@ private fun savedRoute(route: String?): RouteToRestore = RouteToRestore().apply 
 
 class RouteToRestoreTest {
     @Test
-    fun `hands the saved route over once`() {
+    fun `hands the saved route over again to a page reloaded before it shows the route`() {
         val saved = savedRoute(SERIES_PAGE)
+        saved.take()
 
-        val taken = listOf(saved.take(), saved.take())
+        val taken = saved.take()
 
-        assertEquals(listOf(SERIES_PAGE, null), taken)
+        assertEquals(SERIES_PAGE, taken)
+    }
+
+    @Test
+    fun `hands nothing over once the opening page shows`() {
+        val saved = savedRoute(SERIES_PAGE)
+        saved.take()
+        saved.openingPageShown()
+
+        val taken = saved.take()
+
+        assertNull(taken)
     }
 
     @Test

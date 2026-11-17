@@ -7,6 +7,7 @@ import org.junit.Test
 private const val SAVED_ROUTE = "/settings/appearance"
 private const val DOCUMENT = "content://documents.test/document/42"
 private const val ROOT_PAGE_URL = "http://tauri.localhost/"
+private const val HISTORY_PAGE_URL = "http://tauri.localhost/history"
 private val PLAIN_LAUNCH = LaunchIntent(iconAction = null, handedDocument = null, isFromRecents = false)
 private val SEARCH_REQUEST = PLAIN_LAUNCH.copy(iconAction = IconAction.SEARCH_LIBRARY)
 private val DOCUMENT_REQUEST = PLAIN_LAUNCH.copy(handedDocument = DOCUMENT)
@@ -78,7 +79,17 @@ class LaunchRequestsTest {
     }
 
     @Test
-    fun `saves the route taken while the page has not shown it`() {
+    fun `hands the saved route over again to a page reloaded before it shows the route`() {
+        requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
+        requests.takeRoute()
+
+        val route = requests.takeRoute()
+
+        assertEquals(SAVED_ROUTE, route)
+    }
+
+    @Test
+    fun `saves the route taken again when the screen is rebuilt before the page shows it`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
         requests.takeRoute()
 
@@ -96,6 +107,17 @@ class LaunchRequestsTest {
         val route = requests.routeToSave(ROOT_PAGE_URL)
 
         assertEquals("/", route)
+    }
+
+    @Test
+    fun `saves the page shown once a later request drops the saved route`() {
+        requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
+        requests.takeRoute()
+        requests.take(SEARCH_REQUEST)
+
+        val route = requests.routeToSave(HISTORY_PAGE_URL)
+
+        assertEquals("/history", route)
     }
 
     @Test
