@@ -8,7 +8,7 @@
 
   import SectionCover from "./SectionCover.svelte";
   import SectionGap from "./SectionGap.svelte";
-  import { coversTrack, sectionTileLook } from "./section-tile";
+  import { coversGap, coversTrack, sectionTileLook } from "./section-tile";
   import { bookIdsOf, type SectionTile, tileKey } from "./section-tiles";
 
   let {
@@ -64,6 +64,6 @@
   {onNearEnd}
   {cell}
   style={coversTrack(platform, width.current)}
-  class="gap-x-lg gap-y-cover-row"
+  class={coversGap(platform, width.current)}
   itemClass="min-inline-none"
 />

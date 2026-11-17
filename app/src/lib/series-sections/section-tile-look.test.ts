@@ -27,6 +27,8 @@ const VOLUME_SEVEN_COVER =
   "thumb/v1/0190a3e4-0000-8000-8000-000000000007/1/1" as CoverPath;
 const READ_MARK_SIZE = 24;
 const READ_MARK_INSET = "6px";
+const ANDROID_COVERS_ACROSS = "8px";
+const ANDROID_COVERS_DOWN = "16px";
 
 function volume(
   first: number,
@@ -87,6 +89,21 @@ async function drawTiles(
     started: page
       .getByRole("link", { name: "Volume 7 Page 42 of 190" })
       .element() as HTMLElement,
+  };
+}
+
+async function drawAndroidPhoneTiles(): Promise<{
+  readonly list: HTMLElement;
+}> {
+  await page.viewport(ANDROID_PHONE_WINDOW.width, ANDROID_PHONE_WINDOW.height);
+  followCorePlatform("android");
+  document.documentElement.dataset.theme = "light";
+  await render(SectionCoversHarness, {
+    tiles: TILES,
+    width: PHONE_BOOKS_COLUMN,
+  });
+  return {
+    list: page.getByRole("list", { name: "Volumes" }).element() as HTMLElement,
   };
 }
 
@@ -261,4 +278,14 @@ test("leaves an unfinished volume without the check badge", async () => {
   const { started } = await drawTiles();
 
   expect(started.querySelector("[data-read-mark]")).toBeNull();
+});
+
+test("spaces an Android phone's covers 8px across and 16px down", async () => {
+  const { list } = await drawAndroidPhoneTiles();
+  const grid = getComputedStyle(list);
+
+  expect([grid.columnGap, grid.rowGap]).toEqual([
+    ANDROID_COVERS_ACROSS,
+    ANDROID_COVERS_DOWN,
+  ]);
 });

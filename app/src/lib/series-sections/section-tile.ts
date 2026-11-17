@@ -43,3 +43,12 @@ export function coversTrack(platform: Platform, width: WidthClass): string {
     ? THREE_COVERS_A_ROW
     : COVERS_FILL_THE_ROW;
 }
+
+const ANDROID_PHONE_GAP = "gap-x-sm gap-y-lg";
+const COVERS_GAP = "gap-x-lg gap-y-cover-row";
+
+export function coversGap(platform: Platform, width: WidthClass): string {
+  return phoneOf(platform, width) === "android"
+    ? ANDROID_PHONE_GAP
+    : COVERS_GAP;
+}
