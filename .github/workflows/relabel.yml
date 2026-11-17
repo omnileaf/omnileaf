@@ -21,6 +21,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PULL_REQUEST: ${{ github.event.pull_request.number }}
+          POLLS: 60
+          POLL_SECONDS: 5
         run: |
           run_field() { gh run view "$run" --json "$1" --jq ".$1"; }
           current_head() { gh pr view "$PULL_REQUEST" --json headRefOid --jq .headRefOid; }
@@ -33,13 +35,13 @@ jobs:
             if [ "$attempt" -gt "$seen" ]; then exit 0; fi
           }
           wait_until_completed() {
-            for _ in $(seq 60); do
+            for _ in $(seq "$POLLS"); do
               exit_if_rerun_elsewhere
               status=$(run_field status)
               if [ "$status" = completed ]; then return 0; fi
-              sleep 5
+              sleep "$POLL_SECONDS"
             done
-            echo "::error::ci run $run did not stop within five minutes of being cancelled"
+            echo "::error::ci run $run did not stop within $((POLLS * POLL_SECONDS)) seconds of being cancelled"
             return 1
           }
 
