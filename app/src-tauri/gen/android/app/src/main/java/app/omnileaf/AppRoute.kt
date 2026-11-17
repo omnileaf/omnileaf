@@ -8,13 +8,11 @@ private const val APP_SCHEME = "http"
 private const val APP_HOST = "tauri.localhost"
 private const val NO_PORT = -1
 private const val ROOT = "/"
-private const val NETWORK_PATH_PREFIX = "//"
 
 internal fun appRouteOf(pageUrl: String): String? {
     val page = parsedUri(pageUrl)?.normalize() ?: return null
     if (!page.isAppOrigin()) return null
     val path = page.rawPath.ifEmpty { ROOT }
-    if (!path.startsWith(ROOT) || path.startsWith(NETWORK_PATH_PREFIX)) return null
     return page.rawQuery?.let { query -> "$path?$query" } ?: path
 }
 
