@@ -18,8 +18,8 @@ internal data class SavedScreen(
 internal class LaunchRequests(
     private val chooseIconAction: (IconAction) -> Unit,
 ) {
-    val handedDocuments = HandedDocuments()
-    val routeToRestore = RouteToRestore()
+    private val handedDocuments = HandedDocuments()
+    private val routeToRestore = RouteToRestore()
 
     /**
      * Android hands an activity it restores, or reopens from Recents, the intent that first started its task,
@@ -37,6 +37,14 @@ internal class LaunchRequests(
         if (launching.isRequest) routeToRestore.drop()
         launching.iconAction?.let(chooseIconAction)
         launching.handedDocument?.let(handedDocuments::receive)
+    }
+
+    fun takeRoute(): String? = routeToRestore.take()
+
+    fun routeToSave(shownPageUrl: String?): String? = routeToRestore.routeToSave(shownPageUrl)
+
+    fun watchHandedDocuments(page: (String) -> Unit) {
+        handedDocuments.watch(page)
     }
 }
 

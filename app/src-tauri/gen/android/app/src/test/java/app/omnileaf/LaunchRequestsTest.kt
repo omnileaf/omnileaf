@@ -15,7 +15,7 @@ class LaunchRequestsTest {
     private val chosen = mutableListOf<IconAction>()
     private val requests = LaunchRequests { action -> chosen += action }
 
-    private fun handedOver(): List<String> = mutableListOf<String>().also { handed -> requests.handedDocuments.watch { handed += it } }
+    private fun handedOver(): List<String> = mutableListOf<String>().also { handed -> requests.watchHandedDocuments { handed += it } }
 
     @Test
     fun `takes the request a fresh launch carries`() {
@@ -35,14 +35,14 @@ class LaunchRequestsTest {
     fun `keeps the route a rebuilt screen saved`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
 
-        assertEquals(SAVED_ROUTE, requests.routeToRestore.take())
+        assertEquals(SAVED_ROUTE, requests.takeRoute())
     }
 
     @Test
     fun `ignores the intent that created a rebuilt screen`() {
         requests.takeCreating(SEARCH_REQUEST, REBUILT_SCREEN)
 
-        assertEquals(Pair(emptyList<IconAction>(), SAVED_ROUTE), Pair(chosen.toList(), requests.routeToRestore.take()))
+        assertEquals(Pair(emptyList<IconAction>(), SAVED_ROUTE), Pair(chosen.toList(), requests.takeRoute()))
     }
 
     @Test
@@ -58,7 +58,7 @@ class LaunchRequestsTest {
 
         requests.take(SEARCH_REQUEST)
 
-        assertEquals(Pair(listOf(IconAction.SEARCH_LIBRARY), null), Pair(chosen.toList(), requests.routeToRestore.take()))
+        assertEquals(Pair(listOf(IconAction.SEARCH_LIBRARY), null), Pair(chosen.toList(), requests.takeRoute()))
     }
 
     @Test
@@ -67,7 +67,7 @@ class LaunchRequestsTest {
 
         requests.take(DOCUMENT_REQUEST)
 
-        assertNull(requests.routeToRestore.take())
+        assertNull(requests.takeRoute())
     }
 
     @Test
@@ -76,6 +76,6 @@ class LaunchRequestsTest {
 
         requests.take(PLAIN_LAUNCH)
 
-        assertEquals(SAVED_ROUTE, requests.routeToRestore.take())
+        assertEquals(SAVED_ROUTE, requests.takeRoute())
     }
 }
