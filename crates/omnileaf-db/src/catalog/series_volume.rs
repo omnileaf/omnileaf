@@ -5,19 +5,27 @@ use rusqlite::{Connection, OptionalExtension, Row};
 
 use crate::{
     Error,
-    catalog::{BookNumber, Cover, ValueSource, cover::stored_cover, native_path},
+    catalog::{
+        BookNumber, Cover, ValueSource, cover::stored_cover, native_path, series_books::in_range,
+    },
     reading_order::volume_keys,
 };
 
-const VOLUME_OF_SERIES: &str = "SELECT
-        (SELECT count(*) FROM book
-            WHERE book.series_local_id = series.local_id
-                AND book.reading_order_key >= :start AND book.reading_order_key < :end)
-            AS book_count,
+macro_rules! chapters_in_volume {
+    () => {
+        concat!("book.series_local_id = series.local_id AND ", in_range!())
+    };
+}
+
+const VOLUME_OF_SERIES: &str = concat!(
+    "SELECT
+        (SELECT count(*) FROM book WHERE ",
+    chapters_in_volume!(),
+    ") AS book_count,
         (SELECT count(*) FROM book JOIN book_state ON book_state.book_id = book.id
-            WHERE book.series_local_id = series.local_id
-                AND book.reading_order_key >= :start AND book.reading_order_key < :end
-                AND book_state.is_read = 1) AS read_count,
+            WHERE ",
+    chapters_in_volume!(),
+    " AND book_state.is_read = 1) AS read_count,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
         cover.location AS cover_location,
         (SELECT volume_source FROM book WHERE book.id = cover.book_id) AS volume_source
@@ -25,13 +33,14 @@ const VOLUME_OF_SERIES: &str = "SELECT
     LEFT JOIN book_file AS cover ON cover.id = (
         SELECT (SELECT min(book_file.id) FROM book_file WHERE book_file.book_id = book.id)
         FROM book
-        WHERE book.series_local_id = series.local_id
-            AND book.reading_order_key >= :start AND book.reading_order_key < :end
-            AND EXISTS (SELECT 1 FROM book_file WHERE book_file.book_id = book.id)
+        WHERE ",
+    chapters_in_volume!(),
+    " AND EXISTS (SELECT 1 FROM book_file WHERE book_file.book_id = book.id)
         ORDER BY book.reading_order_key, book.id
         LIMIT 1
     )
-    WHERE series.id = :series";
+    WHERE series.id = :series"
+);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VolumeOverview {
@@ -58,8 +67,8 @@ pub fn series_volume(
         .query_row(
             rusqlite::named_params! {
                 ":series": series.as_bytes(),
-                ":start": keys.start,
-                ":end": keys.end,
+                ":range_start": keys.start,
+                ":range_end": keys.end,
             },
             overview,
         )

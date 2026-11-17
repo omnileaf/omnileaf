@@ -107,6 +107,8 @@ macro_rules! in_range {
     };
 }
 
+pub(crate) use in_range;
+
 macro_rules! after_cursor {
     ($comparison:literal) => {
         concat!(
