@@ -4,14 +4,6 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-private fun JSONObject.fields(): Map<String, Any?> =
-    keys().asSequence().associateWith { key -> get(key).let { if (it is JSONObject) it.fields() else it } }
-
-private fun assertJson(
-    expected: String,
-    actual: JSONObject,
-) = assertEquals(JSONObject(expected).fields(), actual.fields())
-
 class UpdateReplyTest {
     @Test
     fun `tells the app whether checks are automatic and nothing is known yet`() {
