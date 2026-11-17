@@ -13,7 +13,7 @@ const FIRST_TAGS: readonly LibraryTag[] = [
   { name: "Slice of life", seriesCount: 12 },
   { name: "Seinen", seriesCount: 7 },
 ];
-const SWIPE_PX = -220;
+const SHORT_SWIPE = 0.25;
 
 let tags: LibraryTag[] = [...FIRST_TAGS];
 
@@ -39,8 +39,9 @@ function rowOf(page: Page, tag: string): Locator {
     .filter({ hasText: tag });
 }
 
-async function swipeAcross(target: Locator, across: number): Promise<void> {
+async function swipeTowardStart(target: Locator, share: number): Promise<void> {
   const box = await boxOf(target);
+  const across = -box.width * share;
   const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   const at = (moved: number) => ({
     pointerType: "touch",
@@ -98,7 +99,10 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
       name: "Delete Seinen",
     });
 
-    await swipeAcross(rowOf(page, "Seinen").locator("[data-swiped]"), SWIPE_PX);
+    await swipeTowardStart(
+      rowOf(page, "Seinen").locator("[data-swiped]"),
+      SHORT_SWIPE,
+    );
 
     await expect.poll(() => isUncovered(rename)).toBe(true);
     await expect.poll(() => isUncovered(remove)).toBe(true);
@@ -115,7 +119,10 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
   test("deletes a tag from its swipe action and offers Undo", async ({
     page,
   }) => {
-    await swipeAcross(rowOf(page, "Seinen").locator("[data-swiped]"), SWIPE_PX);
+    await swipeTowardStart(
+      rowOf(page, "Seinen").locator("[data-swiped]"),
+      SHORT_SWIPE,
+    );
 
     await tap(
       rowOf(page, "Seinen").getByRole("button", { name: "Delete Seinen" }),
