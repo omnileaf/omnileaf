@@ -5,13 +5,13 @@
 
 mod support;
 
-use std::{collections::BTreeMap, path::PathBuf};
+use std::path::PathBuf;
 
 use omnileaf_db::{
     Database,
     catalog::{
         NewRoot, RootId, RootKind, RootLocator, add_root, remember_root_share, remove_root,
-        root_share, root_shares,
+        root_share,
     },
 };
 use support::{ScratchFolder, library_config};
@@ -54,10 +54,12 @@ async fn remembers_the_share_a_folder_is_on() {
 
     remember(&database, manga, Some(MANGA_SHARE)).await;
 
-    let shares = database.read(root_shares).await.unwrap();
     assert_eq!(
-        (shares, share_of(&database, comics).await),
-        (BTreeMap::from([(manga, MANGA_SHARE.to_owned())]), None)
+        (
+            share_of(&database, manga).await,
+            share_of(&database, comics).await
+        ),
+        (Some(MANGA_SHARE.to_owned()), None)
     );
 }
 
@@ -85,5 +87,5 @@ async fn forgets_the_share_of_a_removed_folder() {
         .await
         .unwrap();
 
-    assert!(database.read(root_shares).await.unwrap().is_empty());
+    assert_eq!(share_of(&database, manga).await, None);
 }
