@@ -1,4 +1,5 @@
 mod archive;
+mod release;
 mod version;
 
 use std::{
@@ -9,14 +10,25 @@ use std::{
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
-use self::version::{Version, parse_version};
-use crate::pre_push::{changed_files, git};
+pub(crate) use self::release::{release, rewrite};
+use self::{
+    release::read_changelog,
+    version::{Version, parse_version},
+};
+use crate::{
+    json,
+    pre_push::{changed_files, git},
+};
 
 pub(crate) const FOLDER: &str = ".changes";
 const CONFIG: &str = "config.json";
 const README: &str = "README.md";
 const RELEASED: &str = "released";
 const NOT_FRAGMENTS: &[&str] = &[CONFIG, README, RELEASED];
+const CHANGELOG: &str = "CHANGELOG.md";
+const SECTION_HEADING: &str = "## ";
+const ENTRY_MARK: &str = "- **";
+const ENTRY_AREA_END: &str = ":** ";
 const FRAGMENT_EXTENSION: &str = ".md";
 const MAX_SUMMARY_CHARACTERS: usize = 300;
 const MAX_LOGIN_CHARACTERS: usize = 39;
@@ -72,6 +84,10 @@ impl Config {
         self.types.iter().position(|kind| kind.id == id)
     }
 
+    fn has_type_heading(&self, heading: &str) -> bool {
+        self.types.iter().any(|kind| kind.heading == heading)
+    }
+
     fn area_position(&self, id: &str) -> Option<usize> {
         self.areas.iter().position(|area| area.id == id)
     }
@@ -121,6 +137,7 @@ pub(crate) enum Problem {
     MalformedArchive(String),
     OtherVersion(String),
     NoEntries,
+    NotInChangelog(String),
 }
 
 impl fmt::Display for Problem {
@@ -195,6 +212,10 @@ impl fmt::Display for Problem {
             Self::OtherVersion(version) => write!(
                 formatter,
                 "the archive holds the notes of {version}, not of the version in its name"
+            ),
+            Self::NotInChangelog(version) => write!(
+                formatter,
+                "{CHANGELOG} needs exactly one `{SECTION_HEADING}{version}` section that matches the archive as {FOLDER}/{CONFIG} renders it; once it has one, `cargo xtask changes changelog` rewrites it from the archive"
             ),
         }
     }
@@ -377,6 +398,13 @@ impl Folder {
         );
         Ok(notes)
     }
+
+    fn fragment_paths(&self) -> Vec<PathBuf> {
+        self.files
+            .iter()
+            .map(|(name, _)| self.path.join(name))
+            .collect()
+    }
 }
 
 fn read_folder(root: &Path) -> anyhow::Result<Folder> {
@@ -434,8 +462,9 @@ fn read_fragments(folder: &Folder) -> (Vec<Fragment>, Vec<Violation>) {
 
 pub(crate) fn check(root: &Path) -> anyhow::Result<Vec<Violation>> {
     let folder = read_folder(root)?;
+    let changelog = read_changelog(root)?;
     let mut violations = read_fragments(&folder).1;
-    violations.extend(folder.archive_violations()?);
+    violations.extend(folder.archive_violations(&changelog)?);
     Ok(violations)
 }
 
@@ -516,11 +545,17 @@ impl CreditedNotes {
     }
 
     fn markdown(&self, config: &Config) -> String {
-        let mut sections: Vec<String> = self
-            .headline(config)
-            .map(str::to_owned)
-            .into_iter()
-            .collect();
+        let headline = self.headline(config).map(str::to_owned);
+        joined_sections(
+            &headline
+                .into_iter()
+                .chain(self.sections(config))
+                .collect::<Vec<_>>(),
+        )
+    }
+
+    fn sections(&self, config: &Config) -> Vec<String> {
+        let mut sections = Vec::new();
         for kind in &config.types {
             let lines: Vec<String> = self
                 .notes
@@ -529,14 +564,18 @@ impl CreditedNotes {
                 .filter(|entry| entry.kind == kind.id)
                 .map(|entry| {
                     format!(
-                        "- **{}:** {}",
+                        "{ENTRY_MARK}{}{ENTRY_AREA_END}{}",
                         heading_of(&config.areas, &entry.area),
                         entry.summary
                     )
                 })
                 .collect();
             if !lines.is_empty() {
-                sections.push(format!("## {}\n\n{}", kind.heading, lines.join("\n")));
+                sections.push(format!(
+                    "{SECTION_HEADING}{}\n\n{}",
+                    kind.heading,
+                    lines.join("\n")
+                ));
             }
         }
         if !self.contributors.is_empty() {
@@ -547,11 +586,15 @@ impl CreditedNotes {
                 .collect();
             sections.push(format!("Contributors: {}", handles.join(", ")));
         }
-        if sections.is_empty() {
-            String::new()
-        } else {
-            sections.join("\n\n") + "\n"
-        }
+        sections
+    }
+}
+
+fn joined_sections(sections: &[String]) -> String {
+    if sections.is_empty() {
+        String::new()
+    } else {
+        sections.join("\n\n") + "\n"
     }
 }
 
@@ -585,7 +628,7 @@ pub(crate) fn notes(root: &Path, version: Option<&str>, format: Format) -> anyho
     };
     match format {
         Format::Markdown => Ok(notes.markdown(&folder.config)),
-        Format::Json => Ok(serde_json::to_string_pretty(&notes.notes)? + "\n"),
+        Format::Json => Ok(json::pretty(&notes.notes)?),
     }
 }
 
@@ -656,8 +699,9 @@ pub(crate) fn changed_since_merge_base(root: &Path, base: &str) -> anyhow::Resul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::changelog::archive::archive_name;
 
-    const CONFIG_JSON: &str = r#"{
+    pub(super) const CONFIG_JSON: &str = r#"{
         "headline": "feat",
         "types": [
             {"id": "breaking", "heading": "Breaking changes"},
@@ -697,6 +741,7 @@ mod tests {
         let scratch = omnileaf_testkit::ScratchFolder::new("repo");
         scratch.write(&format!("{FOLDER}/{CONFIG}"), CONFIG_JSON.as_bytes());
         scratch.write(&format!("{FOLDER}/{README}"), b"# Fragments\n");
+        scratch.write(CHANGELOG, b"# Changelog\n");
         for (name, text) in fragments {
             scratch.write(&format!("{FOLDER}/{name}"), text.as_bytes());
         }
@@ -979,7 +1024,7 @@ mod tests {
         );
     }
 
-    fn release() -> Vec<Fragment> {
+    fn mixed_fragments() -> Vec<Fragment> {
         vec![
             valid("fix", "reader", &["octocat"], "The page stays put."),
             valid("feat", "reader", &[], "Pages turn faster."),
@@ -996,7 +1041,7 @@ mod tests {
 
     #[test]
     fn groups_markdown_by_type_in_config_order_with_the_area_in_bold() {
-        let markdown = markdown_of(release());
+        let markdown = markdown_of(mixed_fragments());
 
         assert_eq!(
             markdown,
@@ -1186,6 +1231,8 @@ Contributors: @hubot, @octocat
         assert!(json.contains("\"version\": \"2.0.0-rc.1\""));
     }
 
+    pub(super) const ARCHIVED_CHANGELOG: &str = "# Changelog\n\n## 1.2.0\n\n## New\n\n- **Reader:** Pages turn faster.\n\n## Fixed\n\n- **Library:** Scans finish.\n\nContributors: @octocat\n";
+
     pub(super) const ARCHIVED_JSON: &str = r#"{
         "version": "1.2.0",
         "entries": [
@@ -1195,9 +1242,12 @@ Contributors: @hubot, @octocat
         "contributors": ["octocat"]
     }"#;
 
+    pub(super) const EMPTY_ARCHIVE_JSON: &str =
+        r#"{"version": "1.2.0", "entries": [], "contributors": []}"#;
+
     pub(super) fn archive(scratch: &omnileaf_testkit::ScratchFolder, version: &str, json: &str) {
         scratch.write(
-            &format!("{FOLDER}/{RELEASED}/{version}.json"),
+            &format!("{FOLDER}/{RELEASED}/{}", archive_name(version)),
             json.as_bytes(),
         );
     }
@@ -1264,6 +1314,10 @@ Contributors: @hubot, @octocat
         assert!(error.to_string().contains(".changes/a.md"), "{error}");
     }
 
+    pub(super) fn with_changelog(scratch: &omnileaf_testkit::ScratchFolder, text: &str) {
+        scratch.write(CHANGELOG, text.as_bytes());
+    }
+
     #[test]
     fn needs_a_fragment_for_each_user_facing_path() {
         for path in [
@@ -1313,6 +1367,7 @@ Contributors: @hubot, @octocat
     #[test]
     fn does_not_check_the_released_folder_as_a_fragment() {
         let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        with_changelog(&scratch, ARCHIVED_CHANGELOG);
         archive(&scratch, "1.2.0", ARCHIVED_JSON);
 
         let violations = check(scratch.path()).unwrap();

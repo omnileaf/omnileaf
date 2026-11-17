@@ -18,6 +18,7 @@ mod fixtures;
 mod fresh;
 mod fuzz_seeds;
 mod icons;
+mod json;
 mod licence_catalogue;
 mod licences;
 mod lint_comments;
@@ -92,7 +93,7 @@ impl Narrowing {
 
 #[derive(Subcommand)]
 enum Fragments {
-    /// Check every fragment in `.changes` and every archive in `.changes/released`.
+    /// Check every fragment in `.changes`, every archive in `.changes/released` and that CHANGELOG.md holds each archive's section.
     Check,
     /// Fail when the change since a commit touches what people see and adds no fragment.
     Require {
@@ -112,6 +113,14 @@ enum Fragments {
         #[arg(long, value_enum, default_value = "markdown")]
         format: changelog::Format,
     },
+    /// Release a version: archive its notes in `.changes/released`, add them to the top of CHANGELOG.md and remove the fragments it used.
+    Release {
+        /// The full release version, such as 1.2.0; a pre-release is refused.
+        #[arg(long)]
+        version: String,
+    },
+    /// Rewrite each released version's section of CHANGELOG.md from its archive in `.changes/released`, with the headings and type order in `.changes/config.json`.
+    Changelog,
 }
 
 #[derive(Subcommand)]
@@ -518,6 +527,8 @@ fn work_with_fragments(fragments: Fragments) -> anyhow::Result<()> {
             print_text(&notes);
             Ok(())
         }
+        Fragments::Release { version } => changelog::release(&root, &version),
+        Fragments::Changelog => changelog::rewrite(&root),
     }
 }
 
@@ -661,6 +672,22 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn needs_a_version_to_release() {
+        let release =
+            Cli::try_parse_from(["xtask", "changes", "release", "--version", "1.2.0"]).unwrap();
+        let no_version = Cli::try_parse_from(["xtask", "changes", "release"]);
+
+        assert!(matches!(
+            release.command,
+            Command::Changes {
+                fragments: Some(Fragments::Release { version }),
+                ..
+            } if version == "1.2.0"
+        ));
+        assert!(no_version.is_err());
     }
 
     #[test]

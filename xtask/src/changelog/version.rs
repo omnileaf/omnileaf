@@ -23,22 +23,30 @@ fn is_pre_release_label(label: &str) -> bool {
     label.split('.').all(is_pre_release_identifier)
 }
 
+fn split_label(version: &str) -> (&str, Option<&str>) {
+    version
+        .split_once('-')
+        .map_or((version, None), |(core, label)| (core, Some(label)))
+}
+
+pub(super) fn is_version(text: &str) -> bool {
+    let (core, label) = split_label(text);
+    let parts: Vec<&str> = core.split('.').collect();
+    parts.len() == 3
+        && parts.iter().all(|part| is_version_number(part))
+        && label.is_none_or(is_pre_release_label)
+}
+
 pub(super) fn is_full_version(text: &str) -> bool {
     matches!(parse_version(text), Ok(Version::Full(_)))
 }
 
 pub(super) fn parse_version(version: &str) -> anyhow::Result<Version<'_>> {
-    let (core, label) = version
-        .split_once('-')
-        .map_or((version, None), |(core, label)| (core, Some(label)));
-    let parts: Vec<&str> = core.split('.').collect();
     anyhow::ensure!(
-        parts.len() == 3
-            && parts.iter().all(|part| is_version_number(part))
-            && label.is_none_or(is_pre_release_label),
+        is_version(version),
         "`{version}` is not a version such as 1.2.0 or 1.2.0-rc.1"
     );
-    Ok(match label {
+    Ok(match split_label(version).1 {
         None => Version::Full(version),
         Some(_) => Version::PreRelease(version),
     })
