@@ -1,6 +1,14 @@
 import type { Locator, Page } from "@playwright/test";
 
 import {
+  bar,
+  holdClockStill,
+  isFocusInsideTheBar,
+  scrollTopOf,
+  startAutoScroll,
+  TOOLBAR_TUCKS_MS,
+} from "./auto-scroll.ts";
+import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -22,9 +30,7 @@ const FOUR_SECONDS_MS = 4000;
 const SIX_SECONDS_MS = 6000;
 const FEW_SECONDS_MS = 2000;
 const CLOSE_PX = 8;
-const PAUSE_AHEAD_MS = 500;
 const CONTROLS_GONE_MS = 4000;
-const TOOLBAR_TUCKS_MS = 3500;
 const ANDROID_ROUND_BUTTON_PX = 48;
 const NARROWEST_WIDTHS = [360, 375] as const;
 const NARROW_HEIGHT = 800;
@@ -37,42 +43,10 @@ async function openStrip(page: Page, look: object = {}): Promise<void> {
   await openLongStrip(page, { [LOOK_KEY]: JSON.stringify(look) });
 }
 
-function bar(page: Page): Locator {
-  return page.getByRole("region", { name: "Auto scroll" });
-}
-
-async function startAutoScroll(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Show the controls" }).click();
-  await page.getByRole("button", { name: "Start auto scroll" }).click();
-  await expect(bar(page)).toBeVisible();
-}
-
-async function isFocusInsideTheBar(page: Page): Promise<boolean> {
-  return page.evaluate(() => {
-    const focused = document.activeElement;
-    return [...document.querySelectorAll("section")].some(
-      (section) =>
-        section.querySelector("h2")?.textContent.trim() === "Auto scroll" &&
-        focused !== null &&
-        section.contains(focused),
-    );
-  });
-}
-
 async function closeReadingSettings(page: Page): Promise<void> {
   await page
     .getByRole("button", { name: /^(Done|Close reading settings)$/ })
     .click();
-}
-
-/** Holds the page's clock still, so only the time the test runs on moves the strip. */
-async function holdTime(page: Page): Promise<void> {
-  const now = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(now + PAUSE_AHEAD_MS);
-}
-
-async function scrollTopOf(page: Page): Promise<number> {
-  return page.locator("[data-strip]").evaluate((element) => element.scrollTop);
 }
 
 async function pageHeightOf(page: Page): Promise<number> {
@@ -145,7 +119,7 @@ test.describe("at a set speed", () => {
     const height = await screenHeightOf(page);
     await startAutoScroll(page);
     await expect(bar(page)).toContainText("3 screens a minute");
-    await holdTime(page);
+    await holdClockStill(page);
     const start = await scrollTopOf(page);
 
     await page.clock.runFor(FOUR_SECONDS_MS);
@@ -738,7 +712,7 @@ test.describe("once the library knows the reading speed", () => {
     const height = await pageHeightOf(page);
     await startAutoScroll(page);
     await expect(bar(page)).toContainText("Your pace");
-    await holdTime(page);
+    await holdClockStill(page);
     const start = await scrollTopOf(page);
 
     await page.clock.runFor(SIX_SECONDS_MS);
