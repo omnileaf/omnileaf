@@ -84,7 +84,7 @@
   const headings = $derived(
     isHeading === undefined ? undefined : items.map(isHeading),
   );
-  const stack: RowHeights | undefined = $derived(
+  const heights: RowHeights | undefined = $derived(
     headings === undefined || measure === undefined || measure.columns !== 1
       ? undefined
       : rowHeights({
@@ -97,8 +97,8 @@
     if (measure === undefined) {
       return undefined;
     }
-    if (stack !== undefined) {
-      return stackWindow(stack, seen, EXTRA_ROWS);
+    if (heights !== undefined) {
+      return stackWindow(heights, seen, EXTRA_ROWS);
     }
     const rows = rowWindow({ count, ...measure }, seen, EXTRA_ROWS);
     return {
@@ -223,9 +223,9 @@
   }
 
   function placeOf(index: number, at: Measure): { top: number; size: number } {
-    if (stack !== undefined) {
-      const top = offsetOf(stack, index);
-      return { top, size: offsetOf(stack, index + 1) - top };
+    if (heights !== undefined) {
+      const top = offsetOf(heights, index);
+      return { top, size: offsetOf(heights, index + 1) - top };
     }
     return {
       top: Math.floor(index / at.columns) * at.rowStride,
