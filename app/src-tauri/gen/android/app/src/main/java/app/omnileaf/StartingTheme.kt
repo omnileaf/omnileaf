@@ -1,7 +1,7 @@
 package app.omnileaf
 
 import android.app.Activity
-import android.content.res.Resources
+import android.app.UiModeManager
 import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
@@ -33,11 +33,23 @@ fun ComponentActivity.showStartingBarIcons(theme: StartingTheme) {
     }
 }
 
-/** From Android 13 the system keeps this theme for the app's later cold starts. */
-fun Activity.keepSplashScreenTheme(theme: StartingTheme) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        splashScreen.setSplashScreenTheme(theme.splashScreenStyle())
+internal fun StartingTheme.applicationNightMode(): Int =
+    when (this) {
+        StartingTheme.DEVICE -> UiModeManager.MODE_NIGHT_AUTO
+        StartingTheme.LIGHT -> UiModeManager.MODE_NIGHT_NO
+        StartingTheme.DARK -> UiModeManager.MODE_NIGHT_YES
     }
+
+/** From Android 12 the system keeps an app's own night mode across cold starts and updates, and draws the splash screen in it. */
+fun Activity.keepStartingTheme(theme: StartingTheme) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        keepApplicationNightMode(theme)
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.S)
+private fun Activity.keepApplicationNightMode(theme: StartingTheme) {
+    getSystemService(UiModeManager::class.java).setApplicationNightMode(theme.applicationNightMode())
 }
 
 @StyleRes
@@ -47,7 +59,3 @@ internal fun StartingTheme.style(): Int =
         StartingTheme.LIGHT -> R.style.Theme_omnileaf_app_Light
         StartingTheme.DARK -> R.style.Theme_omnileaf_app_Dark
     }
-
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
-@StyleRes
-private fun StartingTheme.splashScreenStyle(): Int = if (this == StartingTheme.DEVICE) Resources.ID_NULL else style()
