@@ -7,7 +7,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.annotation.StringRes
 import androidx.core.net.toUri
 
 private const val CHANNEL_ID = "updates"
@@ -19,8 +18,11 @@ internal class UpdateNotifications(
 ) : UpdateNotices {
     private val manager: NotificationManager =
         requireNotNull(context.getSystemService(NotificationManager::class.java)) { "look up the NotificationManager system service" }
+    private val rememberedWords = RememberedNoticeWords(PreferencesUpdateStore(context))
+    private val shownWords: UpdateNoticeWords
+        get() = rememberedWords.toShow { UpdateNoticeWords.builtIn(context) }
 
-    override fun canShow(): Boolean = canShowNotices(manager.areNotificationsEnabled(), createdChannel().importance)
+    override fun canShow(): Boolean = canShowNotices(manager.areNotificationsEnabled(), createdChannel(shownWords).importance)
 
     override fun isShowing(version: ReleaseVersion): Boolean =
         manager.activeNotifications.any {
@@ -30,36 +32,39 @@ internal class UpdateNotifications(
     override fun withdraw() = manager.cancel(NOTICE_ID)
 
     override fun post(release: PublishedRelease) {
-        createdChannel()
-        manager.notify(NOTICE_ID, notice(release))
+        val shown = shownWords
+        createdChannel(shown)
+        manager.notify(NOTICE_ID, notice(release, shown))
     }
 
-    private fun createdChannel(): NotificationChannel {
-        val name = context.getString(R.string.update_notice_channel)
-        manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, name, NotificationManager.IMPORTANCE_DEFAULT))
+    private fun createdChannel(shown: UpdateNoticeWords): NotificationChannel {
+        manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, shown.channel, NotificationManager.IMPORTANCE_DEFAULT))
         return requireNotNull(manager.getNotificationChannel(CHANNEL_ID)) { "read the $CHANNEL_ID notification channel just created" }
     }
 
-    private fun notice(release: PublishedRelease): Notification {
+    private fun notice(
+        release: PublishedRelease,
+        shown: UpdateNoticeWords,
+    ): Notification {
         val version = release.version.toString()
         return Notification
             .Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_update)
-            .setContentTitle(context.getString(R.string.update_notice_title, version))
+            .setContentTitle(shown.titleFor(release.version))
             .setContentText(release.headline)
             .setContentIntent(openApp())
             .setAutoCancel(true)
             .setDeleteIntent(answer(UpdateNoticeAction.SNOOZE, version))
             .addExtras(Bundle().apply { putString(EXTRA_UPDATE_VERSION, version) })
-            .addAction(action(R.string.update_notice_view_release, viewRelease(release.version)))
-            .addAction(action(R.string.update_notice_skip, answer(UpdateNoticeAction.SKIP, version)))
+            .addAction(action(shown.viewRelease, viewRelease(release.version)))
+            .addAction(action(shown.skip, answer(UpdateNoticeAction.SKIP, version)))
             .build()
     }
 
     private fun action(
-        @StringRes label: Int,
+        label: String,
         intent: PendingIntent,
-    ): Notification.Action = Notification.Action.Builder(null, context.getString(label), intent).build()
+    ): Notification.Action = Notification.Action.Builder(null, label, intent).build()
 
     private fun openApp(): PendingIntent {
         val launch =
