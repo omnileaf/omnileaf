@@ -3,13 +3,9 @@ import { commands, type Platform } from "#lib/ipc/bindings.ts";
 
 import { resolvedPathOf } from "./app-path";
 
-type TakeRestoredRoute = typeof commands.takeRestoredRoute;
+type AskForSavedRoute = typeof commands.takeRestoredRoute;
 
 type TellRouteShown = typeof commands.restoredRouteShown;
-
-export type RestoredRoute = (
-  platform: Platform,
-) => Promise<ResolvedPathname | undefined>;
 
 const KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN = {
   android: true,
@@ -19,27 +15,22 @@ const KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN = {
   windows: false,
 } satisfies Record<Platform, boolean>;
 
-export function restoredRouteOnce(
-  take: TakeRestoredRoute = () => commands.takeRestoredRoute(),
-): RestoredRoute {
-  let isTaken = false;
-  return async (platform) => {
-    if (isTaken || !KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN[platform]) {
-      return undefined;
-    }
-    isTaken = true;
-    const taken = await take();
-    if (taken.status === "error") {
-      reportError(taken.error);
-      return undefined;
-    }
-    return taken.data === null
-      ? undefined
-      : resolvedPathOf(new URL(taken.data, location.href));
-  };
+export async function takeRestoredRoute(
+  platform: Platform,
+  ask: AskForSavedRoute = () => commands.takeRestoredRoute(),
+): Promise<ResolvedPathname | undefined> {
+  if (!KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN[platform]) {
+    return undefined;
+  }
+  const taken = await ask();
+  if (taken.status === "error") {
+    reportError(taken.error);
+    return undefined;
+  }
+  return taken.data === null
+    ? undefined
+    : resolvedPathOf(new URL(taken.data, location.href));
 }
-
-export const takeRestoredRoute: RestoredRoute = restoredRouteOnce();
 
 export async function tellRestoredRouteShown(
   tell: TellRouteShown = () => commands.restoredRouteShown(),
