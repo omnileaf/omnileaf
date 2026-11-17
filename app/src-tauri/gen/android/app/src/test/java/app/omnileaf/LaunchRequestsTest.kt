@@ -74,7 +74,7 @@ class LaunchRequestsTest {
     fun `keeps the route a rebuilt screen saved`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
 
-        val route = requests.takeRoute()
+        val route = requests.savedRoute()
 
         assertEquals(SAVED_ROUTE, route)
     }
@@ -82,9 +82,9 @@ class LaunchRequestsTest {
     @Test
     fun `hands the saved route over again to a page reloaded before it shows the route`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
-        requests.takeRoute()
+        requests.savedRoute()
 
-        val route = requests.takeRoute()
+        val route = requests.savedRoute()
 
         assertEquals(SAVED_ROUTE, route)
     }
@@ -92,10 +92,10 @@ class LaunchRequestsTest {
     @Test
     fun `hands nothing over once the opening page shows`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
-        requests.takeRoute()
+        requests.savedRoute()
         requests.openingPageShown()
 
-        val route = requests.takeRoute()
+        val route = requests.savedRoute()
 
         assertNull(route)
     }
@@ -104,7 +104,7 @@ class LaunchRequestsTest {
     fun `hands nothing over on a fresh start`() {
         requests.takeCreating(PLAIN_LAUNCH, saved = null)
 
-        val route = requests.takeRoute()
+        val route = requests.savedRoute()
 
         assertNull(route)
     }
@@ -119,9 +119,9 @@ class LaunchRequestsTest {
     }
 
     @Test
-    fun `saves the route taken again when the screen is rebuilt before the page shows it`() {
+    fun `saves the route handed over again when the screen is rebuilt before the page shows it`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
-        requests.takeRoute()
+        requests.savedRoute()
 
         val route = requests.routeToSave(ROOT_PAGE_URL)
 
@@ -131,7 +131,7 @@ class LaunchRequestsTest {
     @Test
     fun `saves the page shown once the opening page shows`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
-        requests.takeRoute()
+        requests.savedRoute()
         requests.openingPageShown()
 
         val route = requests.routeToSave(ROOT_PAGE_URL)
@@ -142,7 +142,7 @@ class LaunchRequestsTest {
     @Test
     fun `saves the page shown once a later request drops the saved route`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
-        requests.takeRoute()
+        requests.savedRoute()
         requests.take(SEARCH_REQUEST)
 
         val route = requests.routeToSave(HISTORY_PAGE_URL)
@@ -179,7 +179,7 @@ class LaunchRequestsTest {
     fun `keeps the saved route despite the intent that created a rebuilt screen`() {
         requests.takeCreating(SEARCH_REQUEST, REBUILT_SCREEN)
 
-        val route = requests.takeRoute()
+        val route = requests.savedRoute()
 
         assertEquals(SAVED_ROUTE, route)
     }
@@ -205,7 +205,7 @@ class LaunchRequestsTest {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
         requests.take(SEARCH_REQUEST)
 
-        val route = requests.takeRoute()
+        val route = requests.savedRoute()
 
         assertNull(route)
     }
@@ -215,7 +215,7 @@ class LaunchRequestsTest {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
         requests.take(DOCUMENT_REQUEST)
 
-        val route = requests.takeRoute()
+        val route = requests.savedRoute()
 
         assertNull(route)
     }
@@ -225,7 +225,7 @@ class LaunchRequestsTest {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
         requests.take(PLAIN_LAUNCH)
 
-        val route = requests.takeRoute()
+        val route = requests.savedRoute()
 
         assertEquals(SAVED_ROUTE, route)
     }

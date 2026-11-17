@@ -45,7 +45,7 @@ mod android {
     const PLUGIN_NAME: &str = "restored-route";
     const ANDROID_PACKAGE: &str = "app.omnileaf";
     const ANDROID_PLUGIN_CLASS: &str = "RestoredRoutePlugin";
-    const TAKE: &str = "take";
+    const SAVED_ROUTE: &str = "savedRoute";
     const OPENING_PAGE_SHOWN: &str = "openingPageShown";
     const PLUGIN_TIMEOUT: Duration = Duration::from_secs(2);
 
@@ -72,7 +72,7 @@ mod android {
     }
 
     pub(crate) async fn take(app: &AppHandle) -> Result<Option<String>, IpcError> {
-        ask::<TakenRoute>(app, TAKE)
+        ask::<TakenRoute>(app, SAVED_ROUTE)
             .await
             .map(|taken| taken.route)
             .map_err(|error| IpcError::internal(&error))

@@ -16,9 +16,9 @@ class RestoredRoutePlugin(
     activity: Activity,
 ) : Plugin(activity) {
     @Command
-    fun take(invoke: Invoke) {
+    fun savedRoute(invoke: Invoke) {
         val requests = shownLaunchRequests() ?: return invoke.reject(NO_SHOWN_ACTIVITY)
-        invoke.resolve(JSObject().put("route", requests.takeRoute() ?: JSONObject.NULL))
+        invoke.resolve(JSObject().put("route", requests.savedRoute() ?: JSONObject.NULL))
     }
 
     @Command

@@ -40,7 +40,7 @@ internal class LaunchRequests(
         launching.handedDocument?.let(handedDocuments::receive)
     }
 
-    fun takeRoute(): String? = routeToRestore.take()
+    fun savedRoute(): String? = routeToRestore.saved()
 
     fun openingPageShown() {
         routeToRestore.openingPageShown()

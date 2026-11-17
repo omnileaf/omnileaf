@@ -9,7 +9,7 @@ internal class RouteToRestore {
     }
 
     @Synchronized
-    fun take(): String? = route
+    fun saved(): String? = route
 
     @Synchronized
     fun openingPageShown() {
