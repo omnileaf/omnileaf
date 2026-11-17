@@ -1,4 +1,4 @@
-import type { SeriesOverview } from "#lib/ipc/bindings.ts";
+import type { SeriesOverview, SeriesVolume } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
 export interface BooksHeading {
@@ -23,5 +23,19 @@ export function seriesBooksHeading({
             bookmarked: bookmarkCount,
           })
         : m.series_read_only({ read: readCount }),
+  };
+}
+
+export function volumeBooksHeading({
+  bookCount,
+  readCount,
+  folder,
+}: Pick<SeriesVolume, "bookCount" | "readCount" | "folder">): BooksHeading {
+  return {
+    title: m.series_chapter_count({ count: bookCount }),
+    line:
+      folder === null
+        ? m.series_read_only({ read: readCount })
+        : m.series_volume_folder_note(),
   };
 }

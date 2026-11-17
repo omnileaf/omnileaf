@@ -17,6 +17,7 @@ type Replacing = Extract<HistoryMove, { kind: "replace" }>;
 export interface BackGoesUp {
   readonly isPassingThrough: boolean;
   replaceWith(target: ResolvedPathname): Promise<void>;
+  followLinkTo(target: ResolvedPathname): Promise<void>;
 }
 
 export function makeBackGoUp(): BackGoesUp {
@@ -108,13 +109,25 @@ export function makeBackGoUp(): BackGoesUp {
     }
   }
 
+  function followOrQueue(target: URL): Promise<void> {
+    if (isMoving) {
+      followedWhileMoving = target;
+      return Promise.resolve();
+    }
+    return follow(moveTo(entries, target.pathname), target);
+  }
+
+  function followLinkTo(target: ResolvedPathname): Promise<void> {
+    return followOrQueue(new URL(target, location.href));
+  }
+
   beforeNavigate(({ type, to, cancel }) => {
     if (type !== "link" || to === null || to.route.id === null) {
       return;
     }
     if (isMoving) {
       cancel();
-      followedWhileMoving = to.url;
+      void followOrQueue(to.url);
       return;
     }
     const planned = moveTo(entries, to.url.pathname);
@@ -140,6 +153,7 @@ export function makeBackGoUp(): BackGoesUp {
       return isPassingThrough;
     },
     replaceWith,
+    followLinkTo,
   };
 }
 
