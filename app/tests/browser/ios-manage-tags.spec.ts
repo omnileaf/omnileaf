@@ -5,6 +5,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  settle,
   test,
   tokenColour,
 } from "./fixtures.ts";
@@ -13,7 +14,7 @@ const FIRST_TAGS: readonly LibraryTag[] = [
   { name: "Slice of life", seriesCount: 12 },
   { name: "Seinen", seriesCount: 7 },
 ];
-const SWIPE_PX = -220;
+const SHORT_SWIPE = 0.25;
 
 let tags: LibraryTag[] = [...FIRST_TAGS];
 
@@ -39,8 +40,13 @@ function rowOf(page: Page, tag: string): Locator {
     .filter({ hasText: tag });
 }
 
-async function swipeAcross(target: Locator, across: number): Promise<void> {
+function swipedOf(page: Page, tag: string): Locator {
+  return rowOf(page, tag).locator("[data-swiped]");
+}
+
+async function swipeTowardStart(target: Locator, share: number): Promise<void> {
   const box = await boxOf(target);
+  const across = -box.width * share;
   const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   const at = (moved: number) => ({
     pointerType: "touch",
@@ -74,6 +80,15 @@ async function isUncovered(control: Locator): Promise<boolean> {
   });
 }
 
+async function expectOpenAtItsActions(swiped: Locator): Promise<void> {
+  const gap = await swiped.evaluate((row) => {
+    const shift = Number.parseFloat(getComputedStyle(row).translate);
+    const strip = row.nextElementSibling?.getBoundingClientRect().width;
+    return shift + (strip ?? Number.NaN);
+  });
+  expect(gap).toBeCloseTo(0);
+}
+
 test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
   test.beforeEach(async ({ page, platform }) => {
     test.skip(platform !== "ios", "iOS's swipe actions");
@@ -98,10 +113,12 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
       name: "Delete Seinen",
     });
 
-    await swipeAcross(rowOf(page, "Seinen").locator("[data-swiped]"), SWIPE_PX);
+    await swipeTowardStart(swipedOf(page, "Seinen"), SHORT_SWIPE);
 
-    await expect.poll(() => isUncovered(rename)).toBe(true);
-    await expect.poll(() => isUncovered(remove)).toBe(true);
+    await settle(rowOf(page, "Seinen"));
+    await expectOpenAtItsActions(swipedOf(page, "Seinen"));
+    expect(await isUncovered(rename)).toBe(true);
+    expect(await isUncovered(remove)).toBe(true);
     await expect(rename).toHaveCSS(
       "background-color",
       await tokenColour(page, "--native-color-button-primary"),
@@ -115,11 +132,15 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
   test("deletes a tag from its swipe action and offers Undo", async ({
     page,
   }) => {
-    await swipeAcross(rowOf(page, "Seinen").locator("[data-swiped]"), SWIPE_PX);
+    const remove = rowOf(page, "Seinen").getByRole("button", {
+      name: "Delete Seinen",
+    });
 
-    await tap(
-      rowOf(page, "Seinen").getByRole("button", { name: "Delete Seinen" }),
-    );
+    await swipeTowardStart(swipedOf(page, "Seinen"), SHORT_SWIPE);
+    await settle(rowOf(page, "Seinen"));
+    await expectOpenAtItsActions(swipedOf(page, "Seinen"));
+    expect(await isUncovered(remove)).toBe(true);
+    await tap(remove);
 
     await expect(rowOf(page, "Seinen")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
