@@ -16,7 +16,7 @@ class MainActivity : TauriActivity() {
     private var webView: WebView? = null
     private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
     internal val volumeKeys = VolumeKeyCapture()
-    internal val launchRequests = LaunchRequests(ChosenIconActions::choose)
+    internal val launchRequests = LaunchRequests(ChosenIconActions)
     private val appLock by lazy {
         AppLockGate(this) { isCovered ->
             backNavigation?.followCover(isCovered)
@@ -31,7 +31,6 @@ class MainActivity : TauriActivity() {
     override val handleBackButton = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        ChosenIconActions.startNewPage()
         launchRequests.takeCreating(intent.launchIntent(), savedInstanceState?.savedScreen())
         showStartingBarIcons(startingTheme)
         showTheAppBehindTheNavigationButtons()

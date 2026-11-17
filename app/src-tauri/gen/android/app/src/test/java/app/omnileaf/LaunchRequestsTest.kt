@@ -11,9 +11,31 @@ private val SEARCH_REQUEST = PLAIN_LAUNCH.copy(iconAction = IconAction.SEARCH_LI
 private val DOCUMENT_REQUEST = PLAIN_LAUNCH.copy(handedDocument = DOCUMENT)
 private val REBUILT_SCREEN = SavedScreen(SAVED_ROUTE)
 
+private sealed interface IconPageEvent {
+    data object NewPage : IconPageEvent
+
+    data class Chose(
+        val action: IconAction,
+    ) : IconPageEvent
+}
+
+private class RecordedIconActions : IconActionChoices {
+    val events = mutableListOf<IconPageEvent>()
+    val chosen: List<IconAction>
+        get() = events.filterIsInstance<IconPageEvent.Chose>().map { it.action }
+
+    override fun startNewPage() {
+        events += IconPageEvent.NewPage
+    }
+
+    override fun choose(chosen: IconAction) {
+        events += IconPageEvent.Chose(chosen)
+    }
+}
+
 class LaunchRequestsTest {
-    private val chosen = mutableListOf<IconAction>()
-    private val requests = LaunchRequests { action -> chosen += action }
+    private val iconActions = RecordedIconActions()
+    private val requests = LaunchRequests(iconActions)
 
     private fun handedOver(): List<String> = mutableListOf<String>().also { handed -> requests.watchHandedDocuments { handed += it } }
 
@@ -21,7 +43,21 @@ class LaunchRequestsTest {
     fun `takes the request a fresh launch carries`() {
         requests.takeCreating(SEARCH_REQUEST, saved = null)
 
-        assertEquals(listOf(IconAction.SEARCH_LIBRARY), chosen)
+        assertEquals(listOf(IconAction.SEARCH_LIBRARY), iconActions.chosen)
+    }
+
+    @Test
+    fun `starts a new page before taking the request a fresh launch carries`() {
+        requests.takeCreating(SEARCH_REQUEST, saved = null)
+
+        assertEquals(listOf(IconPageEvent.NewPage, IconPageEvent.Chose(IconAction.SEARCH_LIBRARY)), iconActions.events)
+    }
+
+    @Test
+    fun `starts a new page for a rebuilt screen`() {
+        requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
+
+        assertEquals(listOf(IconPageEvent.NewPage), iconActions.events)
     }
 
     @Test
@@ -42,14 +78,14 @@ class LaunchRequestsTest {
     fun `ignores the intent that created a rebuilt screen`() {
         requests.takeCreating(SEARCH_REQUEST, REBUILT_SCREEN)
 
-        assertEquals(Pair(emptyList<IconAction>(), SAVED_ROUTE), Pair(chosen.toList(), requests.takeRoute()))
+        assertEquals(Pair(emptyList<IconAction>(), SAVED_ROUTE), Pair(iconActions.chosen, requests.takeRoute()))
     }
 
     @Test
     fun `ignores the intent Recents hands back to a fresh screen`() {
         requests.takeCreating(SEARCH_REQUEST.copy(isFromRecents = true), saved = null)
 
-        assertEquals(emptyList<IconAction>(), chosen)
+        assertEquals(emptyList<IconAction>(), iconActions.chosen)
     }
 
     @Test
@@ -58,7 +94,7 @@ class LaunchRequestsTest {
 
         requests.take(SEARCH_REQUEST)
 
-        assertEquals(Pair(listOf(IconAction.SEARCH_LIBRARY), null), Pair(chosen.toList(), requests.takeRoute()))
+        assertEquals(Pair(listOf(IconAction.SEARCH_LIBRARY), null), Pair(iconActions.chosen, requests.takeRoute()))
     }
 
     @Test

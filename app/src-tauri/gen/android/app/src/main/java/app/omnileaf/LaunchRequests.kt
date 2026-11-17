@@ -16,7 +16,7 @@ internal data class SavedScreen(
 )
 
 internal class LaunchRequests(
-    private val chooseIconAction: (IconAction) -> Unit,
+    private val iconActions: IconActionChoices,
 ) {
     private val handedDocuments = HandedDocuments()
     private val routeToRestore = RouteToRestore()
@@ -29,13 +29,14 @@ internal class LaunchRequests(
         launching: LaunchIntent,
         saved: SavedScreen?,
     ) {
+        iconActions.startNewPage()
         routeToRestore.load(saved?.route)
         if (saved == null && !launching.isFromRecents) take(launching)
     }
 
     fun take(launching: LaunchIntent) {
         if (launching.isRequest) routeToRestore.drop()
-        launching.iconAction?.let(chooseIconAction)
+        launching.iconAction?.let(iconActions::choose)
         launching.handedDocument?.let(handedDocuments::receive)
     }
 
