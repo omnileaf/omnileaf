@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { Check } from "@lucide/svelte";
-
   import { resolve } from "$app/paths";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { SeriesBook } from "#lib/ipc/bindings.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
   import { PICKED_COVER_RING } from "#lib/library/cover-tile.ts";
@@ -17,8 +16,6 @@
   import type { SectionTileLook } from "./section-tile";
 
   type BookId = SeriesBook["id"];
-
-  const READ_MARK_ICON_SIZE = 14;
 
   let {
     book,
@@ -59,7 +56,7 @@
         <SelectionMark isOn={isPicked} />
       {:else if book.reading.state === "read"}
         <span data-read-mark aria-hidden="true" class={look.readMark}>
-          <Check size={READ_MARK_ICON_SIZE} />
+          <Icon name="check" size={look.readCheckSize} />
         </span>
       {/if}
     </span>

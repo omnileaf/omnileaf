@@ -6,20 +6,40 @@ export interface SectionTileLook {
   readonly link: string;
   readonly cover: string;
   readonly readMark: string;
+  readonly readCheckSize: number;
   readonly gap: string;
   readonly title: string;
   readonly meta: string;
 }
 
+const READ_MARK_CIRCLE =
+  "absolute flex items-center justify-center rounded-full bg-accent text-on-accent block-native-read-mark inline-native-read-mark";
+
+const TILE_LINK =
+  "flex flex-col gap-cover-caption min-inline-none focus-visible:focus-ring";
+const COVER_BOX = "relative block aspect-cover overflow-hidden bg-chip";
+const MISSING_RUN_BOX =
+  "flex aspect-cover items-center justify-center border border-dashed border-muted text-muted";
+
 const SHADCN_TILE: SectionTileLook = {
-  link: "flex flex-col gap-cover-caption rounded-cover min-inline-none focus-visible:focus-ring",
-  cover:
-    "relative block aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
-  readMark:
-    "absolute inset-e-read-mark-inset inset-bs-read-mark-inset flex items-center justify-center rounded-full bg-accent text-on-accent ring-2 ring-background block-native-read-mark inline-native-read-mark",
-  gap: "flex aspect-cover items-center justify-center rounded-cover border border-dashed border-muted text-muted",
+  link: `${TILE_LINK} rounded-cover`,
+  cover: `${COVER_BOX} rounded-cover border border-cover-edge`,
+  readMark: `${READ_MARK_CIRCLE} inset-e-read-mark-inset inset-bs-read-mark-inset ring-2 ring-background`,
+  readCheckSize: 14,
+  gap: `${MISSING_RUN_BOX} rounded-cover`,
   title: "truncate text-small font-medium",
   meta: "truncate text-caption text-muted",
+};
+
+const ANDROID_TILE: SectionTileLook = {
+  link: `${TILE_LINK} rounded-native-cover`,
+  cover: `${COVER_BOX} rounded-native-cover`,
+  readMark: `${READ_MARK_CIRCLE} inset-s-xs inset-bs-xs`,
+  readCheckSize: 16,
+  gap: `${MISSING_RUN_BOX} rounded-native-cover`,
+  title:
+    "truncate text-native-tile-title/native-tile-title font-native-tile-title tracking-native-tile-title",
+  meta: "truncate text-native-tile-meta/native-tile-meta font-native-tile-meta tracking-native-tile-meta text-muted",
 };
 
 const SECTION_TILE_LOOKS = {
@@ -27,19 +47,31 @@ const SECTION_TILE_LOOKS = {
   macos: SHADCN_TILE,
   windows: SHADCN_TILE,
   ios: SHADCN_TILE,
-  android: SHADCN_TILE,
+  android: ANDROID_TILE,
 } satisfies Record<Platform, SectionTileLook>;
 
 export function sectionTileLook(platform: Platform): SectionTileLook {
   return SECTION_TILE_LOOKS[platform];
 }
 
-const COVERS_FILL_THE_ROW =
-  "grid-template-columns: repeat(auto-fill, minmax(calc(var(--spacing-book-cover-min) * var(--text-scale)), 1fr))";
-const THREE_COVERS_A_ROW = "grid-template-columns: repeat(3, minmax(0, 1fr))";
+export interface CoversGrid {
+  readonly track: string;
+  readonly gap: string;
+}
 
-export function coversTrack(platform: Platform, width: WidthClass): string {
+const COVERS_GRID: CoversGrid = {
+  track:
+    "grid-template-columns: repeat(auto-fill, minmax(calc(var(--spacing-book-cover-min) * var(--text-scale)), 1fr))",
+  gap: "gap-x-lg gap-y-cover-row",
+};
+
+const ANDROID_PHONE_GRID: CoversGrid = {
+  track: "grid-template-columns: repeat(3, minmax(0, 1fr))",
+  gap: "gap-x-sm gap-y-lg",
+};
+
+export function coversGrid(platform: Platform, width: WidthClass): CoversGrid {
   return phoneOf(platform, width) === "android"
-    ? THREE_COVERS_A_ROW
-    : COVERS_FILL_THE_ROW;
+    ? ANDROID_PHONE_GRID
+    : COVERS_GRID;
 }
