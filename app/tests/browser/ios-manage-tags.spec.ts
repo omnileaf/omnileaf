@@ -5,6 +5,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  settle,
   test,
   tokenColour,
 } from "./fixtures.ts";
@@ -79,16 +80,13 @@ async function isUncovered(control: Locator): Promise<boolean> {
   });
 }
 
-async function expectSettledOpen(swiped: Locator): Promise<void> {
-  await expect
-    .poll(() =>
-      swiped.evaluate((row) => {
-        const shift = Number.parseFloat(getComputedStyle(row).translate);
-        const strip = row.nextElementSibling?.getBoundingClientRect().width;
-        return shift + (strip ?? Number.NaN);
-      }),
-    )
-    .toBeCloseTo(0);
+async function expectOpenAtItsActions(swiped: Locator): Promise<void> {
+  const gap = await swiped.evaluate((row) => {
+    const shift = Number.parseFloat(getComputedStyle(row).translate);
+    const strip = row.nextElementSibling?.getBoundingClientRect().width;
+    return shift + (strip ?? Number.NaN);
+  });
+  expect(gap).toBeCloseTo(0);
 }
 
 test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
@@ -117,7 +115,8 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
 
     await swipeTowardStart(swipedOf(page, "Seinen"), SHORT_SWIPE);
 
-    await expectSettledOpen(swipedOf(page, "Seinen"));
+    await settle(rowOf(page, "Seinen"));
+    await expectOpenAtItsActions(swipedOf(page, "Seinen"));
     expect(await isUncovered(rename)).toBe(true);
     expect(await isUncovered(remove)).toBe(true);
     await expect(rename).toHaveCSS(
@@ -138,7 +137,8 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
     });
 
     await swipeTowardStart(swipedOf(page, "Seinen"), SHORT_SWIPE);
-    await expectSettledOpen(swipedOf(page, "Seinen"));
+    await settle(rowOf(page, "Seinen"));
+    await expectOpenAtItsActions(swipedOf(page, "Seinen"));
     expect(await isUncovered(remove)).toBe(true);
     await tap(remove);
 
