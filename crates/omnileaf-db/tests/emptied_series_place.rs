@@ -15,8 +15,8 @@ use std::path::PathBuf;
 use omnileaf_db::{
     catalog::{
         BookDetails, BookFile, EmptiedPlace, NewRoot, NewSeries, RootId, RootKind, RootLocator,
-        ScannedBook, add_root, emptied_series_place, record_scanned_books, remove_book_files,
-        remove_books_without_files, remove_root,
+        ScannedBook, add_root, emptied_series_place, record_moved_books, record_scanned_books,
+        remove_book_files, remove_books_without_files, remove_root,
     },
     store::Store,
 };
@@ -53,23 +53,7 @@ impl Library {
     }
 
     async fn record(&self, root: RootId, series: &str, location: &str, number: u32) -> BookId {
-        let scanned = ScannedBook {
-            series: NewSeries::local(series, ADDED_AT_MS).unwrap(),
-            named_series: None,
-            fingerprint: fingerprint_of(number),
-            title: format!("Volume {number:02}"),
-            added_at_ms: ADDED_AT_MS,
-            page_count: 1,
-            details: BookDetails::default(),
-            file: BookFile {
-                root,
-                location: PathBuf::from(location),
-                size_bytes: u64::from(number),
-                modified_at_ms: MODIFIED_AT_MS,
-            },
-            numbering: None,
-            name_language: None,
-        };
+        let scanned = scanned(root, series, location, number);
         let recorded = BookId::local(&scanned.fingerprint);
         self.store
             .database()
@@ -77,6 +61,15 @@ impl Library {
             .await
             .unwrap();
         recorded
+    }
+
+    async fn record_moved(&self, root: RootId, series: &str, location: &str, number: u32) {
+        let moved = scanned(root, series, location, number);
+        self.store
+            .database()
+            .write(move |transaction| record_moved_books(transaction, &[moved]))
+            .await
+            .unwrap();
     }
 
     async fn rescan_without(&self, root: RootId, locations: &[&str]) {
@@ -128,6 +121,26 @@ async fn add_linked_root(store: &Store, path: &str) -> RootId {
         .write(move |transaction| add_root(transaction, &root))
         .await
         .unwrap()
+}
+
+fn scanned(root: RootId, series: &str, location: &str, number: u32) -> ScannedBook {
+    ScannedBook {
+        series: NewSeries::local(series, ADDED_AT_MS).unwrap(),
+        named_series: None,
+        fingerprint: fingerprint_of(number),
+        title: format!("Volume {number:02}"),
+        added_at_ms: ADDED_AT_MS,
+        page_count: 1,
+        details: BookDetails::default(),
+        file: BookFile {
+            root,
+            location: PathBuf::from(location),
+            size_bytes: u64::from(number),
+            modified_at_ms: MODIFIED_AT_MS,
+        },
+        numbering: None,
+        name_language: None,
+    }
 }
 
 fn fingerprint_of(number: u32) -> Fingerprint {
@@ -293,4 +306,67 @@ async fn forgets_the_place_when_a_known_file_now_holds_a_book_of_the_series() {
         .await;
 
     assert_eq!(library.emptied_place(EMPTIED).await, None);
+}
+
+#[tokio::test]
+async fn remembers_the_folder_a_rescan_moves_the_last_book_of_a_series_away_from() {
+    let library = Library::open("emptied-place-book-moved-out").await;
+    library
+        .record(library.comics, EMPTIED, "Sample Series 01/v01.cbz", 1)
+        .await;
+
+    library
+        .record_moved(library.comics, OTHER, "Sample Series 02/v01.cbz", 1)
+        .await;
+    library
+        .rescan_without(library.comics, &["Sample Series 01/v01.cbz"])
+        .await;
+
+    assert_eq!(
+        library.emptied_place(EMPTIED).await,
+        Some(EmptiedPlace {
+            root: library.comics,
+            folder: PathBuf::from("Sample Series 01"),
+        })
+    );
+}
+
+#[tokio::test]
+async fn remembers_the_folder_of_a_changed_file_that_files_the_last_book_in_another_series() {
+    let library = Library::open("emptied-place-book-refiled").await;
+    library
+        .record(library.comics, EMPTIED, "Loose/v01.cbz", 1)
+        .await;
+
+    library
+        .record(library.comics, OTHER, "Loose/v01.cbz", 1)
+        .await;
+
+    assert_eq!(
+        library.emptied_place(EMPTIED).await,
+        Some(EmptiedPlace {
+            root: library.comics,
+            folder: PathBuf::from("Loose"),
+        })
+    );
+}
+
+#[tokio::test]
+async fn remembers_the_folder_of_a_file_whose_new_content_is_a_book_of_another_series() {
+    let library = Library::open("emptied-place-book-replaced").await;
+    library
+        .record(library.comics, EMPTIED, "Loose/v01.cbz", 1)
+        .await;
+
+    library
+        .record(library.comics, OTHER, "Loose/v01.cbz", 2)
+        .await;
+
+    assert_eq!(
+        library.emptied_place(EMPTIED).await,
+        Some(EmptiedPlace {
+            root: library.comics,
+            folder: PathBuf::from("Loose"),
+        })
+    );
 }
