@@ -22,9 +22,9 @@ class RestoredRoutePlugin(
     }
 
     @Command
-    fun shown(invoke: Invoke) {
+    fun openingPageShown(invoke: Invoke) {
         val requests = shownLaunchRequests() ?: return invoke.reject(NO_SHOWN_ACTIVITY)
-        requests.routeShown()
+        requests.openingPageShown()
         invoke.resolve()
     }
 

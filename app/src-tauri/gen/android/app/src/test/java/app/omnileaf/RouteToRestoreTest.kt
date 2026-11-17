@@ -42,7 +42,7 @@ class RouteToRestoreTest {
     fun `saves the page the app shows once it shows the route taken`() {
         val saved = savedRoute(SERIES_PAGE)
         saved.take()
-        saved.shown()
+        saved.openingPageShown()
 
         val route = saved.routeToSave(SETTINGS_PAGE_URL)
 

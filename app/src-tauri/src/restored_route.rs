@@ -1,5 +1,5 @@
 #[cfg(target_os = "android")]
-pub(crate) use android::{plugin, shown, take};
+pub(crate) use android::{opening_page_shown, plugin, take};
 
 #[cfg(any(target_os = "android", test))]
 #[derive(Debug, serde::Deserialize)]
@@ -23,7 +23,9 @@ pub(crate) async fn take(
     clippy::unused_async,
     reason = "only Android rebuilds the page on a route it saved"
 )]
-pub(crate) async fn shown(_app: &tauri::AppHandle) -> Result<(), crate::ipc_error::IpcError> {
+pub(crate) async fn opening_page_shown(
+    _app: &tauri::AppHandle,
+) -> Result<(), crate::ipc_error::IpcError> {
     Ok(())
 }
 
@@ -44,7 +46,7 @@ mod android {
     const ANDROID_PACKAGE: &str = "app.omnileaf";
     const ANDROID_PLUGIN_CLASS: &str = "RestoredRoutePlugin";
     const TAKE: &str = "take";
-    const SHOWN: &str = "shown";
+    const OPENING_PAGE_SHOWN: &str = "openingPageShown";
     const PLUGIN_TIMEOUT: Duration = Duration::from_secs(2);
 
     struct RestoredRoutePlugin(PluginHandle<Wry>);
@@ -76,8 +78,8 @@ mod android {
             .map_err(|error| IpcError::internal(&error))
     }
 
-    pub(crate) async fn shown(app: &AppHandle) -> Result<(), IpcError> {
-        ask::<()>(app, SHOWN)
+    pub(crate) async fn opening_page_shown(app: &AppHandle) -> Result<(), IpcError> {
+        ask::<()>(app, OPENING_PAGE_SHOWN)
             .await
             .map_err(|error| IpcError::internal(&error))
     }

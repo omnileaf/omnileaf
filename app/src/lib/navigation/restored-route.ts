@@ -5,7 +5,7 @@ import { resolvedPathOf } from "./app-path";
 
 type AskForSavedRoute = typeof commands.takeRestoredRoute;
 
-type TellRouteShown = typeof commands.restoredRouteShown;
+type TellOpeningPageShown = typeof commands.openingPageShown;
 
 const KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN = {
   android: true,
@@ -34,7 +34,7 @@ export async function takeRestoredRoute(
 
 export async function tellOpeningPageShown(
   platform: Platform,
-  tell: TellRouteShown = () => commands.restoredRouteShown(),
+  tell: TellOpeningPageShown = () => commands.openingPageShown(),
 ): Promise<void> {
   if (!KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN[platform]) {
     return;

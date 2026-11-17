@@ -16,7 +16,7 @@ function rebuiltScreen(changes: Partial<FakeBackend> = {}): FakeBackend {
       taken.count += 1;
       return taken.count === 1 ? SAVED_PAGE : null;
     },
-    restoredRouteShown: () => {
+    openingPageShown: () => {
       shown.count += 1;
       return null;
     },

@@ -19,7 +19,7 @@ internal class RouteToRestore {
     }
 
     @Synchronized
-    fun shown() {
+    fun openingPageShown() {
         handedOver = null
     }
 

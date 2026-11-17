@@ -81,7 +81,7 @@ class LaunchRequestsTest {
         requests.takeRoute()
         val savedBeforeShown = requests.routeToSave(ROOT_PAGE_URL)
 
-        requests.routeShown()
+        requests.openingPageShown()
 
         assertEquals(listOf(SAVED_ROUTE, "/"), listOf(savedBeforeShown, requests.routeToSave(ROOT_PAGE_URL)))
     }

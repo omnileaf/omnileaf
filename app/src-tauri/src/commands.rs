@@ -78,7 +78,7 @@ macro_rules! app_commands {
             watch_system_contrast,
             system_app_language,
             take_restored_route,
-            restored_route_shown,
+            opening_page_shown,
             system_clock,
             app_lock,
             turn_app_lock_on,
@@ -490,8 +490,8 @@ async fn take_restored_route(app: AppHandle) -> Result<Option<String>, IpcError>
 
 #[tauri::command]
 #[specta::specta]
-async fn restored_route_shown(app: AppHandle) -> Result<(), IpcError> {
-    restored_route::shown(&app).await
+async fn opening_page_shown(app: AppHandle) -> Result<(), IpcError> {
+    restored_route::opening_page_shown(&app).await
 }
 
 #[tauri::command]

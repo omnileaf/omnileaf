@@ -1263,7 +1263,7 @@ export function sampleBackend(
     watchSystemContrast: () => null,
     systemAppLanguage: () => ({ offered: false, tag: null }),
     takeRestoredRoute: () => null,
-    restoredRouteShown: () => null,
+    openingPageShown: () => null,
     watchSystemBoldText: () => null,
     systemClock: () => "followsLanguage",
     appLock: () => {
