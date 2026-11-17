@@ -27,12 +27,14 @@ import type { LayoutLoad } from "./$types";
 
 export const ssr = false;
 
-function pageToRestoreFor(opening: Opening): ResolvedPathname | undefined {
+type OpeningInPlace = Exclude<Opening, { kind: "opensOn" }>;
+
+function pageToRestoreFor(
+  opening: OpeningInPlace,
+): ResolvedPathname | undefined {
   switch (opening.kind) {
     case "stays":
       return undefined;
-    case "opensOn":
-      return redirect(307, opening.page);
     case "restores":
       return opening.page;
     default:
@@ -72,19 +74,27 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   }
   const opensTheApp =
     !isFirstLaunch && untrack(() => url.pathname) === resolve("/(app)");
-  const pageToRestore = opensTheApp
-    ? pageToRestoreFor(
-        await openingPage(
-          opensOnSettingForDocument().choice,
-          await takeRestoredRoute(appInfo.platform),
-        ),
-      )
-    : undefined;
+  if (!opensTheApp) {
+    return {
+      appInfo,
+      libraryProblem,
+      homeArrival,
+      isFirstLaunch,
+      pageToRestore: undefined,
+    };
+  }
+  const opening = await openingPage(
+    opensOnSettingForDocument().choice,
+    await takeRestoredRoute(appInfo.platform),
+  );
+  if (opening.kind === "opensOn") {
+    redirect(307, opening.page);
+  }
   return {
     appInfo,
     libraryProblem,
     homeArrival,
     isFirstLaunch,
-    pageToRestore,
+    pageToRestore: pageToRestoreFor(opening),
   };
 };
