@@ -31,6 +31,13 @@ function attributeValues(filter: string, pattern: RegExp): string[] {
   return [...filter.matchAll(pattern)].map((found) => found[1] ?? "");
 }
 
+async function handledConfigChanges(): Promise<string[]> {
+  const manifest = await readFile(MANIFEST, "utf8");
+  return (
+    /android:configChanges="([^"]*)"/.exec(manifest)?.[1]?.split("|") ?? []
+  );
+}
+
 async function intentFilters(): Promise<IntentFilter[]> {
   const manifest = await readFile(MANIFEST, "utf8");
   return [...manifest.matchAll(/<intent-filter>([\s\S]*?)<\/intent-filter>/g)]
@@ -83,8 +90,13 @@ test("offers generic rar types where a provider or a share may report a comic ar
 });
 
 test("keeps the page open when Android's Bold text changes", async () => {
-  const manifest = await readFile(MANIFEST, "utf8");
-  const handled = /android:configChanges="([^"]*)"/.exec(manifest)?.[1] ?? "";
+  const handled = await handledConfigChanges();
 
-  expect(handled.split("|")).toContain("fontWeightAdjustment");
+  expect(handled).toContain("fontWeightAdjustment");
+});
+
+test("keeps the page open when Android's font size or display size changes", async () => {
+  const handled = await handledConfigChanges();
+
+  expect(handled).toEqual(expect.arrayContaining(["fontScale", "density"]));
 });

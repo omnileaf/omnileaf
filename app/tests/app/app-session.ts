@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, inject } from "vitest";
+import { afterAll, beforeAll, beforeEach, expect, inject } from "vitest";
 
 import type { AppUnderTest } from "./app-under-test.ts";
 import { finishFirstLaunchIfShown } from "./first-launch.ts";
@@ -39,6 +39,15 @@ export async function shownPage(
     xpath(`//main//h1[normalize-space()='${title}']`),
   );
   return heading.text();
+}
+
+export async function expectStillOn(
+  session: Session,
+  windowsBefore: readonly string[],
+  page: string,
+): Promise<void> {
+  expect(await session.windows()).toEqual(windowsBefore);
+  expect(await shownPage(session, page)).toBe(page);
 }
 
 const LIBRARY_LINK = mainNavigationLink("Library");

@@ -1,8 +1,6 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { afterAll, beforeAll, expect, test } from "vitest";
 
-import { afterAll, expect, onTestFinished, test } from "vitest";
-
+import { ANDROID_APP_ID, adbShell } from "./android-settings.ts";
 import {
   clickWhenShown,
   mainNavigationLink,
@@ -14,15 +12,21 @@ import { pollUntil } from "./webdriver.ts";
 
 const BACK_KEY = 4;
 const NEW_SCREEN_TIMEOUT_MS = 30_000;
-const ADB_TIMEOUT_MS = 30_000;
-const DEFAULT_FONT_SCALE = "1.0";
-const LARGER_FONT_SCALE = "1.15";
-
-const run = promisify(execFile);
+const RIGHT_TO_LEFT_LANGUAGE = "ar";
 
 const appSession = useAppSession();
 
-afterAll(() => setFontScale(DEFAULT_FONT_SCALE));
+let appLanguagesBefore: string | undefined;
+
+beforeAll(async () => {
+  appLanguagesBefore = await appLanguages();
+});
+
+afterAll(async () => {
+  if (appLanguagesBefore !== undefined) {
+    await setAppLanguages(appLanguagesBefore);
+  }
+});
 
 async function pressBack(): Promise<void> {
   await appSession().runMobileCommand("pressKey", { keycode: BACK_KEY });
@@ -35,20 +39,29 @@ async function newWindow(
   return windows.find((handle) => !known.includes(handle));
 }
 
-async function setFontScale(scale: string): Promise<void> {
-  await run(
-    "adb",
-    ["shell", "settings", "put", "system", "font_scale", scale],
-    {
-      timeout: ADB_TIMEOUT_MS,
-    },
+async function localeCommand(...args: readonly string[]): Promise<string> {
+  return adbShell("cmd", "locale", ...args);
+}
+
+async function appLanguages(): Promise<string> {
+  const listed = await localeCommand("get-app-locales", ANDROID_APP_ID);
+  return /\[(.*)\]/.exec(listed)?.[1] ?? "";
+}
+
+async function setAppLanguages(languages: string): Promise<void> {
+  await localeCommand(
+    "set-app-locales",
+    ANDROID_APP_ID,
+    ...(languages === "" ? [] : ["--locales", languages]),
   );
 }
 
-/** Changes the text size, which Android answers by recreating the activity with a new web view. */
-async function recreateTheScreenWithFontScale(scale: string): Promise<void> {
+/** Android recreates the activity, with a new web view, when an app language turns the layout right to left. */
+async function recreateTheScreenWithAppLanguages(
+  languages: string,
+): Promise<void> {
   const known = await appSession().windows();
-  await setFontScale(scale);
+  await setAppLanguages(languages);
   const created = await pollUntil(
     () => newWindow(known),
     NEW_SCREEN_TIMEOUT_MS,
@@ -81,8 +94,8 @@ test("goes back to Library from a section opened after another", async () => {
 });
 
 test("keeps back inside the app after Android recreates the activity", async () => {
-  await recreateTheScreenWithFontScale(LARGER_FONT_SCALE);
-  onTestFinished(() => recreateTheScreenWithFontScale(DEFAULT_FONT_SCALE));
+  await recreateTheScreenWithAppLanguages(RIGHT_TO_LEFT_LANGUAGE);
+  await recreateTheScreenWithAppLanguages(appLanguagesBefore ?? "");
   await clickWhenShown(appSession(), mainNavigationLink("Settings"));
   await clickWhenShown(appSession(), settingsRow("About"));
   await shownPage(appSession(), "About");
