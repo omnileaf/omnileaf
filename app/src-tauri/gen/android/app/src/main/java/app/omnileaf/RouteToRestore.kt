@@ -12,5 +12,5 @@ internal class RouteToRestore(
     }
 
     @Synchronized
-    fun toSave(pageUrl: String?): String? = route ?: pageUrl?.let(::appRouteOf)
+    fun routeToSave(shownPageUrl: String?): String? = route ?: shownPageUrl?.let(::appRouteOf)
 }

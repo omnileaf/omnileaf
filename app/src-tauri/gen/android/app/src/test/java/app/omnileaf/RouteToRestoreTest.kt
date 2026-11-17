@@ -40,7 +40,7 @@ class RouteToRestoreTest {
         val saved = RouteToRestore(SERIES_PAGE)
         saved.take()
 
-        val route = saved.toSave(SETTINGS_PAGE_URL)
+        val route = saved.routeToSave(SETTINGS_PAGE_URL)
 
         assertEquals("/settings/appearance", route)
     }
@@ -49,7 +49,7 @@ class RouteToRestoreTest {
     fun `saves again a route the page has not taken yet`() {
         val saved = RouteToRestore(SERIES_PAGE)
 
-        val route = saved.toSave("http://tauri.localhost/")
+        val route = saved.routeToSave("http://tauri.localhost/")
 
         assertEquals(SERIES_PAGE, route)
     }
@@ -58,7 +58,7 @@ class RouteToRestoreTest {
     fun `saves nothing for a page outside the app`() {
         val saved = RouteToRestore(null)
 
-        val route = saved.toSave("http://example.com/settings")
+        val route = saved.routeToSave("http://example.com/settings")
 
         assertNull(route)
     }
@@ -67,7 +67,7 @@ class RouteToRestoreTest {
     fun `saves nothing before the web view has a page`() {
         val saved = RouteToRestore(null)
 
-        val route = saved.toSave(null)
+        val route = saved.routeToSave(null)
 
         assertNull(route)
     }

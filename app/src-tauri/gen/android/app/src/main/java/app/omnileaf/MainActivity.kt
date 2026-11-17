@@ -52,7 +52,7 @@ class MainActivity : TauriActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        routeToRestore.toSave(webView?.url)?.let { route -> outState.putString(OPEN_ROUTE_KEY, route) }
+        routeToRestore.routeToSave(webView?.url)?.let { route -> outState.putString(OPEN_ROUTE_KEY, route) }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
