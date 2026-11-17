@@ -6,9 +6,9 @@
   import { rowWindow, type Seen } from "./row-window";
   import { scrollerOf } from "./scroller";
   import {
-    headingsBefore,
     offsetOf,
-    type Stack,
+    type RowHeights,
+    rowHeights,
     stackWindow,
   } from "./stack-window";
 
@@ -81,19 +81,17 @@
     total !== undefined && total >= items.length ? total : undefined,
   );
   const count = $derived(knownTotal ?? items.length);
-  const headingCounts = $derived(
-    isHeading === undefined ? undefined : headingsBefore(items.map(isHeading)),
+  const headings = $derived(
+    isHeading === undefined ? undefined : items.map(isHeading),
   );
-  const stack: Stack | undefined = $derived(
-    headingCounts === undefined ||
-      measure === undefined ||
-      measure.columns !== 1
+  const stack: RowHeights | undefined = $derived(
+    headings === undefined || measure === undefined || measure.columns !== 1
       ? undefined
-      : {
+      : rowHeights({
           count,
-          heights: { row: measure.rowStride, heading: measure.headingStride },
-          headingsBefore: headingCounts,
-        },
+          isHeading: headings,
+          strides: { row: measure.rowStride, heading: measure.headingStride },
+        }),
   );
   const shown: Shown | undefined = $derived.by(() => {
     if (measure === undefined) {

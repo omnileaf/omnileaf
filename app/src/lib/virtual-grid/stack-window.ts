@@ -1,14 +1,19 @@
 import type { Seen } from "./row-window";
 
-export interface RowHeights {
+export interface Strides {
   readonly row: number;
   readonly heading: number;
 }
 
-export interface Stack {
+export interface RowLayout {
   readonly count: number;
-  readonly heights: RowHeights;
-  readonly headingsBefore: readonly number[];
+  readonly isHeading: readonly boolean[];
+  readonly strides: Strides;
+}
+
+export interface RowHeights {
+  readonly count: number;
+  readonly offsets: readonly number[];
 }
 
 export interface StackWindow {
@@ -18,24 +23,25 @@ export interface StackWindow {
   readonly size: number;
 }
 
-export function headingsBefore(
-  isHeading: readonly boolean[],
-): readonly number[] {
-  let headings = 0;
-  return [
-    0,
-    ...isHeading.map((heading) => {
-      headings += heading ? 1 : 0;
-      return headings;
-    }),
-  ];
+export function rowHeights(layout: RowLayout): RowHeights {
+  const { count, isHeading, strides } = layout;
+  const offsets = [0];
+  let offset = 0;
+  for (let index = 0; index < count; index += 1) {
+    offset += isHeading[index] === true ? strides.heading : strides.row;
+    offsets.push(offset);
+  }
+  return { count, offsets };
 }
 
-export function offsetOf(stack: Stack, index: number): number {
-  const { row, heading } = stack.heights;
-  const known = stack.headingsBefore;
-  const headings = known[Math.min(index, known.length - 1)] ?? 0;
-  return (index - headings) * row + headings * heading;
+export function offsetOf(heights: RowHeights, index: number): number {
+  const offset = heights.offsets[index];
+  if (offset === undefined) {
+    throw new RangeError(
+      `row ${String(index)} is outside a list of ${String(heights.count)}`,
+    );
+  }
+  return offset;
 }
 
 function firstIndexWhere(
@@ -56,25 +62,25 @@ function firstIndexWhere(
 }
 
 export function stackWindow(
-  stack: Stack,
+  heights: RowHeights,
   seen: Seen,
   extraRows: number,
 ): StackWindow {
-  const { count } = stack;
+  const { count } = heights;
   const firstSeen = firstIndexWhere(
     count,
-    (index) => offsetOf(stack, index + 1) > seen.top,
+    (index) => offsetOf(heights, index + 1) > seen.top,
   );
   const firstUnseen = firstIndexWhere(
     count,
-    (index) => offsetOf(stack, index) >= seen.bottom,
+    (index) => offsetOf(heights, index) >= seen.bottom,
   );
   const start = Math.min(Math.max(firstSeen - extraRows, 0), count);
   const end = Math.min(Math.max(firstUnseen + extraRows, start), count);
   return {
     start,
     end,
-    before: offsetOf(stack, start),
-    size: offsetOf(stack, count),
+    before: offsetOf(heights, start),
+    size: offsetOf(heights, count),
   };
 }

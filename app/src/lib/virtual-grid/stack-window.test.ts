@@ -1,9 +1,9 @@
 import { expect, test } from "vitest";
 
 import {
-  headingsBefore,
   offsetOf,
-  type Stack,
+  type RowHeights,
+  rowHeights,
   stackWindow,
 } from "./stack-window";
 
@@ -18,17 +18,16 @@ function runsOf(...lengths: readonly number[]): readonly boolean[] {
   ]);
 }
 
-function stackOf(isHeading: readonly boolean[]): Stack {
-  return {
-    count: isHeading.length,
-    heights: { row: ROW, heading: HEADING },
-    headingsBefore: headingsBefore(isHeading),
-  };
+function stackOf(
+  isHeading: readonly boolean[],
+  count = isHeading.length,
+): RowHeights {
+  return rowHeights({
+    count,
+    isHeading,
+    strides: { row: ROW, heading: HEADING },
+  });
 }
-
-test("counts the headings before each row", () => {
-  expect(headingsBefore(runsOf(2, 1))).toEqual([0, 1, 1, 1, 2, 2]);
-});
 
 test("places each row after the rows and shorter headings above it", () => {
   const stack = stackOf(runsOf(2, 1));
@@ -108,7 +107,7 @@ test("lays out nothing for an empty list", () => {
 });
 
 test("counts rows yet to come as rows", () => {
-  const stack = { ...stackOf(runsOf(2)), count: 5 };
+  const stack = stackOf(runsOf(2), 5);
 
   const window = stackWindow(stack, { top: 0, bottom: 100 }, NO_EXTRA_ROWS);
 
