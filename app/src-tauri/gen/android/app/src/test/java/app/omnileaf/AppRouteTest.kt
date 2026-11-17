@@ -58,10 +58,17 @@ class AppRouteTest {
     }
 
     @Test
-    fun `refuses a path that would lead out of the app`() {
-        val route = appRouteOf("http://tauri.localhost//example.com/settings")
+    fun `keeps a path that would lead to another origin inside the app`() {
+        val pages =
+            listOf(
+                "http://tauri.localhost//example.com/x",
+                "http://tauri.localhost/.//example.com/x",
+                "http://tauri.localhost/a/..//example.com/x",
+            )
 
-        assertNull(route)
+        val routes = pages.map(::appRouteOf)
+
+        assertEquals(listOf("/example.com/x", "/example.com/x", "/example.com/x"), routes)
     }
 
     @Test

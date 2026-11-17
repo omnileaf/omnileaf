@@ -11,7 +11,7 @@ private const val ROOT = "/"
 private const val NETWORK_PATH_PREFIX = "//"
 
 internal fun appRouteOf(pageUrl: String): String? {
-    val page = parsedUri(pageUrl) ?: return null
+    val page = parsedUri(pageUrl)?.normalize() ?: return null
     if (!page.isAppOrigin()) return null
     val path = page.rawPath.ifEmpty { ROOT }
     if (!path.startsWith(ROOT) || path.startsWith(NETWORK_PATH_PREFIX)) return null
