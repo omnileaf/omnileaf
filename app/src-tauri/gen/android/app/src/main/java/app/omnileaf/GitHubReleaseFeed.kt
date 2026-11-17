@@ -68,7 +68,7 @@ internal class GitHubReleaseFeed(
             Thread.currentThread().interrupt()
             throw InterruptedIOException("the release check was interrupted").apply { initCause(interrupted) }
         } catch (failure: ExecutionException) {
-            throw failure.cause ?: failure
+            throw (failure.cause as? IOException) ?: IOException("the release check failed", failure.cause ?: failure)
         }
 
     private fun request(): FeedReply {
