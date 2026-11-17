@@ -8,6 +8,7 @@ use crate::{
         cursor::{Cursor, Position},
         page::{Page, PageRequest},
         search_text::Lookup,
+        series_connection::note_book_connections,
         series_listing::{FilterParams, adult_condition, smart_conditions},
         series_search::SeriesSearch,
         staged_rows::snapshot,
@@ -34,6 +35,7 @@ pub struct ChapterHit {
     pub position: u32,
     pub title: String,
     pub matched_in: ChapterTitleSource,
+    pub is_connected: bool,
 }
 
 macro_rules! candidate_tables {
@@ -204,6 +206,7 @@ impl HitAwaitingPosition {
             position,
             title: self.title,
             matched_in: self.matched_in,
+            is_connected: true,
         }
     }
 }
@@ -262,8 +265,13 @@ pub fn search_chapters(
     )?;
     let rows = hits_among(connection, phrases, &candidates.hit_ids)?;
     let page = Page::of(rows, request.size);
+    let mut hits: Vec<ChapterHit> = page.items.into_iter().flatten().collect();
+    note_book_connections(
+        connection,
+        hits.iter_mut().map(|hit| (hit.book, &mut hit.is_connected)),
+    )?;
     Ok(Page {
-        items: page.items.into_iter().flatten().collect(),
+        items: hits,
         next: page.next.or(candidates.resumes_at),
     })
 }

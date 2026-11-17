@@ -115,6 +115,7 @@ mod tests {
             position: 3,
             title: "Chapter 3".to_owned(),
             matched_in: catalog::ChapterTitleSource::ComicInfo,
+            is_connected: true,
         };
 
         let hit = ChapterHit::from(stored);

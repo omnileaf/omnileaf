@@ -11,10 +11,10 @@ use omnileaf_db::{
     Database,
     catalog::{
         BookDetails, BookFile, BookListing, NewRoot, NewSeries, PageRequest, PageSize, RootId,
-        RootKind, RootLocator, ScannedBook, SeriesListing, SeriesOrder, SeriesSort, add_root,
-        hidden_series_count, library_root, mark_root_available, mark_root_unavailable,
-        record_scanned_books, series_books, series_count, series_overview, series_page,
-        show_root_while_missing, up_next,
+        RootKind, RootLocator, ScannedBook, SearchText, SeriesFilter, SeriesListing, SeriesOrder,
+        SeriesSearch, SeriesSort, add_root, hidden_series_count, library_root, mark_root_available,
+        mark_root_unavailable, record_scanned_books, search_chapters, series_books, series_count,
+        series_overview, series_page, show_root_while_missing, up_next,
     },
 };
 use omnileaf_sync_proto::{Fingerprint, ImageEntry, SeriesId};
@@ -147,6 +147,23 @@ impl Shelf {
             .unwrap()
             .unwrap();
         (book.title, book.is_connected)
+    }
+
+    async fn chapter_hit_connections(&self, text: &str) -> Vec<(String, bool)> {
+        let search = SeriesSearch {
+            text: SearchText::parse(text).unwrap().unwrap(),
+            filter: SeriesFilter::NONE,
+        };
+        let request = first_page();
+        let page = self
+            .database
+            .read(move |connection| search_chapters(connection, &search, &request))
+            .await
+            .unwrap();
+        page.items
+            .into_iter()
+            .map(|hit| (hit.title, hit.is_connected))
+            .collect()
     }
 
     async fn books_not_connected(&self, series: &str) -> u32 {
@@ -441,4 +458,50 @@ async fn leaves_a_book_with_a_file_still_there_out_of_the_books_not_connected() 
     shelf.go_missing(shelf.comics).await;
 
     assert_eq!(shelf.books_not_connected("Harbour Gate").await, 0);
+}
+
+#[tokio::test]
+async fn finds_every_chapter_connected_while_every_folder_is_there() {
+    let shelf = Shelf::open("chapter-hits-connected-all").await;
+
+    assert_eq!(
+        shelf.chapter_hit_connections("volume").await,
+        [
+            connection("Volume 01", true),
+            connection("Volume 02", true),
+            connection("Volume 03", true),
+            connection("Volume 04", true),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn marks_a_chapter_found_whose_book_is_only_in_a_missing_folder() {
+    let shelf = Shelf::open("chapter-hits-in-missing-folder").await;
+    shelf.go_missing(shelf.comics).await;
+
+    shelf.show_anyway(shelf.comics, true).await;
+
+    assert_eq!(
+        shelf.chapter_hit_connections("volume").await,
+        [
+            connection("Volume 01", false),
+            connection("Volume 02", false),
+            connection("Volume 03", true),
+            connection("Volume 04", true),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn keeps_a_chapter_found_connected_while_another_of_its_files_is_in_a_folder_still_there() {
+    let shelf = Shelf::open("chapter-hits-in-two-folders").await;
+    shelf.shelve(shelf.manga, "Harbour Gate", 1).await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(
+        shelf.chapter_hit_connections("volume 01").await,
+        [connection("Volume 01", true)]
+    );
 }
