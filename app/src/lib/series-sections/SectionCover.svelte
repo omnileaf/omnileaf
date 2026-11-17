@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { Check } from "@lucide/svelte";
-
   import { resolve } from "$app/paths";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { SeriesBook } from "#lib/ipc/bindings.ts";
@@ -58,11 +56,7 @@
         <SelectionMark isOn={isPicked} />
       {:else if book.reading.state === "read"}
         <span data-read-mark aria-hidden="true" class={look.readMark}>
-          {#if look.readCheck.glyph === "platform"}
-            <Icon name="check" size={look.readCheck.size} />
-          {:else}
-            <Check size={look.readCheck.size} />
-          {/if}
+          <Icon name="check" size={look.readCheckSize} />
         </span>
       {/if}
     </span>

@@ -2,16 +2,11 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { phoneOf } from "#lib/page/platform.ts";
 
-export interface ReadCheck {
-  readonly glyph: "lucide" | "platform";
-  readonly size: number;
-}
-
 export interface SectionTileLook {
   readonly link: string;
   readonly cover: string;
   readonly readMark: string;
-  readonly readCheck: ReadCheck;
+  readonly readCheckSize: number;
   readonly gap: string;
   readonly title: string;
   readonly meta: string;
@@ -30,7 +25,7 @@ const SHADCN_TILE: SectionTileLook = {
   link: `${TILE_LINK} rounded-cover`,
   cover: `${COVER_BOX} rounded-cover border border-cover-edge`,
   readMark: `${READ_MARK_CIRCLE} inset-e-read-mark-inset inset-bs-read-mark-inset ring-2 ring-background`,
-  readCheck: { glyph: "lucide", size: 14 },
+  readCheckSize: 14,
   gap: `${MISSING_RUN_BOX} rounded-cover`,
   title: "truncate text-small font-medium",
   meta: "truncate text-caption text-muted",
@@ -40,7 +35,7 @@ const ANDROID_TILE: SectionTileLook = {
   link: `${TILE_LINK} rounded-native-cover`,
   cover: `${COVER_BOX} rounded-native-cover`,
   readMark: `${READ_MARK_CIRCLE} inset-s-xs inset-bs-xs`,
-  readCheck: { glyph: "platform", size: 16 },
+  readCheckSize: 16,
   gap: `${MISSING_RUN_BOX} rounded-native-cover`,
   title:
     "truncate text-native-tile-title/native-tile-title font-native-tile-title tracking-native-tile-title",

@@ -31,6 +31,7 @@ const ANDROID_COVERS_ACROSS = "8px";
 const ANDROID_COVERS_DOWN = "16px";
 const ANDROID_READ_MARK_INSET = "4px";
 const ANDROID_COVER_CORNER = "4px";
+const READ_CHECK_SIZE = 14;
 const ANDROID_READ_CHECK_SIZE = 16;
 
 function volume(
@@ -370,12 +371,20 @@ test("marks a finished Android volume with an accent circle at its cover's top s
   });
 });
 
-test("draws the shared check icon inside an Android volume's read mark", async () => {
-  const { link } = await drawTiles("android");
-  const check = link.querySelector('[data-read-mark] [data-icon="check"]');
+test.each<[DrawnPlatform, number]>([
+  ["linux", READ_CHECK_SIZE],
+  ["ios", READ_CHECK_SIZE],
+  ["macos", READ_CHECK_SIZE],
+  ["android", ANDROID_READ_CHECK_SIZE],
+])(
+  "draws the shared check icon inside %s's read mark at %dpx",
+  async (platform, size) => {
+    const { link } = await drawTiles(platform);
+    const check = link.querySelector('[data-read-mark] [data-icon="check"]');
 
-  expect([
-    check?.getBoundingClientRect().width,
-    check?.getBoundingClientRect().height,
-  ]).toEqual([ANDROID_READ_CHECK_SIZE, ANDROID_READ_CHECK_SIZE]);
-});
+    expect([
+      check?.getBoundingClientRect().width,
+      check?.getBoundingClientRect().height,
+    ]).toEqual([size, size]);
+  },
+);
