@@ -1,9 +1,9 @@
 #[cfg(target_os = "android")]
-pub(crate) use android::{opening_page_shown, plugin, take};
+pub(crate) use android::{opening_page_shown, plugin, saved_route};
 
 #[cfg(any(target_os = "android", test))]
 #[derive(Debug, serde::Deserialize)]
-struct TakenRoute {
+struct SavedRoute {
     route: Option<String>,
 }
 
@@ -12,7 +12,7 @@ struct TakenRoute {
     clippy::unused_async,
     reason = "only Android rebuilds the page on a route it saved"
 )]
-pub(crate) async fn take(
+pub(crate) async fn saved_route(
     _app: &tauri::AppHandle,
 ) -> Result<Option<String>, crate::ipc_error::IpcError> {
     Ok(None)
@@ -39,7 +39,7 @@ mod android {
         plugin::{Builder, PluginHandle, TauriPlugin, mobile::PluginInvokeError},
     };
 
-    use super::TakenRoute;
+    use super::SavedRoute;
     use crate::ipc_error::IpcError;
 
     const PLUGIN_NAME: &str = "restored-route";
@@ -71,10 +71,10 @@ mod android {
             .build()
     }
 
-    pub(crate) async fn take(app: &AppHandle) -> Result<Option<String>, IpcError> {
-        ask::<TakenRoute>(app, SAVED_ROUTE)
+    pub(crate) async fn saved_route(app: &AppHandle) -> Result<Option<String>, IpcError> {
+        ask::<SavedRoute>(app, SAVED_ROUTE)
             .await
-            .map(|taken| taken.route)
+            .map(|saved| saved.route)
             .map_err(|error| IpcError::internal(&error))
     }
 
@@ -102,23 +102,23 @@ mod android {
 
 #[cfg(test)]
 mod tests {
-    use super::TakenRoute;
+    use super::SavedRoute;
 
     #[test]
     fn reads_the_route_android_hands_over() {
         let sent = serde_json::json!({ "route": "/series/42?tab=books" });
 
-        let taken: TakenRoute = serde_json::from_value(sent).unwrap();
+        let saved: SavedRoute = serde_json::from_value(sent).unwrap();
 
-        assert_eq!(taken.route.as_deref(), Some("/series/42?tab=books"));
+        assert_eq!(saved.route.as_deref(), Some("/series/42?tab=books"));
     }
 
     #[test]
     fn reads_no_route_when_android_saved_none() {
         let sent = serde_json::json!({ "route": null });
 
-        let taken: TakenRoute = serde_json::from_value(sent).unwrap();
+        let saved: SavedRoute = serde_json::from_value(sent).unwrap();
 
-        assert_eq!(taken.route, None);
+        assert_eq!(saved.route, None);
     }
 }

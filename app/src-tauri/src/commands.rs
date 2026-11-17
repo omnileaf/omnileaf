@@ -77,7 +77,7 @@ macro_rules! app_commands {
             allow_back_swipe,
             watch_system_contrast,
             system_app_language,
-            take_restored_route,
+            saved_route,
             opening_page_shown,
             system_clock,
             app_lock,
@@ -484,8 +484,8 @@ async fn system_app_language(app: AppHandle) -> Result<SystemAppLanguage, IpcErr
 
 #[tauri::command]
 #[specta::specta]
-async fn take_restored_route(app: AppHandle) -> Result<Option<String>, IpcError> {
-    restored_route::take(&app).await
+async fn saved_route(app: AppHandle) -> Result<Option<String>, IpcError> {
+    restored_route::saved_route(&app).await
 }
 
 #[tauri::command]

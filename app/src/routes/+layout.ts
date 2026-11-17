@@ -17,7 +17,7 @@ import {
   opensOnSettingForDocument,
 } from "#lib/general/opens-on.svelte.ts";
 import { commands } from "#lib/ipc/bindings.ts";
-import { takeRestoredRoute } from "#lib/navigation/restored-route.ts";
+import { savedRoute } from "#lib/navigation/restored-route.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 import { followSystemBoldText } from "#lib/page/system-bold-text.ts";
 import { followSystemContrast } from "#lib/page/system-contrast.ts";
@@ -85,7 +85,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   }
   const opening = await openingPage(
     opensOnSettingForDocument().choice,
-    await takeRestoredRoute(appInfo.platform),
+    await savedRoute(appInfo.platform),
   );
   if (opening.kind === "opensOn") {
     redirect(307, opening.page);

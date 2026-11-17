@@ -4,7 +4,7 @@ import { commands, type Platform } from "#lib/ipc/bindings.ts";
 
 import { resolvedPathOf } from "./app-path";
 
-type AskForSavedRoute = typeof commands.takeRestoredRoute;
+type AskForSavedRoute = typeof commands.savedRoute;
 
 type TellOpeningPageShown = typeof commands.openingPageShown;
 
@@ -18,21 +18,21 @@ const KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN = {
   windows: false,
 } satisfies Record<Platform, boolean>;
 
-export async function takeRestoredRoute(
+export async function savedRoute(
   platform: Platform,
-  ask: AskForSavedRoute = () => commands.takeRestoredRoute(),
+  ask: AskForSavedRoute = () => commands.savedRoute(),
 ): Promise<ResolvedPathname | undefined> {
   if (!KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN[platform]) {
     return undefined;
   }
-  const taken = await ask();
-  if (taken.status === "error") {
-    reportError(taken.error);
+  const saved = await ask();
+  if (saved.status === "error") {
+    reportError(saved.error);
     return undefined;
   }
-  return taken.data === null
+  return saved.data === null
     ? undefined
-    : resolvedPathOf(new URL(taken.data, location.href));
+    : resolvedPathOf(new URL(saved.data, location.href));
 }
 
 async function tellOpeningPageShown(

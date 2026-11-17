@@ -1262,7 +1262,7 @@ export function sampleBackend(
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
     systemAppLanguage: () => ({ offered: false, tag: null }),
-    takeRestoredRoute: () => null,
+    savedRoute: () => null,
     openingPageShown: () => null,
     watchSystemBoldText: () => null,
     systemClock: () => "followsLanguage",

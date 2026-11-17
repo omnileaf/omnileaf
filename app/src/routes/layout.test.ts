@@ -10,7 +10,7 @@ const LIBRARY = "/";
 const FIRST_LAUNCH = "/first-launch";
 const SAVED_PAGE = "/settings/appearance";
 const HISTORY = "/history";
-const TAKE_THE_SAVED_PAGE = "take_restored_route";
+const ASK_FOR_THE_SAVED_PAGE = "saved_route";
 
 const ANDROID_APP: AppInfo = {
   version: "1.2.3",
@@ -55,7 +55,7 @@ function serveAndroidRebuiltOn(
         return null;
       case "first_launch_finished":
         return app.isFirstLaunchFinished;
-      case TAKE_THE_SAVED_PAGE:
+      case ASK_FOR_THE_SAVED_PAGE:
         return savedPage;
       default:
         if (COMMANDS_THE_LOAD_STARTS.has(command)) {
@@ -94,7 +94,7 @@ test("doesn't ask Android for the saved page when the library has a problem", as
 
   await load(openingAt(LIBRARY));
 
-  expect(asked).not.toContain(TAKE_THE_SAVED_PAGE);
+  expect(asked).not.toContain(ASK_FOR_THE_SAVED_PAGE);
 });
 
 test("doesn't ask Android for the saved page on the first launch page", async () => {
@@ -105,7 +105,7 @@ test("doesn't ask Android for the saved page on the first launch page", async ()
 
   await load(openingAt(FIRST_LAUNCH));
 
-  expect(asked).not.toContain(TAKE_THE_SAVED_PAGE);
+  expect(asked).not.toContain(ASK_FOR_THE_SAVED_PAGE);
 });
 
 test("doesn't ask Android for the saved page on a page past the library", async () => {
@@ -113,7 +113,7 @@ test("doesn't ask Android for the saved page on a page past the library", async 
 
   await load(openingAt(HISTORY));
 
-  expect(asked).not.toContain(TAKE_THE_SAVED_PAGE);
+  expect(asked).not.toContain(ASK_FOR_THE_SAVED_PAGE);
 });
 
 test("opens first launch instead of the page Android saved", async () => {

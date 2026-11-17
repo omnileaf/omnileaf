@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest";
 
-import { showOpeningPage, takeRestoredRoute } from "./restored-route";
+import { savedRoute, showOpeningPage } from "./restored-route";
 
 const SETTINGS_PAGE = "/settings/appearance";
 
@@ -21,31 +21,28 @@ afterEach(() => {
 });
 
 test("hands over the route Android saved for the rebuilt screen", async () => {
-  const route = await takeRestoredRoute("android", saved(SETTINGS_PAGE));
+  const route = await savedRoute("android", saved(SETTINGS_PAGE));
 
   expect(route).toBe(SETTINGS_PAGE);
 });
 
 test("keeps the query of the saved route", async () => {
-  const route = await takeRestoredRoute(
-    "android",
-    saved("/series/42?tab=books"),
-  );
+  const route = await savedRoute("android", saved("/series/42?tab=books"));
 
   expect(route).toBe("/series/42?tab=books");
 });
 
 test("hands over nothing when Android saved no route", async () => {
-  const route = await takeRestoredRoute("android", saved(null));
+  const route = await savedRoute("android", saved(null));
 
   expect(route).toBeUndefined();
 });
 
-test("reports a failed take and hands over nothing", async () => {
+test("reports a failed ask and hands over nothing", async () => {
   const reported = vi.spyOn(window, "reportError").mockReturnValue(undefined);
   const error = { code: "internal", message: "timed out" } as const;
 
-  const route = await takeRestoredRoute("android", () =>
+  const route = await savedRoute("android", () =>
     Promise.resolve({ status: "error", error }),
   );
 
@@ -58,7 +55,7 @@ test("doesn't ask anywhere but Android", async () => {
 
   const routes = await Promise.all(
     (["ios", "linux", "macos", "windows"] as const).map((platform) =>
-      takeRestoredRoute(platform, ask),
+      savedRoute(platform, ask),
     ),
   );
 

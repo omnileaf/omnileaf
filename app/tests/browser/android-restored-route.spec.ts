@@ -11,7 +11,7 @@ testOnlyInItsWebview("android");
 function rebuiltScreen(changes: Partial<FakeBackend> = {}): FakeBackend {
   return {
     ...onPlatform("android").backend,
-    takeRestoredRoute: () => (shown.count === 0 ? SAVED_PAGE : null),
+    savedRoute: () => (shown.count === 0 ? SAVED_PAGE : null),
     openingPageShown: () => {
       shown.count += 1;
       return null;
