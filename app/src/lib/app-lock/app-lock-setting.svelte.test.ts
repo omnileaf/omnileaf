@@ -118,9 +118,9 @@ test("keeps the lock on and reports why when turning it off fails", async () => 
 test("keeps the delay chosen", async () => {
   const setting = new AppLockSetting(NEW_APP_LOCK, changes(), answers());
 
-  await setting.chooseLockAfter("oneHour");
+  await setting.chooseLockAfter("thirtyMinutes");
 
-  expect(setting.lock.lockAfter).toBe("oneHour");
+  expect(setting.lock.lockAfter).toBe("thirtyMinutes");
 });
 
 test("keeps the old delay when the new one can't be kept", async () => {
@@ -131,7 +131,7 @@ test("keeps the old delay when the new one can't be kept", async () => {
     told,
   );
 
-  await setting.chooseLockAfter("oneHour");
+  await setting.chooseLockAfter("thirtyMinutes");
 
   expect(setting.lock.lockAfter).toBe("oneMinute");
   expect(told.onFailure).toHaveBeenCalledWith(NOT_CHANGED);
