@@ -83,7 +83,7 @@ export async function goBackToTheLibrary(session: Session): Promise<void> {
 
 export function shownPageCount(page: number, count: number): Locator {
   return xpath(
-    `//main//span[normalize-space()='${String(page)} / ${String(count)}']`,
+    `//main//span[@data-reader-count][normalize-space()='${String(page)} / ${String(count)}']`,
   );
 }
 
