@@ -815,6 +815,22 @@ export function sampleBackend(
     };
   }
 
+  function missingFolderEntry(kind: Exclude<MissingKind, "none">) {
+    return {
+      folder: missingFolderOf(kind),
+      problem: MISSING_FOLDERS[kind].problem,
+      hiddenSeries: MISSING_FOLDER_SERIES.size,
+      isShownAnyway: missingFolder.isShownAnyway,
+    };
+  }
+
+  function missingFolderHolding(series: SampleSeries) {
+    return scenario.missing === "none" ||
+      connectionOf(series).kind === "connected"
+      ? null
+      : missingFolderEntry(scenario.missing);
+  }
+
   function hiddenSeries(): number {
     return library.filter(isOutOfReach).length;
   }
@@ -1389,16 +1405,9 @@ export function sampleBackend(
     missingLibraryFolders: () =>
       scenario.missing === "none" || missingFolder.isFound
         ? []
-        : [
-            {
-              folder: missingFolderOf(scenario.missing),
-              problem: MISSING_FOLDERS[scenario.missing].problem,
-              hiddenSeries: MISSING_FOLDER_SERIES.size,
-              isShownAnyway: missingFolder.isShownAnyway,
-            },
-          ],
-    seriesMissingFolder: () => null,
-    bookMissingFolder: () => null,
+        : [missingFolderEntry(scenario.missing)],
+    seriesMissingFolder: (id) => missingFolderHolding(seriesWith(id)),
+    bookMissingFolder: (id) => missingFolderHolding(bookWith(id).series),
     libraryHiddenSeriesCount: hiddenSeries,
     showMissingLibraryFolder: (_id, isShown) => {
       missingFolder.isShownAnyway = isShown;
