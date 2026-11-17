@@ -981,7 +981,7 @@
   --native-color-jump-current-progress-rest: var(--android-wallpaper-light-surface);
   --native-color-on-tab: var(--android-wallpaper-light-on-surface-variant);
   --native-color-on-tab-current: var(--android-wallpaper-light-primary);
-  --native-color-on-tab-bar-current: var(--android-wallpaper-light-on-secondary-container);
+  --native-color-on-tab-bar-current: var(--android-wallpaper-light-secondary);
   --native-color-on-tab-pill: var(--android-wallpaper-light-on-secondary-container);
   --native-color-cover-badge: var(--android-wallpaper-light-secondary-container);
   --native-color-on-cover-badge: var(--android-wallpaper-light-on-secondary-container);
@@ -1044,7 +1044,7 @@
   --native-color-jump-current-progress-rest: var(--android-wallpaper-dark-surface);
   --native-color-on-tab: var(--android-wallpaper-dark-on-surface-variant);
   --native-color-on-tab-current: var(--android-wallpaper-dark-primary);
-  --native-color-on-tab-bar-current: var(--android-wallpaper-dark-on-secondary-container);
+  --native-color-on-tab-bar-current: var(--android-wallpaper-dark-secondary);
   --native-color-on-tab-pill: var(--android-wallpaper-dark-on-secondary-container);
   --native-color-cover-badge: var(--android-wallpaper-dark-secondary-container);
   --native-color-on-cover-badge: var(--android-wallpaper-dark-on-secondary-container);
