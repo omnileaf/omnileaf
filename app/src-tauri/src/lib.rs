@@ -35,6 +35,9 @@ mod problem_reporting;
 mod put_away;
 #[cfg(any(all(target_os = "android", not(debug_assertions)), test))]
 mod release_log;
+#[cfg(test)]
+#[path = "../build/release_notes.rs"]
+mod release_notes;
 #[cfg(target_os = "android")]
 mod report_downloads;
 mod report_relay;

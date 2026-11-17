@@ -17,6 +17,9 @@ rar = ["omnileaf-engine/rar"]
 update-check = []
 
 [build-dependencies]
+semver.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 tauri-build.workspace = true
 
 [dependencies]
@@ -89,6 +92,7 @@ omnileaf-db.workspace = true
 omnileaf-relay.workspace = true
 omnileaf-system-bars.workspace = true
 omnileaf-testkit.workspace = true
+semver.workspace = true
 serde_json.workspace = true
 tauri = { workspace = true, features = ["test"] }
 tokio = { workspace = true, features = ["macros", "net", "rt", "rt-multi-thread", "test-util"] }

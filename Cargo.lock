@@ -3808,6 +3808,7 @@ dependencies = [
  "reqwest",
  "rustix",
  "rustls",
+ "semver",
  "serde",
  "serde_json",
  "specta",
