@@ -36,6 +36,14 @@ test("counts the linked folders beside the series, leaving out the home folder",
   );
 });
 
+test("counts the linked folders even before any series is found", () => {
+  const linked = [folder("comics", "linked")];
+
+  expect(librarySummaryOf({ kind: "loaded", home: HOME, linked }, 0)).toBe(
+    "1 folder · 0 series",
+  );
+});
+
 test("says nothing when the folders can't be read", () => {
   expect(librarySummaryOf({ kind: "failed" }, 3)).toBeUndefined();
 });
