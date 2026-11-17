@@ -2,6 +2,7 @@ package app.omnileaf
 
 internal class LockPrompt {
     private var isOpen = false
+    private var isWaitingForFocus = false
 
     fun open(): Boolean {
         if (isOpen) return false
@@ -14,4 +15,18 @@ internal class LockPrompt {
     }
 
     fun isStillInTheApp(isChangingScreens: Boolean): Boolean = isChangingScreens || isOpen
+
+    fun waitForFocus() {
+        isWaitingForFocus = !isOpen
+    }
+
+    fun stopWaitingForFocus() {
+        isWaitingForFocus = false
+    }
+
+    fun takeFocus(): Boolean {
+        val wasWaiting = isWaitingForFocus
+        isWaitingForFocus = false
+        return wasWaiting
+    }
 }
