@@ -178,7 +178,7 @@
       (fitted) => {
         fittedColumns = fitted;
       },
-      { hasEqualColumns: hasEqualMacosColumns, spansLastRow },
+      { fitsOneRowByWidest: hasEqualMacosColumns, spansLastRow },
     );
   });
 

@@ -51,7 +51,7 @@ test("needs room for the widest segment in every column when the columns are equ
   const space = 330;
 
   expect(
-    columnsThatFit({ widths, space, gap: GAP, hasEqualColumns: true }),
+    columnsThatFit({ widths, space, gap: GAP, fitsOneRowByWidest: true }),
   ).toBe(2);
 });
 
@@ -60,7 +60,7 @@ test("keeps equal columns on one row once the widest segment fits in each", () =
   const space = 412;
 
   expect(
-    columnsThatFit({ widths, space, gap: GAP, hasEqualColumns: true }),
+    columnsThatFit({ widths, space, gap: GAP, fitsOneRowByWidest: true }),
   ).toBe(4);
 });
 
