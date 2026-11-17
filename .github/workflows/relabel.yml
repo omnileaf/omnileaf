@@ -28,8 +28,13 @@ jobs:
             latest_head=$(current_head)
             if [ "$latest_head" != "$head" ]; then exit 0; fi
           }
+          exit_if_rerun_elsewhere() {
+            attempt=$(run_field attempt)
+            if [ "$attempt" -gt "$seen" ]; then exit 0; fi
+          }
           wait_until_completed() {
             for _ in $(seq 60); do
+              exit_if_rerun_elsewhere
               status=$(run_field status)
               if [ "$status" = completed ]; then return 0; fi
               sleep 5
@@ -48,12 +53,12 @@ jobs:
             labels_read=$(gh run view "$run" --json jobs --jq 'any(.jobs[]; .name == "changed areas" and (.status == "in_progress" or .status == "completed"))')
             if [ "$labels_read" = false ]; then exit 0; fi
             exit_if_head_moved
+            exit_if_rerun_elsewhere
             gh run cancel "$run" || [ "$(run_field status)" = completed ]
             wait_until_completed
           fi
 
-          attempt=$(run_field attempt)
-          if [ "$attempt" -gt "$seen" ]; then exit 0; fi
+          exit_if_rerun_elsewhere
           exit_if_head_moved
           if ! gh run rerun "$run"; then
             attempt=$(run_field attempt)
