@@ -30,6 +30,7 @@ const READ_MARK_INSET = "6px";
 const ANDROID_COVERS_ACROSS = "8px";
 const ANDROID_COVERS_DOWN = "16px";
 const ANDROID_READ_MARK_INSET = "4px";
+const ANDROID_COVER_CORNER = "4px";
 const ANDROID_READ_CHECK_SIZE = 16;
 
 function volume(
@@ -315,7 +316,7 @@ test("names an Android volume in Material type under a flat cover", async () => 
       meta?.color,
     ],
   }).toEqual({
-    corner: "4px",
+    corner: ANDROID_COVER_CORNER,
     edge: "0px",
     title: ["14px", "20px", "400", "0.25px"],
     meta: [
@@ -325,6 +326,20 @@ test("names an Android volume in Material type under a flat cover", async () => 
       "0.4px",
       resolvedColour("--secondary-text", "color"),
     ],
+  });
+});
+
+test("rounds an Android missing run and focus outline to the cover's corner", async () => {
+  const { gap, link } = await drawTiles("android");
+
+  expect({
+    cover: styleOf(link.firstElementChild).borderTopLeftRadius,
+    gap: styleOf(gap.firstElementChild).borderTopLeftRadius,
+    link: styleOf(link).borderTopLeftRadius,
+  }).toEqual({
+    cover: ANDROID_COVER_CORNER,
+    gap: ANDROID_COVER_CORNER,
+    link: ANDROID_COVER_CORNER,
   });
 });
 

@@ -37,11 +37,11 @@ const SHADCN_TILE: SectionTileLook = {
 };
 
 const ANDROID_TILE: SectionTileLook = {
-  link: `${TILE_LINK} rounded-cover`,
+  link: `${TILE_LINK} rounded-native-cover`,
   cover: `${COVER_BOX} rounded-native-cover`,
   readMark: `${READ_MARK_CIRCLE} inset-s-xs inset-bs-xs`,
   readCheck: { glyph: "platform", size: 16 },
-  gap: `${MISSING_RUN_BOX} rounded-cover`,
+  gap: `${MISSING_RUN_BOX} rounded-native-cover`,
   title:
     "truncate text-native-tile-title/native-tile-title font-native-tile-title tracking-native-tile-title",
   meta: "truncate text-native-tile-meta/native-tile-meta font-native-tile-meta tracking-native-tile-meta text-muted",
