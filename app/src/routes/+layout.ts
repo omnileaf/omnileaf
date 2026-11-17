@@ -1,15 +1,18 @@
 import { redirect } from "@sveltejs/kit";
 
 import { resolve } from "$app/paths";
+import type { ResolvedPathname } from "$app/types";
 import { boldTextChoice } from "#lib/accessibility/bold-text-choice.svelte.ts";
 import { textSizeChoice } from "#lib/accessibility/text-size-choice.svelte.ts";
 import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
 import { rememberLockWords } from "#lib/app-lock/app-lock.ts";
+import { assertNever } from "#lib/assert-never.ts";
 import {
   FIRST_LAUNCH_ROUTE,
   needsFirstLaunch,
 } from "#lib/first-launch/gate.ts";
 import {
+  type Opening,
   openingPage,
   opensOnSettingForDocument,
 } from "#lib/general/opens-on.svelte.ts";
@@ -23,6 +26,19 @@ import { followSystemTextSize } from "#lib/page/system-text-size.ts";
 import type { LayoutLoad } from "./$types";
 
 export const ssr = false;
+
+function pageToRestoreFor(opening: Opening): ResolvedPathname | undefined {
+  switch (opening.kind) {
+    case "stays":
+      return undefined;
+    case "opensOn":
+      return redirect(307, opening.page);
+    case "restores":
+      return opening.page;
+    default:
+      return assertNever(opening);
+  }
+}
 
 export const load: LayoutLoad = async ({ url, untrack }) => {
   const [appInfo, libraryProblem, homeArrival] = await Promise.all([
@@ -55,29 +71,18 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   ) {
     redirect(307, resolve(FIRST_LAUNCH_ROUTE));
   }
-  if (!isFirstLaunch && untrack(() => url.pathname) === resolve("/(app)")) {
-    const opening = await openingPage(
-      opensOnSettingForDocument().choice,
-      restoredRoute,
-    );
-    if (opening.kind === "opensOn") {
-      redirect(307, opening.page);
-    }
-    if (opening.kind === "restores") {
-      return {
-        appInfo,
-        libraryProblem,
-        homeArrival,
-        isFirstLaunch,
-        pageToRestore: opening.page,
-      };
-    }
-  }
+  const opensTheApp =
+    !isFirstLaunch && untrack(() => url.pathname) === resolve("/(app)");
+  const pageToRestore = opensTheApp
+    ? pageToRestoreFor(
+        await openingPage(opensOnSettingForDocument().choice, restoredRoute),
+      )
+    : undefined;
   return {
     appInfo,
     libraryProblem,
     homeArrival,
     isFirstLaunch,
-    pageToRestore: undefined,
+    pageToRestore,
   };
 };
