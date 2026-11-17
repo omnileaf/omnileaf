@@ -315,12 +315,16 @@
     return shownFrame.isConnected;
   }
 
+  function isPlacedByRowSizes(at: Measure): boolean {
+    return at.columns === 1 && rowSizes.size > 0;
+  }
+
   function isSameMeasure(one: Measure, other: Measure | undefined): boolean {
     return (
       other !== undefined &&
       one.columns === other.columns &&
-      one.rowStride === other.rowStride &&
-      one.headingStride === other.headingStride
+      one.headingStride === other.headingStride &&
+      (one.rowStride === other.rowStride || isPlacedByRowSizes(one))
     );
   }
 

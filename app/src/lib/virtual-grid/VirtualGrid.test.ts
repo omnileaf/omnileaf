@@ -151,6 +151,7 @@ interface Rows {
   readonly isHeading?: (sample: Sample) => boolean;
   readonly itemRole?: (sample: Sample) => "listitem" | "presentation";
   readonly onRevealReady?: (reveal: Reveal) => void;
+  readonly onColumns?: (columns: number) => void;
   readonly baseElement?: HTMLElement;
 }
 
@@ -860,4 +861,22 @@ test.each([
     SIZING_ROWS * row.getBoundingClientRect().height,
     0,
   );
+});
+
+test("tells its one column once while scrolling through rows of different heights", async () => {
+  const told = vi.fn<(columns: number) => void>();
+  const { frame } = await renderRows({
+    items: samples(3000),
+    cell: mixedCell,
+    onColumns: told,
+  });
+
+  for (let step = 0; step < FRAMES_SCROLLED; step += 1) {
+    window.scrollBy(0, SCROLL_STEP);
+    await nextFrame();
+  }
+  await settled();
+
+  expect(frame.getBoundingClientRect().top).toBeLessThan(0);
+  expect(told.mock.calls).toEqual([[1]]);
 });
