@@ -20,23 +20,28 @@ export interface SectionTileLook {
 const READ_MARK_CIRCLE =
   "absolute flex items-center justify-center rounded-full bg-accent text-on-accent block-native-read-mark inline-native-read-mark";
 
+const TILE_LINK =
+  "flex flex-col gap-cover-caption min-inline-none focus-visible:focus-ring";
+const COVER_BOX = "relative block aspect-cover overflow-hidden bg-chip";
+const MISSING_RUN_BOX =
+  "flex aspect-cover items-center justify-center border border-dashed border-muted text-muted";
+
 const SHADCN_TILE: SectionTileLook = {
-  link: "flex flex-col gap-cover-caption rounded-cover min-inline-none focus-visible:focus-ring",
-  cover:
-    "relative block aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
+  link: `${TILE_LINK} rounded-cover`,
+  cover: `${COVER_BOX} rounded-cover border border-cover-edge`,
   readMark: `${READ_MARK_CIRCLE} inset-e-read-mark-inset inset-bs-read-mark-inset ring-2 ring-background`,
   readCheck: { glyph: "lucide", size: 14 },
-  gap: "flex aspect-cover items-center justify-center rounded-cover border border-dashed border-muted text-muted",
+  gap: `${MISSING_RUN_BOX} rounded-cover`,
   title: "truncate text-small font-medium",
   meta: "truncate text-caption text-muted",
 };
 
 const ANDROID_TILE: SectionTileLook = {
-  ...SHADCN_TILE,
-  cover:
-    "relative block aspect-cover overflow-hidden rounded-native-cover bg-chip",
+  link: `${TILE_LINK} rounded-cover`,
+  cover: `${COVER_BOX} rounded-native-cover`,
   readMark: `${READ_MARK_CIRCLE} inset-s-xs inset-bs-xs`,
   readCheck: { glyph: "platform", size: 16 },
+  gap: `${MISSING_RUN_BOX} rounded-cover`,
   title:
     "truncate text-native-tile-title/native-tile-title font-native-tile-title tracking-native-tile-title",
   meta: "truncate text-native-tile-meta/native-tile-meta font-native-tile-meta tracking-native-tile-meta text-muted",
