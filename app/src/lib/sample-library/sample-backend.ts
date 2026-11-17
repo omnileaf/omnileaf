@@ -1397,6 +1397,8 @@ export function sampleBackend(
               isShownAnyway: missingFolder.isShownAnyway,
             },
           ],
+    seriesMissingFolder: () => null,
+    bookMissingFolder: () => null,
     libraryHiddenSeriesCount: hiddenSeries,
     showMissingLibraryFolder: (_id, isShown) => {
       missingFolder.isShownAnyway = isShown;

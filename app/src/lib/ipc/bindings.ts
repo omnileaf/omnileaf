@@ -161,6 +161,18 @@ export const commands = {
 	chapterOf: string | null,
 } | null, IpcError>(__TAURI_INVOKE("library_spelling_suggestion", { text })),
 	missingLibraryFolders: () => typedError<MissingFolder[], IpcError>(__TAURI_INVOKE("missing_library_folders")),
+	seriesMissingFolder: (id: string & { readonly __brand: "SeriesId" }) => typedError<{
+	folder: LibraryFolder,
+	problem: FolderProblem,
+	hiddenSeries: number,
+	isShownAnyway: boolean,
+} | null, IpcError>(__TAURI_INVOKE("series_missing_folder", { id })),
+	bookMissingFolder: (id: string & { readonly __brand: "BookId" }) => typedError<{
+	folder: LibraryFolder,
+	problem: FolderProblem,
+	hiddenSeries: number,
+	isShownAnyway: boolean,
+} | null, IpcError>(__TAURI_INVOKE("book_missing_folder", { id })),
 	libraryHiddenSeriesCount: () => typedError<number, IpcError>(__TAURI_INVOKE("library_hidden_series_count")),
 	showMissingLibraryFolder: (id: string & { readonly __brand: "FolderId" }, isShown: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("show_missing_library_folder", { id, isShown })),
 	relocateLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<{
