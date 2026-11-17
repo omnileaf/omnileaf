@@ -19,6 +19,9 @@ internal data class ReleaseVersion(
         require(preRelease == null || PRE_RELEASE_PATTERN.matches(preRelease)) { "not a semver pre-release: $preRelease" }
     }
 
+    val tag: String
+        get() = "$TAG_PREFIX$this"
+
     override fun compareTo(other: ReleaseVersion): Int {
         val byNumbers = compareValuesBy(this, other, { it.major }, { it.minor }, { it.patch })
         if (byNumbers != 0) return byNumbers

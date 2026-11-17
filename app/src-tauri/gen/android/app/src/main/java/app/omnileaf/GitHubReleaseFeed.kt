@@ -16,7 +16,7 @@ import java.util.concurrent.FutureTask
 
 internal const val MAX_REPLY_BYTES = 1024 * 1024
 private const val GITHUB_API = "https://api.github.com"
-private const val OMNILEAF_REPOSITORY = "omnileaf/omnileaf"
+internal const val OMNILEAF_REPOSITORY = "omnileaf/omnileaf"
 private const val RATE_LIMIT_REMAINING = "x-ratelimit-remaining"
 private const val END_OF_STREAM = -1
 private val ON_ITS_OWN_THREAD = Executor { task -> Thread(task, "release-check").apply { isDaemon = true }.start() }

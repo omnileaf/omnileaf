@@ -138,3 +138,19 @@ test("keeps the page open when Android's font size or display size changes", asy
 
   expect(handled).toEqual(expect.arrayContaining(["fontScale", "density"]));
 });
+
+test("asks for permission before posting update notifications", async () => {
+  expect(
+    await elementAttributes(
+      "uses-permission",
+      "android.permission.POST_NOTIFICATIONS",
+    ),
+  ).toBeDefined();
+});
+
+test("answers an update notice only from this app", async () => {
+  expect(await elementAttributes("receiver", ".UpdateNoticeReceiver")).toEqual({
+    name: ".UpdateNoticeReceiver",
+    exported: "false",
+  });
+});
