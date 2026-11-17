@@ -6,6 +6,8 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 /** Commands */
 export const commands = {
 	appInfo: () => __TAURI_INVOKE<AppInfo>("app_info"),
+	whatsNew: () => __TAURI_INVOKE<WhatsNew>("whats_new"),
+	whatsNewNotice: (lastSeen: LastSeen) => __TAURI_INVOKE<WhatsNewNotice>("whats_new_notice", { lastSeen }),
 	libraryProblem: () => __TAURI_INVOKE<"writtenByANewerVersion" | "couldNotOpen" | null>("library_problem"),
 	homeArrival: () => __TAURI_INVOKE<"moved" | "moveFailed" | null>("home_arrival"),
 	addLibraryFolder: (onProgress: Channel<ScanProgress>) => typedError<{
@@ -361,6 +363,13 @@ export type CategoryHeld = {
 	holding: number,
 };
 
+export type ChangeEntry = {
+	kind: ChangeKind,
+	summary: string,
+};
+
+export type ChangeKind = "breaking" | "sec" | "feat" | "perf" | "fix";
+
 export type ChapterHit = {
 	series: string & { readonly __brand: "SeriesId" },
 	seriesTitle: string,
@@ -644,6 +653,8 @@ export type LabelChanges = {
 	tagsAdded: string[],
 	tagsRemoved: string[],
 };
+
+export type LastSeen = { kind: "firstInstall" } | { kind: "notRecorded" } | { kind: "version"; version: string };
 
 export type LibraryCategory = {
 	id: string & { readonly __brand: "CategoryId" },
@@ -1200,10 +1211,22 @@ export type UpdateStatus = {
 
 export type ValueSource = "folderName" | "fileName" | "files";
 
+export type VersionNotes = {
+	version: string,
+	entries: ChangeEntry[],
+};
+
 export type WallpaperColours = {
 	light: ColourRoles,
 	dark: ColourRoles,
 };
+
+export type WhatsNew = {
+	installed: VersionNotes | null,
+	earlier: VersionNotes[],
+};
+
+export type WhatsNewNotice = { kind: "show"; notes: VersionNotes } | { kind: "record" } | { kind: "nothing" };
 
 export type WindowBackdrop = "mica" | "none";
 

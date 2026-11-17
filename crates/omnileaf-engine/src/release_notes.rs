@@ -41,11 +41,12 @@ pub enum WhatsNewNotice {
     Nothing,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LastSeen<'a> {
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum LastSeen {
     FirstInstall,
     NotRecorded,
-    Version(&'a str),
+    Version { version: String },
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -132,7 +133,7 @@ impl ReleaseNotes {
     }
 
     #[must_use]
-    pub fn notice_for(&self, installed: &str, last_seen: LastSeen<'_>) -> WhatsNewNotice {
+    pub fn notice_for(&self, installed: &str, last_seen: &LastSeen) -> WhatsNewNotice {
         let Some(released) = Version::parse(installed)
             .ok()
             .and_then(|installed| self.released_version(&installed))
@@ -167,11 +168,11 @@ impl ReleasedVersion {
         }))
     }
 
-    fn notice_after(&self, last_seen: LastSeen<'_>) -> WhatsNewNotice {
+    fn notice_after(&self, last_seen: &LastSeen) -> WhatsNewNotice {
         match last_seen {
             LastSeen::FirstInstall => WhatsNewNotice::Record,
             LastSeen::NotRecorded => self.show(),
-            LastSeen::Version(seen) => Version::parse(seen).map_or_else(
+            LastSeen::Version { version: seen } => Version::parse(seen).map_or_else(
                 |_| self.show(),
                 |seen| self.notice_after_change(VersionChange::between(&seen, &self.number)),
             ),
@@ -271,6 +272,12 @@ mod tests {
         ReleaseNotes::parse(&bundle(versions))
             .unwrap()
             .for_installed(installed)
+    }
+
+    fn seen(version: &str) -> LastSeen {
+        LastSeen::Version {
+            version: version.to_owned(),
+        }
     }
 
     fn versions_of(notes: &[VersionNotes]) -> Vec<&str> {
@@ -483,7 +490,6 @@ mod tests {
     fn decides_the_notice_from_the_last_version_seen() {
         use Expected::{Nothing, Record, Show};
         use LastSeen::{FirstInstall, NotRecorded};
-        let seen = LastSeen::Version;
         let cases: &[(&str, &[&str], LastSeen, Expected)] = &[
             ("0.2.0", &["feat"], FirstInstall, Record),
             ("0.2.0", &["fix"], FirstInstall, Record),
@@ -511,7 +517,7 @@ mod tests {
             let notes =
                 ReleaseNotes::parse(&bundle(&[("0.1.0", &["feat"]), (installed, types)])).unwrap();
 
-            let notice = notes.notice_for(installed, *last_seen);
+            let notice = notes.notice_for(installed, last_seen);
 
             let decided = match notice {
                 WhatsNewNotice::Show { notes: shown } => {
@@ -533,15 +539,11 @@ mod tests {
         let notes =
             ReleaseNotes::parse(&bundle(&[("0.1.0", &["feat"]), ("0.2.0", &["feat"])])).unwrap();
         let installs = ["0.0.0", "0.2.0-rc.1", "0.3.0", "latest"];
-        let last_seen = [
-            LastSeen::FirstInstall,
-            LastSeen::NotRecorded,
-            LastSeen::Version("0.1.0"),
-        ];
+        let last_seen = [LastSeen::FirstInstall, LastSeen::NotRecorded, seen("0.1.0")];
 
         for (installed, last_seen) in installs
             .iter()
-            .flat_map(|installed| last_seen.map(|seen| (installed, seen)))
+            .flat_map(|installed| last_seen.iter().map(move |seen| (installed, seen)))
         {
             let notice = notes.notice_for(installed, last_seen);
 
@@ -551,5 +553,24 @@ mod tests {
                 "{installed} after {last_seen:?}"
             );
         }
+    }
+
+    #[test]
+    fn reads_the_last_seen_state_the_interface_sends() {
+        let sent = [
+            r#"{"kind":"firstInstall"}"#,
+            r#"{"kind":"notRecorded"}"#,
+            r#"{"kind":"version","version":"0.2.0"}"#,
+        ];
+
+        let read: Vec<LastSeen> = sent
+            .iter()
+            .map(|json| serde_json::from_str(json).unwrap())
+            .collect();
+
+        assert_eq!(
+            read,
+            [LastSeen::FirstInstall, LastSeen::NotRecorded, seen("0.2.0")]
+        );
     }
 }

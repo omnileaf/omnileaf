@@ -89,6 +89,8 @@ function refuseUpdateCheck(): never {
 
 export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
+  whatsNew: () => ({ installed: null, earlier: [] }),
+  whatsNewNotice: () => ({ kind: "nothing" }),
   libraryProblem: () => null,
   homeArrival: () => null,
   addLibraryFolder: () => null,

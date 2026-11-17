@@ -1284,6 +1284,8 @@ export function sampleBackend(
       windowBackdrop: scenario.backdrop,
       checksForUpdates: false,
     }),
+    whatsNew: () => ({ installed: null, earlier: [] }),
+    whatsNewNotice: () => ({ kind: "nothing" }),
     libraryProblem: () => null,
     homeArrival: () => null,
     addLibraryFolder: () => {

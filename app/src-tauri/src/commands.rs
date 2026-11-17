@@ -9,14 +9,15 @@ use omnileaf_engine::{
     CoversPerRow, CreatorSeries, DetailEdits, DropMode, DropOutcome, DropSummary, FileFate,
     FileToRead, FileType, FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage,
     FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark,
-    HistoryOf, HistoryPage, HistorySeries, HomeArrival, InterfaceError, LabelChanges, Library,
-    LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing,
+    HistoryOf, HistoryPage, HistorySeries, HomeArrival, InterfaceError, LabelChanges, LastSeen,
+    Library, LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing,
     LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook,
     PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary,
-    ReadingWeek, RemovalPreview, RemovalReport, RemovalTarget, ReportCode, ResourceRouter,
-    RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
-    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SeriesShown, SeriesVolume,
-    ShownOnDisk, SpellingSuggestion, StorageUse, UtcOffset, WriterCursor, WriterPage,
+    ReadingWeek, ReleaseNotes, RemovalPreview, RemovalReport, RemovalTarget, ReportCode,
+    ResourceRouter, RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing,
+    SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
+    SeriesPage, SeriesShown, SeriesVolume, ShownOnDisk, SpellingSuggestion, StorageUse, UtcOffset,
+    WhatsNew, WhatsNewNotice, WriterCursor, WriterPage,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -67,6 +68,8 @@ macro_rules! app_commands {
     ($($development_only:ident),*) => {
         collect_commands![
             app_info,
+            whats_new,
+            whats_new_notice,
             library_problem,
             home_arrival,
             add_library_folder,
@@ -269,6 +272,30 @@ fn registered_commands() -> Commands<Wry> {
 )]
 fn app_info(core: State<'_, Core>) -> AppInfo {
     core.app_info().clone()
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn whats_new(core: State<'_, Core>, notes: State<'_, ReleaseNotes>) -> WhatsNew {
+    notes.for_installed(&core.app_info().version)
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn whats_new_notice(
+    core: State<'_, Core>,
+    notes: State<'_, ReleaseNotes>,
+    last_seen: LastSeen,
+) -> WhatsNewNotice {
+    notes.notice_for(&core.app_info().version, &last_seen)
 }
 
 #[tauri::command]
