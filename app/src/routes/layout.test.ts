@@ -1,39 +1,63 @@
-import { expect, test, vi } from "vitest";
+import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
+import { afterEach, expect, test } from "vitest";
 
-import type * as Bindings from "#lib/ipc/bindings.ts";
+import type { AppInfo, commands } from "#lib/ipc/bindings.ts";
 
 import type { LayoutLoadEvent } from "./$types";
 import { load } from "./+layout";
 
 const LIBRARY = "/";
 const FIRST_LAUNCH = "/first-launch";
+const SAVED_PAGE = "/settings/appearance";
 
-const backend = vi.hoisted(() => ({
-  isLibraryOpenable: true,
+const ANDROID_APP: AppInfo = {
+  version: "1.2.3",
+  platform: "android",
+  sourceCode: "repo.example.org/omnileaf",
+  isDevelopmentBuild: false,
+  checksForUpdates: false,
+  windowBackdrop: "none",
+};
+
+type LibraryProblem = Awaited<ReturnType<typeof commands.libraryProblem>>;
+
+interface RebuiltApp {
+  readonly libraryProblem: LibraryProblem;
+  readonly isFirstLaunchFinished: boolean;
+}
+
+const OPENABLE_LIBRARY: RebuiltApp = {
+  libraryProblem: null,
   isFirstLaunchFinished: true,
-  savedPage: "/settings/appearance",
-}));
+};
 
-vi.mock("#lib/ipc/bindings.ts", async (importOriginal) => {
-  const bindings = await importOriginal<typeof Bindings>();
-  return {
-    ...bindings,
-    commands: {
-      ...bindings.commands,
-      appInfo: () => Promise.resolve({ platform: "linux" }),
-      libraryProblem: () =>
-        Promise.resolve(backend.isLibraryOpenable ? null : "couldNotOpen"),
-      homeArrival: () => Promise.resolve(null),
-      firstLaunchFinished: () =>
-        Promise.resolve({ status: "ok", data: backend.isFirstLaunchFinished }),
-      rememberAppLockWords: () => Promise.resolve({ status: "ok", data: null }),
-    },
-  };
-});
+const COMMANDS_THE_LOAD_STARTS = new Set([
+  "remember_app_lock_words",
+  "watch_system_bold_text",
+  "watch_system_contrast",
+]);
 
-vi.mock("#lib/navigation/restored-route.ts", () => ({
-  takeRestoredRoute: () => Promise.resolve(backend.savedPage),
-}));
+function serveAndroidRebuiltOn(savedPage: string, app: RebuiltApp): void {
+  mockIPC((command) => {
+    switch (command) {
+      case "app_info":
+        return ANDROID_APP;
+      case "library_problem":
+        return app.libraryProblem;
+      case "home_arrival":
+        return null;
+      case "first_launch_finished":
+        return app.isFirstLaunchFinished;
+      case "take_restored_route":
+        return savedPage;
+      default:
+        if (COMMANDS_THE_LOAD_STARTS.has(command)) {
+          return null;
+        }
+        throw new Error(`the test serves no command \`${command}\``);
+    }
+  });
+}
 
 function openingAt(pathname: string): LayoutLoadEvent {
   return {
@@ -50,18 +74,15 @@ function openingAt(pathname: string): LayoutLoadEvent {
   };
 }
 
-test("hands the layout the page Android saved", async () => {
-  backend.isLibraryOpenable = true;
-  backend.isFirstLaunchFinished = true;
-
-  const loaded = await load(openingAt(LIBRARY));
-
-  expect(loaded).toHaveProperty("pageToRestore", backend.savedPage);
+afterEach(() => {
+  clearMocks();
 });
 
 test("drops the page Android saved when the library has a problem", async () => {
-  backend.isLibraryOpenable = false;
-  backend.isFirstLaunchFinished = true;
+  serveAndroidRebuiltOn(SAVED_PAGE, {
+    ...OPENABLE_LIBRARY,
+    libraryProblem: "couldNotOpen",
+  });
 
   const loaded = await load(openingAt(LIBRARY));
 
@@ -69,8 +90,10 @@ test("drops the page Android saved when the library has a problem", async () => 
 });
 
 test("opens first launch instead of the page Android saved", async () => {
-  backend.isLibraryOpenable = true;
-  backend.isFirstLaunchFinished = false;
+  serveAndroidRebuiltOn(SAVED_PAGE, {
+    ...OPENABLE_LIBRARY,
+    isFirstLaunchFinished: false,
+  });
 
   const loading = load(openingAt(LIBRARY));
 
@@ -78,4 +101,12 @@ test("opens first launch instead of the page Android saved", async () => {
     status: 307,
     location: FIRST_LAUNCH,
   });
+});
+
+test("hands the layout the page Android saved", async () => {
+  serveAndroidRebuiltOn(SAVED_PAGE, OPENABLE_LIBRARY);
+
+  const loaded = await load(openingAt(LIBRARY));
+
+  expect(loaded).toHaveProperty("pageToRestore", SAVED_PAGE);
 });
