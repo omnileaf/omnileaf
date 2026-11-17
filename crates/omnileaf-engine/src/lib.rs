@@ -67,6 +67,7 @@ mod reading_pace;
 mod reading_progress;
 mod reading_session;
 mod recent_log;
+mod release_notes;
 mod report_code;
 mod rescan;
 mod rescan_conditions;
@@ -171,6 +172,10 @@ pub use project_link::ProjectLink;
 pub use reading_progress::ReadingSaved;
 pub use reading_session::READING_SAVE_DELAY;
 pub use recent_log::RecentLog;
+pub use release_notes::{
+    ChangeEntry, ChangeKind, LastSeen, ReleaseNotes, ReleaseNotesError, VersionNotes, WhatsNew,
+    WhatsNewNotice,
+};
 pub use report_code::{NotAReportCode, ReportCode};
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
 pub use rescan_conditions::{
