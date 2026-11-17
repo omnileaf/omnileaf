@@ -17,7 +17,7 @@ use omnileaf_db::{
         LibraryRoot, NewRoot, PageDimensions, PageRequest, PageSize, PlaceInSeries,
         RelatedSeriesWanted, RootId, RootKind, RootLocator, TreeUri, add_root, book_bookmarks,
         book_to_read, bookmarked_roots, category_series_count, category_series_page, cover_file,
-        filter_choices as stored_filter_choices, folder_group_series_count,
+        emptied_series_place, filter_choices as stored_filter_choices, folder_group_series_count,
         folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
         mark_root_unavailable, missing_roots, page_dimensions, person_series, place_in_series,
@@ -1554,13 +1554,30 @@ impl Library {
             .await?)
     }
 
-    /// The file of a series' first book, to show in its folder; none for a series without books, or one in a folder only Android's documents provider can read.
     pub async fn series_file(&self, id: SeriesId) -> Result<Option<PathBuf>, LibraryError> {
+        if let Some(book) = self.first_book_to_read(id).await? {
+            return Ok(file_to_show(&book));
+        }
         Ok(self
-            .first_book_to_read(id)
+            .emptied_place(id)
             .await?
-            .as_ref()
-            .and_then(file_to_show))
+            .and_then(|place| path_on_disk(&place.root, &place.folder)))
+    }
+
+    async fn emptied_place(&self, id: SeriesId) -> Result<Option<LeftPlace>, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| {
+                let Some(place) = emptied_series_place(connection, id.0)? else {
+                    return Ok(None);
+                };
+                Ok(Some(LeftPlace {
+                    root: library_root(connection, place.root)?.locator,
+                    folder: place.folder,
+                }))
+            })
+            .await?)
     }
 
     async fn first_book_to_read(&self, id: SeriesId) -> Result<Option<BookToRead>, LibraryError> {
@@ -1584,7 +1601,13 @@ impl Library {
         &self,
         id: SeriesId,
     ) -> Result<Option<ShownInTree>, LibraryError> {
-        Ok(self.first_book_to_read(id).await?.and_then(shown_in_tree))
+        if let Some(book) = self.first_book_to_read(id).await? {
+            return Ok(shown_in_tree(book));
+        }
+        Ok(self
+            .emptied_place(id)
+            .await?
+            .and_then(|place| folder_in_tree(place.root, place.folder)))
     }
 
     /// The file of a book, to show in its folder; none for a book the library lacks, or one in a folder only Android's documents provider can read.
@@ -2550,25 +2573,36 @@ pub struct ShownInTree {
     pub folder: PathBuf,
 }
 
+struct LeftPlace {
+    root: RootLocator,
+    folder: PathBuf,
+}
+
 fn shown_in_tree(found: BookToRead) -> Option<ShownInTree> {
-    match found.root {
-        RootLocator::AndroidTree(tree) => Some(ShownInTree {
-            tree,
-            folder: found
-                .location
-                .parent()
-                .map(Path::to_path_buf)
-                .unwrap_or_default(),
-        }),
+    let folder = found
+        .location
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_default();
+    folder_in_tree(found.root, folder)
+}
+
+fn folder_in_tree(root: RootLocator, folder: PathBuf) -> Option<ShownInTree> {
+    match root {
+        RootLocator::AndroidTree(tree) => Some(ShownInTree { tree, folder }),
         RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => None,
     }
 }
 
 fn file_to_show(book: &BookToRead) -> Option<PathBuf> {
-    match book.root {
+    path_on_disk(&book.root, &book.location)
+}
+
+fn path_on_disk(root: &RootLocator, location: &Path) -> Option<PathBuf> {
+    match root {
         RootLocator::AndroidTree(_) => None,
         RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
-            Some(root_folder(&book.root).join(&book.location))
+            Some(root_folder(root).join(location))
         }
     }
 }

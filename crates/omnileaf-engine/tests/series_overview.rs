@@ -402,6 +402,17 @@ async fn refuses_to_edit_the_details_of_a_series_whose_books_left_its_folder() {
 }
 
 #[tokio::test]
+async fn shows_the_folder_a_series_books_left() {
+    let sample = SampleLibrary::open("show-emptied-series").await;
+    let series = sample.series_named(FIRST_SERIES).await;
+    sample.empty_by_a_rescan(FIRST_SERIES).await;
+
+    let shown = sample.library.series_file(series).await.unwrap();
+
+    assert_eq!(shown, Some(sample.series_folder(FIRST_SERIES)));
+}
+
+#[tokio::test]
 async fn marks_books_read_and_moves_what_is_up_next_past_them() {
     let sample = SampleLibrary::open("mark-books-read").await;
     let series = sample.series_named(FIRST_SERIES).await;

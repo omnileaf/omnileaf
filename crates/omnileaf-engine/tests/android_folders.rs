@@ -8,6 +8,7 @@ mod support;
 mod tree_of_folder;
 
 use std::{
+    fs,
     future::ready,
     path::{Path, PathBuf},
     sync::Arc,
@@ -23,6 +24,7 @@ use stepped_clock::SteppedClock;
 use support::{FixedClock, ScratchFolder};
 use tree_of_folder::TreeOfFolder;
 
+const EMPTIED_SERIES: &str = "Sample Series 01";
 const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
 const INTERNAL_DOCUMENTS: &str = "Internal storage › Documents";
 const SAMPLE_BOOKS: u32 = 7;
@@ -317,6 +319,40 @@ async fn finds_the_tree_and_folder_to_show_for_a_book_in_an_android_folder() {
     assert_eq!(target.tree.uri().as_str(), COMICS_TREE);
     assert!(target.folder.is_relative());
     assert_eq!(library.book_in_folder(book).await.unwrap(), None);
+}
+
+#[tokio::test]
+async fn finds_the_tree_and_folder_a_series_books_left_in_an_android_folder() {
+    let home = ScratchFolder::new("tree-show-emptied-home");
+    let tree = TreeOfFolder::new("tree-show-emptied-comics");
+    let library = open_reading(home.path(), &tree).await;
+    library.add_folder(sample_tree(), |_| {}).await.unwrap();
+    let series = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .into_iter()
+        .find(|series| series.title == EMPTIED_SERIES)
+        .unwrap();
+    let before = library
+        .series_in_android_tree(series.id)
+        .await
+        .unwrap()
+        .unwrap();
+    let series_folder = tree
+        .scratch
+        .path()
+        .join(SAMPLE_LIBRARY_NAME)
+        .join(EMPTIED_SERIES);
+    for file in fs::read_dir(series_folder).unwrap() {
+        fs::remove_file(file.unwrap().path()).unwrap();
+    }
+    rescan_linked(&library).await;
+
+    let target = library.series_in_android_tree(series.id).await.unwrap();
+
+    assert_eq!(target, Some(before));
 }
 
 #[tokio::test]
