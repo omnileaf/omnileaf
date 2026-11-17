@@ -52,8 +52,15 @@ jobs:
           seen=$(run_field attempt)
           status=$(run_field status)
           if [ "$status" != completed ]; then
-            labels_read=$(gh run view "$run" --json jobs --jq 'any(.jobs[]; .name == "changed areas" and (.status == "in_progress" or .status == "completed"))')
-            if [ "$labels_read" = false ]; then exit 0; fi
+            labels_job=$(gh run view "$run" --json jobs --jq 'if .jobs == [] then "not listed" else ([.jobs[] | select(.name == "changed areas") | .status][0] // "missing") end')
+            case "$labels_job" in
+              missing)
+                echo "::error::ci run $run has no job named \"changed areas\" to read the labels"
+                exit 1
+                ;;
+              in_progress | completed) ;;
+              *) exit 0 ;;
+            esac
             exit_if_head_moved
             exit_if_rerun_elsewhere
             gh run cancel "$run" || [ "$(run_field status)" = completed ]
