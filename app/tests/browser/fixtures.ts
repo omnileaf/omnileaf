@@ -230,6 +230,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   watchSystemContrast: () => null,
   systemAppLanguage: () => ({ offered: false, tag: null }),
   takeRestoredRoute: () => null,
+  restoredRouteShown: () => null,
   watchSystemBoldText: () => null,
   systemClock: () => "followsLanguage",
   appLock: () => {

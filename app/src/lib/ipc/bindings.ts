@@ -26,6 +26,7 @@ export const commands = {
 	watchSystemContrast: (onChange: Channel<SystemContrast>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_contrast", { onChange })),
 	systemAppLanguage: () => typedError<SystemAppLanguage, IpcError>(__TAURI_INVOKE("system_app_language")),
 	takeRestoredRoute: () => typedError<string | null, IpcError>(__TAURI_INVOKE("take_restored_route")),
+	restoredRouteShown: () => typedError<null, IpcError>(__TAURI_INVOKE("restored_route_shown")),
 	systemClock: () => typedError<SystemClock, IpcError>(__TAURI_INVOKE("system_clock")),
 	appLock: () => typedError<AppLock, IpcError>(__TAURI_INVOKE("app_lock")),
 	turnAppLockOn: (promptTitle: string) => typedError<AppLockTurning, IpcError>(__TAURI_INVOKE("turn_app_lock_on", { promptTitle })),

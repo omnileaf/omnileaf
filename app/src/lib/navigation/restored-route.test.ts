@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest";
 
-import { restoredRouteOnce } from "./restored-route";
+import { restoredRouteOnce, tellRestoredRouteShown } from "./restored-route";
 
 const SETTINGS_PAGE = "/settings/appearance";
 
@@ -69,4 +69,25 @@ test("doesn't ask anywhere but Android", async () => {
 
   expect(routes).toEqual([undefined, undefined, undefined, undefined]);
   expect(take).not.toHaveBeenCalled();
+});
+
+test("tells Android the restored page shows", async () => {
+  const tell = vi.fn(() =>
+    Promise.resolve({ status: "ok" as const, data: null }),
+  );
+
+  await tellRestoredRouteShown(tell);
+
+  expect(tell).toHaveBeenCalledTimes(1);
+});
+
+test("reports Android not hearing that the restored page shows", async () => {
+  const reported = vi.spyOn(window, "reportError").mockReturnValue(undefined);
+  const error = { code: "internal", message: "timed out" } as const;
+
+  await tellRestoredRouteShown(() =>
+    Promise.resolve({ status: "error", error }),
+  );
+
+  expect(reported).toHaveBeenCalledWith(error);
 });

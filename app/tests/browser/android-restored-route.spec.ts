@@ -4,6 +4,7 @@ import { expect, onPlatform, test, testOnlyInItsWebview } from "./fixtures.ts";
 const SAVED_PAGE = "/settings/appearance";
 
 const taken = { count: 0 };
+const shown = { count: 0 };
 const canGoBack: boolean[] = [];
 
 testOnlyInItsWebview("android");
@@ -15,6 +16,10 @@ function rebuiltScreen(changes: Partial<FakeBackend> = {}): FakeBackend {
       taken.count += 1;
       return taken.count === 1 ? SAVED_PAGE : null;
     },
+    restoredRouteShown: () => {
+      shown.count += 1;
+      return null;
+    },
     followBackHistory: (canGo) => {
       canGoBack.push(canGo);
       return null;
@@ -25,6 +30,7 @@ function rebuiltScreen(changes: Partial<FakeBackend> = {}): FakeBackend {
 
 test.beforeEach(() => {
   taken.count = 0;
+  shown.count = 0;
   canGoBack.length = 0;
 });
 
@@ -53,6 +59,15 @@ test.describe("when Android rebuilt the screen on a page", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Library" }),
     ).toBeVisible();
+  });
+
+  test("tells Android once the page shows", async ({ page }) => {
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Appearance" }),
+    ).toBeVisible();
+
+    await expect.poll(() => shown.count).toBe(1);
   });
 
   test("tells Android there is a page to go back to", async ({ page }) => {

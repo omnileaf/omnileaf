@@ -3,6 +3,7 @@
 
   import { afterNavigate, goto } from "$app/navigation";
   import { page } from "$app/state";
+  import type { ResolvedPathname } from "$app/types";
 
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
   import {
@@ -29,6 +30,7 @@
   import IconActionsSync from "#lib/icon-actions/IconActionsSync.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
   import { followHistoryForBack } from "#lib/navigation/android-back.ts";
+  import { tellRestoredRouteShown } from "#lib/navigation/restored-route.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
     languageSettingForDocument,
@@ -149,9 +151,14 @@
   followHistoryForBack(() => data.appInfo.platform);
   afterNavigate(({ type }) => {
     if (type === "enter" && data.pageToRestore !== undefined) {
-      void goto(data.pageToRestore);
+      void restorePage(data.pageToRestore);
     }
   });
+
+  async function restorePage(restored: ResolvedPathname): Promise<void> {
+    await goto(restored);
+    await tellRestoredRouteShown();
+  }
 
   function settleScreenshotMode(): void {
     screenshotMode.settle();

@@ -5,6 +5,8 @@ import { resolvedPathOf } from "./app-path";
 
 type TakeRestoredRoute = typeof commands.takeRestoredRoute;
 
+type TellRouteShown = typeof commands.restoredRouteShown;
+
 export type RestoredRoute = (
   platform: Platform,
 ) => Promise<ResolvedPathname | undefined>;
@@ -38,3 +40,12 @@ export function restoredRouteOnce(
 }
 
 export const takeRestoredRoute: RestoredRoute = restoredRouteOnce();
+
+export async function tellRestoredRouteShown(
+  tell: TellRouteShown = () => commands.restoredRouteShown(),
+): Promise<void> {
+  const told = await tell();
+  if (told.status === "error") {
+    reportError(told.error);
+  }
+}

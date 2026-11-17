@@ -1,5 +1,5 @@
 #[cfg(target_os = "android")]
-pub(crate) use android::{plugin, take};
+pub(crate) use android::{plugin, shown, take};
 
 #[cfg(any(target_os = "android", test))]
 #[derive(Debug, serde::Deserialize)]
@@ -18,10 +18,20 @@ pub(crate) async fn take(
     Ok(None)
 }
 
+#[cfg(not(target_os = "android"))]
+#[expect(
+    clippy::unused_async,
+    reason = "only Android rebuilds the page on a route it saved"
+)]
+pub(crate) async fn shown(_app: &tauri::AppHandle) -> Result<(), crate::ipc_error::IpcError> {
+    Ok(())
+}
+
 #[cfg(target_os = "android")]
 mod android {
     use std::time::Duration;
 
+    use serde::de::DeserializeOwned;
     use tauri::{
         AppHandle, Manager, Wry,
         plugin::{Builder, PluginHandle, TauriPlugin, mobile::PluginInvokeError},
@@ -34,6 +44,7 @@ mod android {
     const ANDROID_PACKAGE: &str = "app.omnileaf";
     const ANDROID_PLUGIN_CLASS: &str = "RestoredRoutePlugin";
     const TAKE: &str = "take";
+    const SHOWN: &str = "shown";
     const PLUGIN_TIMEOUT: Duration = Duration::from_secs(2);
 
     struct RestoredRoutePlugin(PluginHandle<Wry>);
@@ -42,9 +53,9 @@ mod android {
     enum RestoredRouteError {
         #[error("the restored route plugin is not registered")]
         NotRegistered,
-        #[error("take the route Android saved for the rebuilt screen")]
+        #[error("ask Android about the route it saved for the rebuilt screen")]
         Plugin(#[from] PluginInvokeError),
-        #[error("Android took too long to hand over the route it saved for the rebuilt screen")]
+        #[error("Android took too long to answer about the route it saved for the rebuilt screen")]
         TimedOut,
     }
 
@@ -59,19 +70,28 @@ mod android {
     }
 
     pub(crate) async fn take(app: &AppHandle) -> Result<Option<String>, IpcError> {
-        ask(app)
+        ask::<TakenRoute>(app, TAKE)
             .await
             .map(|taken| taken.route)
             .map_err(|error| IpcError::internal(&error))
     }
 
-    async fn ask(app: &AppHandle) -> Result<TakenRoute, RestoredRouteError> {
+    pub(crate) async fn shown(app: &AppHandle) -> Result<(), IpcError> {
+        ask::<()>(app, SHOWN)
+            .await
+            .map_err(|error| IpcError::internal(&error))
+    }
+
+    async fn ask<T: DeserializeOwned>(
+        app: &AppHandle,
+        command: &str,
+    ) -> Result<T, RestoredRouteError> {
         let plugin = app
             .try_state::<RestoredRoutePlugin>()
             .ok_or(RestoredRouteError::NotRegistered)?;
         Ok(tokio::time::timeout(
             PLUGIN_TIMEOUT,
-            plugin.0.run_mobile_plugin_async::<TakenRoute>(TAKE, ()),
+            plugin.0.run_mobile_plugin_async::<T>(command, ()),
         )
         .await
         .map_err(|_elapsed| RestoredRouteError::TimedOut)??)
