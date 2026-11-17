@@ -27,7 +27,7 @@ export const BLUE_WALLPAPER: WallpaperColours = {
   dark: {
     primary: 0xb1c8ec,
     onPrimary: 0x2a415f,
-    secondary: 0xbbc6db,
+    secondary: 0x949fb3,
     secondaryContainer: 0x313c4c,
     onSecondaryContainer: 0xb4c0d4,
     tertiaryContainer: 0xdacdff,
