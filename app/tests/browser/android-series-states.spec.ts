@@ -260,6 +260,7 @@ test.describe(
       test.use({
         backend: {
           ...filled,
+          keepsDetailEdits: () => true,
           seriesOverview: (id) => shelf().seriesOverview(id),
           seriesBooks: (id, listing, after) =>
             shelf().seriesBooks(id, listing, after),
@@ -270,7 +271,7 @@ test.describe(
         isEmptied = false;
       });
 
-      test("turns into the empty state, offering Rescan the folder", async ({
+      test("refreshes into the empty state when the library changes", async ({
         page,
       }) => {
         await openSeries(page);
@@ -293,6 +294,32 @@ test.describe(
         await expect(page.getByRole("button", { name: /^Start / })).toHaveCount(
           0,
         );
+      });
+
+      test("takes Edit details out of More once the series has no books", async ({
+        page,
+      }) => {
+        await openSeries(page);
+        const more = topAppBar(page).getByRole("button", { name: "More" });
+        const editDetails = page.getByRole("menuitem", {
+          name: "Edit details…",
+        });
+        await more.click();
+        await expect(editDetails).toBeVisible();
+        await page.keyboard.press("Escape");
+
+        isEmptied = true;
+        await emitFakeEvent(page, LIBRARY_CHANGED);
+        await expect(
+          page.getByRole("heading", {
+            level: 2,
+            name: "No books in this series",
+          }),
+        ).toBeVisible();
+        await more.click();
+
+        await expect(page.getByRole("menu")).toBeVisible();
+        await expect(editDetails).toHaveCount(0);
       });
     });
 
