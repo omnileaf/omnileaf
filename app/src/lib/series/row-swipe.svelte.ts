@@ -24,6 +24,7 @@ interface Revealed {
 }
 
 export const REVEALED_PX = 112;
+export const ACT_PAST_OPEN_PX = 48;
 
 export interface OpenAction {
   readonly revealPx: () => number;
