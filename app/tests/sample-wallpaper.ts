@@ -1,7 +1,31 @@
 import type {
   AccentColours,
+  ColourRoles,
   WallpaperColours,
 } from "../src/lib/ipc/bindings.ts";
+
+export function uniformRoles(colour: number): ColourRoles {
+  return {
+    primary: colour,
+    onPrimary: colour,
+    secondary: colour,
+    secondaryContainer: colour,
+    onSecondaryContainer: colour,
+    tertiaryContainer: colour,
+    onTertiaryContainer: colour,
+    surface: colour,
+    surfaceContainerLow: colour,
+    surfaceContainer: colour,
+    surfaceContainerHighest: colour,
+    onSurface: colour,
+    onSurfaceVariant: colour,
+    outline: colour,
+    outlineVariant: colour,
+    inverseSurface: colour,
+    inverseOnSurface: colour,
+    inversePrimary: colour,
+  };
+}
 
 export const BLUE_WALLPAPER: WallpaperColours = {
   light: {
