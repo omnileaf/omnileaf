@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import {
   offsetOf,
   type RowHeights,
+  remeasured,
   rowHeights,
   stackWindow,
 } from "./stack-window";
@@ -112,4 +113,52 @@ test("counts rows yet to come as rows", () => {
   const window = stackWindow(stack, { top: 0, bottom: 100 }, NO_EXTRA_ROWS);
 
   expect(window.size).toBe(HEADING + 4 * ROW);
+});
+
+test("places measured rows and headings at their own heights", () => {
+  const stack = remeasured(
+    stackOf(runsOf(3)),
+    new Map([
+      [0, 50],
+      [1, 56],
+      [2, 88],
+      [3, 56],
+    ]),
+  );
+
+  expect([0, 1, 2, 3, 4].map((index) => offsetOf(stack, index))).toEqual([
+    0, 50, 106, 194, 250,
+  ]);
+});
+
+test("makes room for every row at its measured height", () => {
+  const stack = remeasured(
+    stackOf(runsOf(2)),
+    new Map([
+      [1, 120],
+      [2, 40],
+    ]),
+  );
+
+  const window = stackWindow(stack, { top: 0, bottom: 100 }, NO_EXTRA_ROWS);
+
+  expect(window.size).toBe(HEADING + 160);
+});
+
+test("starts at the row the screen's top falls in among rows of different heights", () => {
+  const stack = remeasured(
+    stackOf(runsOf(4)),
+    new Map([
+      [1, 56],
+      [2, 200],
+      [3, 56],
+      [4, 200],
+    ]),
+  );
+  const top = offsetOf(stack, 3) + 10;
+
+  const window = stackWindow(stack, { top, bottom: top + 100 }, NO_EXTRA_ROWS);
+
+  expect([window.start, window.end]).toEqual([3, 5]);
+  expect(window.before).toBe(HEADING + 256);
 });

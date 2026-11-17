@@ -12,7 +12,8 @@ export interface RowLayout {
 }
 
 export interface RowHeights {
-  readonly count: number;
+  readonly layout: RowLayout;
+  readonly measured: ReadonlyMap<number, number>;
   readonly offsets: readonly number[];
 }
 
@@ -24,21 +25,40 @@ export interface StackWindow {
 }
 
 export function rowHeights(layout: RowLayout): RowHeights {
+  return measuredRowHeights(layout, new Map());
+}
+
+export function remeasured(
+  heights: RowHeights,
+  measurements: ReadonlyMap<number, number>,
+): RowHeights {
+  return measuredRowHeights(
+    heights.layout,
+    new Map([...heights.measured, ...measurements]),
+  );
+}
+
+function measuredRowHeights(
+  layout: RowLayout,
+  measured: ReadonlyMap<number, number>,
+): RowHeights {
   const { count, isHeading, strides } = layout;
   const offsets = [0];
   let offset = 0;
   for (let index = 0; index < count; index += 1) {
-    offset += isHeading[index] === true ? strides.heading : strides.row;
+    offset +=
+      measured.get(index) ??
+      (isHeading[index] === true ? strides.heading : strides.row);
     offsets.push(offset);
   }
-  return { count, offsets };
+  return { layout, measured, offsets };
 }
 
 export function offsetOf(heights: RowHeights, index: number): number {
   const offset = heights.offsets[index];
   if (offset === undefined) {
     throw new RangeError(
-      `row ${String(index)} is outside a list of ${String(heights.count)}`,
+      `row ${String(index)} is outside a list of ${String(heights.layout.count)}`,
     );
   }
   return offset;
@@ -66,7 +86,7 @@ export function stackWindow(
   seen: Seen,
   extraRows: number,
 ): StackWindow {
-  const { count } = heights;
+  const { count } = heights.layout;
   const firstSeen = firstIndexWhere(
     count,
     (index) => offsetOf(heights, index + 1) > seen.top,
