@@ -2378,6 +2378,7 @@ test("finds a chapter by its file name, naming its series, book and position", a
         position: 1,
         title: "Volume 1 · Arrival at the Harbour Gate",
         matchedIn: "fileName",
+        file: { kind: "present" },
       },
       {
         series: sampleSeriesId(11),
@@ -2386,6 +2387,7 @@ test("finds a chapter by its file name, naming its series, book and position", a
         position: 148,
         title: "Chapter 148 · The Harbour Gate at Night",
         matchedIn: "fileName",
+        file: { kind: "present" },
       },
     ],
     next: null,
@@ -2401,6 +2403,27 @@ test("reports every hit as found by file name, the sample books holding no Comic
   expect(new Set(hits.map((hit) => hit.matchedIn))).toEqual(
     new Set(["fileName"]),
   );
+});
+
+async function chapterFileStatesOfSeries(backend: FakeBackend, number: number) {
+  const hits = await everyChapterHit(backend, "volume");
+  return new Set(
+    hits
+      .filter((hit) => hit.series === sampleSeriesId(number))
+      .map((hit) => hit.file.kind),
+  );
+}
+
+test("tells the chapters found in a series of a missing folder apart from those of a connected series", async () => {
+  const { backend } = backendFor("?missing=folder");
+  const [missing] = await backend.missingLibraryFolders();
+
+  await backend.showMissingLibraryFolder(missing?.folder.id ?? "", true);
+
+  expect([
+    await chapterFileStatesOfSeries(backend, 3),
+    await chapterFileStatesOfSeries(backend, 4),
+  ]).toEqual([new Set(["notConnected"]), new Set(["present", "missing"])]);
 });
 
 test("finds a chapter whatever the letter case and order of the words typed", async () => {

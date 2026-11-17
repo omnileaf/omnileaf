@@ -2,7 +2,7 @@ use omnileaf_db::catalog::{self, Cursor, Page};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
-use crate::{BookId, SeriesId, ipc_brand::branded_string};
+use crate::{BookFileState, BookId, SeriesId, ipc_brand::branded_string};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -20,6 +20,7 @@ pub struct ChapterHit {
     pub position: u32,
     pub title: String,
     pub matched_in: ChapterTitleSource,
+    pub file: BookFileState,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -52,6 +53,7 @@ impl From<catalog::ChapterHit> for ChapterHit {
             position: hit.position,
             title: hit.title,
             matched_in: hit.matched_in.into(),
+            file: BookFileState::of_connection(hit.is_connected),
         }
     }
 }
@@ -98,38 +100,61 @@ impl Type for ChapterCursor {
 mod tests {
     use super::*;
 
-    #[test]
-    fn hands_a_hit_over_with_its_ids_position_and_the_title_it_matched_in() {
-        let series = omnileaf_sync_proto::SeriesId::local("Sample Series 01").unwrap();
-        let book = omnileaf_sync_proto::BookId::local(
+    fn stored_series() -> omnileaf_sync_proto::SeriesId {
+        omnileaf_sync_proto::SeriesId::local("Sample Series 01").unwrap()
+    }
+
+    fn stored_book() -> omnileaf_sync_proto::BookId {
+        omnileaf_sync_proto::BookId::local(
             &omnileaf_sync_proto::Fingerprint::pmf1([omnileaf_sync_proto::ImageEntry {
                 crc32: 3,
                 size: 1,
             }])
             .unwrap(),
-        );
-        let stored = catalog::ChapterHit {
-            series,
+        )
+    }
+
+    fn stored_hit() -> catalog::ChapterHit {
+        catalog::ChapterHit {
+            series: stored_series(),
             series_title: "Sample Series 01".to_owned(),
-            book,
+            book: stored_book(),
             position: 3,
             title: "Chapter 3".to_owned(),
             matched_in: catalog::ChapterTitleSource::ComicInfo,
             is_connected: true,
-        };
+        }
+    }
+
+    #[test]
+    fn hands_a_hit_over_with_its_ids_position_and_the_title_it_matched_in() {
+        let stored = stored_hit();
 
         let hit = ChapterHit::from(stored);
 
         assert_eq!(
             hit,
             ChapterHit {
-                series: SeriesId(series),
+                series: SeriesId(stored_series()),
                 series_title: "Sample Series 01".to_owned(),
-                book: BookId(book),
+                book: BookId(stored_book()),
                 position: 3,
                 title: "Chapter 3".to_owned(),
                 matched_in: ChapterTitleSource::ComicInfo,
+                file: BookFileState::Present,
             }
         );
+    }
+
+    #[test]
+    fn hands_a_hit_whose_book_is_only_in_a_missing_folder_over_as_not_connected() {
+        let stored = catalog::ChapterHit {
+            is_connected: false,
+            ..stored_hit()
+        };
+
+        let json = serde_json::to_value(ChapterHit::from(stored)).unwrap();
+
+        assert_eq!(json["file"], serde_json::json!({ "kind": "notConnected" }));
     }
 }

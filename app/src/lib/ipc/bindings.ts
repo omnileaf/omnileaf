@@ -347,6 +347,7 @@ export type ChapterHit = {
 	position: number,
 	title: string,
 	matchedIn: ChapterTitleSource,
+	file: BookFileState,
 };
 
 export type ChapterHitPage = {
