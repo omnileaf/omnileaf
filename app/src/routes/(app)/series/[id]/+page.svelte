@@ -57,6 +57,7 @@
   import type { EditedSeries } from "#lib/series/edited-series.ts";
   import SeriesBand from "#lib/series/SeriesBand.svelte";
   import SeriesBar from "#lib/series/SeriesBar.svelte";
+  import { watchTitleUnderBar } from "#lib/series/title-under-bar.ts";
   import SeriesTitleBar from "#lib/series/SeriesTitleBar.svelte";
   import {
     standInBook,
@@ -162,27 +163,6 @@
   let pickedCount: number | undefined = $state();
   let isTitleUnderBar = $state(false);
 
-  function watchTitleUnderBar(barBottom: number): () => void {
-    const title = document.querySelector("main h1");
-    if (title === null) {
-      return () => undefined;
-    }
-    const watching = new IntersectionObserver(
-      ([seen]) => {
-        if (seen !== undefined) {
-          isTitleUnderBar =
-            !seen.isIntersecting &&
-            seen.boundingClientRect.bottom <= (seen.rootBounds?.top ?? 0);
-        }
-      },
-      { rootMargin: `${String(-barBottom)}px 0px 0px 0px` },
-    );
-    watching.observe(title);
-    return () => {
-      watching.disconnect();
-    };
-  }
-
   async function rescan(): Promise<void> {
     await rescanEveryFolder();
     readAgain();
@@ -283,7 +263,9 @@
 
   $effect(() => {
     if (overview !== undefined && barHeight > 0 && !hasToolbar) {
-      return watchTitleUnderBar(barHeight);
+      return watchTitleUnderBar(barHeight, (isUnder) => {
+        isTitleUnderBar = isUnder;
+      });
     }
     return undefined;
   });
