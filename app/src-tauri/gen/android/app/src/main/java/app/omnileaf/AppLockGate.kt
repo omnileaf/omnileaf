@@ -24,7 +24,7 @@ internal class AppLockGate(
     /** System UI cancels a screen lock prompt that opens before the app's task is back on top, which can come after onStart. */
     private val asksOnceFocused =
         ViewTreeObserver.OnWindowFocusChangeListener { hasFocus ->
-            if (hasFocus && prompt.takeFocus()) ask()
+            if (hasFocus && prompt.focusArrived()) ask()
         }
 
     val isCovering: Boolean
@@ -53,7 +53,6 @@ internal class AppLockGate(
             showCover()
             prompt.waitForFocus()
         } else {
-            prompt.stopWaitingForFocus()
             hideCover()
         }
     }

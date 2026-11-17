@@ -20,11 +20,7 @@ internal class LockPrompt {
         isWaitingForFocus = !isOpen
     }
 
-    fun stopWaitingForFocus() {
-        isWaitingForFocus = false
-    }
-
-    fun takeFocus(): Boolean {
+    fun focusArrived(): Boolean {
         val wasWaiting = isWaitingForFocus
         isWaitingForFocus = false
         return wasWaiting

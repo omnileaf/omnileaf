@@ -42,30 +42,21 @@ class LockPromptTest {
     fun `asks once focus arrives after waiting for it`() {
         prompt.waitForFocus()
 
-        assertEquals(true, prompt.takeFocus())
+        assertEquals(true, prompt.focusArrived())
     }
 
     @Test
     fun `asks only once for each wait`() {
         prompt.waitForFocus()
 
-        val asks = listOf(prompt.takeFocus(), prompt.takeFocus())
+        val asks = listOf(prompt.focusArrived(), prompt.focusArrived())
 
         assertEquals(listOf(true, false), asks)
     }
 
     @Test
     fun `does not ask on focus it was not waiting for`() {
-        assertEquals(false, prompt.takeFocus())
-    }
-
-    @Test
-    fun `does not ask once it stops waiting`() {
-        prompt.waitForFocus()
-
-        prompt.stopWaitingForFocus()
-
-        assertEquals(false, prompt.takeFocus())
+        assertEquals(false, prompt.focusArrived())
     }
 
     @Test
@@ -74,6 +65,6 @@ class LockPromptTest {
 
         prompt.waitForFocus()
 
-        assertEquals(false, prompt.takeFocus())
+        assertEquals(false, prompt.focusArrived())
     }
 }
