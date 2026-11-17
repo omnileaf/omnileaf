@@ -7,13 +7,6 @@ struct TakenRoute {
     route: Option<String>,
 }
 
-#[cfg(any(target_os = "android", test))]
-impl TakenRoute {
-    fn into_route(self) -> Option<String> {
-        self.route
-    }
-}
-
 #[cfg(not(target_os = "android"))]
 #[expect(
     clippy::unused_async,
@@ -68,7 +61,7 @@ mod android {
     pub(crate) async fn take(app: &AppHandle) -> Result<Option<String>, IpcError> {
         ask(app)
             .await
-            .map(TakenRoute::into_route)
+            .map(|taken| taken.route)
             .map_err(|error| IpcError::internal(&error))
     }
 
@@ -95,7 +88,7 @@ mod tests {
 
         let taken: TakenRoute = serde_json::from_value(sent).unwrap();
 
-        assert_eq!(taken.into_route().as_deref(), Some("/series/42?tab=books"));
+        assert_eq!(taken.route.as_deref(), Some("/series/42?tab=books"));
     }
 
     #[test]
@@ -104,6 +97,6 @@ mod tests {
 
         let taken: TakenRoute = serde_json::from_value(sent).unwrap();
 
-        assert_eq!(taken.into_route(), None);
+        assert_eq!(taken.route, None);
     }
 }
