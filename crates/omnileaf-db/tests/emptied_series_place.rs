@@ -29,6 +29,7 @@ const MODIFIED_AT_MS: i64 = 1_770_000_000_000;
 const COMICS: &str = "/media/Comics";
 const MANGA: &str = "/media/Manga";
 const EMPTIED: &str = "Sample Series 01";
+const OTHER: &str = "Sample Series 02";
 
 struct Library {
     store: Store,
@@ -233,6 +234,63 @@ async fn forgets_the_place_when_its_folder_leaves_the_library() {
         .await;
 
     library.remove_root(library.comics).await;
+
+    assert_eq!(library.emptied_place(EMPTIED).await, None);
+}
+
+#[tokio::test]
+async fn forgets_the_place_when_a_book_is_filed_into_the_series_again() {
+    let library = Library::open("emptied-place-refilled").await;
+    library
+        .record(library.comics, EMPTIED, "Sample Series 01/v01.cbz", 1)
+        .await;
+    library
+        .rescan_without(library.comics, &["Sample Series 01/v01.cbz"])
+        .await;
+
+    library
+        .record(library.comics, EMPTIED, "Sample Series 01/v02.cbz", 2)
+        .await;
+
+    assert_eq!(library.emptied_place(EMPTIED).await, None);
+}
+
+#[tokio::test]
+async fn forgets_the_place_when_a_book_with_a_file_moves_into_the_series() {
+    let library = Library::open("emptied-place-book-moved-in").await;
+    library
+        .record(library.comics, EMPTIED, "Sample Series 01/v01.cbz", 1)
+        .await;
+    library
+        .record(library.manga, OTHER, "Loose/v02.cbz", 2)
+        .await;
+    library
+        .rescan_without(library.comics, &["Sample Series 01/v01.cbz"])
+        .await;
+
+    library
+        .record(library.manga, EMPTIED, "Loose/v02.cbz", 2)
+        .await;
+
+    assert_eq!(library.emptied_place(EMPTIED).await, None);
+}
+
+#[tokio::test]
+async fn forgets_the_place_when_a_known_file_now_holds_a_book_of_the_series() {
+    let library = Library::open("emptied-place-file-changed").await;
+    library
+        .record(library.comics, EMPTIED, "Sample Series 01/v01.cbz", 1)
+        .await;
+    library
+        .record(library.manga, OTHER, "Loose/v02.cbz", 2)
+        .await;
+    library
+        .rescan_without(library.comics, &["Sample Series 01/v01.cbz"])
+        .await;
+
+    library
+        .record(library.manga, EMPTIED, "Loose/v02.cbz", 3)
+        .await;
 
     assert_eq!(library.emptied_place(EMPTIED).await, None);
 }
