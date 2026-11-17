@@ -6,7 +6,7 @@ import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 
 private const val LEAST_HOURS_BETWEEN_CHECKS = 22L
-private val LEAST_TIME_BETWEEN_CHECKS: Duration = Duration.ofHours(LEAST_HOURS_BETWEEN_CHECKS)
+internal val LEAST_TIME_BETWEEN_CHECKS: Duration = Duration.ofHours(LEAST_HOURS_BETWEEN_CHECKS)
 private val ONE_CHECK_AT_A_TIME: Lock = ReentrantLock()
 
 internal sealed interface DailyRun {
