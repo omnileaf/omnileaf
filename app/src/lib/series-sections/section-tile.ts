@@ -2,24 +2,44 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { phoneOf } from "#lib/page/platform.ts";
 
+export interface ReadCheck {
+  readonly glyph: "lucide" | "platform";
+  readonly size: number;
+}
+
 export interface SectionTileLook {
   readonly link: string;
   readonly cover: string;
   readonly readMark: string;
+  readonly readCheck: ReadCheck;
   readonly gap: string;
   readonly title: string;
   readonly meta: string;
 }
 
+const READ_MARK_CIRCLE =
+  "absolute flex items-center justify-center rounded-full bg-accent text-on-accent block-native-read-mark inline-native-read-mark";
+
 const SHADCN_TILE: SectionTileLook = {
   link: "flex flex-col gap-cover-caption rounded-cover min-inline-none focus-visible:focus-ring",
   cover:
     "relative block aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
-  readMark:
-    "absolute inset-e-read-mark-inset inset-bs-read-mark-inset flex items-center justify-center rounded-full bg-accent text-on-accent ring-2 ring-background block-native-read-mark inline-native-read-mark",
+  readMark: `${READ_MARK_CIRCLE} inset-e-read-mark-inset inset-bs-read-mark-inset ring-2 ring-background`,
+  readCheck: { glyph: "lucide", size: 14 },
   gap: "flex aspect-cover items-center justify-center rounded-cover border border-dashed border-muted text-muted",
   title: "truncate text-small font-medium",
   meta: "truncate text-caption text-muted",
+};
+
+const ANDROID_TILE: SectionTileLook = {
+  ...SHADCN_TILE,
+  cover:
+    "relative block aspect-cover overflow-hidden rounded-native-cover bg-chip",
+  readMark: `${READ_MARK_CIRCLE} inset-s-xs inset-bs-xs`,
+  readCheck: { glyph: "platform", size: 16 },
+  title:
+    "truncate text-native-tile-title/native-tile-title font-native-tile-title tracking-native-tile-title",
+  meta: "truncate text-native-tile-meta/native-tile-meta font-native-tile-meta tracking-native-tile-meta text-muted",
 };
 
 const SECTION_TILE_LOOKS = {
@@ -27,7 +47,7 @@ const SECTION_TILE_LOOKS = {
   macos: SHADCN_TILE,
   windows: SHADCN_TILE,
   ios: SHADCN_TILE,
-  android: SHADCN_TILE,
+  android: ANDROID_TILE,
 } satisfies Record<Platform, SectionTileLook>;
 
 export function sectionTileLook(platform: Platform): SectionTileLook {

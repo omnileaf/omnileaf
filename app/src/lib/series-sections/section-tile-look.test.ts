@@ -29,6 +29,8 @@ const READ_MARK_SIZE = 24;
 const READ_MARK_INSET = "6px";
 const ANDROID_COVERS_ACROSS = "8px";
 const ANDROID_COVERS_DOWN = "16px";
+const ANDROID_READ_MARK_INSET = "4px";
+const ANDROID_READ_CHECK_SIZE = 16;
 
 function volume(
   first: number,
@@ -94,6 +96,7 @@ async function drawTiles(
 
 async function drawAndroidPhoneTiles(): Promise<{
   readonly list: HTMLElement;
+  readonly link: HTMLElement;
 }> {
   await page.viewport(ANDROID_PHONE_WINDOW.width, ANDROID_PHONE_WINDOW.height);
   followCorePlatform("android");
@@ -104,6 +107,9 @@ async function drawAndroidPhoneTiles(): Promise<{
   });
   return {
     list: page.getByRole("list", { name: "Volumes" }).element() as HTMLElement,
+    link: page
+      .getByRole("link", { name: "Volume 4 Read" })
+      .element() as HTMLElement,
   };
 }
 
@@ -288,4 +294,79 @@ test("spaces an Android phone's covers 8px across and 16px down", async () => {
     ANDROID_COVERS_ACROSS,
     ANDROID_COVERS_DOWN,
   ]);
+});
+
+test("names an Android phone's volume in Material type under a flat cover", async () => {
+  const { link } = await drawAndroidPhoneTiles();
+  const cover = styleOf(link.firstElementChild);
+  const [title, meta] = Array.from(
+    link.lastElementChild?.children ?? [],
+    (part) => getComputedStyle(part),
+  );
+
+  expect({
+    corner: cover.borderTopLeftRadius,
+    edge: cover.borderTopWidth,
+    title: [
+      title?.fontSize,
+      title?.lineHeight,
+      title?.fontWeight,
+      title?.letterSpacing,
+    ],
+    meta: [
+      meta?.fontSize,
+      meta?.lineHeight,
+      meta?.fontWeight,
+      meta?.letterSpacing,
+      meta?.color,
+    ],
+  }).toEqual({
+    corner: "4px",
+    edge: "0px",
+    title: ["14px", "20px", "400", "0.25px"],
+    meta: [
+      "12px",
+      "16px",
+      "400",
+      "0.4px",
+      resolvedColour("--secondary-text", "color"),
+    ],
+  });
+});
+
+test("marks a finished volume on an Android phone with an accent circle at its cover's top start", async () => {
+  const { link } = await drawAndroidPhoneTiles();
+  const mark = link.firstElementChild?.querySelector("[data-read-mark]");
+  const style = styleOf(mark ?? null);
+
+  expect({
+    size: [
+      mark?.getBoundingClientRect().width,
+      mark?.getBoundingClientRect().height,
+    ],
+    isRound: Number.parseFloat(style.borderTopLeftRadius) >= READ_MARK_SIZE / 2,
+    fill: style.backgroundColor,
+    ink: style.color,
+    top: style.insetBlockStart,
+    start: style.insetInlineStart,
+    ring: style.boxShadow,
+  }).toEqual({
+    size: [READ_MARK_SIZE, READ_MARK_SIZE],
+    isRound: true,
+    fill: resolvedColour("--primary", "backgroundColor"),
+    ink: resolvedColour("--primary-foreground", "color"),
+    top: ANDROID_READ_MARK_INSET,
+    start: ANDROID_READ_MARK_INSET,
+    ring: "none",
+  });
+});
+
+test("draws the shared check icon inside an Android phone's read mark", async () => {
+  const { link } = await drawAndroidPhoneTiles();
+  const check = link.querySelector('[data-read-mark] [data-icon="check"]');
+
+  expect([
+    check?.getBoundingClientRect().width,
+    check?.getBoundingClientRect().height,
+  ]).toEqual([ANDROID_READ_CHECK_SIZE, ANDROID_READ_CHECK_SIZE]);
 });
