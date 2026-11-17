@@ -21,6 +21,7 @@ function roles(colour: number): ColourRoles {
   return {
     primary: colour,
     onPrimary: colour,
+    secondary: colour,
     secondaryContainer: colour,
     onSecondaryContainer: colour,
     tertiaryContainer: colour,

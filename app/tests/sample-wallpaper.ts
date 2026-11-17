@@ -7,6 +7,7 @@ export const BLUE_WALLPAPER: WallpaperColours = {
   light: {
     primary: 0x416189,
     onPrimary: 0xf8f8ff,
+    secondary: 0x535e70,
     secondaryContainer: 0xd8e3f8,
     onSecondaryContainer: 0x475263,
     tertiaryContainer: 0xdacdff,
@@ -26,6 +27,7 @@ export const BLUE_WALLPAPER: WallpaperColours = {
   dark: {
     primary: 0xb1c8ec,
     onPrimary: 0x2a415f,
+    secondary: 0xbbc6db,
     secondaryContainer: 0x313c4c,
     onSecondaryContainer: 0xb4c0d4,
     tertiaryContainer: 0xdacdff,
@@ -51,6 +53,7 @@ export const MUTED_WALLPAPER_BY_CONTRAST: Readonly<
     light: {
       primary: 0x615c66,
       onPrimary: 0xfdf5ff,
+      secondary: 0x615e62,
       secondaryContainer: 0xe6e1e6,
       onSecondaryContainer: 0x545155,
       tertiaryContainer: 0xd5d1f2,
@@ -70,6 +73,7 @@ export const MUTED_WALLPAPER_BY_CONTRAST: Readonly<
     dark: {
       primary: 0xcbc4cf,
       onPrimary: 0x433e47,
+      secondary: 0xa19ca1,
       secondaryContainer: 0x3d3a3e,
       onSecondaryContainer: 0xc3bec2,
       tertiaryContainer: 0xd5d1f2,
@@ -91,6 +95,7 @@ export const MUTED_WALLPAPER_BY_CONTRAST: Readonly<
     light: {
       primary: 0x45414a,
       onPrimary: 0xdfd7e2,
+      secondary: 0x444246,
       secondaryContainer: 0x777378,
       onSecondaryContainer: 0xffffff,
       tertiaryContainer: 0x74718e,
@@ -110,6 +115,7 @@ export const MUTED_WALLPAPER_BY_CONTRAST: Readonly<
     dark: {
       primary: 0xcbc4cf,
       onPrimary: 0x38353d,
+      secondary: 0xbcb7bc,
       secondaryContainer: 0x777378,
       onSecondaryContainer: 0xffffff,
       tertiaryContainer: 0xd5d1f2,
@@ -131,6 +137,7 @@ export const MUTED_WALLPAPER_BY_CONTRAST: Readonly<
     light: {
       primary: 0x26222b,
       onPrimary: 0xdfd7e3,
+      secondary: 0x252327,
       secondaryContainer: 0x545155,
       onSecondaryContainer: 0xffffff,
       tertiaryContainer: 0x514f6a,
@@ -150,6 +157,7 @@ export const MUTED_WALLPAPER_BY_CONTRAST: Readonly<
     dark: {
       primary: 0xebe3ee,
       onPrimary: 0x2e2a33,
+      secondary: 0xe9e4e9,
       secondaryContainer: 0xa7a2a7,
       onSecondaryContainer: 0x000000,
       tertiaryContainer: 0xd5d1f2,

@@ -363,6 +363,7 @@ export type ChosenHomeFolder = {
 export type ColourRoles = {
 	primary: number,
 	onPrimary: number,
+	secondary: number,
 	secondaryContainer: number,
 	onSecondaryContainer: number,
 	tertiaryContainer: number,

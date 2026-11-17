@@ -18,6 +18,7 @@ const root = document.documentElement;
 const ELSEWHERE: readonly Platform[] = ["ios", "linux", "macos"];
 const LIGHT_PRIMARY = "--android-wallpaper-light-primary";
 const DARK_CONTAINER_LOW = "--android-wallpaper-dark-surface-container-low";
+const LIGHT_SECONDARY = "--android-wallpaper-light-secondary";
 const LIGHT_ACCENT = "--windows-accent-light";
 const DARK_ACCENT = "--windows-accent-dark";
 
@@ -25,6 +26,7 @@ function roles(colour: number): ColourRoles {
   return {
     primary: colour,
     onPrimary: colour,
+    secondary: colour,
     secondaryContainer: colour,
     onSecondaryContainer: colour,
     tertiaryContainer: colour,
@@ -44,7 +46,7 @@ function roles(colour: number): ColourRoles {
 }
 
 const BLUE_WALLPAPER: WallpaperColours = {
-  light: { ...roles(0xf9f9fe), primary: 0x416189 },
+  light: { ...roles(0xf9f9fe), primary: 0x416189, secondary: 0x535e70 },
   dark: { ...roles(0x0c0e12), surfaceContainerLow: 0x111418 },
 };
 
@@ -83,10 +85,11 @@ test("draws Android's wallpaper colours in light and dark once they are read", a
   await followWallpaperColours("android", "wallpaper", reading(BLUE_WALLPAPER));
 
   expect(root.dataset.colours).toBe("wallpaper");
-  expect([shown(LIGHT_PRIMARY), shown(DARK_CONTAINER_LOW)]).toEqual([
-    "#416189",
-    "#111418",
-  ]);
+  expect([
+    shown(LIGHT_PRIMARY),
+    shown(LIGHT_SECONDARY),
+    shown(DARK_CONTAINER_LOW),
+  ]).toEqual(["#416189", "#535e70", "#111418"]);
 });
 
 test("pads a dark colour to six digits", async () => {
