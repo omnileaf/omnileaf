@@ -40,6 +40,15 @@ internal class LockCover(
         shown = cover
     }
 
+    fun redraw(words: LockWords) {
+        val cover = shown ?: return
+        decor.removeView(cover.root)
+        val redrawn = coverWith(words, cover.behind)
+        decor.addView(redrawn.root, FrameLayout.LayoutParams(MATCH, MATCH))
+        redrawn.root.requestFocus()
+        shown = redrawn
+    }
+
     fun hide() {
         val cover = shown ?: return
         decor.removeView(cover.root)

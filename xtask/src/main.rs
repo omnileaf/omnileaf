@@ -13,10 +13,12 @@ mod dev;
 mod device_choice;
 mod devices;
 mod doctor;
+mod files;
 mod fixtures;
 mod fresh;
 mod fuzz_seeds;
 mod icons;
+mod json;
 mod licence_catalogue;
 mod licences;
 mod lint_comments;
@@ -91,7 +93,7 @@ impl Narrowing {
 
 #[derive(Subcommand)]
 enum Fragments {
-    /// Check that every fragment in `.changes` is well formed.
+    /// Check every fragment in `.changes`, every archive in `.changes/released` and that CHANGELOG.md holds each archive's section.
     Check,
     /// Fail when the change since a commit touches what people see and adds no fragment.
     Require {
@@ -102,15 +104,23 @@ enum Fragments {
         #[arg(long)]
         skip: bool,
     },
-    /// Print the release notes the fragments make.
+    /// Print the release notes under a one-line headline, reading a full release from its archive in `.changes/released` and a pre-release or the unreleased notes from the fragments.
     Notes {
-        /// The version the notes are for; `unreleased` when left out.
+        /// The version the notes are for, such as 1.2.0 or 1.2.0-rc.1; the unreleased notes when left out.
         #[arg(long)]
         version: Option<String>,
         /// What to print: markdown for the release page, json for the app's What's new notice.
         #[arg(long, value_enum, default_value = "markdown")]
         format: changelog::Format,
     },
+    /// Release a version: archive its notes in `.changes/released`, add them to the top of CHANGELOG.md and remove the fragments it used.
+    Release {
+        /// The full release version, such as 1.2.0; a pre-release is refused.
+        #[arg(long)]
+        version: String,
+    },
+    /// Rewrite each released version's section of CHANGELOG.md from its archive in `.changes/released`, with the headings and type order in `.changes/config.json`.
+    Changelog,
 }
 
 #[derive(Subcommand)]
@@ -505,19 +515,20 @@ fn work_with_fragments(fragments: Fragments) -> anyhow::Result<()> {
     let root = workspace::root();
     match fragments {
         Fragments::Check => {
-            let violations = changelog::check(&changelog::read_folder(&root)?);
-            report(&violations, "changelog fragment")
+            let violations = changelog::check(&root)?;
+            report(&violations, "changelog")
         }
         Fragments::Require { base, skip } => {
             let changed = changelog::changed_since_merge_base(&root, &base)?;
             changelog::require(&changed, skip).map_err(|missing| anyhow::anyhow!("{missing}"))
         }
         Fragments::Notes { version, format } => {
-            let notes =
-                changelog::notes(&changelog::read_folder(&root)?, version.as_deref(), format)?;
+            let notes = changelog::notes(&root, version.as_deref(), format)?;
             print_text(&notes);
             Ok(())
         }
+        Fragments::Release { version } => changelog::release(&root, &version),
+        Fragments::Changelog => changelog::rewrite(&root),
     }
 }
 
@@ -661,6 +672,22 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn needs_a_version_to_release() {
+        let release =
+            Cli::try_parse_from(["xtask", "changes", "release", "--version", "1.2.0"]).unwrap();
+        let no_version = Cli::try_parse_from(["xtask", "changes", "release"]);
+
+        assert!(matches!(
+            release.command,
+            Command::Changes {
+                fragments: Some(Fragments::Release { version }),
+                ..
+            } if version == "1.2.0"
+        ));
+        assert!(no_version.is_err());
     }
 
     #[test]

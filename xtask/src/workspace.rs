@@ -6,7 +6,7 @@ use std::{
     process::Command,
 };
 
-use crate::policy::Policy;
+use crate::{files, policy::Policy};
 
 const POLICY_LISTS: &str = "policy";
 const BUILT_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
@@ -61,16 +61,15 @@ pub(crate) fn policy(root: &Path) -> io::Result<Policy> {
 }
 
 fn read_list(path: &Path) -> io::Result<Vec<String>> {
-    match fs::read_to_string(path) {
-        Ok(content) => Ok(content
-            .lines()
-            .map(str::trim)
-            .filter(|line| !line.is_empty())
-            .map(str::to_owned)
-            .collect()),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Vec::new()),
-        Err(error) => Err(error),
-    }
+    let Some(content) = files::read_if_present(path)? else {
+        return Ok(Vec::new());
+    };
+    Ok(content
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(str::to_owned)
+        .collect())
 }
 
 #[cfg(test)]
@@ -91,5 +90,19 @@ mod tests {
         let root = root_from(None);
 
         assert_eq!(root, Path::new(BUILT_MANIFEST_DIR).join(".."));
+    }
+
+    #[test]
+    fn reads_the_policy_lines_without_blanks_and_a_missing_list_as_empty() {
+        let scratch = omnileaf_testkit::ScratchFolder::new("policy");
+        scratch.write(
+            &format!("{POLICY_LISTS}/allowed-hosts.txt"),
+            b"  example.com  \n\nomnileaf.app\n",
+        );
+
+        let policy = policy(scratch.path()).unwrap();
+
+        assert_eq!(policy.allowed_hosts, ["example.com", "omnileaf.app"]);
+        assert_eq!(policy.forbidden_phrases, Vec::<String>::new());
     }
 }

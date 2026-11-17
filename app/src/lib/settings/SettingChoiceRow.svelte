@@ -3,7 +3,7 @@
 
   import { FLUSH_BLEED } from "./android-flush-look.ts";
   import ChoiceDialog, { type Choice } from "./ChoiceDialog.svelte";
-  import { DISABLED_ROW, TINTED } from "./setting-row-look.ts";
+  import { TINTED } from "./setting-row-look.ts";
 
   let {
     title,
@@ -14,7 +14,6 @@
     chosen,
     dialogTitle = title,
     bleed = FLUSH_BLEED,
-    disabled = false,
     onChoose,
     ...rest
   }: {
@@ -26,7 +25,6 @@
     chosen: Value;
     dialogTitle?: string;
     bleed?: string;
-    disabled?: boolean;
     onChoose: (value: Value) => void;
   } & DataAttributes = $props();
 
@@ -42,19 +40,16 @@
   {...rest}
   type="button"
   aria-haspopup="dialog"
-  {disabled}
   class={[
     bleed,
     "flex items-center gap-lg py-sm ps-lg pe-xl text-start transition-control min-block-native-row-two",
-    !disabled && TINTED,
+    TINTED,
   ]}
   onclick={() => {
     isOpen = true;
   }}
 >
-  <span
-    class={["flex flex-1 flex-col min-inline-none", disabled && DISABLED_ROW]}
-  >
+  <span class="flex flex-1 flex-col min-inline-none">
     <span class="text-body tracking-native-row-title">{title}</span>
     <span
       lang={valueLang}

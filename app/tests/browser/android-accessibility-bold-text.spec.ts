@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
+import type { FakeChannel } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
 const BOLD_REGULAR_WEIGHT = "700";
@@ -7,11 +8,22 @@ const PLAIN_REGULAR_WEIGHT = "400";
 const BOLD_ROW_TITLE_WEIGHT = "700";
 const PLAIN_ROW_TITLE_WEIGHT = "400";
 
-let isSystemBold = false;
+let systemBoldTexts: FakeChannel<boolean> | undefined;
 
 test.use({
-  backend: { ...DEFAULT_BACKEND, systemBoldText: () => isSystemBold },
+  backend: {
+    ...DEFAULT_BACKEND,
+    watchSystemBoldText: (channel) => {
+      systemBoldTexts = channel;
+      return null;
+    },
+  },
 });
+
+async function reportSystemBoldText(isBold: boolean): Promise<void> {
+  await expect.poll(() => systemBoldTexts).toBeDefined();
+  await systemBoldTexts?.send(isBold);
+}
 
 async function openAccessibility(page: Page): Promise<void> {
   await page.goto("/settings/accessibility");
@@ -39,15 +51,28 @@ function rowTitleWeight(page: Page): Promise<string> {
 test.describe("Bold text on an Android phone", { tag: "@native" }, () => {
   test.beforeEach(({ platform }) => {
     test.skip(platform !== "android", "Android's settings");
-    isSystemBold = false;
+    systemBoldTexts = undefined;
   });
 
   test("starts from the phone's Bold text being on", async ({ page }) => {
-    isSystemBold = true;
     await openAccessibility(page);
+    await reportSystemBoldText(true);
 
     await expect(boldText(page)).toBeChecked();
     await expect.poll(() => bodyWeight(page)).toBe(BOLD_REGULAR_WEIGHT);
+  });
+
+  test("follows the phone's Bold text as it changes while the app is open", async ({
+    page,
+  }) => {
+    await openAccessibility(page);
+    await reportSystemBoldText(true);
+    await expect(boldText(page)).toBeChecked();
+
+    await reportSystemBoldText(false);
+
+    await expect(boldText(page)).not.toBeChecked();
+    await expect.poll(() => bodyWeight(page)).toBe(PLAIN_REGULAR_WEIGHT);
   });
 
   test("bolds the interface once chosen, and keeps it after a reload", async ({
@@ -68,11 +93,13 @@ test.describe("Bold text on an Android phone", { tag: "@native" }, () => {
   test("keeps plain text once chosen, even with the phone's Bold text on", async ({
     page,
   }) => {
-    isSystemBold = true;
     await openAccessibility(page);
+    await reportSystemBoldText(true);
 
     await boldText(page).click();
+    systemBoldTexts = undefined;
     await page.reload();
+    await reportSystemBoldText(true);
 
     await expect(boldText(page)).not.toBeChecked();
     await expect.poll(() => bodyWeight(page)).toBe(PLAIN_REGULAR_WEIGHT);

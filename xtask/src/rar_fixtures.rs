@@ -16,7 +16,7 @@ use self::{
     manifest::{Fixture, Manifest, Tool},
     recipes::{Maker, RECIPES, Source},
 };
-use crate::vendor::sha256_hex;
+use crate::{json, vendor::sha256_hex};
 
 pub(crate) const FIXTURES: &str = "crates/omnileaf-formats/tests/rar_fixtures";
 
@@ -146,8 +146,8 @@ fn publish(out: &Path, made: &Made) -> anyhow::Result<Vec<PathBuf>> {
         written.push(path);
     }
     let path = out.join(MANIFEST);
-    let json = serde_json::to_string_pretty(&made.manifest).context("write the manifest")?;
-    fs::write(&path, format!("{json}\n")).with_context(|| format!("write {}", path.display()))?;
+    let manifest = json::pretty(&made.manifest).context("write the manifest")?;
+    fs::write(&path, manifest).with_context(|| format!("write {}", path.display()))?;
     written.push(path);
     Ok(written)
 }

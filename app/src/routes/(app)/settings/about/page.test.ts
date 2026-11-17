@@ -11,6 +11,7 @@ const PROPS = {
       sourceCode: "repo.example.org/omnileaf",
       isDevelopmentBuild: false,
       windowBackdrop: "none" as const,
+      checksForUpdates: false,
     },
     isFirstLaunch: false,
     libraryProblem: null,

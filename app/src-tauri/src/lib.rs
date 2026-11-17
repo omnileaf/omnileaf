@@ -67,7 +67,7 @@ use std::{
 use omnileaf_engine::HomeFolderSetting;
 use omnileaf_engine::{
     Core, HomeArrival, Library, LibraryFolders, RecentLog, ResourceRouter, SystemClock,
-    describe_error,
+    WindowBackdrop, describe_error,
 };
 use tauri::{App, Manager};
 use tracing_subscriber::{
@@ -141,7 +141,7 @@ pub fn run() {
                 }
             };
             let window_backdrop = main_window::open(app, window_backdrop)?;
-            app.manage(Core::new().with_window_backdrop(window_backdrop));
+            app.manage(core_of_this_build(window_backdrop));
             crash_reporting::install(app.handle());
             report_relay::install(app.handle());
             app.manage(launch);
@@ -274,5 +274,39 @@ fn cache_folder(app: &App, data_dir: Option<&Path>) -> tauri::Result<PathBuf> {
     match data_dir {
         Some(data_dir) => Ok(data_dir.join(CACHE_FOLDER)),
         None => app.path().app_cache_dir(),
+    }
+}
+
+fn core_of_this_build(window_backdrop: WindowBackdrop) -> Core {
+    let core = Core::new().with_window_backdrop(window_backdrop);
+    if cfg!(feature = "update-check") {
+        core.with_update_check()
+    } else {
+        core
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use omnileaf_engine::WindowBackdrop;
+
+    use super::core_of_this_build;
+
+    #[test]
+    fn checks_for_updates_only_in_a_build_with_the_update_check() {
+        let core = core_of_this_build(WindowBackdrop::None);
+
+        let checks_for_updates = core.app_info().checks_for_updates;
+
+        assert_eq!(checks_for_updates, cfg!(feature = "update-check"));
+    }
+
+    #[test]
+    fn keeps_the_window_backdrop_it_was_given() {
+        let core = core_of_this_build(WindowBackdrop::Mica);
+
+        let window_backdrop = core.app_info().window_backdrop;
+
+        assert_eq!(window_backdrop, WindowBackdrop::Mica);
     }
 }

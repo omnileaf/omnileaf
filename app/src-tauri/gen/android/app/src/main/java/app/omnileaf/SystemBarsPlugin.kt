@@ -59,7 +59,7 @@ class SystemBarsPlugin(
         val color = background.shown.color()
         val shownActivity = PluginManager.activity as? MainActivity ?: return invoke.reject("no activity is showing the app")
         RememberedTheme(shownActivity).keep(background.remembered)
-        shownActivity.keepSplashScreenTheme(background.remembered)
+        shownActivity.keepStartingTheme(background.remembered)
         shownActivity.runOnUiThread { shownActivity.showPageBackground(color) }
         invoke.resolve()
     }

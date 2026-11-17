@@ -1,6 +1,8 @@
 package app.omnileaf
 
 import android.content.SharedPreferences
+import android.content.res.Configuration
+import android.view.ViewTreeObserver
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.FragmentActivity
@@ -17,6 +19,13 @@ internal class AppLockGate(
     private val prompt = LockPrompt()
     private var keepsBackOut: OnBackPressedCallback? = null
     private var recentsListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+    private var drawnFor = Configuration(activity.resources.configuration)
+
+    /** System UI cancels a screen lock prompt that opens before the app's task is back on top, which can come after onStart. */
+    private val asksOnceFocused =
+        ViewTreeObserver.OnWindowFocusChangeListener { hasFocus ->
+            if (hasFocus && prompt.focusArrived()) ask()
+        }
 
     val isCovering: Boolean
         get() = cover.isShown
@@ -24,7 +33,15 @@ internal class AppLockGate(
     fun watch() {
         activity.protectRecents(choices.isOn)
         recentsListener = choices.startFollowingIsOn(activity::protectRecents)
+        activity.window.decorView.viewTreeObserver
+            .addOnWindowFocusChangeListener(asksOnceFocused)
         activity.lifecycle.addObserver(this)
+    }
+
+    fun followConfiguration(configuration: Configuration) {
+        val changes = drawnFor.diff(configuration)
+        drawnFor = Configuration(configuration)
+        if (changesWhatTheCoverDraws(changes)) cover.redraw(choices.wordsToShow())
     }
 
     fun openedOwnScreen() {
@@ -34,7 +51,7 @@ internal class AppLockGate(
     override fun onStart(owner: LifecycleOwner) {
         if (state.returned(choices.isOn, choices.lockAfter)) {
             showCover()
-            ask()
+            prompt.waitForFocus()
         } else {
             hideCover()
         }

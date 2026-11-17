@@ -15,18 +15,14 @@ export const LOCK_DELAYS = [
   "immediately",
   "oneMinute",
   "fiveMinutes",
-  "fifteenMinutes",
   "thirtyMinutes",
-  "oneHour",
 ] as const satisfies readonly LockAfter[];
 
 export const LOCK_DELAY_NAMES = {
   immediately: m.app_lock_immediately,
   oneMinute: m.app_lock_one_minute,
   fiveMinutes: m.app_lock_five_minutes,
-  fifteenMinutes: m.app_lock_fifteen_minutes,
   thirtyMinutes: m.app_lock_thirty_minutes,
-  oneHour: m.app_lock_one_hour,
 } satisfies Record<LockAfter, () => string>;
 
 export function appLockSummary(lock: AppLock): string {

@@ -8,43 +8,50 @@ import { followSystemBoldText } from "./system-bold-text.ts";
 
 const ELSEWHERE: readonly Platform[] = ["ios", "linux", "macos", "windows"];
 
-const BOLD = () => Promise.resolve({ status: "ok", data: true } as const);
+const WATCHING = { status: "ok", data: null } as const;
+
+function reportingEach(
+  reports: readonly boolean[],
+): (onChange: (isBold: boolean) => void) => Promise<typeof WATCHING> {
+  return (onChange) => {
+    reports.forEach(onChange);
+    return Promise.resolve(WATCHING);
+  };
+}
 
 afterEach(() => {
   delete document.documentElement.dataset.boldText;
   vi.restoreAllMocks();
 });
 
-test("reads the phone's Bold text on Android", async () => {
+test("follows the phone's Bold text on Android", async () => {
   const choice = new BoldTextChoice(memoryPreferenceStore());
 
-  await followSystemBoldText("android", BOLD, choice);
+  await followSystemBoldText("android", reportingEach([true]), choice);
 
   expect(choice.isBold).toBe(true);
 });
 
-test.each(ELSEWHERE)("asks nothing on %s", async (platform) => {
+test("follows the phone's Bold text each time it changes", async () => {
   const choice = new BoldTextChoice(memoryPreferenceStore());
-  const read = vi.fn(BOLD);
 
-  await followSystemBoldText(platform, read, choice);
+  await followSystemBoldText("android", reportingEach([true, false]), choice);
 
-  expect(read).not.toHaveBeenCalled();
+  expect(choice.isBold).toBe(false);
+  expect(document.documentElement.dataset.boldText).toBeUndefined();
+});
+
+test.each(ELSEWHERE)("watches nothing on %s", async (platform) => {
+  const choice = new BoldTextChoice(memoryPreferenceStore());
+  const watch = vi.fn(reportingEach([true]));
+
+  await followSystemBoldText(platform, watch, choice);
+
+  expect(watch).not.toHaveBeenCalled();
   expect(choice.isBold).toBe(false);
 });
 
-test("asks nothing once the app has its own choice", async () => {
-  const store = memoryPreferenceStore();
-  new BoldTextChoice(store).choose(true);
-  const choice = new BoldTextChoice(store);
-  const read = vi.fn(BOLD);
-
-  await followSystemBoldText("android", read, choice);
-
-  expect(read).not.toHaveBeenCalled();
-});
-
-test("reports a failed read and keeps text plain", async () => {
+test("reports a failed watch and keeps text plain", async () => {
   const reported = vi.spyOn(window, "reportError").mockReturnValue(undefined);
   const choice = new BoldTextChoice(memoryPreferenceStore());
   const error = {

@@ -6,8 +6,10 @@ import { promisify } from "node:util";
 import { afterAll, beforeAll, expect, test } from "vitest";
 
 import {
+  clickWhenShown,
   mainNavigationLink,
   openLibraryPage,
+  settingsRow,
   useAppSession,
 } from "./app-session.ts";
 import { createSampleLibrary } from "./sample-library.ts";
@@ -46,12 +48,6 @@ async function setBatterySaver(isOn: boolean): Promise<void> {
   await adbShell(`settings put global low_power ${isOn ? "1" : "0"}`);
 }
 
-function settingsRow(label: string): Locator {
-  return xpath(
-    `//main//a[not(ancestor::nav)][starts-with(normalize-space(), '${label}')]`,
-  );
-}
-
 function rescanFoldersRowSaying(schedule: string): string {
   return `${RESCAN_FOLDERS_ROW}[.//*[normalize-space()='${schedule}']]`;
 }
@@ -60,10 +56,6 @@ function scheduleChoice(schedule: string): Locator {
   return xpath(
     `//*[@role='dialog']//*[@role='radio'][.//*[normalize-space()='${schedule}']]`,
   );
-}
-
-async function open(link: Locator): Promise<void> {
-  await (await appSession().waitFor(link)).click();
 }
 
 async function isRescanScheduled(schedule: string): Promise<boolean> {
@@ -75,7 +67,7 @@ async function isRescanScheduled(schedule: string): Promise<boolean> {
 }
 
 async function openSection(name: string): Promise<void> {
-  await open(mainNavigationLink(name));
+  await clickWhenShown(appSession(), mainNavigationLink(name));
   await appSession().waitFor(
     xpath(`${mainNavigationLink(name).value}[@aria-current='page']`),
   );
@@ -84,10 +76,10 @@ async function openSection(name: string): Promise<void> {
 async function turnScheduledChecks(isOn: boolean): Promise<void> {
   const schedule = isOn ? SCHEDULES.on : SCHEDULES.off;
   await openSection("Settings");
-  await open(settingsRow("Library"));
+  await clickWhenShown(appSession(), settingsRow("Library"));
   if (!(await isRescanScheduled(schedule))) {
-    await open(xpath(RESCAN_FOLDERS_ROW));
-    await open(scheduleChoice(schedule));
+    await clickWhenShown(appSession(), xpath(RESCAN_FOLDERS_ROW));
+    await clickWhenShown(appSession(), scheduleChoice(schedule));
   }
   await appSession().waitFor(xpath(rescanFoldersRowSaying(schedule)));
   await openLibraryPage(appSession());

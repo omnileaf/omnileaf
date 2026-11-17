@@ -3,11 +3,16 @@ import { afterEach, expect, test } from "vitest";
 import "../../app.css";
 
 import { followWallpaperColours } from "#lib/appearance/wallpaper-colours.ts";
+import type { WallpaperColours } from "#lib/ipc/bindings.ts";
+import { type Contrast, followContrast } from "#lib/page/display-modes.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { contrastRatio } from "../../../tests/components/contrast-ratio";
 import { resolvedColour } from "../../../tests/components/resolved-colour";
-import { BLUE_WALLPAPER } from "../../../tests/sample-wallpaper";
+import {
+  BLUE_WALLPAPER,
+  MUTED_WALLPAPER_BY_CONTRAST,
+} from "../../../tests/sample-wallpaper";
 import source from "./tokens.json";
 
 type Pair = readonly [ink: string, ground: string];
@@ -36,25 +41,44 @@ const TEXT: readonly Pair[] = [
   ["on-segment-selected", "segment-selected"],
 ];
 
+const CONTRAST_LEVELS: readonly {
+  readonly level: keyof typeof MUTED_WALLPAPER_BY_CONTRAST;
+  readonly contrast: Contrast | undefined;
+}[] = [
+  { level: "standard", contrast: undefined },
+  { level: "medium", contrast: "medium" },
+  { level: "high", contrast: "high" },
+];
+
+const SAMPLES = [
+  { sample: "blue", contrast: undefined, wallpaper: BLUE_WALLPAPER },
+  ...CONTRAST_LEVELS.map(({ level, contrast }) => ({
+    sample: `muted at ${level} contrast`,
+    contrast,
+    wallpaper: MUTED_WALLPAPER_BY_CONTRAST[level],
+  })),
+].flatMap((sample) => THEMES.map((theme) => ({ ...sample, theme })));
+
 const MARKS: readonly Pair[] = [
   ["button-outline-edge", "card"],
   ["switch-off-border", "card"],
 ];
 
-async function showBlueWallpaper(
+async function showWallpaper(
   theme: (typeof THEMES)[number],
+  wallpaper: WallpaperColours,
 ): Promise<void> {
   followCorePlatform("android");
   document.documentElement.dataset.theme = theme;
   await followWallpaperColours("android", "wallpaper", {
-    wallpaperColours: () =>
-      Promise.resolve({ status: "ok", data: BLUE_WALLPAPER }),
+    wallpaperColours: () => Promise.resolve({ status: "ok", data: wallpaper }),
     accentColours: () => Promise.resolve(null),
   });
 }
 
 afterEach(async () => {
   await followWallpaperColours("android", "omnileaf");
+  followContrast(undefined);
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
 });
@@ -62,7 +86,7 @@ afterEach(async () => {
 test.each(THEMES)(
   "draws the primary button in the wallpaper's primary in %s",
   async (theme) => {
-    await showBlueWallpaper(theme);
+    await showWallpaper(theme, BLUE_WALLPAPER);
 
     expect(resolvedColour("--native-color-button-primary", "color")).toBe(
       theme === "light" ? "rgb(65, 97, 137)" : "rgb(177, 200, 236)",
@@ -70,10 +94,11 @@ test.each(THEMES)(
   },
 );
 
-test.each(THEMES)(
-  `holds text at ${String(TEXT_RATIO)}:1 and marks at ${String(MARK_RATIO)}:1 on a sample wallpaper in %s`,
-  async (theme) => {
-    await showBlueWallpaper(theme);
+test.each(SAMPLES)(
+  `holds text at ${String(TEXT_RATIO)}:1 and marks at ${String(MARK_RATIO)}:1 on the $sample wallpaper in $theme`,
+  async ({ theme, contrast, wallpaper }) => {
+    followContrast(contrast);
+    await showWallpaper(theme, wallpaper);
 
     for (const [ink, ground] of TEXT) {
       expect(

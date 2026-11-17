@@ -1,42 +1,35 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { afterAll, beforeAll, expect, test } from "vitest";
 
-import { afterAll, expect, onTestFinished, test } from "vitest";
-
-import { mainNavigationLink, useAppSession } from "./app-session.ts";
-import { type Locator, pollUntil, xpath } from "./webdriver.ts";
+import { ANDROID_APP_ID, adbShell } from "./android-settings.ts";
+import {
+  clickWhenShown,
+  mainNavigationLink,
+  settingsRow,
+  shownPage,
+  useAppSession,
+} from "./app-session.ts";
+import { pollUntil } from "./webdriver.ts";
 
 const BACK_KEY = 4;
 const NEW_SCREEN_TIMEOUT_MS = 30_000;
-const ADB_TIMEOUT_MS = 30_000;
-const DEFAULT_FONT_SCALE = "1.0";
-const LARGER_FONT_SCALE = "1.15";
-
-const run = promisify(execFile);
+const RIGHT_TO_LEFT_LANGUAGE = "ar";
 
 const appSession = useAppSession();
 
-afterAll(() => setFontScale(DEFAULT_FONT_SCALE));
+let appLanguagesBefore: string | undefined;
 
-function settingsRow(label: string): Locator {
-  return xpath(
-    `//main//a[not(ancestor::nav)][starts-with(normalize-space(), '${label}')]`,
-  );
-}
+beforeAll(async () => {
+  appLanguagesBefore = await appLanguages();
+});
 
-async function open(link: Locator): Promise<void> {
-  await (await appSession().waitFor(link)).click();
-}
+afterAll(async () => {
+  if (appLanguagesBefore !== undefined) {
+    await setAppLanguages(appLanguagesBefore);
+  }
+});
 
 async function pressBack(): Promise<void> {
   await appSession().runMobileCommand("pressKey", { keycode: BACK_KEY });
-}
-
-async function shownPage(title: string): Promise<string> {
-  const heading = await appSession().waitFor(
-    xpath(`//main//h1[normalize-space()='${title}']`),
-  );
-  return heading.text();
 }
 
 async function newWindow(
@@ -46,20 +39,29 @@ async function newWindow(
   return windows.find((handle) => !known.includes(handle));
 }
 
-async function setFontScale(scale: string): Promise<void> {
-  await run(
-    "adb",
-    ["shell", "settings", "put", "system", "font_scale", scale],
-    {
-      timeout: ADB_TIMEOUT_MS,
-    },
+async function localeCommand(...args: readonly string[]): Promise<string> {
+  return adbShell("cmd", "locale", ...args);
+}
+
+async function appLanguages(): Promise<string> {
+  const listed = await localeCommand("get-app-locales", ANDROID_APP_ID);
+  return /\[(.*)\]/.exec(listed)?.[1] ?? "";
+}
+
+async function setAppLanguages(languages: string): Promise<void> {
+  await localeCommand(
+    "set-app-locales",
+    ANDROID_APP_ID,
+    ...(languages === "" ? [] : ["--locales", languages]),
   );
 }
 
-/** Changes the text size, which Android answers by recreating the activity with a new web view. */
-async function recreateTheScreenWithFontScale(scale: string): Promise<void> {
+/** Android recreates the activity, with a new web view, when an app language turns the layout right to left. */
+async function recreateTheScreenWithAppLanguages(
+  languages: string,
+): Promise<void> {
   const known = await appSession().windows();
-  await setFontScale(scale);
+  await setAppLanguages(languages);
   const created = await pollUntil(
     () => newWindow(known),
     NEW_SCREEN_TIMEOUT_MS,
@@ -69,36 +71,36 @@ async function recreateTheScreenWithFontScale(scale: string): Promise<void> {
 }
 
 test("goes up from a Settings page to Settings and then to Library", async () => {
-  await open(mainNavigationLink("Settings"));
-  await open(settingsRow("Appearance"));
-  await shownPage("Appearance");
+  await clickWhenShown(appSession(), mainNavigationLink("Settings"));
+  await clickWhenShown(appSession(), settingsRow("Appearance"));
+  await shownPage(appSession(), "Appearance");
 
   await pressBack();
-  const upOneLevel = await shownPage("Settings");
+  const upOneLevel = await shownPage(appSession(), "Settings");
   await pressBack();
-  const upTwoLevels = await shownPage("Library");
+  const upTwoLevels = await shownPage(appSession(), "Library");
 
   expect([upOneLevel, upTwoLevels]).toEqual(["Settings", "Library"]);
 });
 
 test("goes back to Library from a section opened after another", async () => {
-  await open(mainNavigationLink("Browse"));
-  await open(mainNavigationLink("History"));
-  await shownPage("History");
+  await clickWhenShown(appSession(), mainNavigationLink("Browse"));
+  await clickWhenShown(appSession(), mainNavigationLink("History"));
+  await shownPage(appSession(), "History");
 
   await pressBack();
 
-  expect(await shownPage("Library")).toBe("Library");
+  expect(await shownPage(appSession(), "Library")).toBe("Library");
 });
 
 test("keeps back inside the app after Android recreates the activity", async () => {
-  await recreateTheScreenWithFontScale(LARGER_FONT_SCALE);
-  onTestFinished(() => recreateTheScreenWithFontScale(DEFAULT_FONT_SCALE));
-  await open(mainNavigationLink("Settings"));
-  await open(settingsRow("About"));
-  await shownPage("About");
+  await recreateTheScreenWithAppLanguages(RIGHT_TO_LEFT_LANGUAGE);
+  await recreateTheScreenWithAppLanguages(appLanguagesBefore ?? "");
+  await clickWhenShown(appSession(), mainNavigationLink("Settings"));
+  await clickWhenShown(appSession(), settingsRow("About"));
+  await shownPage(appSession(), "About");
 
   await pressBack();
 
-  expect(await shownPage("Settings")).toBe("Settings");
+  expect(await shownPage(appSession(), "Settings")).toBe("Settings");
 });

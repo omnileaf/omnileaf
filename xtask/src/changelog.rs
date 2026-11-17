@@ -1,13 +1,34 @@
-use std::{fmt, fs, io, path::Path};
+mod archive;
+mod release;
+mod version;
+
+use std::{
+    fmt, fs, io,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
-use crate::pre_push::{changed_files, git};
+pub(crate) use self::release::{release, rewrite};
+use self::{
+    release::read_changelog,
+    version::{Version, parse_version},
+};
+use crate::{
+    json,
+    pre_push::{changed_files, git},
+};
 
 pub(crate) const FOLDER: &str = ".changes";
 const CONFIG: &str = "config.json";
 const README: &str = "README.md";
+const RELEASED: &str = "released";
+const NOT_FRAGMENTS: &[&str] = &[CONFIG, README, RELEASED];
+const CHANGELOG: &str = "CHANGELOG.md";
+const SECTION_HEADING: &str = "## ";
+const ENTRY_MARK: &str = "- **";
+const ENTRY_AREA_END: &str = ":** ";
 const FRAGMENT_EXTENSION: &str = ".md";
 const MAX_SUMMARY_CHARACTERS: usize = 300;
 const MAX_LOGIN_CHARACTERS: usize = 39;
@@ -24,10 +45,38 @@ pub(crate) struct Heading {
     heading: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub(crate) struct Config {
+#[derive(Deserialize)]
+struct ConfigFile {
+    headline: String,
     types: Vec<Heading>,
     areas: Vec<Heading>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(try_from = "ConfigFile")]
+pub(crate) struct Config {
+    headline: String,
+    types: Vec<Heading>,
+    areas: Vec<Heading>,
+}
+
+impl TryFrom<ConfigFile> for Config {
+    type Error = String;
+
+    fn try_from(file: ConfigFile) -> Result<Self, Self::Error> {
+        let config = Self {
+            headline: file.headline,
+            types: file.types,
+            areas: file.areas,
+        };
+        match config.type_position(&config.headline) {
+            Some(_) => Ok(config),
+            None => Err(format!(
+                "the headline `{}` must be one of the types",
+                config.headline
+            )),
+        }
+    }
 }
 
 impl Config {
@@ -35,8 +84,26 @@ impl Config {
         self.types.iter().position(|kind| kind.id == id)
     }
 
+    fn has_type_heading(&self, heading: &str) -> bool {
+        self.types.iter().any(|kind| kind.heading == heading)
+    }
+
     fn area_position(&self, id: &str) -> Option<usize> {
         self.areas.iter().position(|area| area.id == id)
+    }
+
+    fn check_type(&self, kind: &str) -> Result<(), Problem> {
+        match self.type_position(kind) {
+            Some(_) => Ok(()),
+            None => Err(Problem::UnknownType(kind.to_owned())),
+        }
+    }
+
+    fn check_area(&self, area: &str) -> Result<(), Problem> {
+        match self.area_position(area) {
+            Some(_) => Ok(()),
+            None => Err(Problem::UnknownArea(area.to_owned())),
+        }
     }
 }
 
@@ -65,6 +132,12 @@ pub(crate) enum Problem {
     EmptySummary,
     LongSummary(usize),
     EmDash,
+    NotOneLine,
+    NotAReleaseName,
+    MalformedArchive(String),
+    OtherVersion(String),
+    NoEntries,
+    NotInChangelog(String),
 }
 
 impl fmt::Display for Problem {
@@ -116,7 +189,7 @@ impl fmt::Display for Problem {
             Self::BadPullRequest(value) => {
                 write!(formatter, "pr `{value}` must be a pull request number")
             }
-            Self::EmptySummary => write!(formatter, "the summary below the front matter is empty"),
+            Self::EmptySummary => write!(formatter, "the summary is empty"),
             Self::LongSummary(length) => write!(
                 formatter,
                 "the summary is {length} characters; keep it to {MAX_SUMMARY_CHARACTERS}"
@@ -124,6 +197,25 @@ impl fmt::Display for Problem {
             Self::EmDash => write!(
                 formatter,
                 "the summary holds an em-dash; use a comma or a full stop"
+            ),
+            Self::NotOneLine => {
+                write!(formatter, "the summary must be one line with single spaces")
+            }
+            Self::NotAReleaseName => write!(
+                formatter,
+                "the file name must be a full release version such as 1.2.0.json"
+            ),
+            Self::MalformedArchive(error) => {
+                write!(formatter, "the archive is not release notes JSON: {error}")
+            }
+            Self::NoEntries => write!(formatter, "the archive has no entries"),
+            Self::OtherVersion(version) => write!(
+                formatter,
+                "the archive holds the notes of {version}, not of the version in its name"
+            ),
+            Self::NotInChangelog(version) => write!(
+                formatter,
+                "{CHANGELOG} needs exactly one `{SECTION_HEADING}{version}` section that matches the archive as {FOLDER}/{CONFIG} renders it; once it has one, `cargo xtask changes changelog` rewrites it from the archive"
             ),
         }
     }
@@ -140,6 +232,8 @@ impl fmt::Display for Violation {
         write!(formatter, "{FOLDER}/{}: {}", self.file, self.problem)
     }
 }
+
+impl std::error::Error for Violation {}
 
 fn is_slug_file(name: &str) -> bool {
     name.strip_suffix(FRAGMENT_EXTENSION).is_some_and(|slug| {
@@ -173,10 +267,7 @@ fn split_front_matter(text: &str) -> Result<(Vec<&str>, String), Problem> {
     for line in lines.by_ref() {
         if line.trim_end() == FRONT_MATTER_FENCE {
             let summary = lines.collect::<Vec<_>>().join(" ");
-            return Ok((
-                front_matter,
-                summary.split_whitespace().collect::<Vec<_>>().join(" "),
-            ));
+            return Ok((front_matter, single_spaced(&summary)));
         }
         front_matter.push(line);
     }
@@ -237,13 +328,9 @@ pub(crate) fn parse(name: &str, text: &str, config: &Config) -> Result<Fragment,
     let (front_matter, summary) = split_front_matter(text)?;
     let keys = read_keys(&front_matter)?;
     let kind = keys.kind.ok_or(Problem::Missing("type"))?;
-    if config.type_position(kind).is_none() {
-        return Err(Problem::UnknownType(kind.to_owned()));
-    }
+    config.check_type(kind)?;
     let area = keys.area.ok_or(Problem::Missing("area"))?;
-    if config.area_position(area).is_none() {
-        return Err(Problem::UnknownArea(area.to_owned()));
-    }
+    config.check_area(area)?;
     let credit = keys
         .credit
         .map(parse_credit)
@@ -254,16 +341,7 @@ pub(crate) fn parse(name: &str, text: &str, config: &Config) -> Result<Fragment,
     {
         return Err(Problem::BadPullRequest(pr.to_owned()));
     }
-    if summary.is_empty() {
-        return Err(Problem::EmptySummary);
-    }
-    let length = summary.chars().count();
-    if length > MAX_SUMMARY_CHARACTERS {
-        return Err(Problem::LongSummary(length));
-    }
-    if summary.contains('\u{2014}') {
-        return Err(Problem::EmDash);
-    }
+    check_summary(&summary)?;
     Ok(Fragment {
         kind: kind.to_owned(),
         area: area.to_owned(),
@@ -272,12 +350,64 @@ pub(crate) fn parse(name: &str, text: &str, config: &Config) -> Result<Fragment,
     })
 }
 
-pub(crate) struct Folder {
-    config: Config,
-    files: Vec<(String, String)>,
+fn single_spaced(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-pub(crate) fn read_folder(root: &Path) -> anyhow::Result<Folder> {
+fn is_one_line(summary: &str) -> bool {
+    single_spaced(summary) == summary
+}
+
+fn check_summary(summary: &str) -> Result<(), Problem> {
+    if summary.is_empty() {
+        return Err(Problem::EmptySummary);
+    }
+    if !is_one_line(summary) {
+        return Err(Problem::NotOneLine);
+    }
+    let length = summary.chars().count();
+    if length > MAX_SUMMARY_CHARACTERS {
+        return Err(Problem::LongSummary(length));
+    }
+    if summary.contains('\u{2014}') {
+        return Err(Problem::EmDash);
+    }
+    Ok(())
+}
+
+struct Folder {
+    config: Config,
+    files: Vec<(String, String)>,
+    path: PathBuf,
+}
+
+impl Folder {
+    fn unreleased_notes(&self, version: &str) -> anyhow::Result<CreditedNotes> {
+        Ok(CreditedNotes::gather(
+            version,
+            valid_fragments(self)?,
+            &self.config,
+        ))
+    }
+
+    fn notes_to_release(&self, version: &str) -> anyhow::Result<CreditedNotes> {
+        let notes = self.unreleased_notes(version)?;
+        anyhow::ensure!(
+            !notes.notes.entries.is_empty(),
+            "{FOLDER} has no fragments, so {version} would have no release notes"
+        );
+        Ok(notes)
+    }
+
+    fn fragment_paths(&self) -> Vec<PathBuf> {
+        self.files
+            .iter()
+            .map(|(name, _)| self.path.join(name))
+            .collect()
+    }
+}
+
+fn read_folder(root: &Path) -> anyhow::Result<Folder> {
     let folder = root.join(FOLDER);
     let config_path = folder.join(CONFIG);
     let config = serde_json::from_slice(
@@ -288,7 +418,7 @@ pub(crate) fn read_folder(root: &Path) -> anyhow::Result<Folder> {
     for entry in fs::read_dir(&folder).with_context(|| format!("list {}", folder.display()))? {
         let path = entry?.path();
         let name = file_name(&path);
-        if name == CONFIG || name == README {
+        if !is_fragment_name(&name) {
             continue;
         }
         let text = fs::read_to_string(&path).or_else(|error| match error.kind() {
@@ -298,7 +428,15 @@ pub(crate) fn read_folder(root: &Path) -> anyhow::Result<Folder> {
         files.push((name, text));
     }
     files.sort();
-    Ok(Folder { config, files })
+    Ok(Folder {
+        config,
+        files,
+        path: folder,
+    })
+}
+
+fn is_fragment_name(name: &str) -> bool {
+    !name.is_empty() && !name.contains('/') && !NOT_FRAGMENTS.contains(&name)
 }
 
 fn file_name(path: &Path) -> String {
@@ -322,8 +460,12 @@ fn read_fragments(folder: &Folder) -> (Vec<Fragment>, Vec<Violation>) {
     (fragments, violations)
 }
 
-pub(crate) fn check(folder: &Folder) -> Vec<Violation> {
-    read_fragments(folder).1
+pub(crate) fn check(root: &Path) -> anyhow::Result<Vec<Violation>> {
+    let folder = read_folder(root)?;
+    let changelog = read_changelog(root)?;
+    let mut violations = read_fragments(&folder).1;
+    violations.extend(folder.archive_violations(&changelog)?);
+    Ok(violations)
 }
 
 fn in_report_order(mut fragments: Vec<Fragment>, config: &Config) -> Vec<Fragment> {
@@ -343,79 +485,117 @@ fn heading_of<'a>(headings: &'a [Heading], id: &'a str) -> &'a str {
         .map_or(id, |heading| heading.heading.as_str())
 }
 
-fn contributors(fragments: &[Fragment]) -> Vec<&str> {
-    let mut logins: Vec<&str> = fragments
+fn contributors(fragments: &[Fragment]) -> Vec<String> {
+    let mut logins: Vec<String> = fragments
         .iter()
-        .flat_map(|fragment| fragment.credit.iter().map(String::as_str))
+        .flat_map(|fragment| fragment.credit.iter().cloned())
         .collect();
     logins.sort_unstable();
     logins.dedup();
     logins
 }
 
-pub(crate) fn render_markdown(fragments: Vec<Fragment>, config: &Config) -> String {
-    let fragments = in_report_order(fragments, config);
-    let mut sections = Vec::new();
-    for kind in &config.types {
-        let lines: Vec<String> = fragments
-            .iter()
-            .filter(|fragment| fragment.kind == kind.id)
-            .map(|fragment| {
-                format!(
-                    "- **{}:** {}",
-                    heading_of(&config.areas, &fragment.area),
-                    fragment.summary
-                )
-            })
-            .collect();
-        if !lines.is_empty() {
-            sections.push(format!("## {}\n\n{}", kind.heading, lines.join("\n")));
+#[derive(Serialize, Deserialize)]
+struct Entry {
+    #[serde(rename = "type")]
+    kind: String,
+    area: String,
+    summary: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Notes {
+    version: String,
+    entries: Vec<Entry>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct CreditedNotes {
+    #[serde(flatten)]
+    notes: Notes,
+    contributors: Vec<String>,
+}
+
+impl CreditedNotes {
+    fn gather(version: &str, fragments: Vec<Fragment>, config: &Config) -> Self {
+        let fragments = in_report_order(fragments, config);
+        Self {
+            contributors: contributors(&fragments),
+            notes: Notes {
+                version: version.to_owned(),
+                entries: fragments
+                    .into_iter()
+                    .map(|fragment| Entry {
+                        kind: fragment.kind,
+                        area: fragment.area,
+                        summary: fragment.summary,
+                    })
+                    .collect(),
+            },
         }
     }
-    let credited = contributors(&fragments);
-    if !credited.is_empty() {
-        let handles: Vec<String> = credited.iter().map(|login| format!("@{login}")).collect();
-        sections.push(format!("Contributors: {}", handles.join(", ")));
+
+    fn headline(&self, config: &Config) -> Option<&str> {
+        let entries = &self.notes.entries;
+        entries
+            .iter()
+            .find(|entry| entry.kind == config.headline)
+            .or_else(|| entries.first())
+            .map(|entry| entry.summary.as_str())
     }
+
+    fn markdown(&self, config: &Config) -> String {
+        let headline = self.headline(config).map(str::to_owned);
+        joined_sections(
+            &headline
+                .into_iter()
+                .chain(self.sections(config))
+                .collect::<Vec<_>>(),
+        )
+    }
+
+    fn sections(&self, config: &Config) -> Vec<String> {
+        let mut sections = Vec::new();
+        for kind in &config.types {
+            let lines: Vec<String> = self
+                .notes
+                .entries
+                .iter()
+                .filter(|entry| entry.kind == kind.id)
+                .map(|entry| {
+                    format!(
+                        "{ENTRY_MARK}{}{ENTRY_AREA_END}{}",
+                        heading_of(&config.areas, &entry.area),
+                        entry.summary
+                    )
+                })
+                .collect();
+            if !lines.is_empty() {
+                sections.push(format!(
+                    "{SECTION_HEADING}{}\n\n{}",
+                    kind.heading,
+                    lines.join("\n")
+                ));
+            }
+        }
+        if !self.contributors.is_empty() {
+            let handles: Vec<String> = self
+                .contributors
+                .iter()
+                .map(|login| format!("@{login}"))
+                .collect();
+            sections.push(format!("Contributors: {}", handles.join(", ")));
+        }
+        sections
+    }
+}
+
+fn joined_sections(sections: &[String]) -> String {
     if sections.is_empty() {
         String::new()
     } else {
         sections.join("\n\n") + "\n"
     }
-}
-
-#[derive(Serialize)]
-struct Entry<'a> {
-    #[serde(rename = "type")]
-    kind: &'a str,
-    area: &'a str,
-    summary: &'a str,
-}
-
-#[derive(Serialize)]
-struct Notes<'a> {
-    version: &'a str,
-    entries: Vec<Entry<'a>>,
-}
-
-pub(crate) fn render_json(
-    version: &str,
-    fragments: Vec<Fragment>,
-    config: &Config,
-) -> serde_json::Result<String> {
-    let fragments = in_report_order(fragments, config);
-    let notes = Notes {
-        version,
-        entries: fragments
-            .iter()
-            .map(|fragment| Entry {
-                kind: &fragment.kind,
-                area: &fragment.area,
-                summary: &fragment.summary,
-            })
-            .collect(),
-    };
-    serde_json::to_string_pretty(&notes).map(|json| json + "\n")
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
@@ -424,11 +604,7 @@ pub(crate) enum Format {
     Json,
 }
 
-pub(crate) fn notes(
-    folder: &Folder,
-    version: Option<&str>,
-    format: Format,
-) -> anyhow::Result<String> {
+fn valid_fragments(folder: &Folder) -> anyhow::Result<Vec<Fragment>> {
     let (fragments, violations) = read_fragments(folder);
     anyhow::ensure!(
         violations.is_empty(),
@@ -440,13 +616,19 @@ pub(crate) fn notes(
             .collect::<Vec<_>>()
             .join("\n")
     );
+    Ok(fragments)
+}
+
+pub(crate) fn notes(root: &Path, version: Option<&str>, format: Format) -> anyhow::Result<String> {
+    let folder = read_folder(root)?;
+    let notes = match version.map(parse_version).transpose()? {
+        Some(Version::Full(version)) => folder.archived_notes(version)?,
+        Some(Version::PreRelease(version)) => folder.notes_to_release(version)?,
+        None => folder.unreleased_notes(UNRELEASED)?,
+    };
     match format {
-        Format::Markdown => Ok(render_markdown(fragments, &folder.config)),
-        Format::Json => Ok(render_json(
-            version.unwrap_or(UNRELEASED),
-            fragments,
-            &folder.config,
-        )?),
+        Format::Markdown => Ok(notes.markdown(&folder.config)),
+        Format::Json => Ok(json::pretty(&notes.notes)?),
     }
 }
 
@@ -471,7 +653,7 @@ fn is_user_facing(path: &str) -> bool {
 fn is_fragment_path(path: &str) -> bool {
     path.strip_prefix(FOLDER)
         .and_then(|rest| rest.strip_prefix('/'))
-        .is_some_and(|name| name != README && name != CONFIG && !name.is_empty())
+        .is_some_and(is_fragment_name)
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -517,8 +699,10 @@ pub(crate) fn changed_since_merge_base(root: &Path, base: &str) -> anyhow::Resul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::changelog::archive::archive_name;
 
-    const CONFIG_JSON: &str = r#"{
+    pub(super) const CONFIG_JSON: &str = r#"{
+        "headline": "feat",
         "types": [
             {"id": "breaking", "heading": "Breaking changes"},
             {"id": "sec", "heading": "Security"},
@@ -536,7 +720,7 @@ mod tests {
         serde_json::from_str(CONFIG_JSON).unwrap()
     }
 
-    fn fragment_text(front_matter: &str, summary: &str) -> String {
+    pub(super) fn fragment_text(front_matter: &str, summary: &str) -> String {
         format!("---\n{front_matter}\n---\n{summary}\n")
     }
 
@@ -553,14 +737,19 @@ mod tests {
         }
     }
 
-    fn folder(files: &[(&str, &str)]) -> Folder {
-        Folder {
-            config: config(),
-            files: files
-                .iter()
-                .map(|(name, text)| ((*name).to_owned(), (*text).to_owned()))
-                .collect(),
+    pub(super) fn scratch_repo(fragments: &[(&str, &str)]) -> omnileaf_testkit::ScratchFolder {
+        let scratch = omnileaf_testkit::ScratchFolder::new("repo");
+        scratch.write(&format!("{FOLDER}/{CONFIG}"), CONFIG_JSON.as_bytes());
+        scratch.write(&format!("{FOLDER}/{README}"), b"# Fragments\n");
+        scratch.write(CHANGELOG, b"# Changelog\n");
+        for (name, text) in fragments {
+            scratch.write(&format!("{FOLDER}/{name}"), text.as_bytes());
         }
+        scratch
+    }
+
+    fn markdown_of(fragments: Vec<Fragment>) -> String {
+        CreditedNotes::gather(UNRELEASED, fragments, &config()).markdown(&config())
     }
 
     fn paths(paths: &[&str]) -> Vec<String> {
@@ -790,9 +979,9 @@ mod tests {
 
     #[test]
     fn names_the_file_and_the_problem_in_a_violation() {
-        let folder = folder(&[("a.md", "Just text.\n")]);
+        let scratch = scratch_repo(&[("a.md", "Just text.\n")]);
 
-        let violations = check(&folder);
+        let violations = check(scratch.path()).unwrap();
 
         assert_eq!(
             violations
@@ -805,20 +994,20 @@ mod tests {
 
     #[test]
     fn passes_a_folder_of_valid_fragments() {
-        let folder = folder(&[(
+        let scratch = scratch_repo(&[(
             "a.md",
             &fragment_text("type: fix\narea: reader", "The page stays put."),
         )]);
 
-        assert_eq!(check(&folder), []);
+        assert_eq!(check(scratch.path()).unwrap(), []);
     }
 
     #[test]
     fn reports_every_bad_fragment() {
         let good = fragment_text("type: fix\narea: reader", "Done.");
-        let folder = folder(&[("a.md", "x"), ("b.md", &good), ("c.txt", &good)]);
+        let scratch = scratch_repo(&[("a.md", "x"), ("b.md", &good), ("c.txt", &good)]);
 
-        let violations = check(&folder);
+        let violations = check(scratch.path()).unwrap();
 
         assert_eq!(
             violations,
@@ -835,7 +1024,7 @@ mod tests {
         );
     }
 
-    fn release() -> Vec<Fragment> {
+    fn mixed_fragments() -> Vec<Fragment> {
         vec![
             valid("fix", "reader", &["octocat"], "The page stays put."),
             valid("feat", "reader", &[], "Pages turn faster."),
@@ -852,11 +1041,13 @@ mod tests {
 
     #[test]
     fn groups_markdown_by_type_in_config_order_with_the_area_in_bold() {
-        let markdown = render_markdown(release(), &config());
+        let markdown = markdown_of(mixed_fragments());
 
         assert_eq!(
             markdown,
             "\
+Section tabs on Android.
+
 ## Breaking changes
 
 - **Library:** Old folders need adding again.
@@ -877,15 +1068,75 @@ Contributors: @hubot, @octocat
     }
 
     #[test]
-    fn leaves_out_a_type_nobody_used() {
-        let markdown = render_markdown(vec![valid("fix", "reader", &[], "Done.")], &config());
+    fn heads_the_markdown_with_the_first_new_entry() {
+        let fragments = vec![
+            valid("sec", "library", &[], "Archives stay inside."),
+            valid("feat", "reader", &[], "Pages turn faster."),
+        ];
 
-        assert_eq!(markdown, "## Fixed\n\n- **Reader:** Done.\n");
+        let markdown = markdown_of(fragments);
+
+        assert!(
+            markdown.starts_with("Pages turn faster.\n\n## Security\n"),
+            "{markdown}"
+        );
+    }
+
+    #[test]
+    fn heads_the_markdown_with_the_first_entry_when_nothing_is_new() {
+        let fragments = vec![
+            valid("fix", "reader", &[], "The page stays put."),
+            valid("sec", "library", &[], "Archives stay inside."),
+        ];
+
+        let markdown = markdown_of(fragments);
+
+        assert!(
+            markdown.starts_with("Archives stay inside.\n\n## Security\n"),
+            "{markdown}"
+        );
+    }
+
+    #[test]
+    fn heads_the_markdown_with_the_type_the_config_names() {
+        let fix_first: Config = serde_json::from_str(
+            &CONFIG_JSON.replace(r#""headline": "feat""#, r#""headline": "fix""#),
+        )
+        .unwrap();
+        let fragments = vec![
+            valid("feat", "reader", &[], "Pages turn faster."),
+            valid("fix", "library", &[], "Scans finish."),
+        ];
+
+        let markdown =
+            CreditedNotes::gather(UNRELEASED, fragments, &fix_first).markdown(&fix_first);
+
+        assert!(
+            markdown.starts_with("Scans finish.\n\n## New\n"),
+            "{markdown}"
+        );
+    }
+
+    #[test]
+    fn refuses_a_headline_that_is_not_a_type() {
+        let unknown_headline =
+            CONFIG_JSON.replace(r#""headline": "feat""#, r#""headline": "chore""#);
+
+        let error = serde_json::from_str::<Config>(&unknown_headline).unwrap_err();
+
+        assert!(error.to_string().contains("`chore`"), "{error}");
+    }
+
+    #[test]
+    fn leaves_out_a_type_nobody_used() {
+        let markdown = markdown_of(vec![valid("fix", "reader", &[], "Done.")]);
+
+        assert_eq!(markdown, "Done.\n\n## Fixed\n\n- **Reader:** Done.\n");
     }
 
     #[test]
     fn writes_no_contributors_line_without_credit() {
-        let markdown = render_markdown(vec![valid("fix", "reader", &[], "Done.")], &config());
+        let markdown = markdown_of(vec![valid("fix", "reader", &[], "Done.")]);
 
         assert!(!markdown.contains("Contributors"));
     }
@@ -897,7 +1148,7 @@ Contributors: @hubot, @octocat
             valid("fix", "library", &["octocat", "amy"], "Two."),
         ];
 
-        let markdown = render_markdown(fragments, &config());
+        let markdown = markdown_of(fragments);
 
         assert_eq!(
             markdown.lines().last(),
@@ -907,18 +1158,50 @@ Contributors: @hubot, @octocat
 
     #[test]
     fn writes_nothing_for_no_fragments() {
-        assert_eq!(render_markdown(Vec::new(), &config()), "");
+        assert_eq!(markdown_of(Vec::new()), "");
     }
 
     #[test]
     fn writes_json_entries_in_report_order_without_credit() {
-        let json = render_json("1.2.0", release(), &config()).unwrap();
+        let scratch = scratch_repo(&[
+            (
+                "a.md",
+                &fragment_text(
+                    "type: fix\narea: reader\ncredit: [octocat]",
+                    "The page stays put.",
+                ),
+            ),
+            (
+                "b.md",
+                &fragment_text("type: feat\narea: reader", "Pages turn faster."),
+            ),
+            (
+                "c.md",
+                &fragment_text(
+                    "type: breaking\narea: library\ncredit: [hubot, octocat]",
+                    "Old folders need adding again.",
+                ),
+            ),
+            (
+                "d.md",
+                &fragment_text("type: fix\narea: library", "Scans finish."),
+            ),
+            (
+                "e.md",
+                &fragment_text(
+                    "type: feat\narea: library\ncredit: [hubot]",
+                    "Section tabs on Android.",
+                ),
+            ),
+        ]);
+
+        let json = notes(scratch.path(), None, Format::Json).unwrap();
 
         let value: serde_json::Value = serde_json::from_str(&json).unwrap();
         assert_eq!(
             value,
             serde_json::json!({
-                "version": "1.2.0",
+                "version": "unreleased",
                 "entries": [
                     {"type": "breaking", "area": "library", "summary": "Old folders need adding again."},
                     {"type": "feat", "area": "library", "summary": "Section tabs on Android."},
@@ -933,35 +1216,106 @@ Contributors: @hubot, @octocat
 
     #[test]
     fn assembles_notes_from_the_folder_in_either_format() {
-        let folder = folder(&[(
+        let scratch = scratch_repo(&[(
             "a.md",
             &fragment_text("type: fix\narea: reader\ncredit: [octocat]", "Done."),
         )]);
 
-        let markdown = notes(&folder, None, Format::Markdown).unwrap();
-        let json = notes(&folder, Some("2.0.0"), Format::Json).unwrap();
+        let markdown = notes(scratch.path(), None, Format::Markdown).unwrap();
+        let json = notes(scratch.path(), Some("2.0.0-rc.1"), Format::Json).unwrap();
 
         assert_eq!(
             markdown,
-            "## Fixed\n\n- **Reader:** Done.\n\nContributors: @octocat\n"
+            "Done.\n\n## Fixed\n\n- **Reader:** Done.\n\nContributors: @octocat\n"
         );
-        assert!(json.contains("\"version\": \"2.0.0\""));
+        assert!(json.contains("\"version\": \"2.0.0-rc.1\""));
+    }
+
+    pub(super) const ARCHIVED_CHANGELOG: &str = "# Changelog\n\n## 1.2.0\n\n## New\n\n- **Reader:** Pages turn faster.\n\n## Fixed\n\n- **Library:** Scans finish.\n\nContributors: @octocat\n";
+
+    pub(super) const ARCHIVED_JSON: &str = r#"{
+        "version": "1.2.0",
+        "entries": [
+            {"type": "feat", "area": "reader", "summary": "Pages turn faster."},
+            {"type": "fix", "area": "library", "summary": "Scans finish."}
+        ],
+        "contributors": ["octocat"]
+    }"#;
+
+    pub(super) const EMPTY_ARCHIVE_JSON: &str =
+        r#"{"version": "1.2.0", "entries": [], "contributors": []}"#;
+
+    pub(super) fn archive(scratch: &omnileaf_testkit::ScratchFolder, version: &str, json: &str) {
+        scratch.write(
+            &format!("{FOLDER}/{RELEASED}/{}", archive_name(version)),
+            json.as_bytes(),
+        );
+    }
+
+    pub(super) fn notes_in(
+        scratch: &omnileaf_testkit::ScratchFolder,
+        version: &str,
+        format: Format,
+    ) -> anyhow::Result<String> {
+        notes(scratch.path(), Some(version), format)
+    }
+
+    #[test]
+    fn takes_the_notes_of_a_pre_release_from_the_fragments() {
+        let scratch = scratch_repo(&[(
+            "a.md",
+            &fragment_text("type: fix\narea: reader", "Not yet out."),
+        )]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+
+        let json = notes_in(&scratch, "1.3.0-rc.1", Format::Json).unwrap();
+
+        assert!(json.contains("Not yet out."), "{json}");
+        assert!(json.contains("\"version\": \"1.3.0-rc.1\""), "{json}");
+    }
+
+    #[test]
+    fn refuses_the_notes_of_a_pre_release_without_fragments() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+
+        let error = notes_in(&scratch, "1.3.0-rc.1", Format::Markdown).unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            ".changes has no fragments, so 1.3.0-rc.1 would have no release notes"
+        );
+    }
+
+    #[test]
+    fn writes_empty_unreleased_notes_without_fragments() {
+        let scratch = scratch_repo(&[]);
+
+        let markdown = notes(scratch.path(), None, Format::Markdown).unwrap();
+
+        assert_eq!(markdown, "");
     }
 
     #[test]
     fn records_the_version_as_unreleased_when_none_is_given() {
-        let json = notes(&folder(&[]), None, Format::Json).unwrap();
+        let scratch = scratch_repo(&[]);
+
+        let json = notes(scratch.path(), None, Format::Json).unwrap();
 
         assert!(json.contains("\"version\": \"unreleased\""));
     }
 
     #[test]
     fn refuses_to_assemble_notes_from_a_bad_fragment() {
-        let folder = folder(&[("a.md", "x")]);
+        let scratch = scratch_repo(&[("a.md", "x")]);
 
-        let error = notes(&folder, None, Format::Markdown).unwrap_err();
+        let error = notes(scratch.path(), None, Format::Markdown).unwrap_err();
 
         assert!(error.to_string().contains(".changes/a.md"), "{error}");
+    }
+
+    pub(super) fn with_changelog(scratch: &omnileaf_testkit::ScratchFolder, text: &str) {
+        scratch.write(CHANGELOG, text.as_bytes());
     }
 
     #[test]
@@ -1001,6 +1355,40 @@ Contributors: @hubot, @octocat
 
             assert!(require(&changed, false).is_err(), "{file}");
         }
+    }
+
+    #[test]
+    fn does_not_count_a_released_archive_as_a_fragment() {
+        let changed = paths(&["app/src/lib/a.ts", ".changes/released/1.2.0.json"]);
+
+        assert!(require(&changed, false).is_err());
+    }
+
+    #[test]
+    fn does_not_check_the_released_folder_as_a_fragment() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        with_changelog(&scratch, ARCHIVED_CHANGELOG);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(violations, []);
+    }
+
+    #[test]
+    fn leaves_the_released_folder_out_of_the_unreleased_notes() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+
+        let json = notes(scratch.path(), None, Format::Json).unwrap();
+
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&json).unwrap(),
+            serde_json::json!({
+                "version": "unreleased",
+                "entries": [{"type": "fix", "area": "reader", "summary": "Done."}]
+            })
+        );
     }
 
     #[test]

@@ -116,6 +116,7 @@ const LAYOUT_DATA = {
     sourceCode: "repo.example.org/omnileaf",
     isDevelopmentBuild: false,
     windowBackdrop: "none",
+    checksForUpdates: false,
   },
   libraryProblem: null,
   homeArrival: null,

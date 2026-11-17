@@ -3,8 +3,7 @@ import { cp, mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
-import { inject } from "vitest";
-
+import { capability } from "./app-under-test.ts";
 import { createSampleLibrary } from "./sample-library.ts";
 
 const SIMCTL_TIMEOUT_MS = 30_000;
@@ -12,14 +11,6 @@ const RELAUNCH_TIMEOUT_MS = 60_000;
 const SAMPLE_CHAPTER = join("Sample Series 03", "Chapter 01");
 
 const run = promisify(execFile);
-
-export function capability(name: string): string {
-  const value = inject("appUnderTest").capabilities[name];
-  if (typeof value !== "string") {
-    throw new Error(`the iOS session has no ${name}`);
-  }
-  return value;
-}
 
 /** XCTest's own terminate and launch, behind Appium's terminateApp and activateApp, wait up to a minute for the app to settle and have hung there on CI, while the Simulator's launcher returns once the app has restarted. */
 export async function relaunchOnSimulator(): Promise<void> {
