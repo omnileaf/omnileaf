@@ -8,8 +8,10 @@ import {
   testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
+import { folderRow, goToStep, openFolderGuide } from "./first-launch-steps.ts";
 
 const ACCENT = "rgb(47, 111, 79)";
+const LINK_STEP = 2;
 const HOME_LOCATION = "C:\\Users\\Reader\\Documents\\Omnileaf";
 
 test.describe("the first launch on Windows", () => {
@@ -124,6 +126,41 @@ test.describe("the first launch on Windows", () => {
       "border-top-width",
       "1px",
     );
+  });
+
+  test("opens the folder guide on a full page with Back beside its title and no footer under it", async ({
+    page,
+  }) => {
+    await goToStep(page, LINK_STEP);
+    await openFolderGuide(page);
+    const main = page.getByRole("main");
+    const title = main
+      .locator("header")
+      .getByRole("heading", { level: 1, name: "How folders are read" });
+    await expect(title).toBeFocused();
+
+    const back = await boxOf(main.getByRole("button", { name: "Back" }));
+
+    expect(back.x).toBeLessThan((await boxOf(title)).x);
+    await expect(main.getByRole("progressbar")).toHaveCount(0);
+    await expect(main.locator("footer")).toHaveCount(0);
+  });
+
+  test("returns from the folder guide to the folder step with Back", async ({
+    page,
+  }) => {
+    await goToStep(page, LINK_STEP);
+    await openFolderGuide(page);
+
+    await page.getByRole("main").getByRole("button", { name: "Back" }).click();
+
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "Already have comics or books?",
+      }),
+    ).toBeFocused();
+    await expect(folderRow(page, "Comics")).toBeVisible();
   });
 
   test("tells the last step with a check in the Windows success colour, left aligned", async ({
