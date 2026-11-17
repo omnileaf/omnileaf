@@ -3,7 +3,6 @@ import { createContext } from "svelte";
 import { resolve } from "$app/paths";
 import { assertNever } from "#lib/assert-never.ts";
 import { lastUnfinishedBookPage } from "#lib/history/last-book.ts";
-import { takeRestoredRoute } from "#lib/navigation/restored-route.ts";
 import {
   browserPreferenceStore,
   type PreferenceStore,
@@ -46,12 +45,10 @@ export const [getOpensOnSetting, setOpensOnSetting] =
 
 type FindPage = () => Promise<string | undefined>;
 
-export interface OpeningPages {
-  readonly restoredRoute: FindPage;
-  readonly lastBook: FindPage;
-}
-
-export type OpeningPage = (place: OpeningPlace) => Promise<string | undefined>;
+export type OpeningPage = (
+  place: OpeningPlace,
+  restored: string | undefined,
+) => Promise<string | undefined>;
 
 async function placePage(
   place: OpeningPlace,
@@ -69,22 +66,18 @@ async function placePage(
   }
 }
 
-export function openingPageOnce(pages: OpeningPages): OpeningPage {
+export function openingPageOnce(lastBook: FindPage): OpeningPage {
   let hasOpened = false;
-  return async (place) => {
+  return async (place, restored) => {
     if (hasOpened) {
       return undefined;
     }
     hasOpened = true;
-    const restored = await pages.restoredRoute();
     if (restored === undefined) {
-      return placePage(place, pages.lastBook);
+      return placePage(place, lastBook);
     }
     return restored === resolve("/(app)") ? undefined : restored;
   };
 }
 
-export const openingPage: OpeningPage = openingPageOnce({
-  restoredRoute: takeRestoredRoute,
-  lastBook: lastUnfinishedBookPage,
-});
+export const openingPage: OpeningPage = openingPageOnce(lastUnfinishedBookPage);

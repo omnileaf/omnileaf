@@ -14,6 +14,7 @@ import {
   opensOnSettingForDocument,
 } from "#lib/general/opens-on.svelte.ts";
 import { commands } from "#lib/ipc/bindings.ts";
+import { takeRestoredRoute } from "#lib/navigation/restored-route.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 import { followSystemBoldText } from "#lib/page/system-bold-text.ts";
 import { followSystemContrast } from "#lib/page/system-contrast.ts";
@@ -37,6 +38,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   void followSystemBoldText(appInfo.platform);
   touchChoices.markDocument();
   void rememberLockWords();
+  const restoredRoute = await takeRestoredRoute(appInfo.platform);
   if (libraryProblem !== null) {
     return { appInfo, libraryProblem, homeArrival, isFirstLaunch: false };
   }
@@ -48,7 +50,10 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
     redirect(307, resolve(FIRST_LAUNCH_ROUTE));
   }
   if (!isFirstLaunch && untrack(() => url.pathname) === resolve("/(app)")) {
-    const opening = await openingPage(opensOnSettingForDocument().choice);
+    const opening = await openingPage(
+      opensOnSettingForDocument().choice,
+      restoredRoute,
+    );
     if (opening !== undefined) {
       redirect(307, opening);
     }
