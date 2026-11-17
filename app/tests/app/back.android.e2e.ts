@@ -4,7 +4,7 @@ import { ANDROID_APP_ID, adbShell } from "./android-settings.ts";
 import {
   clickWhenShown,
   mainNavigationLink,
-  settingsRow,
+  openSettingsPage,
   shownPage,
   useAppSession,
 } from "./app-session.ts";
@@ -56,9 +56,7 @@ async function recreateTheScreenWithAppLanguages(
 }
 
 test("goes up from a Settings page to Settings and then to Library", async () => {
-  await clickWhenShown(appSession(), mainNavigationLink("Settings"));
-  await clickWhenShown(appSession(), settingsRow("Appearance"));
-  await shownPage(appSession(), "Appearance");
+  await openSettingsPage(appSession(), "Appearance");
 
   await pressBack();
   const upOneLevel = await shownPage(appSession(), "Settings");
@@ -81,9 +79,7 @@ test("goes back to Library from a section opened after another", async () => {
 test("keeps back inside the app after Android recreates the activity", async () => {
   await recreateTheScreenWithAppLanguages(RIGHT_TO_LEFT_LANGUAGE);
   await recreateTheScreenWithAppLanguages(appLanguagesBefore ?? "");
-  await clickWhenShown(appSession(), mainNavigationLink("Settings"));
-  await clickWhenShown(appSession(), settingsRow("About"));
-  await shownPage(appSession(), "About");
+  await openSettingsPage(appSession(), "About");
 
   await pressBack();
 

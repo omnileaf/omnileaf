@@ -4,9 +4,7 @@ import { promisify } from "node:util";
 import { expect, test } from "vitest";
 
 import {
-  clickWhenShown,
-  mainNavigationLink,
-  settingsRow,
+  openSettingsPage,
   SHOWN_PATH,
   shownPage,
   useAppSession,
@@ -82,12 +80,6 @@ async function reclaimTheAppInTheBackground(): Promise<void> {
   );
 }
 
-async function openAppearanceSettings(): Promise<void> {
-  await clickWhenShown(appSession(), mainNavigationLink("Settings"));
-  await clickWhenShown(appSession(), settingsRow("Appearance"));
-  await shownPage(appSession(), "Appearance");
-}
-
 test("publishes Screenshot mode with its state, Continue reading and Search the library", async () => {
   await expect
     .poll(publishedShortcuts, { timeout: PUBLISHED_TIMEOUT_MS })
@@ -141,7 +133,7 @@ test("coming back after Android reclaimed the app does not choose again the shor
 });
 
 test("a shortcut chosen after Android reclaimed the app opens its page instead of the page left", async () => {
-  await openAppearanceSettings();
+  await openSettingsPage(appSession(), "Appearance");
   await reclaimTheAppInTheBackground();
 
   await chooseOnTheIcon("searchLibrary");
@@ -152,7 +144,7 @@ test("a shortcut chosen after Android reclaimed the app opens its page instead o
 });
 
 test("coming back from the launcher after Android reclaimed the app keeps the page left", async () => {
-  await openAppearanceSettings();
+  await openSettingsPage(appSession(), "Appearance");
   await reclaimTheAppInTheBackground();
 
   await openFromTheLauncher();

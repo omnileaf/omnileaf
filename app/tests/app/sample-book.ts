@@ -55,10 +55,14 @@ export async function showTheBooks(session: Session): Promise<void> {
   await session.waitUntil(SCROLL_TO_THE_BOOKS, "the series' books in view");
 }
 
-export async function openSampleSeries(session: Session): Promise<void> {
-  await addSampleLibrary(session);
+export async function showSampleSeries(session: Session): Promise<void> {
   await (await session.waitFor(FIRST_SERIES_COVER)).click();
   await showTheBooks(session);
+}
+
+export async function openSampleSeries(session: Session): Promise<void> {
+  await addSampleLibrary(session);
+  await showSampleSeries(session);
 }
 
 export async function openSampleBook(
@@ -95,8 +99,7 @@ export async function readSampleBookToPage(
   session: Session,
   page: number,
 ): Promise<void> {
-  await (await session.waitFor(FIRST_SERIES_COVER)).click();
-  await showTheBooks(session);
+  await showSampleSeries(session);
   await (await session.waitFor(sampleBookLink(1))).click();
   const guide = await session.findWithin(GOT_IT, GUIDE_TIMEOUT_MS);
   await guide?.click();

@@ -2,9 +2,7 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 
 import { androidSetting, ANDROID_APP_ID } from "./android-settings.ts";
 import {
-  clickWhenShown,
-  mainNavigationLink,
-  settingsRow,
+  openSettingsPage,
   SHOWN_PATH,
   shownPage,
   useAppSession,
@@ -16,9 +14,9 @@ import {
 } from "./files-sample-library.ts";
 import { followRecreatedScreen } from "./recreated-screen.ts";
 import {
-  FIRST_SERIES_COVER,
   PAGE_COUNTER,
   readSampleBookToPage,
+  showSampleSeries,
 } from "./sample-book.ts";
 
 const SETUP_TIMEOUT_MS = 180_000;
@@ -62,17 +60,6 @@ async function changeTheContrast(): Promise<void> {
   });
 }
 
-async function showSampleSeries(): Promise<void> {
-  await (await appSession().waitFor(FIRST_SERIES_COVER)).click();
-  await shownPage(appSession(), SAMPLE_SERIES);
-}
-
-async function openAppearanceSettings(): Promise<void> {
-  await clickWhenShown(appSession(), mainNavigationLink("Settings"));
-  await clickWhenShown(appSession(), settingsRow("Appearance"));
-  await shownPage(appSession(), "Appearance");
-}
-
 async function pressBack(): Promise<void> {
   await appSession().runMobileCommand("pressKey", { keycode: BACK_KEY });
 }
@@ -84,7 +71,7 @@ async function appState(): Promise<unknown> {
 }
 
 test("stays on a Settings page when Android's colour contrast changes", async () => {
-  await openAppearanceSettings();
+  await openSettingsPage(appSession(), "Appearance");
 
   await changeTheContrast();
 
@@ -92,7 +79,7 @@ test("stays on a Settings page when Android's colour contrast changes", async ()
 });
 
 test("keeps Back inside the app on a page kept through a contrast change", async () => {
-  await openAppearanceSettings();
+  await openSettingsPage(appSession(), "Appearance");
   await changeTheContrast();
   await shownPage(appSession(), "Appearance");
 
@@ -103,7 +90,7 @@ test("keeps Back inside the app on a page kept through a contrast change", async
 });
 
 test("stays on a series page when Android's colour contrast changes", async () => {
-  await showSampleSeries();
+  await showSampleSeries(appSession());
   const pathBefore = await appSession().run(SHOWN_PATH);
 
   await changeTheContrast();

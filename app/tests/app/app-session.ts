@@ -41,6 +41,15 @@ export async function shownPage(
   return heading.text();
 }
 
+export async function openSettingsPage(
+  session: Session,
+  row: string,
+): Promise<void> {
+  await clickWhenShown(session, SETTINGS_LINK);
+  await clickWhenShown(session, settingsRow(row));
+  await shownPage(session, row);
+}
+
 export async function expectStillOn(
   session: Session,
   windowsBefore: readonly string[],
