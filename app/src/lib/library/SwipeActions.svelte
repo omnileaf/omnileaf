@@ -12,7 +12,6 @@
     readonly label: string;
     readonly words: string;
     readonly isDestructive: boolean;
-    readonly runsOnFullSwipe: boolean;
     readonly act: () => void;
   }
 
@@ -20,24 +19,24 @@
     swipe,
     key,
     actions,
+    onFullSwipe,
     children,
   }: {
     swipe: RowSwipe;
     key: string;
     actions: readonly SwipeAction[];
+    onFullSwipe?: (() => void) | undefined;
     children: Snippet;
   } = $props();
 
   let strip: HTMLElement | undefined = $state();
   let content: HTMLElement | undefined = $state();
 
-  const fullSwipeAction = $derived(
-    actions.find(({ runsOnFullSwipe }) => runsOnFullSwipe),
-  );
-  const opensOnActions: OpenAction = $derived({
+  const opensOnActions: OpenAction = {
     revealPx: () => strip?.getBoundingClientRect().width ?? 0,
-    actPastOpenPx: fullSwipeAction === undefined ? 0 : ACT_PAST_OPEN_PX,
-  });
+    actPastOpenPx: ACT_PAST_OPEN_PX,
+    actPastRevealPx: ACT_PAST_OPEN_PX,
+  };
 
   const isOpen = $derived(swipe.sideOf(key) !== undefined);
 </script>
@@ -64,7 +63,7 @@
     onpointerup={() => {
       const outcome = swipe.released(opensOnActions);
       if (outcome.kind === "act" && outcome.side === "towardStart") {
-        fullSwipeAction?.act();
+        onFullSwipe?.();
       }
     }}
     onpointercancel={() => {

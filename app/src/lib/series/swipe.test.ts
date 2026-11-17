@@ -84,3 +84,16 @@ test("takes a drag as a swipe only once it moves more across than down", () => {
 test("mirrors the travel of a swipe in right-to-left text", () => {
   expect([travelToward(80, "ltr"), travelToward(80, "rtl")]).toEqual([80, -80]);
 });
+
+test("acts on a closed row only past the least distance it asks for", () => {
+  const closed = { rowWidth: 358, openPx: 0, actPastOpenPx: 48 };
+  const leastPx = 234;
+
+  expect(
+    [200, 240].map(
+      (travel) =>
+        swipeOutcome({ travel, ...closed, closedActPx: leastPx }, EITHER_SIDE)
+          .kind,
+    ),
+  ).toEqual(["reveal", "act"]);
+});

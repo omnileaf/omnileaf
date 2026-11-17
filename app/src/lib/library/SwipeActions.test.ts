@@ -4,151 +4,139 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import { ACT_PAST_OPEN_PX } from "#lib/series/row-swipe.svelte.ts";
+import { swipeAcross } from "#lib/series/row-swipe-finger.ts";
+import type { SwipeSide } from "#lib/series/swipe.ts";
+
 import type { SwipeAction } from "./SwipeActions.svelte";
 import SwipeActionsHarness from "./SwipeActionsHarness.svelte";
 
-const FULL_SWIPE = 0.75;
 const SHORT_SWIPE = 0.25;
-const NUDGE = 0.1;
+const FULL_SWIPE = 0.75;
+const JUST_PAST_ACTIONS_PX = 10;
+const PAST_MARGIN_PX = ACT_PAST_OPEN_PX + 2;
+const NUDGE_PX = ACT_PAST_OPEN_PX - 18;
 
-interface Acted {
-  readonly actions: readonly SwipeAction[];
-  readonly acted: readonly string[];
+interface Row {
+  readonly row: HTMLElement;
+  readonly widthPx: number;
+  readonly actionsPx: number;
+  readonly ran: readonly string[];
 }
 
-function renameAndDelete(deleteRunsOnFullSwipe: boolean): Acted {
-  const acted: string[] = [];
-  const action = (name: string, runsOnFullSwipe: boolean): SwipeAction => ({
+interface RowOptions {
+  readonly dir?: "ltr" | "rtl";
+  readonly canSwipe?: (side: SwipeSide) => boolean;
+  readonly hasFullSwipe?: boolean;
+}
+
+async function renderRow({
+  dir = "ltr",
+  canSwipe = (side) => side === "towardStart",
+  hasFullSwipe = true,
+}: RowOptions = {}): Promise<Row> {
+  const ran: string[] = [];
+  const action = (name: string): SwipeAction => ({
     name,
     label: `${name} Seinen`,
     words: name,
     isDestructive: name === "delete",
-    runsOnFullSwipe,
     act: () => {
-      acted.push(name);
+      ran.push(name);
     },
   });
+  const { container } = await render(SwipeActionsHarness, {
+    actions: [action("rename"), action("delete")],
+    onFullSwipe: hasFullSwipe
+      ? () => {
+          ran.push("full swipe");
+        }
+      : undefined,
+    canSwipe,
+    dir,
+  });
+  const row = container.querySelector("[data-swiped]");
+  const strip = row?.nextElementSibling;
+  if (!(row instanceof HTMLElement) || !(strip instanceof HTMLElement)) {
+    throw new Error("the row has no swiped layer or no actions");
+  }
   return {
-    actions: [action("rename", false), action("delete", deleteRunsOnFullSwipe)],
-    acted,
+    row,
+    widthPx: row.getBoundingClientRect().width,
+    actionsPx: strip.getBoundingClientRect().width,
+    ran,
   };
 }
 
-function swipedRow(container: HTMLElement): HTMLElement {
-  const row = container.querySelector("[data-swiped]");
-  if (!(row instanceof HTMLElement)) {
-    throw new Error("the row has no swiped layer");
-  }
-  return row;
-}
-
-function openGap(row: HTMLElement): number {
+function openGap({ row, actionsPx }: Row): number {
   flushSync();
-  const strip = row.nextElementSibling?.getBoundingClientRect().width;
-  return Number.parseFloat(row.style.translate) + (strip ?? Number.NaN);
+  return Number.parseFloat(row.style.translate) + actionsPx;
 }
 
-function swipeAcross(target: Element, share: number): void {
-  const box = target.getBoundingClientRect();
-  const across = box.width * share;
-  const at = (moved: number): PointerEventInit => ({
-    pointerType: "touch",
-    pointerId: 7,
-    isPrimary: true,
-    bubbles: true,
-    clientX: box.x + box.width / 2 + moved,
-    clientY: box.y + box.height / 2,
-  });
-  target.dispatchEvent(new PointerEvent("pointerdown", at(0)));
-  for (const moved of [across / 4, across / 2, across]) {
-    target.dispatchEvent(new PointerEvent("pointermove", at(moved)));
-  }
-  target.dispatchEvent(new PointerEvent("pointerup", at(across)));
-}
+test("runs the full swipe when a closed row is swiped past its actions and a margin toward the start", async () => {
+  const shown = await renderRow();
 
-test("runs the full-swipe action when the row is swiped past half its width toward the start", async () => {
-  const { actions, acted } = renameAndDelete(true);
-  const { container } = await render(SwipeActionsHarness, {
-    actions,
-    dir: "ltr",
-  });
+  swipeAcross(shown.row, -(shown.actionsPx + PAST_MARGIN_PX));
 
-  swipeAcross(swipedRow(container), -FULL_SWIPE);
-
-  expect(acted).toEqual(["delete"]);
+  expect(shown.ran).toEqual(["full swipe"]);
 });
 
-test("runs the full-swipe action on a swipe toward the start in right-to-left text", async () => {
-  const { actions, acted } = renameAndDelete(true);
-  const { container } = await render(SwipeActionsHarness, {
-    actions,
-    dir: "rtl",
-  });
+test("runs the full swipe on a swipe toward the start in right-to-left text", async () => {
+  const shown = await renderRow({ dir: "rtl" });
 
-  swipeAcross(swipedRow(container), FULL_SWIPE);
+  swipeAcross(shown.row, shown.actionsPx + PAST_MARGIN_PX);
 
-  expect(acted).toEqual(["delete"]);
+  expect(shown.ran).toEqual(["full swipe"]);
+});
+
+test("only opens a closed row swiped just past its actions", async () => {
+  const shown = await renderRow();
+
+  swipeAcross(shown.row, -(shown.actionsPx + JUST_PAST_ACTIONS_PX));
+
+  expect(shown.ran).toEqual([]);
+  expect(openGap(shown)).toBeCloseTo(0);
 });
 
 test("runs nothing on a full swipe toward the end", async () => {
-  const { actions, acted } = renameAndDelete(true);
-  const { container } = await render(SwipeActionsHarness, {
-    actions,
-    dir: "ltr",
-  });
+  const shown = await renderRow({ canSwipe: () => true });
 
-  swipeAcross(swipedRow(container), FULL_SWIPE);
+  swipeAcross(shown.row, shown.widthPx * FULL_SWIPE);
 
-  expect(acted).toEqual([]);
+  expect(shown.ran).toEqual([]);
 });
 
 test("only opens the row on a short swipe", async () => {
-  const { actions, acted } = renameAndDelete(true);
-  const { container } = await render(SwipeActionsHarness, {
-    actions,
-    dir: "ltr",
-  });
+  const shown = await renderRow();
 
-  swipeAcross(swipedRow(container), -SHORT_SWIPE);
+  swipeAcross(shown.row, -shown.widthPx * SHORT_SWIPE);
 
-  expect(acted).toEqual([]);
+  expect(shown.ran).toEqual([]);
 });
 
-test("runs nothing on a full swipe when no action asks to", async () => {
-  const { actions, acted } = renameAndDelete(false);
-  const { container } = await render(SwipeActionsHarness, {
-    actions,
-    dir: "ltr",
-  });
+test("runs nothing on a full swipe without a full-swipe action", async () => {
+  const shown = await renderRow({ hasFullSwipe: false });
 
-  swipeAcross(swipedRow(container), -FULL_SWIPE);
+  swipeAcross(shown.row, -shown.widthPx * FULL_SWIPE);
 
-  expect(acted).toEqual([]);
+  expect(shown.ran).toEqual([]);
 });
 
 test("keeps an open row open when it is swiped a little further toward the start", async () => {
-  const { actions, acted } = renameAndDelete(true);
-  const { container } = await render(SwipeActionsHarness, {
-    actions,
-    dir: "ltr",
-  });
-  swipeAcross(swipedRow(container), -SHORT_SWIPE);
+  const shown = await renderRow();
+  swipeAcross(shown.row, -shown.widthPx * SHORT_SWIPE);
 
-  swipeAcross(swipedRow(container), -NUDGE);
+  swipeAcross(shown.row, -NUDGE_PX);
 
-  expect(acted).toEqual([]);
-  expect(openGap(swipedRow(container))).toBeCloseTo(0);
+  expect(shown.ran).toEqual([]);
+  expect(openGap(shown)).toBeCloseTo(0);
 });
 
-test("runs the full-swipe action when an open row is swiped on past its actions", async () => {
-  const { actions, acted } = renameAndDelete(true);
-  const { container } = await render(SwipeActionsHarness, {
-    actions,
-    dir: "ltr",
-  });
-  swipeAcross(swipedRow(container), -SHORT_SWIPE);
+test("runs the full swipe when an open row is swiped on past the margin", async () => {
+  const shown = await renderRow();
+  swipeAcross(shown.row, -shown.widthPx * SHORT_SWIPE);
 
-  swipeAcross(swipedRow(container), -SHORT_SWIPE);
+  swipeAcross(shown.row, -PAST_MARGIN_PX);
 
-  expect(acted).toEqual(["delete"]);
+  expect(shown.ran).toEqual(["full swipe"]);
 });

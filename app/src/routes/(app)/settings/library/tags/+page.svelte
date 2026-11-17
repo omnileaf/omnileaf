@@ -140,6 +140,9 @@
       >
         {#each shown as tag (tag.name)}
           {#if ios.isOn}
+            {@const removeTag = () => {
+              void remove(tag.name);
+            }}
             <li>
               <SwipeActions
                 {swipe}
@@ -150,7 +153,6 @@
                     label: m.manage_tags_rename({ tag: tag.name }),
                     words: m.manage_tags_rename_action(),
                     isDestructive: false,
-                    runsOnFullSwipe: false,
                     act: () => {
                       renaming = tag.name;
                     },
@@ -160,12 +162,10 @@
                     label: m.manage_tags_delete({ tag: tag.name }),
                     words: m.manage_tags_delete_action(),
                     isDestructive: true,
-                    runsOnFullSwipe: true,
-                    act: () => {
-                      void remove(tag.name);
-                    },
+                    act: removeTag,
                   },
                 ]}
+                onFullSwipe={removeTag}
               >
                 <span
                   class="flex items-center gap-md ps-lg pe-lg min-block-native-row"
