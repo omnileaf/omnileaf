@@ -50,6 +50,7 @@
   import { EVERY_BOOK_IN_ORDER } from "#lib/series/book-listing.ts";
   import type { BooksControls } from "#lib/series/books-controls.ts";
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
+  import { seriesBooksHeading } from "#lib/series/books-heading.ts";
   import { seriesBookCommands } from "#lib/series/series-book-commands.ts";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
@@ -442,9 +443,7 @@
                       : books.list.items}
                     {sections}
                     seriesTitle={overview.title}
-                    bookCount={found.overview.bookCount}
-                    readCount={found.overview.readCount}
-                    bookmarkCount={found.overview.bookmarkCount}
+                    heading={seriesBooksHeading(found.overview)}
                     {listing}
                     onListing={choose}
                     isComplete={books.list.isComplete}
