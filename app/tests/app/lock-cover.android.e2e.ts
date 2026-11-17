@@ -163,7 +163,37 @@ async function leaveAndComeBack(): Promise<void> {
   await appSession().inNativeContext(() =>
     appSession().waitFor(PIN_ENTRY, PROMPT_TIMEOUT_MS),
   );
+  await cancelScreenLock();
+}
+
+async function isKeyboardShown(): Promise<boolean> {
+  return (await appSession().runMobileCommand("isKeyboardShown", {})) === true;
+}
+
+async function waitForKeyboard(isShown: boolean, what: string): Promise<void> {
+  await pollUntil(
+    async () => ((await isKeyboardShown()) === isShown ? true : undefined),
+    PROMPT_TIMEOUT_MS,
+    what,
+  );
+}
+
+/** Android's first BACK on a screen lock prompt only closes the keyboard its PIN field opens. */
+async function cancelScreenLock(): Promise<void> {
+  await waitForKeyboard(true, "the screen lock keyboard to open");
   await pressKey(BACK_KEY);
+  await waitForKeyboard(false, "the screen lock keyboard to close");
+  await pressKey(BACK_KEY);
+  await appSession().inNativeContext(() =>
+    pollUntil(
+      async () =>
+        (await appSession().findWithin(PIN_ENTRY, 0)) === undefined
+          ? true
+          : undefined,
+      PROMPT_TIMEOUT_MS,
+      "the screen lock prompt to close",
+    ),
+  );
 }
 
 async function unlockIfCovered(): Promise<void> {
