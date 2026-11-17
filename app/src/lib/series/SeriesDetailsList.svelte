@@ -13,10 +13,12 @@
   let {
     overview,
     sourced,
+    hasOrderLineAbove,
     ref = $bindable(),
   }: {
     overview: SeriesOverview;
     sourced?: SeriesDetails | undefined;
+    hasOrderLineAbove: boolean;
     ref?: HTMLElement | undefined;
   } = $props();
 
@@ -65,46 +67,57 @@
   </span>
 {/snippet}
 
-<dl
-  bind:this={ref}
-  tabindex="-1"
-  class="grid grid-cols-details items-baseline gap-x-md gap-y-sm text-small outline-none android:max-medium:flex android:max-medium:flex-col android:max-medium:gap-none"
->
-  <div class={ROW}>
-    <dt class={TERM}>{m.series_detail_title()}</dt>
-    <dd class={["wrap-anywhere", VALUE]}>
-      {overview.title}
-      {#if titleSource !== undefined}
-        {@render source(titleSource)}
-      {/if}
-    </dd>
-  </div>
-  {#each credits as { role, names } (role)}
+<div bind:this={ref} tabindex="-1" class="outline-none">
+  {#if hasOrderLineAbove}
+    <p
+      class="ps-native-row-start pe-native-row-start pbe-sm text-native-row-subtitle/native-row-subtitle tracking-native-row-subtitle text-muted"
+    >
+      {m.series_detail_order()}
+    </p>
+  {/if}
+  <dl
+    class="grid grid-cols-details items-baseline gap-x-md gap-y-sm text-small android:max-medium:flex android:max-medium:flex-col android:max-medium:gap-none"
+  >
     <div class={ROW}>
-      <dt class={TERM}>{roleName(role)}</dt>
+      <dt class={TERM}>{m.series_detail_title()}</dt>
       <dd class={["wrap-anywhere", VALUE]}>
-        <CreatorNames {names} creators={overview.creators} from={overview.id} />
-        {#if peopleSource !== undefined}
-          {@render source(peopleSource)}
+        {overview.title}
+        {#if titleSource !== undefined}
+          {@render source(titleSource)}
         {/if}
       </dd>
     </div>
-  {/each}
-  {#if year !== null}
-    <div class={ROW}>
-      <dt class={TERM}>{m.series_detail_year()}</dt>
-      <dd class={VALUE}>
-        {year.fromFile}
-        {#if yearSource !== undefined}
-          {@render source(yearSource)}
-        {/if}
-      </dd>
-    </div>
-  {/if}
-  {#if overview.format !== null}
-    <div class={ROW}>
-      <dt class={TERM}>{m.series_detail_format()}</dt>
-      <dd class={["wrap-anywhere", VALUE]}>{overview.format}</dd>
-    </div>
-  {/if}
-</dl>
+    {#each credits as { role, names } (role)}
+      <div class={ROW}>
+        <dt class={TERM}>{roleName(role)}</dt>
+        <dd class={["wrap-anywhere", VALUE]}>
+          <CreatorNames
+            {names}
+            creators={overview.creators}
+            from={overview.id}
+          />
+          {#if peopleSource !== undefined}
+            {@render source(peopleSource)}
+          {/if}
+        </dd>
+      </div>
+    {/each}
+    {#if year !== null}
+      <div class={ROW}>
+        <dt class={TERM}>{m.series_detail_year()}</dt>
+        <dd class={VALUE}>
+          {year.fromFile}
+          {#if yearSource !== undefined}
+            {@render source(yearSource)}
+          {/if}
+        </dd>
+      </div>
+    {/if}
+    {#if overview.format !== null}
+      <div class={ROW}>
+        <dt class={TERM}>{m.series_detail_format()}</dt>
+        <dd class={["wrap-anywhere", VALUE]}>{overview.format}</dd>
+      </div>
+    {/if}
+  </dl>
+</div>

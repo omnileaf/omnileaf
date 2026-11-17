@@ -44,7 +44,12 @@
   import type { CoverUrl } from "#lib/library/cover-url.ts";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone, phoneOf } from "#lib/page/platform.ts";
+  import {
+    currentPlatform,
+    isPhone,
+    isPointer,
+    phoneOf,
+  } from "#lib/page/platform.ts";
   import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -90,6 +95,18 @@
     windows: undefined,
   };
 
+  type OrderLinePlace = "aboveDetails";
+
+  const ORDER_LINE_PLACES: Readonly<
+    Record<Platform, OrderLinePlace | undefined>
+  > = {
+    android: "aboveDetails",
+    ios: undefined,
+    linux: undefined,
+    macos: undefined,
+    windows: undefined,
+  };
+
   let {
     overview,
     details: sourced,
@@ -115,6 +132,11 @@
   );
   const detailsRow = $derived(
     isPhone(platform, width.current) ? DETAILS_ROWS[platform] : undefined,
+  );
+  const orderLinePlace = $derived(
+    isPointer(platform) || isPhone(platform, width.current)
+      ? ORDER_LINE_PLACES[platform]
+      : undefined,
   );
 
   let areDetailsOpen = $state(false);
@@ -252,7 +274,12 @@
         </CardAction>
       </CardHeader>
       <CardContent class="px-lg">
-        <SeriesDetailsList {overview} {sourced} bind:ref={details} />
+        <SeriesDetailsList
+          {overview}
+          {sourced}
+          hasOrderLineAbove={orderLinePlace === "aboveDetails"}
+          bind:ref={details}
+        />
       </CardContent>
     </Card>
   {:else if overview.bookCount > 0}
@@ -297,7 +324,12 @@
             ABOUT_DETAILS_CARD,
           ]}
         >
-          <SeriesDetailsList {overview} {sourced} bind:ref={details} />
+          <SeriesDetailsList
+            {overview}
+            {sourced}
+            hasOrderLineAbove={orderLinePlace === "aboveDetails"}
+            bind:ref={details}
+          />
         </Card>
       </CollapsibleContent>
     </Collapsible>

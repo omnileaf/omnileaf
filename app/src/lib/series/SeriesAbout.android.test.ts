@@ -48,12 +48,16 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function heroOn(platform: Platform, details?: SeriesDetails) {
+async function heroOn(
+  platform: Platform,
+  details?: SeriesDetails,
+  overview = OVERVIEW,
+) {
   await page.viewport(PHONE.width, PHONE.height);
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   await render(SeriesAbout, {
-    overview: OVERVIEW,
+    overview,
     details,
     cover: { kind: "none" },
     coverUrl: () => "",
@@ -202,6 +206,8 @@ const SOURCED: SeriesDetails = {
   isMarkedAdult: false,
   isRatedAdult: false,
 };
+const ORDER_LINE =
+  "Your edits come first, then the files, then the folder and file names.";
 
 function middle(box: DOMRect): number {
   return box.top + box.height / 2;
@@ -214,9 +220,40 @@ async function sourcedDetailsOn(platform: Platform) {
     .element(page.getByText("From the folder name", { exact: true }))
     .toBeVisible();
   return {
+    order: page.getByText(ORDER_LINE, { exact: true }).query(),
     source: page.getByText("From the folder name", { exact: true }).element(),
+    firstRow: document.querySelector("dt")?.parentElement ?? null,
   };
 }
+
+test("says the order details win in at the top of an Android phone's details", async () => {
+  const { order, firstRow } = await sourcedDetailsOn("android");
+  if (!(order instanceof HTMLElement) || firstRow === null) {
+    throw new Error("the details drew no order line above their rows");
+  }
+  const style = getComputedStyle(order);
+
+  expect(order.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+    firstRow.getBoundingClientRect().top,
+  );
+  expect([
+    style.fontSize,
+    style.lineHeight,
+    style.letterSpacing,
+    style.color,
+    style.paddingInlineStart,
+    style.paddingInlineEnd,
+    style.paddingBlockEnd,
+  ]).toEqual([
+    "14px",
+    "20px",
+    "0.25px",
+    "rgb(88, 97, 90)",
+    "16px",
+    "16px",
+    "8px",
+  ]);
+});
 
 test("draws where an Android phone's detail came from as a footnote line with its icon", async () => {
   const { source } = await sourcedDetailsOn("android");
@@ -242,8 +279,30 @@ test("draws where an Android phone's detail came from as a footnote line with it
   ]).toEqual(["12px", "16px", "0.4px", "rgb(88, 97, 90)", "4px", "2px"]);
 });
 
-test("keeps an iPhone's details without source icons", async () => {
-  const { source } = await sourcedDetailsOn("ios");
+test("starts an Android phone's show all creators at the order line", async () => {
+  await heroOn("android", SOURCED, {
+    ...OVERVIEW,
+    creators: [
+      { name: "Author A", role: "story", seriesCount: 1 },
+      { name: "Author B", role: "story", seriesCount: 1 },
+      { name: "Author C", role: "art", seriesCount: 1 },
+    ],
+  });
 
+  await page
+    .getByRole("button", { name: "+1 more, show all 3 creators in Details" })
+    .click();
+
+  const order = page.getByText(ORDER_LINE, { exact: true });
+  await expect.element(order).toBeVisible();
+  await expect
+    .poll(() => document.activeElement?.contains(order.element()))
+    .toBe(true);
+});
+
+test("keeps an iPhone's details without the order line or source icons", async () => {
+  const { order, source } = await sourcedDetailsOn("ios");
+
+  expect(order).toBeNull();
   expect(source.querySelector("[data-icon]")).toBeNull();
 });
