@@ -104,6 +104,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0068_search_the_titles_of_each_book"),
     migration!("0069_key_reading_sessions_by_profile"),
     migration!("0070_read_again_the_books_whose_comic_info_volume_is_a_year"),
+    migration!("0071_remember_where_each_emptied_series_was"),
 ];
 
 pub(crate) fn pending(
