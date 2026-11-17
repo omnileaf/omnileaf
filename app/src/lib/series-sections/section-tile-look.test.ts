@@ -45,7 +45,7 @@ function volume(
       pageCount: 190,
       isBookmarked: false,
       isNew: false,
-      isFileMissing: false,
+      file: { kind: "present" },
       kind: "volume",
       numbers: { first, last: first },
       volume: null,

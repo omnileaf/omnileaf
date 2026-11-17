@@ -20,6 +20,7 @@ const OVERVIEW: SeriesOverview = {
   bookCount: 8,
   readCount: 2,
   bookmarkCount: 0,
+  connection: { kind: "connected" },
   cover: null,
   folder: "Comics",
   upNext: null,

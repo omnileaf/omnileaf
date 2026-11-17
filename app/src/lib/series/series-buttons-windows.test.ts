@@ -25,7 +25,7 @@ const BOOK: SeriesBook = {
   pageCount: 180,
   isBookmarked: false,
   isNew: false,
-  isFileMissing: false,
+  file: { kind: "present" },
   kind: null,
   numbers: null,
   volume: null,

@@ -1337,6 +1337,32 @@ test("lists the series of a missing folder shown anyway as not connected", async
   ]);
 });
 
+async function connectionsOfSeries(backend: FakeBackend, number: number) {
+  const series = sampleSeriesId(number);
+  const overview = await backend.seriesOverview(series);
+  const page = await backend.seriesBooks(
+    series,
+    { shown: "all", direction: "ascending" },
+    null,
+  );
+  return [
+    overview.connection,
+    new Set(page.books.map((book) => book.file.kind)),
+  ];
+}
+
+test("tells a series of a missing folder and its books apart from one connected with a missing file", async () => {
+  const { backend } = backendFor("?missing=folder");
+
+  expect([
+    await connectionsOfSeries(backend, 3),
+    await connectionsOfSeries(backend, 4),
+  ]).toEqual([
+    [{ kind: "notConnected" }, new Set(["notConnected"])],
+    [{ kind: "connected" }, new Set(["present", "missing"])],
+  ]);
+});
+
 test("lists the series of a folder found again as connected", async () => {
   const { backend } = backendFor("?missing=folder");
   const [missing] = await backend.missingLibraryFolders();
