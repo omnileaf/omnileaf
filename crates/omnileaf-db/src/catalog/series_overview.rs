@@ -24,7 +24,10 @@ const OVERVIEW_OF_SERIES: &str = concat!(
     FROM series ",
     crate::catalog::cover::join_series_cover!(),
     " LEFT JOIN library_root ON library_root.id = cover.root_id
-    WHERE series.id = ?1 AND series.book_count > 0"
+    WHERE series.id = ?1 AND (series.book_count > 0 OR EXISTS (
+        SELECT 1 FROM series_emptied_place
+        WHERE series_emptied_place.series_local_id = series.local_id
+    ))"
 );
 const NUMBERING_OF_PLACED_BOOKS: &str = "SELECT kind, first_number, last_number, number_source,
         volume_number, volume_source
@@ -56,7 +59,7 @@ pub struct SeriesOverview {
     pub books_not_connected: u32,
 }
 
-/// None for a series missing from the catalog or holding no books, which the library doesn't show.
+/// None for a series missing from the catalog, or holding no books with no folder they left, which the library doesn't show.
 #[tracing::instrument(skip_all, fields(%series))]
 pub fn series_overview(
     connection: &Connection,
@@ -145,9 +148,15 @@ mod tests {
 
         let plan = scratch.query_plan(OVERVIEW_OF_SERIES);
 
-        let mut expected = with_covers(vec![
-            "SEARCH series USING INDEX sqlite_autoindex_series_1 (id=?)".to_owned(),
-        ]);
+        let mut expected = with_covers(
+            [
+                "SEARCH series USING INDEX sqlite_autoindex_series_1 (id=?)",
+                "CORRELATED SCALAR SUBQUERY 3",
+                "SEARCH series_emptied_place USING INTEGER PRIMARY KEY (rowid=?)",
+            ]
+            .map(ToOwned::to_owned)
+            .to_vec(),
+        );
         expected.extend(
             [
                 "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",

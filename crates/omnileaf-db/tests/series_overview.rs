@@ -14,7 +14,8 @@ use omnileaf_db::{
     catalog::{
         AndroidTree, AppleBookmark, BookDetails, BookFile, BookReading, NewRoot, NewSeries, RootId,
         RootKind, RootLocator, ScannedBook, SeriesFolder, SeriesNaming, SeriesOverview, Sourced,
-        TreeUri, ValueSource, add_root, record_scanned_books, series_overview, up_next,
+        TreeUri, ValueSource, add_root, record_scanned_books, remove_book_files,
+        remove_books_without_files, series_overview, up_next,
     },
 };
 use omnileaf_sync_proto::SeriesId;
@@ -72,6 +73,21 @@ impl Library {
     async fn with_books_in(folder: RootLocator, titles: &[&str], placing: &Placing) -> Self {
         let library = Self::with(&[]).await;
         let root = library.add_root(folder).await;
+        library.record(root, titles, placing).await;
+        library
+    }
+
+    async fn emptied_by_a_rescan(titles: &[&str]) -> Self {
+        let library = Self::with(&[]).await;
+        let root = library
+            .add_root(RootLocator::Path(PathBuf::from(ROOT_FOLDER)))
+            .await;
+        library.record(root, titles, &Placing::by_name()).await;
+        library.rescan_without(root, titles).await;
+        library
+    }
+
+    async fn record(&self, root: RootId, titles: &[&str], placing: &Placing) {
         let scanned: Vec<ScannedBook> = titles
             .iter()
             .map(|&title| ScannedBook {
@@ -84,7 +100,7 @@ impl Library {
                 details: BookDetails::default(),
                 file: BookFile {
                     root,
-                    location: PathBuf::from(SERIES).join(format!("{title}.cbz")),
+                    location: location_of(title),
                     size_bytes: 1,
                     modified_at_ms: ADDED_AT_MS,
                 },
@@ -92,12 +108,21 @@ impl Library {
                 name_language: placing.name_language.clone(),
             })
             .collect();
-        library
-            .database
+        self.database
             .write(move |transaction| record_scanned_books(transaction, &scanned))
             .await
             .unwrap();
-        library
+    }
+
+    async fn rescan_without(&self, root: RootId, titles: &[&str]) {
+        let locations: Vec<PathBuf> = titles.iter().map(|title| location_of(title)).collect();
+        self.database
+            .write(move |transaction| {
+                let held = remove_book_files(transaction, root, &locations)?;
+                remove_books_without_files(transaction, &held)
+            })
+            .await
+            .unwrap();
     }
 
     async fn add_root(&self, locator: RootLocator) -> RootId {
@@ -199,6 +224,10 @@ fn bookmarked_folder() -> RootLocator {
         path: PathBuf::from(ROOT_FOLDER),
         bookmark: AppleBookmark::new(FOLDER_BOOKMARK.to_vec()),
     }
+}
+
+fn location_of(title: &str) -> PathBuf {
+    PathBuf::from(SERIES).join(format!("{title}.cbz"))
 }
 
 fn series_id(name: &str) -> SeriesId {
@@ -329,15 +358,49 @@ async fn names_the_bookmarked_folder_holding_the_cover_of_a_series() {
 }
 
 #[tokio::test]
-async fn finds_no_overview_of_a_series_the_library_does_not_show() {
+async fn finds_no_overview_of_a_series_the_library_does_not_hold() {
     let library = Library::with(&[holding("Sample Series 02", &[])]).await;
 
-    let overviews = [
-        library.overview("Sample Series 02").await,
-        library.overview("Sample Series 09").await,
-    ];
+    let overview = library.overview("Sample Series 09").await;
 
-    assert_eq!(overviews, [None, None]);
+    assert_eq!(overview, None);
+}
+
+#[tokio::test]
+async fn finds_no_overview_of_a_series_without_books_or_a_folder_they_left() {
+    let library = Library::with(&[holding("Sample Series 02", &[])]).await;
+
+    let overview = library.overview("Sample Series 02").await;
+
+    assert_eq!(overview, None);
+}
+
+#[tokio::test]
+async fn sums_up_a_series_whose_books_left_its_folder_with_no_books_or_cover() {
+    let library = Library::emptied_by_a_rescan(&["Volume 01", "Volume 02"]).await;
+
+    let overview = library.overview(SERIES).await;
+
+    assert_eq!(
+        overview,
+        Some(SeriesOverview {
+            id: series_id(SERIES),
+            title: SERIES.to_owned(),
+            file_title: SERIES.to_owned(),
+            title_source: None,
+            year: None,
+            language: None,
+            book_count: 0,
+            read_count: 0,
+            cover: None,
+            folder: None,
+            pages_left: Some(0),
+            is_rated_adult: false,
+            is_marked_adult: false,
+            bookmark_count: 0,
+            books_not_connected: 0,
+        })
+    );
 }
 
 #[tokio::test]
