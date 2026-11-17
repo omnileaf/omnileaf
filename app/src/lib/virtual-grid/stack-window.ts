@@ -20,7 +20,6 @@ export interface StackWindow {
 
 export class RowHeights {
   readonly #layout: RowLayout;
-  readonly #measured: ReadonlyMap<number, number>;
   readonly #offsets: readonly number[];
 
   constructor(
@@ -28,10 +27,10 @@ export class RowHeights {
     measurements: ReadonlyMap<number, number> = new Map(),
   ) {
     this.#layout = layout;
-    this.#measured = new Map(
-      [...measurements].filter(([index]) => isRowOf(layout, index)),
+    this.#offsets = offsetsOf(
+      layout,
+      new Map([...measurements].filter(([index]) => isRowOf(layout, index))),
     );
-    this.#offsets = offsetsOf(layout, this.#measured);
   }
 
   get count(): number {
@@ -53,16 +52,6 @@ export class RowHeights {
       this.count,
       (index) => this.offsetOf(index + 1) > offset,
     );
-  }
-
-  remeasured(measurements: ReadonlyMap<number, number>): RowHeights {
-    const changes = [...measurements].filter(
-      ([index, height]) =>
-        isRowOf(this.#layout, index) && this.#measured.get(index) !== height,
-    );
-    return changes.length === 0
-      ? this
-      : new RowHeights(this.#layout, new Map([...this.#measured, ...changes]));
   }
 }
 
