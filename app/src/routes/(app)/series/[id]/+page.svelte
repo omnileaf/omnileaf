@@ -41,6 +41,7 @@
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import ContinueCard from "#lib/series/ContinueCard.svelte";
   import { seriesBookList } from "#lib/series/series-books.svelte.ts";
+  import { listedSeriesBooks } from "#lib/series/listed-series-books.svelte.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import {
     SERIES_OVERVIEW,
@@ -136,20 +137,16 @@
       ? undefined
       : (screenshotMode.isOn ? standInLook : realLook)(found.overview).cover,
   );
-  const books = $derived(
-    foundId === undefined ? undefined : seriesBookList(foundId, () => listed),
+  const listedBooks = listedSeriesBooks(
+    () => foundId,
+    () => listed,
   );
-  const listingKey = $derived(
-    [listed.shown, listed.direction, listed.section, listed.volume].join(":"),
-  );
-  let startedFor: string | undefined;
+  const books = $derived(listedBooks.pages);
 
   function choose(change: ListingChange): void {
     chosen = { id: data.id, change: { ...chosenHere, ...change } };
     listingChoices.keep(data.id, chosen.change);
-    if (listingKey === startedFor) {
-      void books?.start();
-    }
+    listedBooks.startAgain();
   }
 
   let sourcedDetails: SeriesDetails | undefined = $state();
@@ -249,15 +246,6 @@
     }
     untrack(() => {
       void readSourcedDetails(id);
-    });
-  });
-
-  $effect(() => {
-    const list = books;
-    const key = listingKey;
-    untrack(() => {
-      startedFor = key;
-      void list?.start();
     });
   });
 
