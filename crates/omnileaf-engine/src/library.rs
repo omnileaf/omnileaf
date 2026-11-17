@@ -1552,59 +1552,35 @@ impl Library {
     }
 
     pub async fn series_in_folder(&self, id: SeriesId) -> Result<Option<PathBuf>, LibraryError> {
-        if let Some(book) = self.first_book_to_read(id).await? {
-            return Ok(file_to_show(&book));
-        }
-        Ok(self
-            .emptied_place(id)
-            .await?
-            .and_then(|place| path_on_disk(&place.root, &place.folder)))
-    }
-
-    async fn emptied_place(&self, id: SeriesId) -> Result<Option<LeftPlace>, LibraryError> {
-        Ok(self
-            .store
-            .database()
-            .read(move |connection| {
-                let Some(place) = emptied_series_place(connection, id.0)? else {
-                    return Ok(None);
-                };
-                Ok(Some(LeftPlace {
-                    root: library_root(connection, place.root)?.locator,
-                    folder: place.folder,
-                }))
-            })
-            .await?)
-    }
-
-    async fn first_book_to_read(&self, id: SeriesId) -> Result<Option<BookToRead>, LibraryError> {
-        Ok(self
-            .store
-            .database()
-            .read(move |connection| {
-                let request = PageRequest {
-                    after: None,
-                    size: PageSize::try_from(1)?,
-                };
-                let page = series_books(connection, id.0, BookListing::IN_ORDER, &request)?;
-                page.items
-                    .first()
-                    .map_or(Ok(None), |book| book_to_read(connection, book.id))
-            })
-            .await?)
+        Ok(match self.series_place(id).await? {
+            Some(SeriesPlace::Book(book)) => file_to_show(&book),
+            Some(SeriesPlace::Emptied(emptied)) => path_on_disk(&emptied.root, &emptied.folder),
+            None => None,
+        })
     }
 
     pub async fn series_in_android_tree(
         &self,
         id: SeriesId,
     ) -> Result<Option<ShownInTree>, LibraryError> {
-        if let Some(book) = self.first_book_to_read(id).await? {
-            return Ok(shown_in_tree(book));
-        }
+        Ok(match self.series_place(id).await? {
+            Some(SeriesPlace::Book(book)) => shown_in_tree(book),
+            Some(SeriesPlace::Emptied(emptied)) => folder_in_tree(emptied.root, emptied.folder),
+            None => None,
+        })
+    }
+
+    async fn series_place(&self, id: SeriesId) -> Result<Option<SeriesPlace>, LibraryError> {
         Ok(self
-            .emptied_place(id)
-            .await?
-            .and_then(|place| folder_in_tree(place.root, place.folder)))
+            .store
+            .database()
+            .read(move |connection| {
+                if let Some(book) = first_book_to_read(connection, id)? {
+                    return Ok(Some(SeriesPlace::Book(book)));
+                }
+                Ok(emptied_folder(connection, id)?.map(SeriesPlace::Emptied))
+            })
+            .await?)
     }
 
     /// The file of a book, to show in its folder; none for a book the library lacks, or one in a folder only Android's documents provider can read.
@@ -2577,9 +2553,41 @@ pub struct ShownInTree {
     pub folder: PathBuf,
 }
 
-struct LeftPlace {
+enum SeriesPlace {
+    Book(BookToRead),
+    Emptied(EmptiedFolder),
+}
+
+struct EmptiedFolder {
     root: RootLocator,
     folder: PathBuf,
+}
+
+fn first_book_to_read(
+    connection: &Connection,
+    id: SeriesId,
+) -> Result<Option<BookToRead>, omnileaf_db::Error> {
+    let request = PageRequest {
+        after: None,
+        size: PageSize::try_from(1)?,
+    };
+    let page = series_books(connection, id.0, BookListing::IN_ORDER, &request)?;
+    page.items
+        .first()
+        .map_or(Ok(None), |book| book_to_read(connection, book.id))
+}
+
+fn emptied_folder(
+    connection: &Connection,
+    id: SeriesId,
+) -> Result<Option<EmptiedFolder>, omnileaf_db::Error> {
+    let Some(place) = emptied_series_place(connection, id.0)? else {
+        return Ok(None);
+    };
+    Ok(Some(EmptiedFolder {
+        root: library_root(connection, place.root)?.locator,
+        folder: place.folder,
+    }))
 }
 
 fn shown_in_tree(found: BookToRead) -> Option<ShownInTree> {
