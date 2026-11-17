@@ -25,7 +25,7 @@
     swipe: RowSwipe;
     key: string;
     actions: readonly SwipeAction[];
-    onFullSwipe?: (() => void) | undefined;
+    onFullSwipe: () => void;
     children: Snippet;
   } = $props();
 
@@ -63,7 +63,7 @@
     onpointerup={() => {
       const outcome = swipe.released(opensOnActions);
       if (outcome.kind === "act" && outcome.side === "towardStart") {
-        onFullSwipe?.();
+        onFullSwipe();
       }
     }}
     onpointercancel={() => {

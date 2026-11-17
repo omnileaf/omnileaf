@@ -27,13 +27,11 @@ interface Row {
 interface RowOptions {
   readonly dir?: "ltr" | "rtl";
   readonly canSwipe?: (side: SwipeSide) => boolean;
-  readonly hasFullSwipe?: boolean;
 }
 
 async function renderRow({
   dir = "ltr",
   canSwipe = (side) => side === "towardStart",
-  hasFullSwipe = true,
 }: RowOptions = {}): Promise<Row> {
   const ran: string[] = [];
   const action = (name: string): SwipeAction => ({
@@ -47,11 +45,9 @@ async function renderRow({
   });
   const { container } = await render(SwipeActionsHarness, {
     actions: [action("rename"), action("delete")],
-    onFullSwipe: hasFullSwipe
-      ? () => {
-          ran.push("full swipe");
-        }
-      : undefined,
+    onFullSwipe: () => {
+      ran.push("full swipe");
+    },
     canSwipe,
     dir,
   });
@@ -110,14 +106,6 @@ test("only opens the row on a short swipe", async () => {
   const shown = await renderRow();
 
   swipeAcross(shown.row, -shown.widthPx * SHORT_SWIPE);
-
-  expect(shown.ran).toEqual([]);
-});
-
-test("runs nothing on a full swipe without a full-swipe action", async () => {
-  const shown = await renderRow({ hasFullSwipe: false });
-
-  swipeAcross(shown.row, -shown.widthPx * FULL_SWIPE);
 
   expect(shown.ran).toEqual([]);
 });

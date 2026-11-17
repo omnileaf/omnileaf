@@ -11,7 +11,7 @@
     dir,
   }: {
     actions: readonly SwipeAction[];
-    onFullSwipe: (() => void) | undefined;
+    onFullSwipe: () => void;
     canSwipe: (side: SwipeSide) => boolean;
     dir: "ltr" | "rtl";
   } = $props();
