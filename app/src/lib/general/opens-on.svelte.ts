@@ -3,6 +3,7 @@ import { createContext } from "svelte";
 import { resolve } from "$app/paths";
 import { assertNever } from "#lib/assert-never.ts";
 import { lastUnfinishedBookPage } from "#lib/history/last-book.ts";
+import { takeRestoredRoute } from "#lib/navigation/restored-route.ts";
 import {
   browserPreferenceStore,
   type PreferenceStore,
@@ -44,24 +45,47 @@ export function opensOnSettingForDocument(): OpensOnSetting {
 export const [getOpensOnSetting, setOpensOnSetting] =
   createContext<OpensOnSetting>();
 
-let hasOpened = false;
+type FindPage = () => Promise<string | undefined>;
 
-/** The page Omnileaf opens on when it starts, chosen once, so the library a person comes back to later stays where they asked. */
-export async function openingPage(
+export interface OpeningPages {
+  readonly restoredRoute: FindPage;
+  readonly lastBook: FindPage;
+}
+
+export type OpeningPage = (place: OpeningPlace) => Promise<string | undefined>;
+
+async function placePage(
   place: OpeningPlace,
+  lastBook: FindPage,
 ): Promise<string | undefined> {
-  if (hasOpened) {
-    return undefined;
-  }
-  hasOpened = true;
   switch (place) {
     case "library":
       return undefined;
     case "history":
       return resolve("/(app)/history");
     case "lastBook":
-      return lastUnfinishedBookPage();
+      return lastBook();
     default:
       return assertNever(place);
   }
 }
+
+export function openingPageOnce(pages: OpeningPages): OpeningPage {
+  let hasOpened = false;
+  return async (place) => {
+    if (hasOpened) {
+      return undefined;
+    }
+    hasOpened = true;
+    const restored = await pages.restoredRoute();
+    if (restored === undefined) {
+      return placePage(place, pages.lastBook);
+    }
+    return restored === resolve("/(app)") ? undefined : restored;
+  };
+}
+
+export const openingPage: OpeningPage = openingPageOnce({
+  restoredRoute: takeRestoredRoute,
+  lastBook: lastUnfinishedBookPage,
+});
