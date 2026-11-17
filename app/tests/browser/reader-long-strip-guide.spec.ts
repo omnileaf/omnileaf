@@ -1,32 +1,17 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { FakeBackend } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import {
   BOOK_ID,
   BOOK_SERIES_ID,
-  NOT_STARTED,
-  readerBackend,
-  readerBook,
   servePages,
+  tallStripBackend,
 } from "./reader-book.ts";
 
 const STRIP_FOUND_KEY = `omnileaf.stripFound.${BOOK_SERIES_ID}`;
 const STRIP_GUIDE_KEY = "omnileaf.readerGuide.strip";
 
-const TALL_PAGES: FakeBackend = {
-  ...readerBackend(DEFAULT_BACKEND),
-  openBook: () => {
-    const book = readerBook(NOT_STARTED);
-    return {
-      ...book,
-      pages: book.pages.map((page) => ({
-        ...page,
-        size: { width: 800, height: 2400 },
-      })),
-    };
-  },
-};
+const TALL_PAGES = tallStripBackend(DEFAULT_BACKEND);
 
 test.use({ backend: TALL_PAGES });
 
