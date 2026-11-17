@@ -13,8 +13,9 @@ use omnileaf_db::{
         BookDetails, BookFile, BookListing, NewRoot, NewSeries, PageRequest, PageSize, RootId,
         RootKind, RootLocator, ScannedBook, SearchText, SeriesFilter, SeriesListing, SeriesOrder,
         SeriesSearch, SeriesSort, add_root, hidden_series_count, library_root, mark_root_available,
-        mark_root_unavailable, record_scanned_books, search_chapters, series_books, series_count,
-        series_overview, series_page, show_root_while_missing, up_next,
+        mark_root_unavailable, missing_root_of_book, missing_root_of_series, record_scanned_books,
+        search_chapters, series_books, series_count, series_overview, series_page,
+        show_root_while_missing, up_next,
     },
 };
 use omnileaf_sync_proto::{Fingerprint, ImageEntry, SeriesId};
@@ -174,6 +175,26 @@ impl Shelf {
             .unwrap()
             .unwrap()
             .books_not_connected
+    }
+
+    async fn missing_root_of_series(&self, series: &str) -> Option<RootId> {
+        let series = series_id(series);
+        self.database
+            .read(move |connection| missing_root_of_series(connection, series))
+            .await
+            .unwrap()
+    }
+
+    async fn missing_root_of_first_book(&self, series: &str) -> Option<RootId> {
+        let series = series_id(series);
+        let request = first_page();
+        self.database
+            .read(move |connection| {
+                let books = series_books(connection, series, BookListing::IN_ORDER, &request)?;
+                missing_root_of_book(connection, books.items.first().unwrap().id)
+            })
+            .await
+            .unwrap()
     }
 
     async fn hidden(&self, root: Option<RootId>) -> u32 {
@@ -503,5 +524,95 @@ async fn keeps_a_chapter_found_connected_while_another_of_its_files_is_in_a_fold
     assert_eq!(
         shelf.chapter_hit_connections("volume 01").await,
         [connection("Volume 01", true)]
+    );
+}
+
+#[tokio::test]
+async fn finds_no_missing_folder_for_a_series_while_every_folder_is_there() {
+    let shelf = Shelf::open("missing-root-of-series-none").await;
+
+    assert_eq!(shelf.missing_root_of_series("Lantern Market").await, None);
+}
+
+#[tokio::test]
+async fn finds_no_missing_folder_for_a_series_in_a_folder_still_there() {
+    let shelf = Shelf::open("missing-root-of-series-connected").await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(shelf.missing_root_of_series("Sea Stories").await, None);
+}
+
+#[tokio::test]
+async fn finds_the_missing_folder_holding_the_most_books_of_a_series() {
+    let shelf = Shelf::open("missing-root-of-series-most").await;
+    shelf.shelve(shelf.manga, "Lantern Market", 5).await;
+    shelf.go_missing(shelf.comics).await;
+
+    shelf.go_missing(shelf.manga).await;
+
+    assert_eq!(
+        shelf.missing_root_of_series("Lantern Market").await,
+        Some(shelf.manga)
+    );
+}
+
+#[tokio::test]
+async fn finds_the_first_folder_added_when_two_missing_folders_hold_as_many_books_of_a_series() {
+    let shelf = Shelf::open("missing-root-of-series-tie").await;
+    shelf.go_missing(shelf.manga).await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(
+        shelf.missing_root_of_series("Lantern Market").await,
+        Some(shelf.comics)
+    );
+}
+
+#[tokio::test]
+async fn finds_the_missing_folder_of_the_books_away_from_a_series_partly_there() {
+    let shelf = Shelf::open("missing-root-of-series-partly").await;
+    shelf.shelve(shelf.manga, "Lantern Market", 5).await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(
+        shelf.missing_root_of_series("Lantern Market").await,
+        Some(shelf.comics)
+    );
+}
+
+#[tokio::test]
+async fn finds_no_missing_folder_for_a_series_whose_book_has_a_file_still_there() {
+    let shelf = Shelf::open("missing-root-of-series-two-folders").await;
+    shelf.shelve(shelf.manga, "Harbour Gate", 1).await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(shelf.missing_root_of_series("Harbour Gate").await, None);
+}
+
+#[tokio::test]
+async fn finds_no_missing_folder_for_a_book_with_a_file_still_there() {
+    let shelf = Shelf::open("missing-root-of-book-connected").await;
+    shelf.shelve(shelf.manga, "Harbour Gate", 1).await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(shelf.missing_root_of_first_book("Harbour Gate").await, None);
+}
+
+#[tokio::test]
+async fn finds_the_first_missing_folder_added_holding_a_book() {
+    let shelf = Shelf::open("missing-root-of-book-first").await;
+    shelf.shelve(shelf.manga, "Harbour Gate", 1).await;
+    shelf.go_missing(shelf.manga).await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(
+        shelf.missing_root_of_first_book("Harbour Gate").await,
+        Some(shelf.comics)
     );
 }

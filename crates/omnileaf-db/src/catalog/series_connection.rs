@@ -1,7 +1,10 @@
 use omnileaf_sync_proto::{BookId, SeriesId};
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 
-use crate::{Error, catalog::series_page::SeriesSummary};
+use crate::{
+    Error,
+    catalog::{RootId, series_page::SeriesSummary},
+};
 
 const SOME_FOLDER_IS_MISSING: &str =
     "SELECT EXISTS (SELECT 1 FROM library_root WHERE unavailable_since_ms IS NOT NULL)";
@@ -42,6 +45,26 @@ const IS_NOT_CONNECTED: &str = concat!(
 );
 
 const IS_BOOK_NOT_CONNECTED: &str = is_book_not_connected!("?1");
+
+const MISSING_ROOT_OF_SERIES: &str = concat!(
+    "SELECT book_file.root_id FROM book
+    JOIN book_file ON book_file.book_id = book.id
+    WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = ?1)
+        AND (",
+    is_book_not_connected!("book.id"),
+    ")
+    GROUP BY book_file.root_id
+    ORDER BY count(*) DESC, book_file.root_id
+    LIMIT 1"
+);
+
+const MISSING_ROOT_OF_BOOK: &str = concat!(
+    "SELECT CASE WHEN ",
+    is_every_file_in_a_missing_folder!(),
+    " THEN min(book_file.root_id) END FROM book_file",
+    join_file_folder!(),
+    " WHERE book_file.book_id = ?1"
+);
 
 const BOOKS_NOT_CONNECTED: &str = concat!(
     "SELECT count(*) FROM book
@@ -96,6 +119,33 @@ pub(crate) fn books_not_connected(connection: &Connection, series: SeriesId) -> 
     Ok(connection
         .prepare_cached(BOOKS_NOT_CONNECTED)?
         .query_row([series.as_bytes()], |row| row.get(0))?)
+}
+
+pub fn missing_root_of_series(
+    connection: &Connection,
+    series: SeriesId,
+) -> Result<Option<RootId>, Error> {
+    if !is_some_folder_missing(connection)? {
+        return Ok(None);
+    }
+    Ok(connection
+        .prepare_cached(MISSING_ROOT_OF_SERIES)?
+        .query_row([series.as_bytes()], |row| row.get(0))
+        .optional()?
+        .map(RootId))
+}
+
+pub fn missing_root_of_book(
+    connection: &Connection,
+    book: BookId,
+) -> Result<Option<RootId>, Error> {
+    if !is_some_folder_missing(connection)? {
+        return Ok(None);
+    }
+    let root: Option<i64> = connection
+        .prepare_cached(MISSING_ROOT_OF_BOOK)?
+        .query_row([book.as_bytes()], |row| row.get(0))?;
+    Ok(root.map(RootId))
 }
 
 #[cfg(test)]
@@ -164,6 +214,43 @@ mod tests {
                 "SCALAR SUBQUERY 1",
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
                 "CORRELATED SCALAR SUBQUERY 2",
+                "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
+                "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?)",
+            ]
+        );
+    }
+
+    #[test]
+    fn finds_the_missing_folder_of_one_series_through_indexes() {
+        let scratch = ScratchLibrary::new("connection-series-root-plan");
+
+        let plan = scratch.query_plan(MISSING_ROOT_OF_SERIES);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
+                "SCALAR SUBQUERY 1",
+                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+                "CORRELATED SCALAR SUBQUERY 2",
+                "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
+                "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?)",
+                "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
+                "USE TEMP B-TREE FOR GROUP BY",
+                "USE TEMP B-TREE FOR ORDER BY",
+            ]
+        );
+    }
+
+    #[test]
+    fn finds_the_missing_folder_of_one_book_through_indexes() {
+        let scratch = ScratchLibrary::new("connection-book-root-plan");
+
+        let plan = scratch.query_plan(MISSING_ROOT_OF_BOOK);
+
+        assert_eq!(
+            plan,
+            [
                 "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
                 "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?)",
             ]
