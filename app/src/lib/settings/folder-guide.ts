@@ -2,6 +2,13 @@ import { m } from "#lib/paraglide/messages.js";
 
 export type FolderDepth = 0 | 1 | 2 | 3;
 
+export const FOLDER_INDENTS = {
+  0: "",
+  1: "ps-folder-depth-1",
+  2: "ps-folder-depth-2",
+  3: "ps-folder-depth-3",
+} satisfies Record<FolderDepth, string>;
+
 export interface ExampleEntry {
   readonly name: string;
   readonly isFolder: boolean;
