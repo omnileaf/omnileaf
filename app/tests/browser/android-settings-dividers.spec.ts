@@ -551,3 +551,34 @@ test.describe(
     });
   },
 );
+
+test.describe(
+  "the lines on the App lock page with the lock on, on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.use({
+      backend: {
+        ...BACKEND,
+        appLock: () => ({ ...NEW_APP_LOCK, isOn: true }),
+      },
+    });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android phone settings");
+    });
+
+    test("draws no line above Start app lock under the switch card", async ({
+      page,
+    }) => {
+      await page.goto("/settings/privacy/app-lock");
+      await expect(
+        page.getByRole("radiogroup", { name: "Start app lock" }),
+      ).toBeVisible();
+
+      const drawn = await linesIn(page);
+
+      expect(drawn.groupCount).toBe(1);
+      expect(drawn.lined).toEqual([]);
+    });
+  },
+);
