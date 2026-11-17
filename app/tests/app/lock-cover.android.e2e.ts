@@ -30,7 +30,7 @@ const HOME_COMPONENT = /^\s*([\w.]+)\/[\w.$]+\s*$/;
 const RESOLVER_PACKAGE = "android";
 const PASSWORD_FIELD_ID = "com.android.systemui:id/lockPassword";
 const PIN_PAD_KEY_ID = "com.android.systemui:id/key_enter";
-const PASSWORD_FIELD = xpath(`//*[@resource-id='${PASSWORD_FIELD_ID}']`);
+const PIN_PAD_KEY = xpath(`//*[@resource-id='${PIN_PAD_KEY_ID}']`);
 const PIN_ENTRY = xpath(
   `//*[@resource-id='${PASSWORD_FIELD_ID}' or @resource-id='${PIN_PAD_KEY_ID}']`,
 );
@@ -181,10 +181,8 @@ async function waitForKeyboard(isShown: boolean, what: string): Promise<void> {
   );
 }
 
-async function isShownNatively(locator: Locator): Promise<boolean> {
-  return appSession().inNativeContext(
-    async () => (await appSession().findWithin(locator, 0)) !== undefined,
-  );
+async function isShown(locator: Locator): Promise<boolean> {
+  return (await appSession().findWithin(locator, 0)) !== undefined;
 }
 
 /** Android's first BACK on a screen lock prompt's password field only closes the keyboard that field opens. */
@@ -192,21 +190,23 @@ async function closePasswordKeyboard(): Promise<void> {
   await waitForKeyboard(true, "the screen lock keyboard to open");
   await pressKey(BACK_KEY);
   await waitForKeyboard(false, "the screen lock keyboard to close");
-  if (!(await isShownNatively(PIN_ENTRY))) {
+  if (!(await isShown(PIN_ENTRY))) {
     throw new Error("the screen lock prompt closed with its keyboard");
   }
 }
 
 async function cancelScreenLock(): Promise<void> {
-  if (await isShownNatively(PASSWORD_FIELD)) {
-    await closePasswordKeyboard();
-  }
-  await pressKey(BACK_KEY);
-  await pollUntil(
-    async () => ((await isShownNatively(PIN_ENTRY)) ? undefined : true),
-    PROMPT_TIMEOUT_MS,
-    "the screen lock prompt to close",
-  );
+  await appSession().inNativeContext(async () => {
+    if (!(await isShown(PIN_PAD_KEY))) {
+      await closePasswordKeyboard();
+    }
+    await pressKey(BACK_KEY);
+    await pollUntil(
+      async () => ((await isShown(PIN_ENTRY)) ? undefined : true),
+      PROMPT_TIMEOUT_MS,
+      "the screen lock prompt to close",
+    );
+  });
 }
 
 async function unlockIfCovered(): Promise<void> {
