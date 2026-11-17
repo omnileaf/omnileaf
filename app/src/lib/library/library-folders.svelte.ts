@@ -15,19 +15,31 @@ export type FolderList =
 
 export type RemoveOutcome = "removed" | "failed";
 
-export async function readFolderList(
+export type ReadFolders = Exclude<FolderList, { readonly kind: "loading" }>;
+
+export async function readAllFolders(
   listFolders: ListFolders,
-): Promise<FolderList> {
+): Promise<readonly LibraryFolder[] | undefined> {
   const folders: LibraryFolder[] = [];
   let after: FolderPage["next"] = null;
   do {
     const page = await listFolders(after);
     if (page.status === "error") {
-      return { kind: "failed" };
+      return undefined;
     }
     folders.push(...page.data.folders);
     after = page.data.next;
   } while (after !== null);
+  return folders;
+}
+
+export async function readFolderList(
+  listFolders: ListFolders,
+): Promise<ReadFolders> {
+  const folders = await readAllFolders(listFolders);
+  if (folders === undefined) {
+    return { kind: "failed" };
+  }
   return {
     kind: "loaded",
     home: folders.find((folder) => folder.kind === "home"),
