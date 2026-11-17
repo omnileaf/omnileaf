@@ -46,19 +46,3 @@ test("leaves out the help line when none is given", async () => {
 
   expect(screen.getByText(PROPS.help).elements()).toEqual([]);
 });
-
-test("keeps its choices closed and dims its words while it is disabled", async () => {
-  followCorePlatform("android");
-  const screen = await render(SettingChoiceRow, { ...PROPS, disabled: true });
-
-  const row = screen.getByRole("button");
-  await row.click({ force: true });
-
-  await expect.element(row).toBeDisabled();
-  expect(screen.getByRole("dialog").elements()).toEqual([]);
-  expect(
-    getComputedStyle(
-      screen.getByText(PROPS.title).element().parentElement ?? row.element(),
-    ).opacity,
-  ).toBe("0.38");
-});

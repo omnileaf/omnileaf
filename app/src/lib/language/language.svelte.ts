@@ -1,11 +1,11 @@
 import { createContext } from "svelte";
 
 import { baseLocale, getLocale, type Locale } from "#lib/paraglide/runtime.js";
+import type { ForgettingPreferenceStore } from "#lib/preferences/stored-preference.ts";
 
 import {
   browserLanguageStore,
   type LanguageChoice,
-  type LanguageStore,
   markLanguage,
   rememberLanguageChoice,
   storedLanguageChoice,
@@ -20,7 +20,7 @@ export class LanguageSetting {
   private systemApp: Locale | undefined = undefined;
 
   constructor(
-    private readonly store: LanguageStore,
+    private readonly store: ForgettingPreferenceStore,
     private readonly root: HTMLElement,
   ) {
     useChosenLanguage(store, () => this.systemApp);

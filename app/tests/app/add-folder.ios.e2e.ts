@@ -11,6 +11,7 @@ import {
   openLibraryPage,
   useAppSession,
 } from "./app-session.ts";
+import { capability } from "./app-under-test.ts";
 import {
   cancelPicker,
   closeAnyPicker,
@@ -20,7 +21,7 @@ import {
   PICKER_TIMEOUT_MS,
   RECENT_TAB,
 } from "./files-picker.ts";
-import { capability, relaunchOnSimulator } from "./ios-app-data.ts";
+import { relaunchOnSimulator } from "./ios-app-data.ts";
 import { SAMPLE_LIBRARY, writeSampleLibrary } from "./sample-library.ts";
 import {
   pollUntil,

@@ -4,6 +4,8 @@ import { promisify } from "node:util";
 const MAIN_ACTIVITY = "app.omnileaf/.MainActivity";
 const OPEN_ICON_ACTION = "app.omnileaf.OPEN_ICON_ACTION";
 const CHOSEN_ICON_ACTION = "app.omnileaf.CHOSEN_ICON_ACTION";
+const LAUNCH = "android.intent.action.MAIN";
+const LAUNCHER = "android.intent.category.LAUNCHER";
 const ADB_TIMEOUT_MS = 30_000;
 
 export const NEW_TASK = 0x10000000;
@@ -31,6 +33,25 @@ export async function chooseOnTheIcon(
       "--es",
       CHOSEN_ICON_ACTION,
       action,
+    ],
+    { timeout: ADB_TIMEOUT_MS },
+  );
+}
+
+export async function openFromTheLauncher(): Promise<void> {
+  await run(
+    "adb",
+    [
+      "shell",
+      "am",
+      "start",
+      "-W",
+      "-n",
+      MAIN_ACTIVITY,
+      "-a",
+      LAUNCH,
+      "-c",
+      LAUNCHER,
     ],
     { timeout: ADB_TIMEOUT_MS },
   );

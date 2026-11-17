@@ -17,6 +17,7 @@ omnileaf-formats.workspace = true
 omnileaf-imaging.workspace = true
 omnileaf-relay-proto.workspace = true
 omnileaf-sync-proto.workspace = true
+semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 specta.workspace = true

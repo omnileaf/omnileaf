@@ -14,7 +14,7 @@ type Channels = readonly [red: number, green: number, blue: number];
 
 interface ContrastCase {
   readonly platform: Platform;
-  readonly contrast: Contrast;
+  readonly contrast: Contrast | undefined;
   readonly text: readonly Pair[];
   readonly marks: readonly Pair[];
 }
@@ -68,6 +68,12 @@ const CASES: readonly ContrastCase[] = [
   },
   {
     platform: "android",
+    contrast: undefined,
+    text: ANDROID_TEXT,
+    marks: ANDROID_MARKS,
+  },
+  {
+    platform: "android",
     contrast: "medium",
     text: ANDROID_TEXT,
     marks: ANDROID_MARKS,
@@ -79,6 +85,10 @@ const CASES: readonly ContrastCase[] = [
     marks: ANDROID_MARKS,
   },
 ];
+
+const RAISED_CONTRAST_CASES = CASES.filter(
+  (contrastCase) => contrastCase.contrast !== undefined,
+);
 
 const THEMES = ["light", "dark"] as const;
 
@@ -141,7 +151,7 @@ afterEach(() => {
 
 for (const { platform, contrast, text, marks } of CASES) {
   for (const theme of THEMES) {
-    test(`holds text at ${String(TEXT_RATIO)}:1 and marks at ${String(MARK_RATIO)}:1 on ${platform} in ${theme} with ${contrast} contrast`, () => {
+    test(`holds text at ${String(TEXT_RATIO)}:1 and marks at ${String(MARK_RATIO)}:1 on ${platform} in ${theme} with ${contrast ?? "standard"} contrast`, () => {
       followCorePlatform(platform);
       document.documentElement.dataset.theme = theme;
 
@@ -161,10 +171,10 @@ for (const { platform, contrast, text, marks } of CASES) {
   }
 }
 
-for (const { platform, contrast, marks } of CASES) {
+for (const { platform, contrast, marks } of RAISED_CONTRAST_CASES) {
   const rings = marks.filter(([ink]) => ink === "focus-ring");
   for (const theme of THEMES) {
-    test(`draws the focus ring at least as strongly on ${platform} in ${theme} with ${contrast} contrast as without it`, () => {
+    test(`draws the focus ring at least as strongly on ${platform} in ${theme} with ${String(contrast)} contrast as without it`, () => {
       followCorePlatform(platform);
       document.documentElement.dataset.theme = theme;
       const withoutContrast = rings.map(paintedRatio);

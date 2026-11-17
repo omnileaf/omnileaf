@@ -14,3 +14,8 @@ export const SETTING_CARD =
 export const SWITCH_CARD = `flex flex-col gap-sm ${SETTING_CARD}`;
 
 export const CARD_SWITCH = "-mx-list-row inline-auto";
+
+export const ANDROID_SWITCH_CARD =
+  "overflow-hidden rounded-android-xl bg-android-container-highest";
+
+export const ANDROID_CARD_SWITCH = "min-block-native-row";

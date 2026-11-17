@@ -58,7 +58,7 @@ export class FakeShelf {
       pageCount,
       isBookmarked: false,
       isNew: false,
-      isFileMissing: false,
+      file: { kind: "present" },
       kind: null,
       numbers: null,
       volume: null,
@@ -121,6 +121,7 @@ export class FakeShelf {
           readCount: this.#books.filter((book) => book.reading.state === "read")
             .length,
           bookmarkCount: this.#books.filter((book) => book.isBookmarked).length,
+          connection: { kind: "connected" },
           cover: null,
           folder: SERIES_FOLDER,
           upNext: this.#upNext() ?? null,

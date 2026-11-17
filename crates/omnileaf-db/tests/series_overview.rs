@@ -235,6 +235,7 @@ async fn sums_up_a_series_by_its_title_books_and_books_read() {
             is_rated_adult: false,
             is_marked_adult: false,
             bookmark_count: 0,
+            books_not_connected: 0,
         }
     );
 }

@@ -9,6 +9,7 @@ pub(crate) use android::{plugin, read};
 pub(crate) struct ColourRoles {
     primary: u32,
     on_primary: u32,
+    secondary: u32,
     secondary_container: u32,
     on_secondary_container: u32,
     tertiary_container: u32,
@@ -189,9 +190,10 @@ mod tests {
         0x0c, 0x00,
     ];
 
-    const ROLES: [&str; 17] = [
+    const ROLES: [&str; 18] = [
         "primary",
         "onPrimary",
+        "secondary",
         "secondaryContainer",
         "onSecondaryContainer",
         "tertiaryContainer",
@@ -224,6 +226,7 @@ mod tests {
 
         let colours = serde_json::to_value(reply.colours).unwrap();
         assert_eq!(colours["light"]["surfaceContainerLow"], 0x41_61_89);
+        assert_eq!(colours["light"]["secondary"], 0x41_61_89);
         assert_eq!(colours["dark"]["inversePrimary"], 0xb1_c8_ec);
     }
 

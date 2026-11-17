@@ -10,9 +10,7 @@ pub(crate) enum LockAfter {
     Immediately,
     OneMinute,
     FiveMinutes,
-    FifteenMinutes,
     ThirtyMinutes,
-    OneHour,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -265,24 +263,23 @@ mod tests {
             LockAfter::Immediately,
             LockAfter::OneMinute,
             LockAfter::FiveMinutes,
-            LockAfter::FifteenMinutes,
             LockAfter::ThirtyMinutes,
-            LockAfter::OneHour,
         ]
         .map(|delay| serde_json::to_value(delay).unwrap());
 
         assert_eq!(
             names,
-            [
-                "immediately",
-                "oneMinute",
-                "fiveMinutes",
-                "fifteenMinutes",
-                "thirtyMinutes",
-                "oneHour"
-            ]
-            .map(serde_json::Value::from)
+            ["immediately", "oneMinute", "fiveMinutes", "thirtyMinutes"]
+                .map(serde_json::Value::from)
         );
+    }
+
+    #[test]
+    fn refuses_a_time_the_page_no_longer_offers() {
+        let refused = ["fifteenMinutes", "oneHour"]
+            .map(|retired| serde_json::from_value::<LockAfter>(retired.into()).is_err());
+
+        assert_eq!(refused, [true, true]);
     }
 
     #[test]
@@ -324,7 +321,7 @@ mod tests {
         let sent = [
             serde_json::to_value(ConfirmingPrompt::titled("Turn on app lock")).unwrap(),
             serde_json::to_value(ChosenDelay {
-                lock_after: LockAfter::OneHour,
+                lock_after: LockAfter::ThirtyMinutes,
             })
             .unwrap(),
             serde_json::to_value(words()).unwrap(),
@@ -334,7 +331,7 @@ mod tests {
             sent,
             [
                 serde_json::json!({ "title": "Turn on app lock" }),
-                serde_json::json!({ "lockAfter": "oneHour" }),
+                serde_json::json!({ "lockAfter": "thirtyMinutes" }),
                 serde_json::json!({
                     "title": "Omnileaf is locked",
                     "body": "Unlock to open your library.",
