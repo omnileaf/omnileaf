@@ -15,9 +15,10 @@ use omnileaf_db::{
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookFileToRemove, BookListing, BookToRead, Cover,
         LibraryRoot, NewRoot, PageDimensions, PageRequest, PageSize, PlaceInSeries,
-        RelatedSeriesWanted, RootId, RootKind, RootLocator, TreeUri, add_root, book_bookmarks,
-        book_to_read, bookmarked_roots, category_series_count, category_series_page, cover_file,
-        emptied_series_place, filter_choices as stored_filter_choices, folder_group_series_count,
+        RelatedSeriesWanted, RootId, RootKind, RootLocator, SeriesOverview as StoredOverview,
+        TreeUri, add_root, book_bookmarks, book_to_read, bookmarked_roots, category_series_count,
+        category_series_page, cover_file, emptied_series_place,
+        filter_choices as stored_filter_choices, folder_group_series_count,
         folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
         mark_root_unavailable, missing_roots, page_dimensions, person_series, place_in_series,
@@ -39,6 +40,7 @@ use omnileaf_db::{
     library_listing::{library_listing, set_library_listing},
     library_tabs::{TabPlace, library_tabs, set_library_tabs},
     library_view::{library_view, set_library_view},
+    rusqlite::Connection,
     store::{Changed, Clock, Store, series_edits},
 };
 use omnileaf_formats::LocalStorage;
@@ -948,18 +950,15 @@ impl Library {
         id: SeriesId,
         edits: DetailEdits,
     ) -> Result<(), LibraryError> {
-        let series = id.0;
-        let is_shown = self
+        let holds_books = self
             .store
             .database()
-            .read(move |connection| {
-                Ok(series_overview(connection, series)?
-                    .is_some_and(|overview| overview.holds_books()))
-            })
+            .read(move |connection| Ok(overview_with_books(connection, id)?.is_some()))
             .await?;
-        if !is_shown {
+        if !holds_books {
             return Err(LibraryError::SeriesNotFound { id });
         }
+        let series = id.0;
         let edits = edits.stored();
         Ok(self
             .store
@@ -973,9 +972,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let Some(overview) = series_overview(connection, series)?
-                    .filter(omnileaf_db::catalog::SeriesOverview::holds_books)
-                else {
+                let Some(overview) = overview_with_books(connection, id)? else {
                     return Ok(None);
                 };
                 Ok(Some((
@@ -2565,6 +2562,13 @@ impl From<omnileaf_db::Error> for LibraryError {
             other => Self::Database(other),
         }
     }
+}
+
+fn overview_with_books(
+    connection: &Connection,
+    id: SeriesId,
+) -> Result<Option<StoredOverview>, omnileaf_db::Error> {
+    Ok(series_overview(connection, id.0)?.filter(StoredOverview::holds_books))
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
