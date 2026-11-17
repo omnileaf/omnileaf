@@ -2,7 +2,7 @@ use std::{
     env,
     ffi::{OsStr, OsString},
     io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 
@@ -75,29 +75,40 @@ const DEFAULT_WINDOWS_EXTENSIONS: &str = ".COM;.EXE;.BAT;.CMD";
 /// Windows installs tools such as pnpm as `.cmd` shims, which `Command` finds only by their full path.
 pub(crate) fn command_for(program: impl AsRef<OsStr>) -> Command {
     let program = program.as_ref();
-    if cfg!(windows)
-        && let Some(program) = program.to_str()
-    {
-        let path = env::var_os("PATH").unwrap_or_default();
-        let extensions =
-            env::var("PATHEXT").unwrap_or_else(|_| DEFAULT_WINDOWS_EXTENSIONS.to_owned());
-        let extensions: Vec<&str> = extensions
-            .split(';')
-            .filter(|extension| !extension.is_empty())
-            .collect();
-        if let Some(found) = find_on_path(program, &path, &extensions) {
-            return Command::new(found);
-        }
+    let path = env::var_os("PATH").unwrap_or_default();
+    let found = program
+        .to_str()
+        .and_then(|name| find_on_path(name, &path, &program_extensions()));
+    match found {
+        Some(found) => Command::new(found),
+        None => Command::new(program),
     }
-    Command::new(program)
 }
 
-fn find_on_path(program: &str, path: &OsStr, extensions: &[&str]) -> Option<PathBuf> {
+fn program_extensions() -> Vec<String> {
+    if !cfg!(windows) {
+        return Vec::new();
+    }
+    env::var("PATHEXT")
+        .unwrap_or_else(|_| DEFAULT_WINDOWS_EXTENSIONS.to_owned())
+        .split(';')
+        .filter(|extension| !extension.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+fn find_on_path(program: &str, path: &OsStr, extensions: &[impl AsRef<OsStr>]) -> Option<PathBuf> {
     env::split_paths(path)
-        .flat_map(|directory| {
-            extensions
-                .iter()
-                .map(move |extension| directory.join(format!("{program}{extension}")))
+        .find_map(|directory| first_existing_with_extension(&directory.join(program), extensions))
+}
+
+fn first_existing_with_extension(base: &Path, extensions: &[impl AsRef<OsStr>]) -> Option<PathBuf> {
+    extensions
+        .iter()
+        .map(|extension| {
+            let mut candidate = base.as_os_str().to_owned();
+            candidate.push(extension);
+            PathBuf::from(candidate)
         })
         .find(|candidate| candidate.is_file())
 }
