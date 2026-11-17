@@ -92,7 +92,7 @@ impl Narrowing {
 
 #[derive(Subcommand)]
 enum Fragments {
-    /// Check that every fragment in `.changes` is well formed.
+    /// Check every fragment in `.changes` and every archive in `.changes/released`.
     Check,
     /// Fail when the change since a commit touches what people see and adds no fragment.
     Require {
@@ -506,16 +506,15 @@ fn work_with_fragments(fragments: Fragments) -> anyhow::Result<()> {
     let root = workspace::root();
     match fragments {
         Fragments::Check => {
-            let violations = changelog::check(&changelog::read_folder(&root)?);
-            report(&violations, "changelog fragment")
+            let violations = changelog::check(&root)?;
+            report(&violations, "changelog")
         }
         Fragments::Require { base, skip } => {
             let changed = changelog::changed_since_merge_base(&root, &base)?;
             changelog::require(&changed, skip).map_err(|missing| anyhow::anyhow!("{missing}"))
         }
         Fragments::Notes { version, format } => {
-            let notes =
-                changelog::notes(&changelog::read_folder(&root)?, version.as_deref(), format)?;
+            let notes = changelog::notes(&root, version.as_deref(), format)?;
             print_text(&notes);
             Ok(())
         }

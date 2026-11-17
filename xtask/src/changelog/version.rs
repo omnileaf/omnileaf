@@ -23,6 +23,10 @@ fn is_pre_release_label(label: &str) -> bool {
     label.split('.').all(is_pre_release_identifier)
 }
 
+pub(super) fn is_full_version(text: &str) -> bool {
+    matches!(parse_version(text), Ok(Version::Full(_)))
+}
+
 pub(super) fn parse_version(version: &str) -> anyhow::Result<Version<'_>> {
     let (core, label) = version
         .split_once('-')
