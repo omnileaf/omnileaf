@@ -42,6 +42,10 @@ internal class LaunchRequests(
 
     fun takeRoute(): String? = routeToRestore.take()
 
+    fun routeShown() {
+        routeToRestore.shown()
+    }
+
     fun routeToSave(shownPageUrl: String?): String? = routeToRestore.routeToSave(shownPageUrl)
 
     fun watchHandedDocuments(page: (String) -> Unit) {

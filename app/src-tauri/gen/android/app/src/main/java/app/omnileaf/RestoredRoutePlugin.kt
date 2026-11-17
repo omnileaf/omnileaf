@@ -9,16 +9,24 @@ import app.tauri.plugin.Plugin
 import app.tauri.plugin.PluginManager
 import org.json.JSONObject
 
+private const val NO_SHOWN_ACTIVITY = "no activity is showing the app"
+
 @TauriPlugin
 class RestoredRoutePlugin(
     activity: Activity,
 ) : Plugin(activity) {
     @Command
     fun take(invoke: Invoke) {
-        val shownActivity =
-            PluginManager.activity as? MainActivity
-                ?: return invoke.reject("no activity is showing the app")
-        val route = shownActivity.launchRequests.takeRoute()
-        invoke.resolve(JSObject().put("route", route ?: JSONObject.NULL))
+        val requests = shownLaunchRequests() ?: return invoke.reject(NO_SHOWN_ACTIVITY)
+        invoke.resolve(JSObject().put("route", requests.takeRoute() ?: JSONObject.NULL))
     }
+
+    @Command
+    fun shown(invoke: Invoke) {
+        val requests = shownLaunchRequests() ?: return invoke.reject(NO_SHOWN_ACTIVITY)
+        requests.routeShown()
+        invoke.resolve()
+    }
+
+    private fun shownLaunchRequests(): LaunchRequests? = (PluginManager.activity as? MainActivity)?.launchRequests
 }

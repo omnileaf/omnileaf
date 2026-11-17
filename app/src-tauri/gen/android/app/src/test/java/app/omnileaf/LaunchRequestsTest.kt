@@ -6,6 +6,7 @@ import org.junit.Test
 
 private const val SAVED_ROUTE = "/settings/appearance"
 private const val DOCUMENT = "content://documents.test/document/42"
+private const val ROOT_PAGE_URL = "http://tauri.localhost/"
 private val PLAIN_LAUNCH = LaunchIntent(iconAction = null, handedDocument = null, isFromRecents = false)
 private val SEARCH_REQUEST = PLAIN_LAUNCH.copy(iconAction = IconAction.SEARCH_LIBRARY)
 private val DOCUMENT_REQUEST = PLAIN_LAUNCH.copy(handedDocument = DOCUMENT)
@@ -72,6 +73,17 @@ class LaunchRequestsTest {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
 
         assertEquals(SAVED_ROUTE, requests.takeRoute())
+    }
+
+    @Test
+    fun `saves the route taken until the page shows it`() {
+        requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
+        requests.takeRoute()
+        val savedBeforeShown = requests.routeToSave(ROOT_PAGE_URL)
+
+        requests.routeShown()
+
+        assertEquals(listOf(SAVED_ROUTE, "/"), listOf(savedBeforeShown, requests.routeToSave(ROOT_PAGE_URL)))
     }
 
     @Test

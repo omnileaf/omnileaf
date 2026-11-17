@@ -6,6 +6,7 @@ import org.junit.Test
 
 private const val SERIES_PAGE = "/series/42"
 private const val SETTINGS_PAGE_URL = "http://tauri.localhost/settings/appearance"
+private const val ROOT_PAGE_URL = "http://tauri.localhost/"
 
 private fun savedRoute(route: String?): RouteToRestore = RouteToRestore().apply { load(route) }
 
@@ -38,9 +39,31 @@ class RouteToRestoreTest {
     }
 
     @Test
-    fun `saves the page the app shows once the route is taken`() {
+    fun `saves the page the app shows once it shows the route taken`() {
         val saved = savedRoute(SERIES_PAGE)
         saved.take()
+        saved.shown()
+
+        val route = saved.routeToSave(SETTINGS_PAGE_URL)
+
+        assertEquals("/settings/appearance", route)
+    }
+
+    @Test
+    fun `saves again a route taken while the page is still at the root`() {
+        val saved = savedRoute(SERIES_PAGE)
+        saved.take()
+
+        val route = saved.routeToSave(ROOT_PAGE_URL)
+
+        assertEquals(SERIES_PAGE, route)
+    }
+
+    @Test
+    fun `saves the page the app shows once a launch request replaces the route taken`() {
+        val saved = savedRoute(SERIES_PAGE)
+        saved.take()
+        saved.drop()
 
         val route = saved.routeToSave(SETTINGS_PAGE_URL)
 
@@ -51,7 +74,7 @@ class RouteToRestoreTest {
     fun `saves again a route the page has not taken yet`() {
         val saved = savedRoute(SERIES_PAGE)
 
-        val route = saved.routeToSave("http://tauri.localhost/")
+        val route = saved.routeToSave(ROOT_PAGE_URL)
 
         assertEquals(SERIES_PAGE, route)
     }
