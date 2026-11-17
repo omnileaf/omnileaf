@@ -33,6 +33,7 @@ const ANDROID_READ_MARK_INSET = "4px";
 const ANDROID_COVER_CORNER = "4px";
 const READ_CHECK_SIZE = 14;
 const ANDROID_READ_CHECK_SIZE = 16;
+const ANDROID_OUTLINE = "rgb(115, 125, 117)";
 const GAP_ICON_SIZE = 24;
 
 function volume(
@@ -343,6 +344,17 @@ test("rounds an Android missing run and focus outline to the cover's corner", as
     gap: ANDROID_COVER_CORNER,
     link: ANDROID_COVER_CORNER,
   });
+});
+
+test("edges an Android missing run with a 1px dashed Material outline", async () => {
+  const { gap } = await drawTiles("android");
+  const box = styleOf(gap.firstElementChild);
+
+  expect([box.borderTopWidth, box.borderTopStyle, box.borderTopColor]).toEqual([
+    "1px",
+    "dashed",
+    ANDROID_OUTLINE,
+  ]);
 });
 
 test.each<[DrawnPlatform, string]>([

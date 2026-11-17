@@ -519,6 +519,7 @@
   --color-native-tile-pressed: var(--native-color-tile-pressed);
   --color-native-tile-check-fill: var(--native-color-tile-check-fill);
   --color-native-tile-check-edge: var(--native-color-tile-check-edge);
+  --color-native-gap-edge: var(--native-color-gap-edge);
   --spacing-native-tile-edge: var(--native-spacing-tile-edge);
   --spacing-native-tile-lift: var(--native-spacing-tile-lift);
   --spacing-native-tile-badge: var(--native-spacing-tile-badge);
