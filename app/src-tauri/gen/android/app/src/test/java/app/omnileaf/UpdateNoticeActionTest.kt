@@ -10,7 +10,7 @@ private val NO_CHOICES = UpdateChoices(skipped = null, snooze = null)
 
 class UpdateNoticeActionTest {
     private val state = UpdateState(MemoryUpdateStore())
-    private val choices = UpdateNoticeChoices(state, MemoryPostedNotice())
+    private val choices = UpdateNoticeChoices(state, MemoryUpdateNotices())
 
     @Test
     fun `skip this version skips the version the notice named`() {

@@ -1,5 +1,6 @@
 package app.omnileaf
 
+import android.app.NotificationManager
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.Duration
@@ -12,7 +13,7 @@ private val NEWER = PublishedRelease(ReleaseVersion(0, 4, 0), headline = null)
 
 class UpdateNoticeTest {
     private val state = UpdateState(MemoryUpdateStore())
-    private val posted = MemoryPostedNotice()
+    private val posted = MemoryUpdateNotices()
 
     private fun found(release: PublishedRelease) = state.record(CheckResult.Available(release), NOW)
 
@@ -122,5 +123,38 @@ class UpdateNoticeTest {
         state.record(CheckResult.Offline, NOW.plusSeconds(60))
 
         assertEquals(UpdateNotice.Post(FOUND), noticeAfterCheck(now = NOW.plusSeconds(60)))
+    }
+
+    @Test
+    fun `withdraws the notice for the release just installed`() {
+        found(FOUND)
+        posted.post(FOUND)
+
+        state.withdrawStaleNotice(FOUND.version, NOW, posted)
+
+        assertEquals(false, posted.isShowing(FOUND.version))
+    }
+
+    @Test
+    fun `keeps the notice for a release newer than the one just installed`() {
+        found(NEWER)
+        posted.post(NEWER)
+
+        state.withdrawStaleNotice(FOUND.version, NOW, posted)
+
+        assertEquals(true, posted.isShowing(NEWER.version))
+    }
+
+    @Test
+    fun `shows notices only while the app and the updates channel allow them`() {
+        val allowed =
+            listOf(
+                canShowNotices(areNotificationsEnabled = true, NotificationManager.IMPORTANCE_DEFAULT),
+                canShowNotices(areNotificationsEnabled = true, NotificationManager.IMPORTANCE_LOW),
+                canShowNotices(areNotificationsEnabled = false, NotificationManager.IMPORTANCE_DEFAULT),
+                canShowNotices(areNotificationsEnabled = true, NotificationManager.IMPORTANCE_NONE),
+            )
+
+        assertEquals(listOf(true, true, false, false), allowed)
     }
 }

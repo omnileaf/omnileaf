@@ -12,7 +12,7 @@ private val NEWER = PublishedRelease(ReleaseVersion(0, 4, 0), headline = null)
 
 class UpdateNoticeChoicesTest {
     private val state = UpdateState(MemoryUpdateStore())
-    private val posted = MemoryPostedNotice()
+    private val posted = MemoryUpdateNotices()
     private val choices = UpdateNoticeChoices(state, posted)
 
     private fun posts(release: PublishedRelease) {
