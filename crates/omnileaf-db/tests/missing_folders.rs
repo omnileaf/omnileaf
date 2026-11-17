@@ -100,10 +100,7 @@ impl Shelf {
     }
 
     async fn listed(&self) -> Vec<String> {
-        let request = PageRequest {
-            after: None,
-            size: PageSize::try_from(50).unwrap(),
-        };
+        let request = first_page();
         let page = self
             .database
             .read(move |connection| series_page(connection, &A_TO_Z, &request))
@@ -113,10 +110,7 @@ impl Shelf {
     }
 
     async fn connections(&self) -> Vec<(String, bool)> {
-        let request = PageRequest {
-            after: None,
-            size: PageSize::try_from(50).unwrap(),
-        };
+        let request = first_page();
         let page = self
             .database
             .read(move |connection| series_page(connection, &A_TO_Z, &request))
@@ -130,10 +124,7 @@ impl Shelf {
 
     async fn book_connections(&self, series: &str) -> Vec<(String, bool)> {
         let series = series_id(series);
-        let request = PageRequest {
-            after: None,
-            size: PageSize::try_from(50).unwrap(),
-        };
+        let request = first_page();
         let page = self
             .database
             .read(move |connection| {
@@ -173,6 +164,13 @@ impl Shelf {
             .read(move |connection| hidden_series_count(connection, root))
             .await
             .unwrap()
+    }
+}
+
+fn first_page() -> PageRequest {
+    PageRequest {
+        after: None,
+        size: PageSize::try_from(50).unwrap(),
     }
 }
 
