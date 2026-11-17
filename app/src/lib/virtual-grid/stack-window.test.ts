@@ -253,3 +253,30 @@ test("refuses to place a row past the end of the list", () => {
 
   expect(() => heights.offsetOf(4)).toThrow(RangeError);
 });
+
+test("finds the row an offset falls in among rows of different heights", () => {
+  const heights = heightsOf(runsOf(3)).remeasured(
+    new Map([
+      [1, 56],
+      [2, 88],
+    ]),
+  );
+
+  expect(
+    [0, HEADING - 1, HEADING, HEADING + 56, HEADING + 143].map((offset) =>
+      heights.rowAt(offset),
+    ),
+  ).toEqual([0, 0, 1, 2, 2]);
+});
+
+test("finds the first row for an offset above the list", () => {
+  const heights = heightsOf(runsOf(2));
+
+  expect(heights.rowAt(-100)).toBe(0);
+});
+
+test("finds the end of the list for an offset below its last row", () => {
+  const heights = heightsOf(runsOf(2));
+
+  expect(heights.rowAt(heights.offsetOf(3))).toBe(3);
+});

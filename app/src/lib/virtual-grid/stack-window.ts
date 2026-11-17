@@ -48,6 +48,13 @@ export class RowHeights {
     return offset;
   }
 
+  rowAt(offset: number): number {
+    return firstIndexWhere(
+      this.count,
+      (index) => this.offsetOf(index + 1) > offset,
+    );
+  }
+
   remeasured(measurements: ReadonlyMap<number, number>): RowHeights {
     const changes = [...measurements].filter(
       ([index, height]) =>
@@ -115,10 +122,7 @@ export function stackWindow(
   extraRows: number,
 ): StackWindow {
   const { count } = heights;
-  const firstSeen = firstIndexWhere(
-    count,
-    (index) => heights.offsetOf(index + 1) > seen.top,
-  );
+  const firstSeen = heights.rowAt(seen.top);
   const firstUnseen = firstIndexWhere(
     count,
     (index) => heights.offsetOf(index) >= seen.bottom,
