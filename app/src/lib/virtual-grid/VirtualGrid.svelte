@@ -5,12 +5,7 @@
   import { columnsOf, optionId, type Reveal } from "./grid-keys";
   import { rowWindow, type Seen } from "./row-window";
   import { scrollerOf } from "./scroller";
-  import {
-    offsetOf,
-    type RowHeights,
-    rowHeights,
-    stackWindow,
-  } from "./stack-window";
+  import { RowHeights, stackWindow } from "./stack-window";
 
   interface Listbox {
     readonly id: string;
@@ -87,7 +82,7 @@
   const heights: RowHeights | undefined = $derived(
     headings === undefined || measure === undefined || measure.columns !== 1
       ? undefined
-      : rowHeights({
+      : new RowHeights({
           count,
           isHeading: headings,
           strides: { row: measure.rowStride, heading: measure.headingStride },
@@ -224,8 +219,8 @@
 
   function placeOf(index: number, at: Measure): { top: number; size: number } {
     if (heights !== undefined) {
-      const top = offsetOf(heights, index);
-      return { top, size: offsetOf(heights, index + 1) - top };
+      const top = heights.offsetOf(index);
+      return { top, size: heights.offsetOf(index + 1) - top };
     }
     return {
       top: Math.floor(index / at.columns) * at.rowStride,

@@ -1,13 +1,6 @@
 import { expect, test } from "vitest";
 
-import {
-  offsetOf,
-  type RowHeights,
-  type RowLayout,
-  remeasured,
-  rowHeights,
-  stackWindow,
-} from "./stack-window";
+import { RowHeights, type RowLayout, stackWindow } from "./stack-window";
 
 const ROW = 72;
 const HEADING = 44;
@@ -31,13 +24,13 @@ function heightsOf(
   isHeading: readonly boolean[],
   count = isHeading.length,
 ): RowHeights {
-  return rowHeights(layoutOf(isHeading, count));
+  return new RowHeights(layoutOf(isHeading, count));
 }
 
 test("places each row after the rows and shorter headings above it", () => {
   const heights = heightsOf(runsOf(2, 1));
 
-  expect([0, 1, 2, 3, 4, 5].map((index) => offsetOf(heights, index))).toEqual([
+  expect([0, 1, 2, 3, 4, 5].map((index) => heights.offsetOf(index))).toEqual([
     0,
     HEADING,
     HEADING + ROW,
@@ -60,7 +53,7 @@ test("makes room for every row and heading at its own height", () => {
 test("starts at the row the screen's top falls in, past shorter headings", () => {
   const heights = heightsOf(runsOf(12, 12));
   const secondRunsFirstRow = 14;
-  const top = offsetOf(heights, secondRunsFirstRow) + ROW / 2;
+  const top = heights.offsetOf(secondRunsFirstRow) + ROW / 2;
 
   const window = stackWindow(
     heights,
@@ -69,13 +62,13 @@ test("starts at the row the screen's top falls in, past shorter headings", () =>
   );
 
   expect(window.start).toBe(secondRunsFirstRow);
-  expect(window.before).toBe(offsetOf(heights, secondRunsFirstRow));
+  expect(window.before).toBe(heights.offsetOf(secondRunsFirstRow));
   expect(window.end).toBe(secondRunsFirstRow + 4);
 });
 
 test("keeps extra rows on either side of the screen", () => {
   const heights = heightsOf(runsOf(12, 12));
-  const top = offsetOf(heights, 14);
+  const top = heights.offsetOf(14);
 
   const window = stackWindow(heights, { top, bottom: top + ROW }, 2);
 
@@ -124,8 +117,7 @@ test("counts rows yet to come as rows", () => {
 });
 
 test("places measured rows and headings at their own heights", () => {
-  const heights = remeasured(
-    heightsOf(runsOf(3)),
+  const heights = heightsOf(runsOf(3)).remeasured(
     new Map([
       [0, 50],
       [1, 56],
@@ -134,14 +126,13 @@ test("places measured rows and headings at their own heights", () => {
     ]),
   );
 
-  expect([0, 1, 2, 3, 4].map((index) => offsetOf(heights, index))).toEqual([
+  expect([0, 1, 2, 3, 4].map((index) => heights.offsetOf(index))).toEqual([
     0, 50, 106, 194, 250,
   ]);
 });
 
 test("makes room for every row at its measured height", () => {
-  const heights = remeasured(
-    heightsOf(runsOf(2)),
+  const heights = heightsOf(runsOf(2)).remeasured(
     new Map([
       [1, 120],
       [2, 40],
@@ -154,8 +145,7 @@ test("makes room for every row at its measured height", () => {
 });
 
 test("starts at the row the screen's top falls in among rows of different heights", () => {
-  const heights = remeasured(
-    heightsOf(runsOf(4)),
+  const heights = heightsOf(runsOf(4)).remeasured(
     new Map([
       [1, 56],
       [2, 200],
@@ -163,7 +153,7 @@ test("starts at the row the screen's top falls in among rows of different height
       [4, 200],
     ]),
   );
-  const top = offsetOf(heights, 3) + 10;
+  const top = heights.offsetOf(3) + 10;
 
   const window = stackWindow(
     heights,
@@ -176,8 +166,7 @@ test("starts at the row the screen's top falls in among rows of different height
 });
 
 test("estimates rows not yet drawn from the median measured row", () => {
-  const heights = remeasured(
-    heightsOf(runsOf(5)),
+  const heights = heightsOf(runsOf(5)).remeasured(
     new Map([
       [1, 200],
       [2, 40],
@@ -185,12 +174,11 @@ test("estimates rows not yet drawn from the median measured row", () => {
     ]),
   );
 
-  expect(offsetOf(heights, 6) - offsetOf(heights, 4)).toBe(2 * 60);
+  expect(heights.offsetOf(6) - heights.offsetOf(4)).toBe(2 * 60);
 });
 
 test("estimates from the middle two rows when an even number are measured", () => {
-  const heights = remeasured(
-    heightsOf(runsOf(5)),
+  const heights = heightsOf(runsOf(5)).remeasured(
     new Map([
       [1, 60],
       [2, 200],
@@ -199,20 +187,19 @@ test("estimates from the middle two rows when an even number are measured", () =
     ]),
   );
 
-  expect(offsetOf(heights, 6) - offsetOf(heights, 5)).toBe(50);
+  expect(heights.offsetOf(6) - heights.offsetOf(5)).toBe(50);
 });
 
 test("estimates headings not yet drawn from the heading stride alone", () => {
-  const heights = remeasured(
-    heightsOf(runsOf(1, 1)),
+  const heights = heightsOf(runsOf(1, 1)).remeasured(
     new Map([
       [0, 30],
       [1, 90],
     ]),
   );
 
-  expect(offsetOf(heights, 3) - offsetOf(heights, 2)).toBe(HEADING);
-  expect(offsetOf(heights, 4) - offsetOf(heights, 3)).toBe(90);
+  expect(heights.offsetOf(3) - heights.offsetOf(2)).toBe(HEADING);
+  expect(heights.offsetOf(4) - heights.offsetOf(3)).toBe(90);
 });
 
 test("keeps the heights measured before the list grew by a page", () => {
@@ -222,17 +209,17 @@ test("keeps the heights measured before the list grew by a page", () => {
     [3, 120],
   ]);
 
-  const heights = rowHeights(layoutOf(runsOf(3, 3)), measuredBeforeGrowing);
+  const heights = new RowHeights(layoutOf(runsOf(3, 3)), measuredBeforeGrowing);
 
   expect(
     [1, 2, 3, 4, 5].map(
-      (index) => offsetOf(heights, index + 1) - offsetOf(heights, index),
+      (index) => heights.offsetOf(index + 1) - heights.offsetOf(index),
     ),
   ).toEqual([120, 40, 120, HEADING, 120]);
 });
 
 test("builds heights without measurements of rows outside the list", () => {
-  const heights = rowHeights(
+  const heights = new RowHeights(
     layoutOf(runsOf(2)),
     new Map([
       [-1, 500],
@@ -240,29 +227,29 @@ test("builds heights without measurements of rows outside the list", () => {
     ]),
   );
 
-  expect(offsetOf(heights, 3)).toBe(HEADING + 2 * ROW);
+  expect(heights.offsetOf(3)).toBe(HEADING + 2 * ROW);
 });
 
 test("keeps the same heights when every measurement repeats", () => {
-  const heights = remeasured(heightsOf(runsOf(2)), new Map([[1, 56]]));
+  const heights = heightsOf(runsOf(2)).remeasured(new Map([[1, 56]]));
 
-  expect(remeasured(heights, new Map([[1, 56]]))).toBe(heights);
+  expect(heights.remeasured(new Map([[1, 56]]))).toBe(heights);
 });
 
 test("ignores measurements of rows past the end of the list", () => {
   const heights = heightsOf(runsOf(2));
 
-  expect(remeasured(heights, new Map([[3, 500]]))).toBe(heights);
+  expect(heights.remeasured(new Map([[3, 500]]))).toBe(heights);
 });
 
 test("ignores measurements of rows before the start of the list", () => {
   const heights = heightsOf(runsOf(2));
 
-  expect(remeasured(heights, new Map([[-1, 500]]))).toBe(heights);
+  expect(heights.remeasured(new Map([[-1, 500]]))).toBe(heights);
 });
 
 test("refuses to place a row past the end of the list", () => {
   const heights = heightsOf(runsOf(2));
 
-  expect(() => offsetOf(heights, 4)).toThrow(RangeError);
+  expect(() => heights.offsetOf(4)).toThrow(RangeError);
 });

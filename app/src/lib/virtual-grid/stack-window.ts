@@ -11,12 +11,6 @@ export interface RowLayout {
   readonly strides: Strides;
 }
 
-export interface RowHeights {
-  readonly layout: RowLayout;
-  readonly measured: ReadonlyMap<number, number>;
-  readonly offsets: readonly number[];
-}
-
 export interface StackWindow {
   readonly start: number;
   readonly end: number;
@@ -24,38 +18,55 @@ export interface StackWindow {
   readonly size: number;
 }
 
-export function rowHeights(
-  layout: RowLayout,
-  measurements: ReadonlyMap<number, number> = new Map(),
-): RowHeights {
-  return laidOut(
-    layout,
-    new Map([...measurements].filter(([index]) => isRowOf(layout, index))),
-  );
-}
+export class RowHeights {
+  readonly #layout: RowLayout;
+  readonly #measured: ReadonlyMap<number, number>;
+  readonly #offsets: readonly number[];
 
-export function remeasured(
-  heights: RowHeights,
-  measurements: ReadonlyMap<number, number>,
-): RowHeights {
-  const { layout, measured } = heights;
-  const changes = [...measurements].filter(
-    ([index, height]) =>
-      isRowOf(layout, index) && measured.get(index) !== height,
-  );
-  return changes.length === 0
-    ? heights
-    : laidOut(layout, new Map([...measured, ...changes]));
+  constructor(
+    layout: RowLayout,
+    measurements: ReadonlyMap<number, number> = new Map(),
+  ) {
+    this.#layout = layout;
+    this.#measured = new Map(
+      [...measurements].filter(([index]) => isRowOf(layout, index)),
+    );
+    this.#offsets = offsetsOf(layout, this.#measured);
+  }
+
+  get count(): number {
+    return this.#layout.count;
+  }
+
+  offsetOf(index: number): number {
+    const offset = this.#offsets[index];
+    if (offset === undefined) {
+      throw new RangeError(
+        `row ${String(index)} is outside a list of ${String(this.count)}`,
+      );
+    }
+    return offset;
+  }
+
+  remeasured(measurements: ReadonlyMap<number, number>): RowHeights {
+    const changes = [...measurements].filter(
+      ([index, height]) =>
+        isRowOf(this.#layout, index) && this.#measured.get(index) !== height,
+    );
+    return changes.length === 0
+      ? this
+      : new RowHeights(this.#layout, new Map([...this.#measured, ...changes]));
+  }
 }
 
 function isRowOf(layout: RowLayout, index: number): boolean {
   return index >= 0 && index < layout.count;
 }
 
-function laidOut(
+function offsetsOf(
   layout: RowLayout,
   measured: ReadonlyMap<number, number>,
-): RowHeights {
+): readonly number[] {
   const { count, isHeading, strides } = layout;
   const measuredRows = [...measured].flatMap(([index, height]) =>
     isHeading[index] === true ? [] : [height],
@@ -69,7 +80,7 @@ function laidOut(
       (isHeading[index] === true ? strides.heading : estimatedRow);
     offsets.push(offset);
   }
-  return { layout, measured, offsets };
+  return offsets;
 }
 
 function medianOf(values: readonly number[]): number | undefined {
@@ -79,16 +90,6 @@ function medianOf(values: readonly number[]): number | undefined {
   return lowerMiddle === undefined || upperMiddle === undefined
     ? undefined
     : (lowerMiddle + upperMiddle) / 2;
-}
-
-export function offsetOf(heights: RowHeights, index: number): number {
-  const offset = heights.offsets[index];
-  if (offset === undefined) {
-    throw new RangeError(
-      `row ${String(index)} is outside a list of ${String(heights.layout.count)}`,
-    );
-  }
-  return offset;
 }
 
 function firstIndexWhere(
@@ -113,21 +114,21 @@ export function stackWindow(
   seen: Seen,
   extraRows: number,
 ): StackWindow {
-  const { count } = heights.layout;
+  const { count } = heights;
   const firstSeen = firstIndexWhere(
     count,
-    (index) => offsetOf(heights, index + 1) > seen.top,
+    (index) => heights.offsetOf(index + 1) > seen.top,
   );
   const firstUnseen = firstIndexWhere(
     count,
-    (index) => offsetOf(heights, index) >= seen.bottom,
+    (index) => heights.offsetOf(index) >= seen.bottom,
   );
   const start = Math.min(Math.max(firstSeen - extraRows, 0), count);
   const end = Math.min(Math.max(firstUnseen + extraRows, start), count);
   return {
     start,
     end,
-    before: offsetOf(heights, start),
-    size: offsetOf(heights, count),
+    before: heights.offsetOf(start),
+    size: heights.offsetOf(count),
   };
 }
