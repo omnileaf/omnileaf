@@ -8,6 +8,7 @@ private const val SAVED_ROUTE = "/settings/appearance"
 private const val DOCUMENT = "content://documents.test/document/42"
 private const val ROOT_PAGE_URL = "http://tauri.localhost/"
 private const val HISTORY_PAGE_URL = "http://tauri.localhost/history"
+private const val OUTSIDE_PAGE_URL = "http://example.com/settings"
 private val PLAIN_LAUNCH = LaunchIntent(iconAction = null, handedDocument = null, isFromRecents = false)
 private val SEARCH_REQUEST = PLAIN_LAUNCH.copy(iconAction = IconAction.SEARCH_LIBRARY)
 private val DOCUMENT_REQUEST = PLAIN_LAUNCH.copy(handedDocument = DOCUMENT)
@@ -89,6 +90,35 @@ class LaunchRequestsTest {
     }
 
     @Test
+    fun `hands nothing over once the opening page shows`() {
+        requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
+        requests.takeRoute()
+        requests.openingPageShown()
+
+        val route = requests.takeRoute()
+
+        assertNull(route)
+    }
+
+    @Test
+    fun `hands nothing over on a fresh start`() {
+        requests.takeCreating(PLAIN_LAUNCH, saved = null)
+
+        val route = requests.takeRoute()
+
+        assertNull(route)
+    }
+
+    @Test
+    fun `saves again a route the page has not asked for yet`() {
+        requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
+
+        val route = requests.routeToSave(ROOT_PAGE_URL)
+
+        assertEquals(SAVED_ROUTE, route)
+    }
+
+    @Test
     fun `saves the route taken again when the screen is rebuilt before the page shows it`() {
         requests.takeCreating(PLAIN_LAUNCH, REBUILT_SCREEN)
         requests.takeRoute()
@@ -118,6 +148,24 @@ class LaunchRequestsTest {
         val route = requests.routeToSave(HISTORY_PAGE_URL)
 
         assertEquals("/history", route)
+    }
+
+    @Test
+    fun `saves nothing for a page outside the app`() {
+        requests.takeCreating(PLAIN_LAUNCH, saved = null)
+
+        val route = requests.routeToSave(OUTSIDE_PAGE_URL)
+
+        assertNull(route)
+    }
+
+    @Test
+    fun `saves nothing before the web view has a page`() {
+        requests.takeCreating(PLAIN_LAUNCH, saved = null)
+
+        val route = requests.routeToSave(null)
+
+        assertNull(route)
     }
 
     @Test
