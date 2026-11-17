@@ -15,6 +15,7 @@ const FIRST_TAGS: readonly LibraryTag[] = [
   { name: "Seinen", seriesCount: 7 },
 ];
 const SHORT_SWIPE = 0.25;
+const FULL_SWIPE = 0.75;
 
 let tags: LibraryTag[] = [...FIRST_TAGS];
 
@@ -25,6 +26,14 @@ test.use({
     removeLibraryTag: (tag) => {
       tags = tags.filter((one) => one.name !== tag);
       return [];
+    },
+    labelSeries: (_series, changes) => {
+      tags = FIRST_TAGS.filter(
+        (tag) =>
+          changes.tagsAdded.includes(tag.name) ||
+          tags.some((one) => one.name === tag.name),
+      );
+      return null;
     },
   },
 });
@@ -144,5 +153,19 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
 
     await expect(rowOf(page, "Seinen")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+  });
+
+  test("deletes a tag from a full swipe toward the start and brings it back on Undo", async ({
+    page,
+  }) => {
+    await swipeTowardStart(swipedOf(page, "Seinen"), FULL_SWIPE);
+
+    await expect(rowOf(page, "Seinen")).toHaveCount(0);
+    const undo = page.getByRole("button", { name: "Undo" });
+    await expect(undo).toBeVisible();
+    await settle(undo);
+    await undo.click();
+
+    await expect(rowOf(page, "Seinen")).toBeVisible();
   });
 });

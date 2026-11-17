@@ -150,6 +150,7 @@
                     label: m.manage_tags_rename({ tag: tag.name }),
                     words: m.manage_tags_rename_action(),
                     isDestructive: false,
+                    runsOnFullSwipe: false,
                     act: () => {
                       renaming = tag.name;
                     },
@@ -159,6 +160,7 @@
                     label: m.manage_tags_delete({ tag: tag.name }),
                     words: m.manage_tags_delete_action(),
                     isDestructive: true,
+                    runsOnFullSwipe: true,
                     act: () => {
                       void remove(tag.name);
                     },

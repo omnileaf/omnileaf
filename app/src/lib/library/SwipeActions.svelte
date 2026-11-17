@@ -1,13 +1,18 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import type { OpenAction, RowSwipe } from "#lib/series/row-swipe.svelte.ts";
+  import {
+    ACT_PAST_OPEN_PX,
+    type OpenAction,
+    type RowSwipe,
+  } from "#lib/series/row-swipe.svelte.ts";
 
   export interface SwipeAction {
     readonly name: string;
     readonly label: string;
     readonly words: string;
     readonly isDestructive: boolean;
+    readonly runsOnFullSwipe: boolean;
     readonly act: () => void;
   }
 
@@ -26,10 +31,13 @@
   let strip: HTMLElement | undefined = $state();
   let content: HTMLElement | undefined = $state();
 
-  const opensOnActions: OpenAction = {
+  const fullSwipeAction = $derived(
+    actions.find(({ runsOnFullSwipe }) => runsOnFullSwipe),
+  );
+  const opensOnActions: OpenAction = $derived({
     revealPx: () => strip?.getBoundingClientRect().width ?? 0,
-    actPastOpenPx: 0,
-  };
+    actPastOpenPx: fullSwipeAction === undefined ? 0 : ACT_PAST_OPEN_PX,
+  });
 
   const isOpen = $derived(swipe.sideOf(key) !== undefined);
 </script>
@@ -54,7 +62,10 @@
       swipe.moved(event);
     }}
     onpointerup={() => {
-      swipe.released(opensOnActions);
+      const outcome = swipe.released(opensOnActions);
+      if (outcome.kind === "act" && outcome.side === "towardStart") {
+        fullSwipeAction?.act();
+      }
     }}
     onpointercancel={() => {
       swipe.cancelled();
