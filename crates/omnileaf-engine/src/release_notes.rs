@@ -33,6 +33,21 @@ pub struct WhatsNew {
     pub earlier: Vec<VersionNotes>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum WhatsNewNotice {
+    Show { notes: VersionNotes },
+    Record,
+    Nothing,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LastSeen<'a> {
+    FirstInstall,
+    NotRecorded,
+    Version(&'a str),
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum ReleaseNotesError {
     #[error("read the release notes bundle")]
@@ -115,6 +130,17 @@ impl ReleaseNotes {
             .iter()
             .find(|released| released.number == *installed)
     }
+
+    #[must_use]
+    pub fn notice_for(&self, installed: &str, last_seen: LastSeen<'_>) -> WhatsNewNotice {
+        let Some(released) = Version::parse(installed)
+            .ok()
+            .and_then(|installed| self.released_version(&installed))
+        else {
+            return WhatsNewNotice::Nothing;
+        };
+        released.notice_after(last_seen)
+    }
 }
 
 impl ReleasedVersion {
@@ -140,6 +166,57 @@ impl ReleasedVersion {
             },
         }))
     }
+
+    fn notice_after(&self, last_seen: LastSeen<'_>) -> WhatsNewNotice {
+        match last_seen {
+            LastSeen::FirstInstall => WhatsNewNotice::Record,
+            LastSeen::NotRecorded => self.show(),
+            LastSeen::Version(seen) => Version::parse(seen).map_or_else(
+                |_| self.show(),
+                |seen| self.notice_after_change(VersionChange::between(&seen, &self.number)),
+            ),
+        }
+    }
+
+    fn notice_after_change(&self, change: VersionChange) -> WhatsNewNotice {
+        match change {
+            VersionChange::SameOrOlder => WhatsNewNotice::Nothing,
+            VersionChange::Patch if !self.has_news_for_a_patch() => WhatsNewNotice::Record,
+            VersionChange::Patch | VersionChange::MinorOrMajor => self.show(),
+        }
+    }
+
+    fn has_news_for_a_patch(&self) -> bool {
+        self.notes
+            .entries
+            .iter()
+            .any(|entry| entry.kind.is_news_in_a_patch())
+    }
+
+    fn show(&self) -> WhatsNewNotice {
+        WhatsNewNotice::Show {
+            notes: self.notes.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+enum VersionChange {
+    SameOrOlder,
+    Patch,
+    MinorOrMajor,
+}
+
+impl VersionChange {
+    fn between(seen: &Version, installed: &Version) -> Self {
+        if installed <= seen {
+            Self::SameOrOlder
+        } else if installed.major == seen.major && installed.minor == seen.minor {
+            Self::Patch
+        } else {
+            Self::MinorOrMajor
+        }
+    }
 }
 
 impl ArchivedEntry {
@@ -150,6 +227,15 @@ impl ArchivedEntry {
                 summary: self.summary,
             }),
             ArchivedKind::Unknown(_) => None,
+        }
+    }
+}
+
+impl ChangeKind {
+    fn is_news_in_a_patch(self) -> bool {
+        match self {
+            Self::Breaking | Self::Sec | Self::Feat => true,
+            Self::Perf | Self::Fix => false,
         }
     }
 }
@@ -382,6 +468,87 @@ mod tests {
             prop_assert_eq!(
                 whats_new.installed.as_ref().map(|notes| notes.version.as_str()),
                 numbers.contains(&installed).then_some(installed.as_str())
+            );
+        }
+    }
+
+    #[derive(Debug, PartialEq, Eq)]
+    enum Expected {
+        Show,
+        Record,
+        Nothing,
+    }
+
+    #[test]
+    fn decides_the_notice_from_the_last_version_seen() {
+        use Expected::{Nothing, Record, Show};
+        use LastSeen::{FirstInstall, NotRecorded};
+        let seen = LastSeen::Version;
+        let cases: &[(&str, &[&str], LastSeen, Expected)] = &[
+            ("0.2.0", &["feat"], FirstInstall, Record),
+            ("0.2.0", &["fix"], FirstInstall, Record),
+            ("0.2.0", &["fix"], NotRecorded, Show),
+            ("0.2.0", &["fix"], seen(""), Show),
+            ("0.2.0", &["fix"], seen("not a version"), Show),
+            ("0.2.0", &["feat"], seen("0.2.0"), Nothing),
+            ("0.2.1", &["fix"], seen("0.2.1"), Nothing),
+            ("0.2.0", &["feat"], seen("0.3.0"), Nothing),
+            ("0.2.1", &["feat"], seen("0.2.2"), Nothing),
+            ("0.2.1", &["fix"], seen("0.2.2"), Nothing),
+            ("0.2.0", &["fix"], seen("0.1.4"), Show),
+            ("2.0.0", &["fix"], seen("1.4.2"), Show),
+            ("2.2.0", &["fix"], seen("1.2.5"), Show),
+            ("1.1.0", &["perf"], seen("1.0.9"), Show),
+            ("0.2.1", &["fix"], seen("0.2.0"), Record),
+            ("0.2.1", &["perf", "fix"], seen("0.2.0"), Record),
+            ("0.2.3", &["fix"], seen("0.2.0"), Record),
+            ("0.2.1", &["fix", "feat"], seen("0.2.0"), Show),
+            ("0.2.1", &["sec"], seen("0.2.0"), Show),
+            ("0.2.1", &["breaking"], seen("0.2.0"), Show),
+        ];
+
+        for (installed, types, last_seen, expected) in cases {
+            let notes =
+                ReleaseNotes::parse(&bundle(&[("0.1.0", &["feat"]), (installed, types)])).unwrap();
+
+            let notice = notes.notice_for(installed, *last_seen);
+
+            let decided = match notice {
+                WhatsNewNotice::Show { notes: shown } => {
+                    assert_eq!(Some(shown), notes.for_installed(installed).installed);
+                    Expected::Show
+                }
+                WhatsNewNotice::Record => Expected::Record,
+                WhatsNewNotice::Nothing => Expected::Nothing,
+            };
+            assert_eq!(
+                &decided, expected,
+                "{installed} with {types:?} after {last_seen:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn shows_nothing_without_notes_for_the_installed_version() {
+        let notes =
+            ReleaseNotes::parse(&bundle(&[("0.1.0", &["feat"]), ("0.2.0", &["feat"])])).unwrap();
+        let installs = ["0.0.0", "0.2.0-rc.1", "0.3.0", "latest"];
+        let last_seen = [
+            LastSeen::FirstInstall,
+            LastSeen::NotRecorded,
+            LastSeen::Version("0.1.0"),
+        ];
+
+        for (installed, last_seen) in installs
+            .iter()
+            .flat_map(|installed| last_seen.map(|seen| (installed, seen)))
+        {
+            let notice = notes.notice_for(installed, last_seen);
+
+            assert_eq!(
+                notice,
+                WhatsNewNotice::Nothing,
+                "{installed} after {last_seen:?}"
             );
         }
     }

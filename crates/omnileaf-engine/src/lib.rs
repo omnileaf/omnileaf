@@ -173,7 +173,8 @@ pub use reading_progress::ReadingSaved;
 pub use reading_session::READING_SAVE_DELAY;
 pub use recent_log::RecentLog;
 pub use release_notes::{
-    ChangeEntry, ChangeKind, ReleaseNotes, ReleaseNotesError, VersionNotes, WhatsNew,
+    ChangeEntry, ChangeKind, LastSeen, ReleaseNotes, ReleaseNotesError, VersionNotes, WhatsNew,
+    WhatsNewNotice,
 };
 pub use report_code::{NotAReportCode, ReportCode};
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
