@@ -1,9 +1,12 @@
 import type { Page } from "@playwright/test";
 
 import { expect, test } from "./fixtures.ts";
+import { isPhonePlatform } from "./phone-platform.ts";
 
 const PAGES = ["/", "/history", "/settings", "/settings/privacy/app-lock"];
 const BOTTOM_TENTH = 0.9;
+const PHONE = { width: 412, height: 900 };
+const TURNED_SIDEWAYS = { width: 900, height: 412 };
 
 function tabBar(page: Page) {
   return page.getByRole("navigation", { name: "Main" });
@@ -24,6 +27,8 @@ function isTabBarAfterContent(page: Page): Promise<boolean> {
 }
 
 test.describe("the reading order on a phone", { tag: "@native" }, () => {
+  test.skip(({ platform }) => !isPhonePlatform(platform), "phones only");
+
   for (const path of PAGES) {
     test(`reads ${path} before the tab bar`, async ({ page }) => {
       await page.goto(path);
@@ -62,5 +67,29 @@ test.describe("the reading order on a phone", { tag: "@native" }, () => {
       height * BOTTOM_TENTH,
     );
     expect(content?.y ?? height).toBeLessThan(bar?.y ?? 0);
+  });
+
+  test("keeps the focused tab when an Android phone turns sideways and back", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(
+      platform !== "android",
+      "Android keeps its bar across the turn; iOS swaps it for the top tab bar",
+    );
+    await page.setViewportSize(TURNED_SIDEWAYS);
+    await page.goto("/history");
+    const library = tabBar(page).getByRole("link", { name: "Library" });
+    await library.focus();
+
+    await page.setViewportSize(PHONE);
+
+    await expect.poll(() => isTabBarAfterContent(page)).toBe(true);
+    await expect(library).toBeFocused();
+
+    await page.setViewportSize(TURNED_SIDEWAYS);
+
+    await expect.poll(() => isTabBarAfterContent(page)).toBe(false);
+    await expect(library).toBeFocused();
   });
 });

@@ -38,6 +38,7 @@
     sidebarSettingForDocument,
   } from "#lib/navigation/sidebar.svelte.ts";
   import SwipeableMain from "#lib/navigation/SwipeableMain.svelte";
+  import { focusedTabHref, focusTab } from "#lib/navigation/tab-focus.ts";
   import TopTabBar from "#lib/navigation/TopTabBar.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import Toasts from "#lib/notices/Toasts.svelte";
@@ -62,6 +63,7 @@
   import { paneFoldQuery, WindowWidth } from "#lib/page/breakpoints.ts";
   import {
     hasTopTabBar,
+    isPhone,
     isPointer,
     phoneOf,
     usesCommandKey,
@@ -154,8 +156,24 @@
       phoneOf(data.appInfo.platform, width.current) === "ios",
   );
   const isTabBarAfterPage = $derived(
-    phoneOf(data.appInfo.platform, width.current) !== undefined,
+    isPhone(data.appInfo.platform, width.current),
   );
+  let navigationPlace = untrack(() => isTabBarAfterPage);
+  let tabToRefocus: string | undefined;
+
+  $effect.pre(() => {
+    if (isTabBarAfterPage !== navigationPlace) {
+      navigationPlace = isTabBarAfterPage;
+      tabToRefocus = focusedTabHref();
+    }
+  });
+
+  $effect(() => {
+    if (isTabBarAfterPage === navigationPlace && tabToRefocus !== undefined) {
+      focusTab(tabToRefocus);
+      tabToRefocus = undefined;
+    }
+  });
   const isSearchViewOpen = $derived(
     page.route.id === SEARCH_ROUTE_ID &&
       phoneOf(data.appInfo.platform, width.current) === "android",
