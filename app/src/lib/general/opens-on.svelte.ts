@@ -1,6 +1,7 @@
 import { createContext } from "svelte";
 
 import { resolve } from "$app/paths";
+import type { ResolvedPathname } from "$app/types";
 import { assertNever } from "#lib/assert-never.ts";
 import { lastUnfinishedBookPage } from "#lib/history/last-book.ts";
 import {
@@ -43,17 +44,24 @@ export function opensOnSettingForDocument(): OpensOnSetting {
 export const [getOpensOnSetting, setOpensOnSetting] =
   createContext<OpensOnSetting>();
 
-type FindPage = () => Promise<string | undefined>;
+type FindPage = () => Promise<ResolvedPathname | undefined>;
+
+export type Opening =
+  | { readonly kind: "stays" }
+  | { readonly kind: "opensOn"; readonly page: ResolvedPathname }
+  | { readonly kind: "restores"; readonly page: ResolvedPathname };
 
 export type OpeningPage = (
   place: OpeningPlace,
-  restored: string | undefined,
-) => Promise<string | undefined>;
+  restored: ResolvedPathname | undefined,
+) => Promise<Opening>;
+
+const STAYS: Opening = { kind: "stays" };
 
 async function placePage(
   place: OpeningPlace,
   lastBook: FindPage,
-): Promise<string | undefined> {
+): Promise<ResolvedPathname | undefined> {
   switch (place) {
     case "library":
       return undefined;
@@ -70,13 +78,16 @@ export function openingPageOnce(lastBook: FindPage): OpeningPage {
   let hasOpened = false;
   return async (place, restored) => {
     if (hasOpened) {
-      return undefined;
+      return STAYS;
     }
     hasOpened = true;
     if (restored === undefined) {
-      return placePage(place, lastBook);
+      const page = await placePage(place, lastBook);
+      return page === undefined ? STAYS : { kind: "opensOn", page };
     }
-    return restored === resolve("/(app)") ? undefined : restored;
+    return restored === resolve("/(app)")
+      ? STAYS
+      : { kind: "restores", page: restored };
   };
 }
 

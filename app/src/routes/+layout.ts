@@ -40,7 +40,13 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   void rememberLockWords();
   const restoredRoute = await takeRestoredRoute(appInfo.platform);
   if (libraryProblem !== null) {
-    return { appInfo, libraryProblem, homeArrival, isFirstLaunch: false };
+    return {
+      appInfo,
+      libraryProblem,
+      homeArrival,
+      isFirstLaunch: false,
+      pageToRestore: undefined,
+    };
   }
   const isFirstLaunch = needsFirstLaunch(await commands.firstLaunchFinished());
   if (
@@ -54,9 +60,24 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
       opensOnSettingForDocument().choice,
       restoredRoute,
     );
-    if (opening !== undefined) {
-      redirect(307, opening);
+    if (opening.kind === "opensOn") {
+      redirect(307, opening.page);
+    }
+    if (opening.kind === "restores") {
+      return {
+        appInfo,
+        libraryProblem,
+        homeArrival,
+        isFirstLaunch,
+        pageToRestore: opening.page,
+      };
     }
   }
-  return { appInfo, libraryProblem, homeArrival, isFirstLaunch };
+  return {
+    appInfo,
+    libraryProblem,
+    homeArrival,
+    isFirstLaunch,
+    pageToRestore: undefined,
+  };
 };

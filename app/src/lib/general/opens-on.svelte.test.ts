@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
 
+import { resolve } from "$app/paths";
+
 import { openingPageOnce, OpensOnSetting } from "./opens-on.svelte";
 
 function memoryStore() {
@@ -31,8 +33,9 @@ test("opens on the library when what was stored isn't a place", () => {
   expect(new OpensOnSetting(store).choice).toBe("library");
 });
 
-const SETTINGS_PAGE = "/settings/appearance";
-const LAST_BOOK_PAGE = "/read/7";
+const SETTINGS_PAGE = resolve("/(app)/settings/appearance");
+const LAST_BOOK_PAGE = resolve("/read/[book]", { book: "7" });
+const LIBRARY_PAGE = resolve("/(app)");
 
 function lastBook() {
   return Promise.resolve(LAST_BOOK_PAGE);
@@ -41,25 +44,31 @@ function lastBook() {
 test("opens on the page Android rebuilt the screen on over the chosen place", async () => {
   const opening = await openingPageOnce(lastBook)("history", SETTINGS_PAGE);
 
-  expect(opening).toBe(SETTINGS_PAGE);
+  expect(opening).toEqual({ kind: "restores", page: SETTINGS_PAGE });
 });
 
 test("stays on the library Android rebuilt the screen on whatever the chosen place", async () => {
-  const opening = await openingPageOnce(lastBook)("lastBook", "/");
+  const opening = await openingPageOnce(lastBook)("lastBook", LIBRARY_PAGE);
 
-  expect(opening).toBeUndefined();
+  expect(opening).toEqual({ kind: "stays" });
 });
 
 test("opens on the chosen place when no page was restored", async () => {
   const opening = await openingPageOnce(lastBook)("history", undefined);
 
-  expect(opening).toBe("/history");
+  expect(opening).toEqual({ kind: "opensOn", page: "/history" });
 });
 
 test("opens on the last book when chosen and no page was restored", async () => {
   const opening = await openingPageOnce(lastBook)("lastBook", undefined);
 
-  expect(opening).toBe(LAST_BOOK_PAGE);
+  expect(opening).toEqual({ kind: "opensOn", page: LAST_BOOK_PAGE });
+});
+
+test("stays on the library when the chosen place is the library", async () => {
+  const opening = await openingPageOnce(lastBook)("library", undefined);
+
+  expect(opening).toEqual({ kind: "stays" });
 });
 
 test("chooses the opening page only once", async () => {
@@ -70,5 +79,8 @@ test("chooses the opening page only once", async () => {
     await openingPage("history", SETTINGS_PAGE),
   ];
 
-  expect(openings).toEqual([SETTINGS_PAGE, undefined]);
+  expect(openings).toEqual([
+    { kind: "restores", page: SETTINGS_PAGE },
+    { kind: "stays" },
+  ]);
 });

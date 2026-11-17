@@ -4,6 +4,7 @@ import { expect, onPlatform, test, testOnlyInItsWebview } from "./fixtures.ts";
 const SAVED_PAGE = "/settings/appearance";
 
 const taken = { count: 0 };
+const canGoBack: boolean[] = [];
 
 testOnlyInItsWebview("android");
 
@@ -14,12 +15,17 @@ function rebuiltScreen(changes: Partial<FakeBackend> = {}): FakeBackend {
       taken.count += 1;
       return taken.count === 1 ? SAVED_PAGE : null;
     },
+    followBackHistory: (canGo) => {
+      canGoBack.push(canGo);
+      return null;
+    },
     ...changes,
   };
 }
 
 test.beforeEach(() => {
   taken.count = 0;
+  canGoBack.length = 0;
 });
 
 test.describe("when Android rebuilt the screen on a page", () => {
@@ -32,6 +38,30 @@ test.describe("when Android rebuilt the screen on a page", () => {
       page.getByRole("heading", { level: 1, name: "Appearance" }),
     ).toBeVisible();
     expect(new URL(page.url()).pathname).toBe(SAVED_PAGE);
+  });
+
+  test("lets Back go to the library instead of leaving the app", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Appearance" }),
+    ).toBeVisible();
+
+    await page.goBack();
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Library" }),
+    ).toBeVisible();
+  });
+
+  test("tells Android there is a page to go back to", async ({ page }) => {
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Appearance" }),
+    ).toBeVisible();
+
+    await expect.poll(() => canGoBack.at(-1)).toBe(true);
   });
 });
 

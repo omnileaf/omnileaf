@@ -16,6 +16,14 @@ test("hands over the route Android saved for the rebuilt screen", async () => {
   expect(route).toBe(SETTINGS_PAGE);
 });
 
+test("keeps the query of the saved route", async () => {
+  const restoredRoute = restoredRouteOnce(saved("/series/42?tab=books"));
+
+  const route = await restoredRoute("android");
+
+  expect(route).toBe("/series/42?tab=books");
+});
+
 test("hands over nothing when Android saved no route", async () => {
   const restoredRoute = restoredRouteOnce(saved(null));
 

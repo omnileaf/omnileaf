@@ -1,8 +1,13 @@
+import type { ResolvedPathname } from "$app/types";
 import { commands, type Platform } from "#lib/ipc/bindings.ts";
+
+import { resolvedPathOf } from "./app-path";
 
 type TakeRestoredRoute = typeof commands.takeRestoredRoute;
 
-export type RestoredRoute = (platform: Platform) => Promise<string | undefined>;
+export type RestoredRoute = (
+  platform: Platform,
+) => Promise<ResolvedPathname | undefined>;
 
 const KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN = {
   android: true,
@@ -26,7 +31,9 @@ export function restoredRouteOnce(
       reportError(taken.error);
       return undefined;
     }
-    return taken.data ?? undefined;
+    return taken.data === null
+      ? undefined
+      : resolvedPathOf(new URL(taken.data, location.href));
   };
 }
 

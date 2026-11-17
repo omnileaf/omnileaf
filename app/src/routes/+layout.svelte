@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { afterNavigate, goto } from "$app/navigation";
   import { page } from "$app/state";
 
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
@@ -146,6 +147,11 @@
   const bookPresence = setBookPresence(new BookPresence());
   setPreviousScreens(new PreviousScreens());
   followHistoryForBack(() => data.appInfo.platform);
+  afterNavigate(({ type }) => {
+    if (type === "enter" && data.pageToRestore !== undefined) {
+      void goto(data.pageToRestore);
+    }
+  });
 
   function settleScreenshotMode(): void {
     screenshotMode.settle();
