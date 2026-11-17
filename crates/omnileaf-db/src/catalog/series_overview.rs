@@ -59,7 +59,13 @@ pub struct SeriesOverview {
     pub books_not_connected: u32,
 }
 
-/// None for a series missing from the catalog, or holding no books with no folder they left, which the library doesn't show.
+impl SeriesOverview {
+    #[must_use]
+    pub const fn holds_books(&self) -> bool {
+        self.book_count > 0
+    }
+}
+
 #[tracing::instrument(skip_all, fields(%series))]
 pub fn series_overview(
     connection: &Connection,

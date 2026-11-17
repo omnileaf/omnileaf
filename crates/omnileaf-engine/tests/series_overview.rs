@@ -9,9 +9,12 @@
 )]
 mod support;
 
+use std::{fs, path::PathBuf};
+
 use omnileaf_engine::{
-    BookReading, BooksShown, Changed, Library, LibraryError, LibraryListing, ReadMark, SeriesBook,
-    SeriesBookListing, SeriesId, SortDirection,
+    BookReading, BooksShown, Changed, DetailEdits, FileFate, FolderKind, Library, LibraryError,
+    LibraryListing, ReadMark, RemovalTarget, SeriesBook, SeriesBookListing, SeriesId,
+    SortDirection,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -21,7 +24,7 @@ const ADDED_AT_MS: i64 = 1_790_000_000_000;
 
 struct SampleLibrary {
     library: Library,
-    _comics: ScratchFolder,
+    comics: ScratchFolder,
     _home: ScratchFolder,
 }
 
@@ -39,7 +42,7 @@ impl SampleLibrary {
             .unwrap();
         Self {
             library,
-            _comics: comics,
+            comics,
             _home: home,
         }
     }
@@ -55,6 +58,22 @@ impl SampleLibrary {
             .find(|series| series.title == title)
             .unwrap()
             .id
+    }
+
+    fn series_folder(&self, title: &str) -> PathBuf {
+        self.comics.path().join(SAMPLE_LIBRARY_NAME).join(title)
+    }
+
+    async fn empty_by_a_rescan(&self, title: &str) {
+        for file in fs::read_dir(self.series_folder(title)).unwrap() {
+            fs::remove_file(file.unwrap().path()).unwrap();
+        }
+        let folders = self.library.folders(None).await.unwrap().folders;
+        let linked = folders
+            .into_iter()
+            .find(|folder| folder.kind == FolderKind::Linked)
+            .unwrap();
+        self.library.rescan_folder(linked.id, |_| {}).await.unwrap();
     }
 
     async fn books(&self, series: SeriesId) -> Vec<SeriesBook> {
@@ -298,6 +317,83 @@ async fn refuses_an_overview_of_a_series_the_library_does_not_hold() {
         .unwrap();
 
     let outcome = empty.series_overview(series).await;
+
+    assert!(
+        matches!(outcome, Err(LibraryError::SeriesNotFound { id }) if id == series),
+        "{outcome:?}"
+    );
+}
+
+#[tokio::test]
+async fn sums_up_a_series_whose_books_left_its_folder_with_no_books_cover_or_up_next() {
+    let sample = SampleLibrary::open("overview-of-emptied-series").await;
+    let series = sample.series_named(FIRST_SERIES).await;
+    sample.empty_by_a_rescan(FIRST_SERIES).await;
+
+    let overview = sample.library.series_overview(series).await.unwrap();
+
+    assert_eq!(
+        (
+            overview.title.as_str(),
+            overview.book_count,
+            overview.cover,
+            overview.up_next,
+        ),
+        (FIRST_SERIES, 0, None, None)
+    );
+}
+
+#[tokio::test]
+async fn refuses_an_overview_of_a_series_whose_books_were_removed_from_the_library() {
+    let sample = SampleLibrary::open("overview-of-removed-series").await;
+    let series = sample.series_named(FIRST_SERIES).await;
+    sample
+        .library
+        .remove_from_library(&[RemovalTarget::Series { id: series }], FileFate::keep())
+        .await
+        .unwrap();
+
+    let outcome = sample.library.series_overview(series).await;
+
+    assert!(
+        matches!(outcome, Err(LibraryError::SeriesNotFound { id }) if id == series),
+        "{outcome:?}"
+    );
+}
+
+#[tokio::test]
+async fn refuses_the_details_of_a_series_whose_books_left_its_folder() {
+    let sample = SampleLibrary::open("details-of-emptied-series").await;
+    let series = sample.series_named(FIRST_SERIES).await;
+    sample.empty_by_a_rescan(FIRST_SERIES).await;
+
+    let outcome = sample.library.series_details(series).await;
+
+    assert!(
+        matches!(outcome, Err(LibraryError::SeriesNotFound { id }) if id == series),
+        "{outcome:?}"
+    );
+}
+
+#[tokio::test]
+async fn refuses_to_edit_the_details_of_a_series_whose_books_left_its_folder() {
+    let sample = SampleLibrary::open("edit-emptied-series").await;
+    let series = sample.series_named(FIRST_SERIES).await;
+    sample.empty_by_a_rescan(FIRST_SERIES).await;
+
+    let outcome = sample
+        .library
+        .edit_series_details(
+            series,
+            DetailEdits {
+                title: Some("Renamed".to_owned()),
+                people: None,
+                tags: None,
+                summary: None,
+                is_marked_adult: false,
+            },
+        )
+        .await;
 
     assert!(
         matches!(outcome, Err(LibraryError::SeriesNotFound { id }) if id == series),

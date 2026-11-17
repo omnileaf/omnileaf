@@ -870,7 +870,6 @@ impl Library {
             .await?)
     }
 
-    /// Fails with [`LibraryError::SeriesNotFound`] for a series the library doesn't show, being missing or empty of books.
     pub async fn series_overview(&self, id: SeriesId) -> Result<SeriesOverview, LibraryError> {
         self.save_reading_before_reading().await;
         let series = id.0;
@@ -953,7 +952,10 @@ impl Library {
         let is_shown = self
             .store
             .database()
-            .read(move |connection| Ok(series_overview(connection, series)?.is_some()))
+            .read(move |connection| {
+                Ok(series_overview(connection, series)?
+                    .is_some_and(|overview| overview.holds_books()))
+            })
             .await?;
         if !is_shown {
             return Err(LibraryError::SeriesNotFound { id });
@@ -971,7 +973,9 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let Some(overview) = series_overview(connection, series)? else {
+                let Some(overview) = series_overview(connection, series)?
+                    .filter(omnileaf_db::catalog::SeriesOverview::holds_books)
+                else {
                     return Ok(None);
                 };
                 Ok(Some((
