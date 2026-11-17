@@ -223,7 +223,7 @@ async function fitPhoneToShowRow(page: Page): Promise<void> {
       Number.parseFloat(track.paddingInlineStart) -
       Number.parseFloat(track.paddingInlineEnd) -
       (segments.length - 1) * Number.parseFloat(track.columnGap);
-    return segments.reduce((left, segment) => {
+    const naturals = segments.map((segment) => {
       const alone = segment.cloneNode(true);
       if (!(alone instanceof HTMLElement)) {
         throw new Error("a Show segment is not an element");
@@ -234,12 +234,12 @@ async function fitPhoneToShowRow(page: Page): Promise<void> {
       alone.remove();
       const { marginInlineStart, marginInlineEnd } = getComputedStyle(segment);
       return (
-        left -
-        natural -
-        Number.parseFloat(marginInlineStart) -
+        natural +
+        Number.parseFloat(marginInlineStart) +
         Number.parseFloat(marginInlineEnd)
       );
-    }, room);
+    });
+    return room - segments.length * Math.max(...naturals);
   });
   const viewport = viewportOf(page);
   await page.setViewportSize({
