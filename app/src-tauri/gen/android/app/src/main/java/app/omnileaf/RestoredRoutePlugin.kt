@@ -18,7 +18,7 @@ class RestoredRoutePlugin(
         val shownActivity =
             PluginManager.activity as? MainActivity
                 ?: return invoke.reject("no activity is showing the app")
-        val route = shownActivity.routeToRestore.take()
+        val route = shownActivity.launchRequests.routeToRestore.take()
         invoke.resolve(JSObject().put("route", route ?: JSONObject.NULL))
     }
 }

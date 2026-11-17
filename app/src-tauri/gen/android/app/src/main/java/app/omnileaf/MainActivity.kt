@@ -16,7 +16,7 @@ class MainActivity : TauriActivity() {
     private var webView: WebView? = null
     private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
     internal val volumeKeys = VolumeKeyCapture()
-    internal val handedDocuments = HandedDocuments()
+    internal val launchRequests = LaunchRequests(ChosenIconActions::choose)
     private val appLock by lazy {
         AppLockGate(this) { isCovered ->
             backNavigation?.followCover(isCovered)
@@ -27,16 +27,12 @@ class MainActivity : TauriActivity() {
     internal var backNavigation: BackNavigation? = null
         private set
 
-    internal var routeToRestore = RouteToRestore(null)
-        private set
-
     override val handleBackNavigation = false
     override val handleBackButton = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ChosenIconActions.startNewPage()
-        routeToRestore = RouteToRestore(savedInstanceState?.getString(OPEN_ROUTE_KEY))
-        if (intent.isFreshLaunch(savedInstanceState)) takeLaunchRequest(intent)
+        launchRequests.takeCreating(intent.launchIntent(), savedInstanceState?.savedScreen())
         showStartingBarIcons(startingTheme)
         showTheAppBehindTheNavigationButtons()
         turnScreen(resources.configuration)
@@ -47,12 +43,12 @@ class MainActivity : TauriActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        takeLaunchRequest(intent)
+        launchRequests.take(intent.launchIntent())
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        routeToRestore.routeToSave(webView?.url)?.let { route -> outState.putString(OPEN_ROUTE_KEY, route) }
+        launchRequests.routeToRestore.routeToSave(webView?.url)?.let { route -> outState.putString(OPEN_ROUTE_KEY, route) }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -112,19 +108,4 @@ private const val BLUR_FOCUSED_FIELD = "document.activeElement?.blur()"
 
 private const val OPEN_ROUTE_KEY = "app.omnileaf.OPEN_ROUTE"
 
-private val Intent.isFromRecents: Boolean
-    get() = (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
-
-/**
- * Android hands an activity it restores, or reopens from Recents, the intent that first started its task,
- * so only a fresh launch carries a new choice.
- */
-private fun Intent.isFreshLaunch(savedInstanceState: Bundle?): Boolean = savedInstanceState == null && !isFromRecents
-
-private fun MainActivity.takeLaunchRequest(launching: Intent) {
-    val action = launching.chosenIconAction()
-    val document = launching.handedDocument()
-    if (action != null || document != null) routeToRestore.drop()
-    action?.let(ChosenIconActions::choose)
-    document?.let(handedDocuments::receive)
-}
+private fun Bundle.savedScreen(): SavedScreen = SavedScreen(getString(OPEN_ROUTE_KEY))

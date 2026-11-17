@@ -7,10 +7,12 @@ import org.junit.Test
 private const val SERIES_PAGE = "/series/42"
 private const val SETTINGS_PAGE_URL = "http://tauri.localhost/settings/appearance"
 
+private fun savedRoute(route: String?): RouteToRestore = RouteToRestore().apply { load(route) }
+
 class RouteToRestoreTest {
     @Test
     fun `hands the saved route over once`() {
-        val saved = RouteToRestore(SERIES_PAGE)
+        val saved = savedRoute(SERIES_PAGE)
 
         val taken = listOf(saved.take(), saved.take())
 
@@ -19,7 +21,7 @@ class RouteToRestoreTest {
 
     @Test
     fun `hands nothing over on a fresh start`() {
-        val saved = RouteToRestore(null)
+        val saved = savedRoute(null)
 
         val taken = saved.take()
 
@@ -28,7 +30,7 @@ class RouteToRestoreTest {
 
     @Test
     fun `gives way to a launch request`() {
-        val saved = RouteToRestore(SERIES_PAGE)
+        val saved = savedRoute(SERIES_PAGE)
 
         saved.drop()
 
@@ -37,7 +39,7 @@ class RouteToRestoreTest {
 
     @Test
     fun `saves the page the app shows once the route is taken`() {
-        val saved = RouteToRestore(SERIES_PAGE)
+        val saved = savedRoute(SERIES_PAGE)
         saved.take()
 
         val route = saved.routeToSave(SETTINGS_PAGE_URL)
@@ -47,7 +49,7 @@ class RouteToRestoreTest {
 
     @Test
     fun `saves again a route the page has not taken yet`() {
-        val saved = RouteToRestore(SERIES_PAGE)
+        val saved = savedRoute(SERIES_PAGE)
 
         val route = saved.routeToSave("http://tauri.localhost/")
 
@@ -56,7 +58,7 @@ class RouteToRestoreTest {
 
     @Test
     fun `saves nothing for a page outside the app`() {
-        val saved = RouteToRestore(null)
+        val saved = savedRoute(null)
 
         val route = saved.routeToSave("http://example.com/settings")
 
@@ -65,7 +67,7 @@ class RouteToRestoreTest {
 
     @Test
     fun `saves nothing before the web view has a page`() {
-        val saved = RouteToRestore(null)
+        val saved = savedRoute(null)
 
         val route = saved.routeToSave(null)
 
