@@ -48,6 +48,7 @@
     suitsMode,
   } from "#lib/reader/cropped-pages.ts";
   import AutoScrollBar from "#lib/reader/AutoScrollBar.svelte";
+  import AutoScrollSpeedSheet from "#lib/reader/AutoScrollSpeedSheet.svelte";
   import {
     autoScrollSpeed,
     fasterSpeed,
@@ -263,6 +264,10 @@
     | undefined = $state();
   let paged: { place: () => SpreadPlace | undefined } | undefined = $state();
   let autoScroll: "off" | "running" | "paused" = $state("off");
+  let autoScrollBar: { focusReadout: () => void } | undefined = $state();
+  let isSpeedOpen = $state(false);
+  let resumesAfterSpeed = false;
+  let isSpeedTapped = false;
   let isTouchPausing = false;
   const pausesHintId = $props.id();
   const zonesPause = $derived.by(() => autoScroll === "running");
@@ -423,6 +428,36 @@
     autoScroll = autoScroll === "running" ? "paused" : "running";
   }
 
+  function pauseIfRunning(): boolean {
+    const wasRunning = autoScroll === "running";
+    if (wasRunning) {
+      autoScroll = "paused";
+    }
+    return wasRunning;
+  }
+
+  function openSpeed(event: MouseEvent): void {
+    resumesAfterSpeed = pauseIfRunning();
+    isSpeedTapped = isPointerClick(event);
+    isSpeedOpen = true;
+  }
+
+  function closeSpeed(): void {
+    isSpeedOpen = false;
+    if (resumesAfterSpeed && autoScroll === "paused") {
+      autoScroll = "running";
+    }
+    resumesAfterSpeed = false;
+  }
+
+  function returnFocusFromSpeed(): void {
+    if (isSpeedTapped) {
+      heading?.focus();
+      return;
+    }
+    autoScrollBar?.focusReadout();
+  }
+
   function stopAutoScroll(): void {
     autoScroll = "off";
     heading?.focus();
@@ -444,10 +479,7 @@
   }
 
   function pauseOnTouch(): void {
-    isTouchPausing = autoScroll === "running";
-    if (isTouchPausing) {
-      autoScroll = "paused";
-    }
+    isTouchPausing = pauseIfRunning();
   }
 
   function onStripZone(event: MouseEvent, zone: ReaderAction): void {
@@ -1281,6 +1313,7 @@
       </header>
       {#if autoScroll !== "off" && !controls.isShown}
         <AutoScrollBar
+          bind:this={autoScrollBar}
           speed={scrollSpeed}
           chapterProgress={stripProgress}
           isPaused={autoScroll === "paused"}
@@ -1296,6 +1329,7 @@
           onReturnFocus={() => {
             heading?.focus();
           }}
+          onSpeed={openSpeed}
         />
       {/if}
       {#if isStripShown && chrome.spans}
@@ -1453,6 +1487,13 @@
       onClose={() => {
         openSettings(false);
       }}
+    />
+    <AutoScrollSpeedSheet
+      isOpen={isSpeedOpen}
+      {settings}
+      seriesTitle={named.seriesTitle}
+      onClose={closeSpeed}
+      onReturnFocus={returnFocusFromSpeed}
     />
     <p role="status" class="sr-only">{announced}</p>
   </main>
