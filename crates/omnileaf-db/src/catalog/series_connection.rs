@@ -1,10 +1,7 @@
-use omnileaf_sync_proto::SeriesId;
+use omnileaf_sync_proto::{BookId, SeriesId};
 use rusqlite::Connection;
 
-use crate::{
-    Error,
-    catalog::{series_books::BookSummary, series_page::SeriesSummary},
-};
+use crate::{Error, catalog::series_page::SeriesSummary};
 
 const SOME_FOLDER_IS_MISSING: &str =
     "SELECT EXISTS (SELECT 1 FROM library_root WHERE unavailable_since_ms IS NOT NULL)";
@@ -79,15 +76,15 @@ pub(crate) fn note_connections<'a>(
 
 pub(crate) fn note_book_connections<'a>(
     connection: &Connection,
-    books: impl Iterator<Item = &'a mut BookSummary>,
+    books: impl Iterator<Item = (BookId, &'a mut bool)>,
 ) -> Result<(), Error> {
     if !is_some_folder_missing(connection)? {
         return Ok(());
     }
     let mut statement = connection.prepare_cached(IS_BOOK_NOT_CONNECTED)?;
-    for book in books {
-        let is_not_connected: bool = statement.query_row([book.id.as_bytes()], |row| row.get(0))?;
-        book.is_connected = !is_not_connected;
+    for (book, is_connected) in books {
+        let is_not_connected: bool = statement.query_row([book.as_bytes()], |row| row.get(0))?;
+        *is_connected = !is_not_connected;
     }
     Ok(())
 }

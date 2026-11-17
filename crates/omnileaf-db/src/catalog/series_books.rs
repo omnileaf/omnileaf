@@ -337,7 +337,11 @@ pub fn series_books(
     for (book, _) in &mut rows {
         fill_details(&mut details, book)?;
     }
-    note_book_connections(connection, rows.iter_mut().map(|(book, _)| book))?;
+    note_book_connections(
+        connection,
+        rows.iter_mut()
+            .map(|(book, _)| (book.id, &mut book.is_connected)),
+    )?;
     Ok(Page::of(rows, request.size))
 }
 
@@ -459,7 +463,10 @@ pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookS
     let (mut book, cursor) = stored_book(series, BookListing::IN_ORDER, stored_reading(row)?, row)?;
     book.position = books_before(connection, &cursor)? + 1;
     fill_details(&mut connection.prepare(BOOK_DETAILS)?, &mut book)?;
-    note_book_connections(connection, std::iter::once(&mut book))?;
+    note_book_connections(
+        connection,
+        std::iter::once((book.id, &mut book.is_connected)),
+    )?;
     Ok(Some(book))
 }
 
