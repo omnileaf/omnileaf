@@ -54,7 +54,6 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   void followSystemBoldText(appInfo.platform);
   touchChoices.markDocument();
   void rememberLockWords();
-  const restoredRoute = await takeRestoredRoute(appInfo.platform);
   if (libraryProblem !== null) {
     return {
       appInfo,
@@ -75,7 +74,10 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
     !isFirstLaunch && untrack(() => url.pathname) === resolve("/(app)");
   const pageToRestore = opensTheApp
     ? pageToRestoreFor(
-        await openingPage(opensOnSettingForDocument().choice, restoredRoute),
+        await openingPage(
+          opensOnSettingForDocument().choice,
+          await takeRestoredRoute(appInfo.platform),
+        ),
       )
     : undefined;
   return {

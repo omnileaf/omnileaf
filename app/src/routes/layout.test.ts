@@ -9,6 +9,8 @@ import { load } from "./+layout";
 const LIBRARY = "/";
 const FIRST_LAUNCH = "/first-launch";
 const SAVED_PAGE = "/settings/appearance";
+const HISTORY = "/history";
+const TAKE_THE_SAVED_PAGE = "take_restored_route";
 
 const ANDROID_APP: AppInfo = {
   version: "1.2.3",
@@ -37,8 +39,13 @@ const COMMANDS_THE_LOAD_STARTS = new Set([
   "watch_system_contrast",
 ]);
 
-function serveAndroidRebuiltOn(savedPage: string, app: RebuiltApp): void {
+function serveAndroidRebuiltOn(
+  savedPage: string,
+  app: RebuiltApp,
+): readonly string[] {
+  const asked: string[] = [];
   mockIPC((command) => {
+    asked.push(command);
     switch (command) {
       case "app_info":
         return ANDROID_APP;
@@ -48,7 +55,7 @@ function serveAndroidRebuiltOn(savedPage: string, app: RebuiltApp): void {
         return null;
       case "first_launch_finished":
         return app.isFirstLaunchFinished;
-      case "take_restored_route":
+      case TAKE_THE_SAVED_PAGE:
         return savedPage;
       default:
         if (COMMANDS_THE_LOAD_STARTS.has(command)) {
@@ -57,6 +64,7 @@ function serveAndroidRebuiltOn(savedPage: string, app: RebuiltApp): void {
         throw new Error(`the test serves no command \`${command}\``);
     }
   });
+  return asked;
 }
 
 function openingAt(pathname: string): LayoutLoadEvent {
@@ -78,15 +86,34 @@ afterEach(() => {
   clearMocks();
 });
 
-test("drops the page Android saved when the library has a problem", async () => {
-  serveAndroidRebuiltOn(SAVED_PAGE, {
+test("doesn't ask Android for the saved page when the library has a problem", async () => {
+  const asked = serveAndroidRebuiltOn(SAVED_PAGE, {
     ...OPENABLE_LIBRARY,
     libraryProblem: "couldNotOpen",
   });
 
-  const loaded = await load(openingAt(LIBRARY));
+  await load(openingAt(LIBRARY));
 
-  expect(loaded).toHaveProperty("pageToRestore", undefined);
+  expect(asked).not.toContain(TAKE_THE_SAVED_PAGE);
+});
+
+test("doesn't ask Android for the saved page on the first launch page", async () => {
+  const asked = serveAndroidRebuiltOn(SAVED_PAGE, {
+    ...OPENABLE_LIBRARY,
+    isFirstLaunchFinished: false,
+  });
+
+  await load(openingAt(FIRST_LAUNCH));
+
+  expect(asked).not.toContain(TAKE_THE_SAVED_PAGE);
+});
+
+test("doesn't ask Android for the saved page on a page past the library", async () => {
+  const asked = serveAndroidRebuiltOn(SAVED_PAGE, OPENABLE_LIBRARY);
+
+  await load(openingAt(HISTORY));
+
+  expect(asked).not.toContain(TAKE_THE_SAVED_PAGE);
 });
 
 test("opens first launch instead of the page Android saved", async () => {

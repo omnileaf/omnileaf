@@ -3,7 +3,6 @@ import { expect, onPlatform, test, testOnlyInItsWebview } from "./fixtures.ts";
 
 const SAVED_PAGE = "/settings/appearance";
 
-const taken = { count: 0 };
 const shown = { count: 0 };
 const canGoBack: boolean[] = [];
 
@@ -12,10 +11,7 @@ testOnlyInItsWebview("android");
 function rebuiltScreen(changes: Partial<FakeBackend> = {}): FakeBackend {
   return {
     ...onPlatform("android").backend,
-    takeRestoredRoute: () => {
-      taken.count += 1;
-      return taken.count === 1 ? SAVED_PAGE : null;
-    },
+    takeRestoredRoute: () => (shown.count === 0 ? SAVED_PAGE : null),
     openingPageShown: () => {
       shown.count += 1;
       return null;
@@ -29,7 +25,6 @@ function rebuiltScreen(changes: Partial<FakeBackend> = {}): FakeBackend {
 }
 
 test.beforeEach(() => {
-  taken.count = 0;
   shown.count = 0;
   canGoBack.length = 0;
 });
@@ -85,18 +80,6 @@ test.describe("when Android rebuilt the screen while the library has a problem",
     backend: rebuiltScreen({ libraryProblem: () => "couldNotOpen" }),
   });
 
-  test("takes the page Android saved", async ({ page }) => {
-    await page.goto("/");
-
-    await expect(
-      page.getByRole("heading", {
-        level: 1,
-        name: "Your library couldn't be opened",
-      }),
-    ).toBeVisible();
-    expect(taken.count).toBe(1);
-  });
-
   test("tells Android the app shows its own page instead", async ({ page }) => {
     await page.goto("/");
 
@@ -107,15 +90,6 @@ test.describe("when Android rebuilt the screen while the library has a problem",
 test.describe("when Android rebuilt the screen during first launch", () => {
   test.use({
     backend: rebuiltScreen({ firstLaunchFinished: () => false }),
-  });
-
-  test("takes the page Android saved", async ({ page }) => {
-    await page.goto("/");
-
-    await expect(
-      page.getByRole("button", { name: "Get started" }),
-    ).toBeVisible();
-    expect(taken.count).toBeGreaterThan(0);
   });
 
   test("tells Android the app shows its own page instead", async ({ page }) => {
