@@ -14,6 +14,7 @@ import {
   type LibraryView,
   type Platform,
   type RemovalFailure,
+  type SeriesBook,
   type SeriesConnection,
   type SeriesFormat,
   type SignInOutcome,
@@ -542,6 +543,19 @@ const SAMPLE_CATEGORIES: readonly SampleCategory[] = [
     holds: (series) => series.tags.includes("Sea"),
   },
 ];
+
+function pageCountOf(
+  books: readonly Pick<SeriesBook, "pageCount">[],
+): number | null {
+  let pages = 0;
+  for (const { pageCount } of books) {
+    if (pageCount === null) {
+      return null;
+    }
+    pages += pageCount;
+  }
+  return pages;
+}
 
 function wireReading(reading: SampleReading) {
   return reading.state === "started"
@@ -1836,6 +1850,11 @@ export function sampleBackend(
         bookCount: chapters.length,
         readCount: chapters.filter((book) => book.reading.state === "read")
           .length,
+        pageCount: pageCountOf(chapters),
+        upNext:
+          chapters.find((book) => book.reading.state === "started") ??
+          chapters.find((book) => book.reading.state !== "read") ??
+          null,
       };
     },
     creatorSeries: (creator) =>

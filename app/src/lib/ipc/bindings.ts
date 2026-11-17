@@ -86,6 +86,8 @@ export const commands = {
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	bookCount: number,
 	readCount: number,
+	pageCount: number | null,
+	upNext: SeriesBook | null,
 } | null, IpcError>(__TAURI_INVOKE("series_volume", { id, volume })),
 	creatorSeries: (creator: string) => typedError<CreatorSeries[], IpcError>(__TAURI_INVOKE("creator_series", { creator })),
 	bookmarkPages: (book: string & { readonly __brand: "BookId" }, pages: number[], isBookmarked: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("bookmark_pages", { book, pages, isBookmarked })),
@@ -1053,6 +1055,8 @@ export type SeriesVolume = {
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	bookCount: number,
 	readCount: number,
+	pageCount: number | null,
+	upNext: SeriesBook | null,
 };
 
 export type SignInOutcome = "signedIn" | "cancelled" | "failed";
