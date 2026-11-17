@@ -1,4 +1,5 @@
 import { commands, type Platform } from "#lib/ipc/bindings.ts";
+import { readFolderList } from "#lib/library/library-folders.svelte.ts";
 import { m } from "#lib/paraglide/messages.js";
 import { getLocale } from "#lib/paraglide/runtime.js";
 
@@ -15,13 +16,10 @@ const SYSTEM_SETTINGS_LABELS = {
 } satisfies Record<Platform, (() => string) | undefined>;
 
 export async function linkedFolderNames(): Promise<LinkedFolders> {
-  const page = await commands.libraryFolders(null);
-  if (page.status === "error") {
-    return undefined;
-  }
-  return page.data.folders
-    .filter((folder) => folder.kind === "linked")
-    .map((folder) => folder.name);
+  const folders = await readFolderList(commands.libraryFolders);
+  return folders.kind === "loaded"
+    ? folders.linked.map((folder) => folder.name)
+    : undefined;
 }
 
 export function permissionsSummary(linked: LinkedFolders): string {
