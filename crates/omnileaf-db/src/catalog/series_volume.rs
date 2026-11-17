@@ -26,6 +26,10 @@ const VOLUME_OF_SERIES: &str = concat!(
             WHERE ",
     chapters_in_volume!(),
     " AND book_state.is_read = 1) AS read_count,
+        (SELECT CASE WHEN count(*) = count(book.page_count) THEN sum(book.page_count) END
+            FROM book WHERE ",
+    chapters_in_volume!(),
+    ") AS page_count,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
         cover.location AS cover_location,
         (SELECT volume_source FROM book WHERE book.id = cover.book_id) AS volume_source
@@ -46,6 +50,7 @@ const VOLUME_OF_SERIES: &str = concat!(
 pub struct VolumeOverview {
     pub book_count: u32,
     pub read_count: u32,
+    pub page_count: Option<u32>,
     /// The cover of the volume's first chapter that has a file.
     pub cover: Option<Cover>,
     /// Where that chapter's file lies in its library folder, whose parent is the volume's folder.
@@ -84,8 +89,46 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<VolumeOverview> {
     Ok(VolumeOverview {
         book_count: row.get("book_count")?,
         read_count: row.get("read_count")?,
+        page_count: row.get("page_count")?,
         cover,
         cover_location,
         volume_source: row.get("volume_source")?,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scratch::ScratchLibrary;
+
+    const CHAPTERS_BY_INDEX: &str = "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND reading_order_key>? AND reading_order_key<?)";
+
+    #[test]
+    fn sums_up_a_volume_by_searching_its_chapters_by_index_without_scanning_or_sorting() {
+        let scratch = ScratchLibrary::new("volume-overview-plan");
+
+        let plan = scratch.query_plan(VOLUME_OF_SERIES);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+                "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
+                "CORRELATED SCALAR SUBQUERY 7",
+                CHAPTERS_BY_INDEX,
+                "SEARCH book_file EXISTS USING COVERING INDEX book_file_by_book (book_id=?)",
+                "CORRELATED SCALAR SUBQUERY 5",
+                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
+                "CORRELATED SCALAR SUBQUERY 1",
+                CHAPTERS_BY_INDEX,
+                "CORRELATED SCALAR SUBQUERY 2",
+                CHAPTERS_BY_INDEX,
+                "SEARCH book_state USING PRIMARY KEY (book_id=?)",
+                "CORRELATED SCALAR SUBQUERY 3",
+                "SEARCH book USING INDEX book_by_series (series_local_id=? AND reading_order_key>? AND reading_order_key<?)",
+                "CORRELATED SCALAR SUBQUERY 4",
+                "SEARCH book USING PRIMARY KEY (id=?)",
+            ]
+        );
+    }
 }

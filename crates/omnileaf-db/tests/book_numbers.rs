@@ -12,7 +12,7 @@ use omnileaf_db::{
     catalog::{
         BookDetails, BookFile, BookListing, BookNumber, BookSection, BookSummary, BooksShown,
         NewRoot, NewSeries, NumberRange, Numbering, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, ScannedBook, SortDirection, Sourced, ValueSource, add_root,
+        RootLocator, ScannedBook, SortDirection, Sourced, ValueSource, VolumeOverview, add_root,
         record_moved_books, record_scanned_books, series_books, series_numberings, series_volume,
     },
     rusqlite::types::Value,
@@ -106,6 +106,30 @@ impl Library {
             };
             after = Some(next.to_string().parse().unwrap());
         }
+    }
+
+    async fn change(&self, statement: &'static str) {
+        self.database
+            .write(move |transaction| {
+                transaction.execute(statement, [])?;
+                Ok(())
+            })
+            .await
+            .unwrap();
+    }
+
+    async fn volume_overview(&self, thousandths: u32) -> Option<VolumeOverview> {
+        let series = NewSeries::local(SERIES, ADDED_AT_MS).unwrap().id();
+        self.database
+            .read(move |connection| {
+                series_volume(
+                    connection,
+                    series,
+                    BookNumber::from_thousandths(thousandths),
+                )
+            })
+            .await
+            .unwrap()
     }
 
     async fn numbers(&self) -> Vec<StoredNumbers> {
@@ -884,6 +908,44 @@ async fn sums_up_a_volume_by_its_chapters_read_cover_and_folder() {
             None,
         ]
     );
+}
+
+#[tokio::test]
+async fn counts_the_pages_of_a_volume_across_its_chapters() {
+    let library = Library::open("volume-pages").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change(
+            "UPDATE book SET page_count = CASE title
+                WHEN 'v02 c005' THEN 20 WHEN 'v02 c006' THEN 22 WHEN 'v02 c007' THEN 24
+                ELSE page_count END",
+        )
+        .await;
+
+    let counted = [
+        library.volume_overview(2000).await,
+        library.volume_overview(3000).await,
+    ]
+    .map(|found| found.unwrap().page_count);
+
+    assert_eq!(counted, [Some(66), Some(1)]);
+}
+
+#[tokio::test]
+async fn counts_no_pages_for_a_volume_while_a_chapter_has_no_page_count() {
+    let library = Library::open("volume-pages-unknown").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change("UPDATE book SET page_count = NULL WHERE title = 'v02 c006'")
+        .await;
+
+    let counted = [
+        library.volume_overview(2000).await,
+        library.volume_overview(3000).await,
+    ]
+    .map(|found| found.unwrap().page_count);
+
+    assert_eq!(counted, [None, Some(1)]);
 }
 
 #[tokio::test]
