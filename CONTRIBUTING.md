@@ -190,7 +190,7 @@ The RAR readers are tested against archives made once with RARLAB's `rar` and co
 
 ## Releasing
 
-Pushing a tag such as `v0.1.0` runs `.github/workflows/release.yml`, which builds the Linux packages, a universal macOS disk image, the Windows installer and an Android APK at the tag's version, then drafts a GitHub release with notes from the merged pull requests. A tag with a suffix, such as `v0.1.0-rc.1`, drafts a pre-release. Check the draft, then publish it.
+Before tagging a full release, run the release step in [`.changes/README.md`](.changes/README.md#releasing), which archives the version's notes and adds them to `CHANGELOG.md`. Pushing a tag such as `v0.1.0` then runs `.github/workflows/release.yml`, which builds the Linux packages, a universal macOS disk image, the Windows installer and an Android APK at the tag's version, then drafts a GitHub release with those notes. A tag with a suffix, such as `v0.1.0-rc.1`, drafts a pre-release. Check the draft, then publish it.
 
 Each platform is signed only when its secrets are set; otherwise the workflow warns and carries on:
 

@@ -39,9 +39,36 @@ jobs:
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
+  notes:
+    name: write the release notes
+    needs: version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+
+      - name: Write the release notes
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/notes"
+          cargo xtask changes notes --version "$VERSION" --format markdown > "$RUNNER_TEMP/notes/notes.md"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: notes-body
+          if-no-files-found: error
+          retention-days: 7
+          path: ${{ runner.temp }}/notes/notes.md
+
   desktop:
     name: desktop installers (${{ matrix.platform }})
-    needs: version
+    needs: [version, notes]
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     strategy:
@@ -183,7 +210,7 @@ jobs:
 
   android:
     name: android apk
-    needs: version
+    needs: [version, notes]
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -274,7 +301,7 @@ jobs:
 
   publish:
     name: draft the release
-    needs: [version, desktop, android]
+    needs: [version, notes, desktop, android]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -285,6 +312,11 @@ jobs:
           pattern: release-*
           merge-multiple: true
           path: release
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: notes-body
+          path: ${{ runner.temp }}/notes
 
       - name: Draft the release
         env:
@@ -297,7 +329,7 @@ jobs:
           cd release
           sha256sum -- * > SHA256SUMS
           mapfile -t files < <(find . -maxdepth 1 -type f | LC_ALL=C sort)
-          flags=(--draft --verify-tag --generate-notes --title "Omnileaf $VERSION")
+          flags=(--draft --verify-tag --notes-file "$RUNNER_TEMP/notes/notes.md" --title "Omnileaf $VERSION")
           if [[ "$PRERELEASE" == "true" ]]; then
             flags+=(--prerelease)
           fi
