@@ -90,6 +90,8 @@ Review goes through the same binary, never over HTTP: `omnileaf-relay reports li
 
 CI runs the three macOS gates (`rust gate (macos)`, `app (macos)` and `fixtures (macos)`) on every push to `main` and every night, not on each push to a pull request. GitHub gives a repository five macOS jobs at a time on every plan below Enterprise, so running them on every pull request push would leave other runs waiting. Those three checks show as skipped on a pull request, which still satisfies them, and Linux and Windows run on every push as before. Add the `macos` label to a pull request that changes platform-specific code to run them there before it merges.
 
+CI reads the `no-changelog`, `macos` and `mobile` labels when it starts. Adding or removing one of them later re-runs CI on its own for a branch in this repository; for a pull request from a fork, a maintainer chooses Re-run all jobs on the CI run after changing the label, since Re-run failed jobs keeps the labels the run first read.
+
 ### Before you push
 
 Run `cargo xtask install-hooks` once per clone. Git then runs `cargo xtask pre-push` before every push, which checks the branch you have checked out in well under a minute: formatting, the content policy, the sync rules and the comment rules every time, the Rust licences when a `Cargo.toml`, `Cargo.lock` or `about.toml` changed, and the interface build, which checks the JavaScript licences, when a `package.json` or the pnpm lockfile changed. It needs a clean working tree, so it checks exactly what you push, and it names any other branch in the same push that it left unchecked.
@@ -190,7 +192,7 @@ The RAR readers are tested against archives made once with RARLAB's `rar` and co
 
 ## Releasing
 
-Pushing a tag such as `v0.1.0` runs `.github/workflows/release.yml`, which builds the Linux packages, a universal macOS disk image, the Windows installer and an Android APK at the tag's version, then drafts a GitHub release with notes from the merged pull requests. A tag with a suffix, such as `v0.1.0-rc.1`, drafts a pre-release. Check the draft, then publish it.
+Before tagging a full release, run the release step in [`.changes/README.md`](.changes/README.md#releasing), which archives the version's notes and adds them to `CHANGELOG.md`. Pushing a tag such as `v0.1.0` then runs `.github/workflows/release.yml`, which builds the Linux packages, a universal macOS disk image, the Windows installer and an Android APK at the tag's version, then drafts a GitHub release with those notes. A tag with a suffix, such as `v0.1.0-rc.1`, drafts a pre-release. Check the draft, then publish it.
 
 Each platform is signed only when its secrets are set; otherwise the workflow warns and carries on:
 

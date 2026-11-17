@@ -4,9 +4,9 @@ import { join } from "node:path";
 import { afterAll, expect, test } from "vitest";
 
 import { openLibraryPage, useAppSession } from "./app-session.ts";
+import { capability } from "./app-under-test.ts";
 import {
   appContainer,
-  capability,
   copyNewBookInto,
   onMyIphoneOmnileaf,
   relaunchOnSimulator,

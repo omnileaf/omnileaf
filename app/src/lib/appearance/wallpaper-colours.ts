@@ -21,6 +21,7 @@ const THEMES: readonly Theme[] = ["light", "dark"];
 const ROLE_NAMES = {
   primary: "primary",
   onPrimary: "on-primary",
+  secondary: "secondary",
   secondaryContainer: "secondary-container",
   onSecondaryContainer: "on-secondary-container",
   tertiaryContainer: "tertiary-container",

@@ -8,6 +8,10 @@ import {
   type Locale,
   locales,
 } from "#lib/paraglide/runtime.js";
+import {
+  browserPreferenceStore,
+  type ForgettingPreferenceStore,
+} from "#lib/preferences/stored-preference.ts";
 
 import { PSEUDO_LOCALE } from "./pseudo-locale";
 
@@ -15,12 +19,6 @@ const LANGUAGE_KEY = "omnileaf.language";
 const CHOSEN_LANGUAGE_STRATEGY = "custom-chosen";
 
 export type LanguageChoice = "system" | Locale;
-
-export interface LanguageStore {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
-}
 
 export const LANGUAGES: readonly Locale[] = locales.filter(
   (locale) => locale !== PSEUDO_LOCALE,
@@ -32,7 +30,7 @@ export const LANGUAGE_CHOICES: readonly LanguageChoice[] = [
 ];
 
 export function storedLanguageChoice(
-  store: Pick<LanguageStore, "getItem">,
+  store: Pick<ForgettingPreferenceStore, "getItem">,
 ): LanguageChoice {
   const stored = store.getItem(LANGUAGE_KEY);
   return stored !== null && isLocale(stored) ? stored : "system";
@@ -40,7 +38,7 @@ export function storedLanguageChoice(
 
 export function rememberLanguageChoice(
   choice: LanguageChoice,
-  store: LanguageStore,
+  store: ForgettingPreferenceStore,
 ): void {
   if (choice === "system") {
     store.removeItem(LANGUAGE_KEY);
@@ -51,7 +49,7 @@ export function rememberLanguageChoice(
 
 /** Paraglide saves the first language it resolves; ignoring that save keeps "system" following the device. */
 export function useChosenLanguage(
-  store: Pick<LanguageStore, "getItem">,
+  store: Pick<ForgettingPreferenceStore, "getItem">,
   systemAppLanguage: () => Locale | undefined,
 ): void {
   defineCustomClientStrategy(CHOSEN_LANGUAGE_STRATEGY, {
@@ -107,16 +105,12 @@ export function languageName(locale: Locale): string {
   );
 }
 
-const NO_STORE: LanguageStore = {
+const NO_STORE: ForgettingPreferenceStore = {
   getItem: () => null,
   setItem: () => undefined,
   removeItem: () => undefined,
 };
 
-export function browserLanguageStore(): LanguageStore {
-  try {
-    return window.localStorage;
-  } catch {
-    return NO_STORE;
-  }
+export function browserLanguageStore(): ForgettingPreferenceStore {
+  return browserPreferenceStore() ?? NO_STORE;
 }

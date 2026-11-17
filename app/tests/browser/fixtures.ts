@@ -51,6 +51,7 @@ export function fakeAppInfo(platform: Platform): AppInfo {
     sourceCode: FAKE_SOURCE_CODE,
     isDevelopmentBuild: false,
     windowBackdrop: "none",
+    checksForUpdates: false,
   };
 }
 
@@ -228,7 +229,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   allowBackSwipe: () => null,
   watchSystemContrast: () => null,
   systemAppLanguage: () => ({ offered: false, tag: null }),
-  systemBoldText: () => false,
+  watchSystemBoldText: () => null,
   systemClock: () => "followsLanguage",
   appLock: () => {
     throw new CommandFailure({

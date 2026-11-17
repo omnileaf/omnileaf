@@ -4,11 +4,8 @@ import { join } from "node:path";
 import { afterAll, beforeAll, expect, test } from "vitest";
 
 import { openLibraryPage, useAppSession } from "./app-session.ts";
-import {
-  capability,
-  onMyIphoneOmnileaf,
-  relaunchOnSimulator,
-} from "./ios-app-data.ts";
+import { capability } from "./app-under-test.ts";
+import { onMyIphoneOmnileaf, relaunchOnSimulator } from "./ios-app-data.ts";
 import { createSampleLibrary } from "./sample-library.ts";
 import { pollUntil, xpath } from "./webdriver.ts";
 

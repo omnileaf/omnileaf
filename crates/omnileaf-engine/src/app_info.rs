@@ -9,6 +9,7 @@ pub struct AppInfo {
     pub source_code: String,
     pub is_development_build: bool,
     pub window_backdrop: WindowBackdrop,
+    pub checks_for_updates: bool,
 }
 
 impl AppInfo {

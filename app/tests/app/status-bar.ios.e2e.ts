@@ -3,17 +3,10 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  inject,
-  test,
-} from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "vitest";
 
 import { mainNavigationLink, useAppSession } from "./app-session.ts";
+import { capability } from "./app-under-test.ts";
 import {
   cancelPicker,
   closePickerLeftBy,
@@ -50,14 +43,6 @@ const appSession = useAppSession();
 
 let systemAppearanceBefore: unknown;
 
-function simulatorUdid(): string {
-  const udid = inject("appUnderTest").capabilities["appium:udid"];
-  if (typeof udid !== "string") {
-    throw new Error("the iOS session has no appium:udid");
-  }
-  return udid;
-}
-
 async function chooseTheme(label: string): Promise<void> {
   await (await appSession().waitFor(SETTINGS_LINK)).click();
   await (await appSession().waitFor(APPEARANCE_LINK)).click();
@@ -67,7 +52,14 @@ async function chooseTheme(label: string): Promise<void> {
 async function screenshot(): Promise<Buffer> {
   await run(
     "xcrun",
-    ["simctl", "io", simulatorUdid(), "screenshot", "--type=bmp", SCREENSHOT],
+    [
+      "simctl",
+      "io",
+      capability("appium:udid"),
+      "screenshot",
+      "--type=bmp",
+      SCREENSHOT,
+    ],
     { timeout: SIMCTL_TIMEOUT_MS },
   );
   return readFile(SCREENSHOT);

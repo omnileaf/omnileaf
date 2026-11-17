@@ -264,7 +264,7 @@
       {@const book = asRead(listedBook)}
       {@const isCurrent = book.id === current}
       <li>
-        {#if book.isFileMissing}
+        {#if book.file.kind === "missing"}
           <Item
             look={look.row}
             class={cn(look.rowLayout, "pointer-events-none text-muted")}

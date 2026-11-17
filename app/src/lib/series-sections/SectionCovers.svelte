@@ -8,7 +8,7 @@
 
   import SectionCover from "./SectionCover.svelte";
   import SectionGap from "./SectionGap.svelte";
-  import { coversTrack, sectionTileLook } from "./section-tile";
+  import { coversGrid, sectionTileLook } from "./section-tile";
   import { bookIdsOf, type SectionTile, tileKey } from "./section-tiles";
 
   let {
@@ -30,6 +30,7 @@
   const platform = currentPlatform();
   const look = sectionTileLook(platform);
   const width = new WindowWidth();
+  const grid = $derived(coversGrid(platform, width.current));
   const bookOrder = () => bookIdsOf(tiles);
 
   function shownCover(book: SeriesBook): ShownCover {
@@ -63,7 +64,7 @@
   {isComplete}
   {onNearEnd}
   {cell}
-  style={coversTrack(platform, width.current)}
-  class="gap-x-lg gap-y-cover-row"
+  style={grid.track}
+  class={grid.gap}
   itemClass="min-inline-none"
 />

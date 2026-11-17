@@ -34,6 +34,12 @@ const PAGE_WITH_A_HIDDEN_DUPLICATE: Readonly<Record<string, unknown>> = {
   "GET /session/duplicates/element/shown/displayed": true,
   "GET /session/duplicates/element/hidden/text": "About",
   "GET /session/duplicates/element/shown/text": "About Version 1.2.3",
+  "GET /session/duplicates/element/shown/rect": {
+    x: 12,
+    y: 40,
+    width: 280,
+    height: 144,
+  },
 };
 
 function reply(response: ServerResponse, status: number, value: unknown) {
@@ -124,6 +130,18 @@ test("finds an element the page shows within the time given", async () => {
   const found = await session.findWithin(xpath("//a"), 50);
 
   expect(await found?.text()).toBe("About Version 1.2.3");
+});
+
+test("reads the size the page draws an element at", async () => {
+  const session = await Session.start(
+    await serverShowing(PAGE_WITH_A_HIDDEN_DUPLICATE),
+    {},
+  );
+  const element = await session.waitFor(xpath("//a"));
+
+  const size = await element.size();
+
+  expect(size).toEqual({ width: 280, height: 144 });
 });
 
 const SCRIPT_TIMED_OUT = {
