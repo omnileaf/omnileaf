@@ -202,3 +202,27 @@ test("estimates headings not yet drawn from the heading stride alone", () => {
   expect(offsetOf(stack, 3) - offsetOf(stack, 2)).toBe(HEADING);
   expect(offsetOf(stack, 4) - offsetOf(stack, 3)).toBe(90);
 });
+
+test("keeps the same heights when every measurement repeats", () => {
+  const stack = remeasured(stackOf(runsOf(2)), new Map([[1, 56]]));
+
+  expect(remeasured(stack, new Map([[1, 56]]))).toBe(stack);
+});
+
+test("ignores measurements of rows past the end of the list", () => {
+  const stack = stackOf(runsOf(2));
+
+  expect(remeasured(stack, new Map([[3, 500]]))).toBe(stack);
+});
+
+test("ignores measurements of rows before the start of the list", () => {
+  const stack = stackOf(runsOf(2));
+
+  expect(remeasured(stack, new Map([[-1, 500]]))).toBe(stack);
+});
+
+test("refuses to place a row past the end of the list", () => {
+  const stack = stackOf(runsOf(2));
+
+  expect(() => offsetOf(stack, 4)).toThrow(RangeError);
+});

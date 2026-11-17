@@ -32,10 +32,14 @@ export function remeasured(
   heights: RowHeights,
   measurements: ReadonlyMap<number, number>,
 ): RowHeights {
-  return laidOut(
-    heights.layout,
-    new Map([...heights.measured, ...measurements]),
+  const { layout, measured } = heights;
+  const changes = [...measurements].filter(
+    ([index, height]) =>
+      index >= 0 && index < layout.count && measured.get(index) !== height,
   );
+  return changes.length === 0
+    ? heights
+    : laidOut(layout, new Map([...measured, ...changes]));
 }
 
 function laidOut(
