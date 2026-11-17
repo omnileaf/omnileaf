@@ -8,14 +8,17 @@ import {
 } from "./files-sample-library.ts";
 import { chooseOnTheIcon } from "./icon-action-intent.ts";
 import { followRestartedApp } from "./restarted-app.ts";
-import { PAGE_COUNTER, readSampleBookToPage } from "./sample-book.ts";
-import { xpath } from "./webdriver.ts";
+import {
+  ON_THE_BOOK,
+  pageCounterAt,
+  readSampleBookToPage,
+} from "./sample-book.ts";
+import { ELEMENT_TIMEOUT_MS, xpath } from "./webdriver.ts";
 
 const SETUP_TIMEOUT_MS = 180_000;
 const SAVED_PAGE = 3;
 const BACK_KEY = 4;
 const LIBRARY_HEADING = xpath("//main//h1[normalize-space()='Library']");
-const ON_THE_BOOK = "return location.pathname.startsWith('/read/');";
 
 const appSession = useAppSession();
 
@@ -36,6 +39,10 @@ test("Continue reading on the icon opens the book last read at its saved page", 
   await followRestartedApp(appSession());
 
   await appSession().waitUntil(ON_THE_BOOK, "the book opened from the icon");
-  const counter = await appSession().waitFor(PAGE_COUNTER);
-  expect(await counter.text()).toMatch(new RegExp(`^${String(SAVED_PAGE)} / `));
+  expect(
+    await appSession().findWithin(
+      pageCounterAt(SAVED_PAGE),
+      ELEMENT_TIMEOUT_MS,
+    ),
+  ).toBeDefined();
 });

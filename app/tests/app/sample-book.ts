@@ -2,15 +2,13 @@ import { addSampleLibrary } from "./app-session.ts";
 import { type Locator, type Session, xpath } from "./webdriver.ts";
 
 export const NEXT_PAGE = xpath("//button[@aria-label='Next page']");
-export const PAGE_COUNTER = xpath(
-  "//main//span[contains(normalize-space(), ' / ')]",
-);
 export const BACK_TO_THE_LIBRARY = xpath(
   "//main//a[@href='/'] | //nav//a[normalize-space()='Library']",
 );
 export const BACK_TO_THE_SERIES = xpath(
   "//main//a[starts-with(@aria-label, 'Back to ')]",
 );
+export const ON_THE_BOOK = "return location.pathname.startsWith('/read/');";
 export const FIRST_SERIES_COVER = xpath(
   "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
 );
@@ -89,9 +87,9 @@ export function shownPageCount(page: number, count: number): Locator {
   );
 }
 
-function pageCounterAt(page: number): Locator {
+export function pageCounterAt(page: number): Locator {
   return xpath(
-    `//main//span[starts-with(normalize-space(), '${String(page)} / ')]`,
+    `//main//span[@data-reader-count][starts-with(normalize-space(), '${String(page)} / ')]`,
   );
 }
 

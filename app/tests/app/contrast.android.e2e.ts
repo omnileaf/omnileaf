@@ -14,10 +14,12 @@ import {
 } from "./files-sample-library.ts";
 import { followRecreatedScreen } from "./recreated-screen.ts";
 import {
-  PAGE_COUNTER,
+  ON_THE_BOOK,
+  pageCounterAt,
   readSampleBookToPage,
   showSampleSeries,
 } from "./sample-book.ts";
+import { ELEMENT_TIMEOUT_MS } from "./webdriver.ts";
 
 const SETUP_TIMEOUT_MS = 180_000;
 const STANDARD_CONTRAST = "0";
@@ -104,6 +106,11 @@ test("keeps a book open at its page when Android's colour contrast changes", asy
 
   await changeTheContrast();
 
-  const counter = await appSession().waitFor(PAGE_COUNTER);
-  expect(await counter.text()).toMatch(new RegExp(`^${String(SAVED_PAGE)} / `));
+  await appSession().waitUntil(ON_THE_BOOK, "the book kept open");
+  expect(
+    await appSession().findWithin(
+      pageCounterAt(SAVED_PAGE),
+      ELEMENT_TIMEOUT_MS,
+    ),
+  ).toBeDefined();
 });
