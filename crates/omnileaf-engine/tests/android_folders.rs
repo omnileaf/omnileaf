@@ -356,6 +356,34 @@ async fn finds_the_tree_and_folder_a_series_books_left_in_an_android_folder() {
 }
 
 #[tokio::test]
+async fn finds_the_folder_above_a_series_folder_gone_from_an_android_folder() {
+    let home = ScratchFolder::new("tree-show-removed-home");
+    let tree = TreeOfFolder::new("tree-show-removed-comics");
+    let library = open_reading(home.path(), &tree).await;
+    library.add_folder(sample_tree(), |_| {}).await.unwrap();
+    let series = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .into_iter()
+        .find(|series| series.title == EMPTIED_SERIES)
+        .unwrap();
+    fs::remove_dir_all(
+        tree.scratch
+            .path()
+            .join(SAMPLE_LIBRARY_NAME)
+            .join(EMPTIED_SERIES),
+    )
+    .unwrap();
+    rescan_linked(&library).await;
+
+    let target = library.series_in_android_tree(series.id).await.unwrap();
+
+    assert_eq!(target.map(|shown| shown.folder), Some(PathBuf::new()));
+}
+
+#[tokio::test]
 async fn finds_the_tree_and_folder_to_show_for_a_series_in_an_android_folder() {
     let home = ScratchFolder::new("tree-show-series-home");
     let tree = TreeOfFolder::new("tree-show-series-comics");

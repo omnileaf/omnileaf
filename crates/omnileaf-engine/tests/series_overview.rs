@@ -68,6 +68,15 @@ impl SampleLibrary {
         for file in fs::read_dir(self.series_folder(title)).unwrap() {
             fs::remove_file(file.unwrap().path()).unwrap();
         }
+        self.rescan().await;
+    }
+
+    async fn remove_folder_by_a_rescan(&self, title: &str) {
+        fs::remove_dir_all(self.series_folder(title)).unwrap();
+        self.rescan().await;
+    }
+
+    async fn rescan(&self) {
         let folders = self.library.folders(None).await.unwrap().folders;
         let linked = folders
             .into_iter()
@@ -412,6 +421,22 @@ async fn shows_the_folder_a_series_books_left() {
     assert_eq!(
         shown,
         Some(ShownOnDisk::Folder(sample.series_folder(FIRST_SERIES)))
+    );
+}
+
+#[tokio::test]
+async fn shows_the_folder_above_a_series_folder_that_is_gone() {
+    let sample = SampleLibrary::open("show-removed-series-folder").await;
+    let series = sample.series_named(FIRST_SERIES).await;
+    sample.remove_folder_by_a_rescan(FIRST_SERIES).await;
+
+    let shown = sample.library.series_in_folder(series).await.unwrap();
+
+    assert_eq!(
+        shown,
+        Some(ShownOnDisk::Folder(
+            sample.comics.path().join(SAMPLE_LIBRARY_NAME)
+        ))
     );
 }
 

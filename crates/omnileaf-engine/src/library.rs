@@ -43,7 +43,7 @@ use omnileaf_db::{
     rusqlite::Connection,
     store::{Changed, Clock, Store, series_edits},
 };
-use omnileaf_formats::LocalStorage;
+use omnileaf_formats::{Details, LocalStorage};
 use tokio::{
     sync::{Mutex, MutexGuard, broadcast, watch},
     task::spawn_blocking,
@@ -149,6 +149,23 @@ pub struct Library {
 struct RootFiles {
     storage: Arc<dyn omnileaf_formats::Storage>,
     folder: PathBuf,
+}
+
+impl RootFiles {
+    fn nearest_folder(&self, folder: &Path) -> PathBuf {
+        folder
+            .ancestors()
+            .find(|candidate| self.holds_folder(candidate))
+            .unwrap_or_else(|| Path::new(""))
+            .to_path_buf()
+    }
+
+    fn holds_folder(&self, folder: &Path) -> bool {
+        matches!(
+            self.storage.details(&self.folder.join(folder)),
+            Ok(Details::Folder { .. })
+        )
+    }
 }
 
 #[derive(Clone, Copy, Default)]
@@ -1576,7 +1593,7 @@ impl Library {
     }
 
     async fn series_place(&self, id: SeriesId) -> Result<Option<SeriesPlace>, LibraryError> {
-        Ok(self
+        let stored = self
             .store
             .database()
             .read(move |connection| {
@@ -1585,7 +1602,25 @@ impl Library {
                 }
                 Ok(emptied_folder(connection, id)?.map(SeriesPlace::Emptied))
             })
-            .await?)
+            .await?;
+        Ok(match stored {
+            Some(SeriesPlace::Emptied(emptied)) => Some(SeriesPlace::Emptied(
+                self.nearest_folder_left(emptied).await?,
+            )),
+            other => other,
+        })
+    }
+
+    async fn nearest_folder_left(
+        &self,
+        emptied: EmptiedFolder,
+    ) -> Result<EmptiedFolder, LibraryError> {
+        let Some(files) = self.files_of(&emptied.root) else {
+            return Ok(emptied);
+        };
+        let EmptiedFolder { root, folder } = emptied;
+        let folder = spawn_blocking(move || files.nearest_folder(&folder)).await?;
+        Ok(EmptiedFolder { root, folder })
     }
 
     /// The file of a book, to show in its folder; none for a book the library lacks, or one in a folder only Android's documents provider can read.
