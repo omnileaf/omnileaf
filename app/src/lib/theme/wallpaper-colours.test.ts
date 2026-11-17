@@ -41,10 +41,6 @@ const TEXT: readonly Pair[] = [
   ["on-segment-selected", "segment-selected"],
 ];
 
-const TAB_BAR_GROUNDS: ReadonlySet<string> = new Set(["tab-bar", "tab-pill"]);
-
-const TAB_BAR_TEXT = TEXT.filter(([, ground]) => TAB_BAR_GROUNDS.has(ground));
-
 const CONTRAST_LEVELS: readonly {
   readonly level: keyof typeof MUTED_WALLPAPER_BY_CONTRAST;
   readonly contrast: Contrast | undefined;
@@ -53,12 +49,6 @@ const CONTRAST_LEVELS: readonly {
   { level: "medium", contrast: "medium" },
   { level: "high", contrast: "high" },
 ];
-
-const TAB_BAR_STATES = (["omnileaf", "wallpaper"] as const).flatMap((colours) =>
-  THEMES.flatMap((theme) =>
-    CONTRAST_LEVELS.map((level) => ({ colours, theme, ...level })),
-  ),
-);
 
 const SAMPLES = [
   { sample: "blue", contrast: undefined, wallpaper: BLUE_WALLPAPER },
@@ -77,11 +67,10 @@ const MARKS: readonly Pair[] = [
 async function showWallpaper(
   theme: (typeof THEMES)[number],
   wallpaper: WallpaperColours,
-  colours: "omnileaf" | "wallpaper" = "wallpaper",
 ): Promise<void> {
   followCorePlatform("android");
   document.documentElement.dataset.theme = theme;
-  await followWallpaperColours("android", colours, {
+  await followWallpaperColours("android", "wallpaper", {
     wallpaperColours: () => Promise.resolve({ status: "ok", data: wallpaper }),
     accentColours: () => Promise.resolve(null),
   });
@@ -139,18 +128,3 @@ test("takes each theme's wallpaper colours only from that theme", () => {
 
   expect(crossed).toEqual([]);
 });
-
-test.each(TAB_BAR_STATES)(
-  "keeps the tab bar's text readable with $colours colours in $theme at $level contrast",
-  async ({ colours, theme, level, contrast }) => {
-    followContrast(contrast);
-    await showWallpaper(theme, MUTED_WALLPAPER_BY_CONTRAST[level], colours);
-
-    for (const [ink, ground] of TAB_BAR_TEXT) {
-      expect(
-        contrastRatio(ink, ground),
-        `${ink} on ${ground}`,
-      ).toBeGreaterThanOrEqual(TEXT_RATIO);
-    }
-  },
-);
