@@ -13,7 +13,6 @@
     BookSection,
     Platform,
     ReadMark,
-    RemovalReport,
     RemovalTarget,
     SeriesBook,
     SeriesBookListing,
@@ -45,6 +44,7 @@
   import type { BookRows, SearchPlace } from "./book-listing";
   import { booksMatching } from "./book-search";
   import { type BooksControls, OWN_CONTROLS } from "./books-controls";
+  import type { SeriesBookCommands } from "./series-book-commands";
   import BookTable from "./BookTable.svelte";
   import { Selection } from "#lib/page/selection.svelte.ts";
   import BarControls from "./BarControls.svelte";
@@ -151,16 +151,11 @@
     isComplete: boolean;
     onNearEnd: () => void;
     onLoadAll: () => Promise<void>;
-    onMark: (books: BookId[], mark: ReadMark) => Promise<boolean>;
-    onBookmark: (
-      books: BookId[],
-    ) => Promise<{ newlyBookmarked: number; failed: boolean }>;
-    onRemoveBookmarks: (books: BookId[]) => Promise<boolean>;
-    onRemove: (
-      targets: RemovalTarget[],
-      deleteFiles: boolean,
-    ) => Promise<RemovalReport | undefined>;
-    onShowInFolder: (book: BookId) => void;
+    onMark: SeriesBookCommands["mark"];
+    onBookmark: SeriesBookCommands["bookmark"];
+    onRemoveBookmarks: SeriesBookCommands["removeBookmarks"];
+    onRemove: SeriesBookCommands["remove"];
+    onShowInFolder: SeriesBookCommands["showFile"];
     platform: Platform;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
     controls?: BooksControls;
