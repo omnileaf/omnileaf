@@ -1,7 +1,7 @@
 import { followBoldText } from "#lib/page/display-modes.ts";
 import {
   browserPreferenceStore,
-  type PreferenceStore,
+  type ForgettingPreferenceStore,
 } from "#lib/preferences/stored-preference.ts";
 import { StoredSwitch } from "#lib/preferences/stored-switch.ts";
 
@@ -11,9 +11,9 @@ export class BoldTextChoice {
   system = $state(false);
   #chosen: boolean | undefined = $state();
 
-  readonly #stored: StoredSwitch;
+  readonly #stored: StoredSwitch<ForgettingPreferenceStore>;
 
-  constructor(store: PreferenceStore | undefined) {
+  constructor(store: ForgettingPreferenceStore | undefined) {
     this.#stored = new StoredSwitch(store, BOLD_TEXT_KEY);
     this.#chosen = this.#stored.read();
   }
@@ -28,13 +28,25 @@ export class BoldTextChoice {
 
   followSystem(isSystemBold: boolean): void {
     this.system = isSystemBold;
+    if (this.#chosen === isSystemBold) {
+      this.#forgetChoice();
+    }
     followBoldText(this.isBold);
   }
 
   choose(isBold: boolean): void {
-    this.#chosen = isBold;
-    this.#stored.writeIfPossible(isBold);
+    if (isBold === this.system) {
+      this.#forgetChoice();
+    } else {
+      this.#chosen = isBold;
+      this.#stored.writeIfPossible(isBold);
+    }
     followBoldText(isBold);
+  }
+
+  #forgetChoice(): void {
+    this.#chosen = undefined;
+    this.#stored.forgetIfPossible();
   }
 }
 
