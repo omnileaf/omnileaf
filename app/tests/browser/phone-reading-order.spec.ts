@@ -7,6 +7,10 @@ const PAGES = ["/", "/history", "/settings", "/settings/privacy/app-lock"];
 const BOTTOM_TENTH = 0.9;
 const PHONE = { width: 412, height: 900 };
 const TURNED_SIDEWAYS = { width: 900, height: 412 };
+const TURNS = [
+  { path: "/history", tab: "Library" },
+  { path: "/settings/reading", tab: "Settings" },
+] as const;
 
 function tabBar(page: Page) {
   return page.getByRole("navigation", { name: "Main" });
@@ -69,20 +73,10 @@ test.describe("the reading order on a phone", { tag: "@native" }, () => {
     expect(content?.y ?? height).toBeLessThan(bar?.y ?? 0);
   });
 
-  const TURNS = [
-    { path: "/history", tab: "Library", platforms: ["android", "ios"] },
-    { path: "/settings/reading", tab: "Settings", platforms: ["android"] },
-  ] as const;
-
-  for (const { path, tab, platforms } of TURNS) {
+  for (const { path, tab } of TURNS) {
     test(`keeps the focused ${tab} tab on ${path} when the phone turns sideways and back`, async ({
       page,
-      platform,
     }) => {
-      test.skip(
-        !platforms.some((shown) => shown === platform),
-        "iOS shows no tab bar on a sideways Settings page",
-      );
       await page.setViewportSize(TURNED_SIDEWAYS);
       await page.goto(path);
       const focusedTab = tabBar(page).getByRole("link", { name: tab });
