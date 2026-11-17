@@ -10,6 +10,7 @@ import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  fakeAppInfo,
   MEDIUM_MIN_WIDTH,
   test,
   testOnlyInItsWebview,
@@ -123,13 +124,7 @@ for (const platform of ["android", "linux"] as const) {
     test.use({
       backend: {
         ...DEFAULT_BACKEND,
-        appInfo: () => ({
-          version: "1.2.3",
-          platform,
-          sourceCode: "repo.example.org/omnileaf",
-          isDevelopmentBuild: false,
-          windowBackdrop: "none",
-        }),
+        appInfo: () => fakeAppInfo(platform),
         ...fakeCrashReports(calls),
       },
     });

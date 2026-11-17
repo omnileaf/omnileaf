@@ -1,9 +1,9 @@
 import { afterEach, expect, test } from "vitest";
 
-import { RowSwipe } from "./row-swipe.svelte";
+import { ACT_PAST_OPEN_PX, RowSwipe } from "./row-swipe.svelte";
 
 const NARROW_ROW_PX = 288;
-const CAPSULE = { revealPx: () => 112, actPastOpenPx: 48 };
+const CAPSULE = { revealPx: () => 112, actPastOpenPx: ACT_PAST_OPEN_PX };
 
 let row: HTMLElement | undefined;
 
@@ -52,6 +52,31 @@ test("acts on a swipe past half an open row when its action is the fixed one", (
   swipe.pressed(finger("pointerdown", 0), "book", target);
   swipe.moved(finger("pointermove", 40));
   const outcome = swipe.released();
+
+  expect(outcome).toEqual({ kind: "act", side: "towardEnd" });
+});
+
+test("acts on a closed row only once its action is clear by the open margin when it asks to", () => {
+  const swipe = new RowSwipe(() => true);
+  const target = narrowRow();
+  const clearing = { ...CAPSULE, closedRowClearsItsActions: true };
+  const swipeClosed = (across: number) => {
+    swipe.pressed(finger("pointerdown", 0), "book", target);
+    swipe.moved(finger("pointermove", across));
+    return swipe.released(clearing).kind;
+  };
+
+  const outcomes = [swipeClosed(159)];
+  swipe.close();
+  outcomes.push(swipeClosed(160));
+
+  expect(outcomes).toEqual(["reveal", "act"]);
+});
+
+test("acts on a closed row past half its width when it does not ask to clear its action", () => {
+  const swipe = new RowSwipe(() => true);
+
+  const outcome = swipeFrom(swipe, narrowRow(), 150);
 
   expect(outcome).toEqual({ kind: "act", side: "towardEnd" });
 });

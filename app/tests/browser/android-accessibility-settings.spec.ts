@@ -92,16 +92,32 @@ test.describe(
       page,
     }) => {
       await openAccessibility(page);
-      await reportContrast("medium");
+      await reportContrast("standard");
       const higher = page.getByRole("switch", { name: "Higher contrast" });
 
       await higher.click();
+      await expect(higher).toBeChecked();
+      expect(await contrastOf(page)).toBe("high");
+      await higher.click();
+
       await expect(higher).not.toBeChecked();
       expect(await contrastOf(page)).toBeNull();
+    });
+
+    test("follows the phone's contrast again once Higher contrast is set back to match it", async ({
+      page,
+    }) => {
+      await openAccessibility(page);
+      await reportContrast("medium");
+      const higher = page.getByRole("switch", { name: "Higher contrast" });
+      await higher.click();
+      await expect(higher).not.toBeChecked();
+      expect(await contrastOf(page)).toBeNull();
+
       await higher.click();
 
       await expect(higher).toBeChecked();
-      expect(await contrastOf(page)).toBe("high");
+      expect(await contrastOf(page)).toBe("medium");
     });
 
     test("keeps the choice made here over the phone's setting", async ({

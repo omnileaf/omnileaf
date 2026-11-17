@@ -38,6 +38,12 @@ export interface WebElement {
   text(): Promise<string>;
   click(): Promise<void>;
   clickUnlessStale(): Promise<void>;
+  size(): Promise<ElementSize>;
+}
+
+export interface ElementSize {
+  readonly width: number;
+  readonly height: number;
 }
 
 export class WebDriverError extends Error {
@@ -88,6 +94,13 @@ function isStaleElement(error: unknown): boolean {
 
 function property(value: unknown, key: string): unknown {
   return isRecord(value) ? value[key] : undefined;
+}
+
+function requireNumber(value: unknown, what: string): number {
+  if (typeof value !== "number") {
+    throw new TypeError(`expected ${what} to be a number`);
+  }
+  return value;
 }
 
 function requireString(value: unknown, what: string): string {
@@ -459,6 +472,7 @@ export class Session {
       text: () => use((element) => this.textOf(element)),
       click: () => use((element) => this.clickOn(element)),
       clickUnlessStale: () => this.clickUnlessStale(id),
+      size: () => use((element) => this.sizeOf(element)),
     };
   }
 
@@ -503,6 +517,14 @@ export class Session {
 
   private async clickOn(element: string): Promise<void> {
     await send(`${this.endpoint}/element/${element}/click`, "POST", {});
+  }
+
+  private async sizeOf(element: string): Promise<ElementSize> {
+    const rect = await send(`${this.endpoint}/element/${element}/rect`, "GET");
+    return {
+      width: requireNumber(property(rect, "width"), "element width"),
+      height: requireNumber(property(rect, "height"), "element height"),
+    };
   }
 
   private async textOf(element: string): Promise<string> {

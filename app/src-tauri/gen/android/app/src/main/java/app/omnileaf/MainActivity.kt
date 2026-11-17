@@ -50,6 +50,8 @@ class MainActivity : TauriActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         turnScreen(newConfig)
+        webView?.followFontScale(newConfig)
+        appLock.followConfiguration(newConfig)
     }
 
     /** AndroidX's Activity Result API and startActivity still launch every screen through this deprecated override. */
@@ -68,6 +70,7 @@ class MainActivity : TauriActivity() {
 
     override fun onWebViewCreate(webView: WebView) {
         SystemInsets(webView).attach()
+        webView.followFontScale(resources.configuration)
         this.webView = webView
         backNavigation =
             BackNavigation(WebViewHistory(webView), leaveTheApp = { finishAffinity() })

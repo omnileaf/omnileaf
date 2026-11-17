@@ -5,7 +5,8 @@ use crate::{
     Error,
     catalog::{
         Cover, Numbering, RootLocator, Sourced, ValueSource, cover::stored_cover,
-        numbering::stored_numbering, root::stored_locator, stored_id::stored_id,
+        numbering::stored_numbering, root::stored_locator, series_connection::books_not_connected,
+        staged_rows::snapshot, stored_id::stored_id,
     },
 };
 
@@ -52,6 +53,7 @@ pub struct SeriesOverview {
     pub is_marked_adult: bool,
     /// The books with a bookmarked page.
     pub bookmark_count: u32,
+    pub books_not_connected: u32,
 }
 
 /// None for a series missing from the catalog or holding no books, which the library doesn't show.
@@ -60,10 +62,18 @@ pub fn series_overview(
     connection: &Connection,
     series: SeriesId,
 ) -> Result<Option<SeriesOverview>, Error> {
-    Ok(connection
+    let _snapshot = snapshot(connection)?;
+    let Some(overview) = connection
         .prepare(OVERVIEW_OF_SERIES)?
         .query_row([series.as_bytes()], overview)
-        .optional()?)
+        .optional()?
+    else {
+        return Ok(None);
+    };
+    Ok(Some(SeriesOverview {
+        books_not_connected: books_not_connected(connection, series)?,
+        ..overview
+    }))
 }
 
 /// The numbering of each of a series' books placed by number, in reading order, leaving out books not placed yet.
@@ -100,6 +110,7 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<SeriesOverview> {
         is_rated_adult: row.get("is_rated_adult")?,
         is_marked_adult: row.get("is_marked_adult")?,
         bookmark_count: row.get("bookmark_count")?,
+        books_not_connected: 0,
     })
 }
 

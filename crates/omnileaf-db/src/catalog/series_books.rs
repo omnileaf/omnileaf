@@ -9,6 +9,7 @@ use crate::{
         cursor::Position,
         numbering::stored_numbering,
         page::{Page, PageRequest},
+        series_connection::note_book_connections,
         staged_rows::snapshot,
         stored_id::stored_id,
     },
@@ -175,6 +176,7 @@ pub struct BookSummary {
     /// Absent for a book found before the library read numbers from names, until it is scanned again.
     pub numbering: Option<Numbering>,
     pub is_bookmarked: bool,
+    pub is_connected: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -335,6 +337,7 @@ pub fn series_books(
     for (book, _) in &mut rows {
         fill_details(&mut details, book)?;
     }
+    note_book_connections(connection, rows.iter_mut().map(|(book, _)| book))?;
     Ok(Page::of(rows, request.size))
 }
 
@@ -456,6 +459,7 @@ pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookS
     let (mut book, cursor) = stored_book(series, BookListing::IN_ORDER, stored_reading(row)?, row)?;
     book.position = books_before(connection, &cursor)? + 1;
     fill_details(&mut connection.prepare(BOOK_DETAILS)?, &mut book)?;
+    note_book_connections(connection, std::iter::once(&mut book))?;
     Ok(Some(book))
 }
 
@@ -506,6 +510,7 @@ fn stored_book(
         page_count: None,
         numbering: None,
         is_bookmarked: false,
+        is_connected: true,
     };
     let position = Position::Book {
         series,

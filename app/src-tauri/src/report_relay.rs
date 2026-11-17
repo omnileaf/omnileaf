@@ -322,6 +322,7 @@ mod tests {
                 source_code: "repo.example.org/omnileaf".to_owned(),
                 is_development_build: true,
                 window_backdrop: omnileaf_engine::WindowBackdrop::None,
+                checks_for_updates: false,
             }),
             LogStandIns::default().clean_log(&[
                 "WARN omnileaf_engine::scan: skip a book\tpath=/home/reader/Comics/Old.cbz"

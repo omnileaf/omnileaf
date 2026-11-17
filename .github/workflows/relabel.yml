@@ -1,0 +1,76 @@
+name: relabel
+
+on:
+  pull_request:
+    types: [labeled, unlabeled]
+
+permissions: {}
+
+jobs:
+  rerun:
+    name: re-run ci for a label change
+    if: ${{ contains(fromJSON('["no-changelog","macos","mobile"]'), github.event.label.name) && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      pull-requests: read
+    steps:
+      - name: Re-run the pull request's newest ci run so it reads the labels again
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
+          POLLS: 60
+          POLL_SECONDS: 5
+        run: |
+          run_field() { gh run view "$run" --json "$1" --jq ".$1"; }
+          current_head() { gh pr view "$PULL_REQUEST" --json headRefOid --jq .headRefOid; }
+          exit_if_head_moved() {
+            latest_head=$(current_head)
+            if [ "$latest_head" != "$head" ]; then exit 0; fi
+          }
+          exit_if_rerun_elsewhere() {
+            attempt=$(run_field attempt)
+            if [ "$attempt" -gt "$seen" ]; then exit 0; fi
+          }
+          wait_until_completed() {
+            for _ in $(seq "$POLLS"); do
+              exit_if_rerun_elsewhere
+              status=$(run_field status)
+              if [ "$status" = completed ]; then return 0; fi
+              sleep "$POLL_SECONDS"
+            done
+            echo "::error::ci run $run did not stop within $((POLLS * POLL_SECONDS)) seconds of being cancelled"
+            return 1
+          }
+
+          head=$(current_head)
+          run=$(gh run list --workflow ci.yml --event pull_request --commit "$head" --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          if [ -z "$run" ]; then exit 0; fi
+
+          seen=$(run_field attempt)
+          status=$(run_field status)
+          if [ "$status" != completed ]; then
+            labels_job=$(gh run view "$run" --json jobs --jq 'if .jobs == [] then "not listed" else ([.jobs[] | select(.name == "changed areas") | .status][0] // "missing") end')
+            case "$labels_job" in
+              missing)
+                echo "::error::ci run $run has no job named \"changed areas\" to read the labels"
+                exit 1
+                ;;
+              in_progress | completed) ;;
+              *) exit 0 ;;
+            esac
+            exit_if_head_moved
+            exit_if_rerun_elsewhere
+            gh run cancel "$run" || [ "$(run_field status)" = completed ]
+            wait_until_completed
+          fi
+
+          exit_if_rerun_elsewhere
+          exit_if_head_moved
+          if ! gh run rerun "$run"; then
+            attempt=$(run_field attempt)
+            status=$(run_field status)
+            [ "$attempt" -gt "$seen" ] || [ "$status" != completed ]
+          fi

@@ -53,3 +53,32 @@ fn reports_the_window_backdrop_the_app_draws() {
 
     assert_eq!(window_backdrop, WindowBackdrop::Mica);
 }
+
+#[test]
+fn does_not_check_for_updates_until_its_build_says_so() {
+    let core = Core::new();
+
+    let checks_for_updates = core.app_info().checks_for_updates;
+
+    assert!(!checks_for_updates);
+}
+
+#[test]
+fn checks_for_updates_when_its_build_says_so() {
+    let core = Core::new().with_update_check();
+
+    let checks_for_updates = core.app_info().checks_for_updates;
+
+    assert!(checks_for_updates);
+}
+
+#[test]
+fn keeps_the_window_backdrop_when_told_it_checks_for_updates() {
+    let core = Core::new()
+        .with_window_backdrop(WindowBackdrop::Mica)
+        .with_update_check();
+
+    let window_backdrop = core.app_info().window_backdrop;
+
+    assert_eq!(window_backdrop, WindowBackdrop::Mica);
+}

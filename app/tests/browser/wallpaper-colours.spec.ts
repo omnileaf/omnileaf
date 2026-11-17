@@ -1,10 +1,7 @@
 import type { Page } from "@playwright/test";
 
-import type {
-  ColourRoles,
-  WallpaperColours,
-} from "../../src/lib/ipc/bindings.ts";
-import { BLUE_WALLPAPER as SAMPLE } from "../sample-wallpaper.ts";
+import type { WallpaperColours } from "../../src/lib/ipc/bindings.ts";
+import { BLUE_WALLPAPER as SAMPLE, uniformRoles } from "../sample-wallpaper.ts";
 import {
   accessibilityViolations,
   expect,
@@ -17,35 +14,13 @@ import {
 const COLOURS_KEY = "omnileaf.colours";
 const LIGHT_PRIMARY = "--android-wallpaper-light-primary";
 
-function roles(colour: number): ColourRoles {
-  return {
-    primary: colour,
-    onPrimary: colour,
-    secondaryContainer: colour,
-    onSecondaryContainer: colour,
-    tertiaryContainer: colour,
-    onTertiaryContainer: colour,
-    surface: colour,
-    surfaceContainerLow: colour,
-    surfaceContainer: colour,
-    surfaceContainerHighest: colour,
-    onSurface: colour,
-    onSurfaceVariant: colour,
-    outline: colour,
-    outlineVariant: colour,
-    inverseSurface: colour,
-    inverseOnSurface: colour,
-    inversePrimary: colour,
-  };
-}
-
 const BLUE: WallpaperColours = {
-  light: roles(0x416189),
-  dark: roles(0xb1c8ec),
+  light: uniformRoles(0x416189),
+  dark: uniformRoles(0xb1c8ec),
 };
 const ROSE: WallpaperColours = {
-  light: roles(0x8c4a5d),
-  dark: roles(0xffb0c4),
+  light: uniformRoles(0x8c4a5d),
+  dark: uniformRoles(0xffb0c4),
 };
 
 let wallpaper: WallpaperColours = BLUE;

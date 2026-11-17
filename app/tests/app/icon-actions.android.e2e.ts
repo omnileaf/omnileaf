@@ -4,14 +4,15 @@ import { promisify } from "node:util";
 import { expect, test } from "vitest";
 
 import { useAppSession } from "./app-session.ts";
-import { chooseOnTheIcon, NEW_TASK } from "./icon-action-intent.ts";
+import {
+  chooseOnTheIcon,
+  NEW_TASK,
+  openFromTheLauncher,
+} from "./icon-action-intent.ts";
 import { followRestartedApp } from "./restarted-app.ts";
 import { pollUntil, xpath } from "./webdriver.ts";
 
 const APP_ID = "app.omnileaf";
-const MAIN_ACTIVITY = "app.omnileaf/.MainActivity";
-const LAUNCH = "android.intent.action.MAIN";
-const LAUNCHER = "android.intent.category.LAUNCHER";
 const HOME_KEY = "KEYCODE_HOME";
 const LAUNCHED_FROM_HISTORY = 0x00100000;
 const ADB_TIMEOUT_MS = 30_000;
@@ -73,21 +74,6 @@ async function reclaimTheAppInTheBackground(): Promise<void> {
     RESTART_TIMEOUT_MS,
     "the app's process to be reclaimed",
   );
-}
-
-async function openFromTheLauncher(): Promise<void> {
-  await adb([
-    "shell",
-    "am",
-    "start",
-    "-W",
-    "-n",
-    MAIN_ACTIVITY,
-    "-a",
-    LAUNCH,
-    "-c",
-    LAUNCHER,
-  ]);
 }
 
 test("publishes Screenshot mode with its state, Continue reading and Search the library", async () => {

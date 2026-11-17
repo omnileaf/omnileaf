@@ -400,6 +400,8 @@ export const TOKEN_THEME = {
     "list-row",
     "list-row-block",
     "list-unread",
+    "lock-art",
+    "lock-note-end",
     "long-button",
     "md",
     "menu-item",

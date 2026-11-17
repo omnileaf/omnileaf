@@ -14,7 +14,7 @@ export function book(
     pageCount: 188,
     isBookmarked: false,
     isNew: false,
-    isFileMissing: false,
+    file: { kind: "present" },
     kind: null,
     numbers: null,
     volume: null,

@@ -67,6 +67,7 @@ mod reading_pace;
 mod reading_progress;
 mod reading_session;
 mod recent_log;
+mod release_notes;
 mod report_code;
 mod rescan;
 mod rescan_conditions;
@@ -122,8 +123,8 @@ pub use home_folder_setting::{
 pub use lane::LaneStopped;
 pub use library::{Library, LibraryError, LibraryFolders, OpenTree, ShownInTree};
 pub use library_book::{
-    BookCursor, BookId, BookReading, BooksShown, ReadMark, SeriesBook, SeriesBookListing,
-    SeriesBookPage,
+    BookCursor, BookFileState, BookId, BookReading, BooksShown, ReadMark, SeriesBook,
+    SeriesBookListing, SeriesBookPage,
 };
 pub use library_category::{CategoryId, LibraryCategory};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
@@ -171,6 +172,10 @@ pub use project_link::ProjectLink;
 pub use reading_progress::ReadingSaved;
 pub use reading_session::READING_SAVE_DELAY;
 pub use recent_log::RecentLog;
+pub use release_notes::{
+    ChangeEntry, ChangeKind, LastSeen, ReleaseNotes, ReleaseNotesError, VersionNotes, WhatsNew,
+    WhatsNewNotice,
+};
 pub use report_code::{NotAReportCode, ReportCode};
 pub use rescan::{FileChanges, FolderRescan, RescanOutcome};
 pub use rescan_conditions::{
@@ -185,8 +190,8 @@ pub use series_details::{
     SourcedLanguage, SourcedYear,
 };
 pub use series_overview::{
-    CreatorRole, CreatorSeries, RelatedReason, RelatedSeries, SeriesCreator, SeriesOverview,
-    SeriesSection,
+    CreatorRole, CreatorSeries, RelatedReason, RelatedSeries, SeriesConnection, SeriesCreator,
+    SeriesOverview, SeriesSection,
 };
 pub use series_volume::SeriesVolume;
 pub use skipped_types::SkippedType;
@@ -211,6 +216,7 @@ impl Core {
                 source_code: ProjectLink::SourceCode.address().to_owned(),
                 is_development_build: BuildProfile::CURRENT == BuildProfile::Debug,
                 window_backdrop: WindowBackdrop::None,
+                checks_for_updates: false,
             },
         }
     }
@@ -220,6 +226,16 @@ impl Core {
         Self {
             app_info: AppInfo {
                 window_backdrop,
+                ..self.app_info
+            },
+        }
+    }
+
+    #[must_use]
+    pub fn with_update_check(self) -> Self {
+        Self {
+            app_info: AppInfo {
+                checks_for_updates: true,
                 ..self.app_info
             },
         }

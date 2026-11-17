@@ -432,6 +432,7 @@
   --android-container-low: var(--android-palette-surface-sheet);
   --android-container: var(--android-palette-surface-menu);
   --android-container-high: var(--android-palette-surface-dialog);
+  --android-container-highest: var(--android-palette-surface-field);
   --android-tonal: var(--android-palette-primary-container);
   --android-outline: var(--android-palette-outline);
   --android-secondary-text: var(--android-palette-on-surface-muted);
@@ -540,6 +541,7 @@
   --android-container-low: var(--android-palette-surface-sheet);
   --android-container: var(--android-palette-surface-menu);
   --android-container-high: var(--android-palette-surface-dialog);
+  --android-container-highest: var(--android-palette-surface-field);
   --android-tonal: var(--android-palette-primary-container);
   --android-outline: var(--android-palette-outline);
   --android-secondary-text: var(--android-palette-on-surface-muted);
