@@ -15,6 +15,26 @@ export type FolderList =
 
 export type RemoveOutcome = "removed" | "failed";
 
+export async function readFolderList(
+  listFolders: ListFolders,
+): Promise<FolderList> {
+  const folders: LibraryFolder[] = [];
+  let after: FolderPage["next"] = null;
+  do {
+    const page = await listFolders(after);
+    if (page.status === "error") {
+      return { kind: "failed" };
+    }
+    folders.push(...page.data.folders);
+    after = page.data.next;
+  } while (after !== null);
+  return {
+    kind: "loaded",
+    home: folders.find((folder) => folder.kind === "home"),
+    linked: folders.filter((folder) => folder.kind === "linked"),
+  };
+}
+
 export class LibraryFolders {
   list: FolderList = $state({ kind: "loading" });
 
@@ -28,22 +48,7 @@ export class LibraryFolders {
 
   async load(): Promise<void> {
     const load = ++this.#latestLoad;
-    const folders: LibraryFolder[] = [];
-    let after: FolderPage["next"] = null;
-    do {
-      const page = await this.listFolders(after);
-      if (page.status === "error") {
-        this.#show(load, { kind: "failed" });
-        return;
-      }
-      folders.push(...page.data.folders);
-      after = page.data.next;
-    } while (after !== null);
-    this.#show(load, {
-      kind: "loaded",
-      home: folders.find((folder) => folder.kind === "home"),
-      linked: folders.filter((folder) => folder.kind === "linked"),
-    });
+    this.#show(load, await readFolderList(this.listFolders));
   }
 
   #show(load: number, list: FolderList): void {
