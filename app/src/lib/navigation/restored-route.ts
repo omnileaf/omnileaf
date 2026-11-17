@@ -10,6 +10,16 @@ type TellOpeningPageShown = typeof commands.openingPageShown;
 
 type OpenPage = (page: ResolvedPathname) => Promise<void>;
 
+interface OpeningSteps {
+  readonly open: OpenPage;
+  readonly tell: TellOpeningPageShown;
+}
+
+const LIVE_STEPS: OpeningSteps = {
+  open: goto,
+  tell: () => commands.openingPageShown(),
+};
+
 const KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN = {
   android: true,
   ios: false,
@@ -51,11 +61,10 @@ async function tellOpeningPageShown(
 export async function showOpeningPage(
   page: ResolvedPathname | undefined,
   platform: Platform,
-  open: OpenPage = goto,
-  tell: TellOpeningPageShown = () => commands.openingPageShown(),
+  steps: OpeningSteps = LIVE_STEPS,
 ): Promise<void> {
   if (page !== undefined) {
-    await open(page);
+    await steps.open(page);
   }
-  await tellOpeningPageShown(platform, tell);
+  await tellOpeningPageShown(platform, steps.tell);
 }

@@ -66,7 +66,7 @@ test("doesn't ask anywhere but Android", async () => {
 test("opens the restored page", async () => {
   const open = opened();
 
-  await showOpeningPage(SETTINGS_PAGE, "android", open, told());
+  await showOpeningPage(SETTINGS_PAGE, "android", { open, tell: told() });
 
   expect(open).toHaveBeenCalledWith(SETTINGS_PAGE);
 });
@@ -74,7 +74,7 @@ test("opens the restored page", async () => {
 test("opens no page when Android saved none", async () => {
   const open = opened();
 
-  await showOpeningPage(undefined, "android", open, told());
+  await showOpeningPage(undefined, "android", { open, tell: told() });
 
   expect(open).not.toHaveBeenCalled();
 });
@@ -82,7 +82,7 @@ test("opens no page when Android saved none", async () => {
 test("tells Android the opening page shows", async () => {
   const tell = told();
 
-  await showOpeningPage(undefined, "android", opened(), tell);
+  await showOpeningPage(undefined, "android", { open: opened(), tell });
 
   expect(tell).toHaveBeenCalledTimes(1);
 });
@@ -98,7 +98,7 @@ test("tells Android only once the restored page has opened", async () => {
     return Promise.resolve({ status: "ok" as const, data: null });
   };
 
-  await showOpeningPage(SETTINGS_PAGE, "android", open, tell);
+  await showOpeningPage(SETTINGS_PAGE, "android", { open, tell });
 
   expect(steps).toEqual(["opened", "told"]);
 });
@@ -108,7 +108,7 @@ test("doesn't tell anywhere but Android that the opening page shows", async () =
 
   await Promise.all(
     (["ios", "linux", "macos", "windows"] as const).map((platform) =>
-      showOpeningPage(undefined, platform, opened(), tell),
+      showOpeningPage(undefined, platform, { open: opened(), tell }),
     ),
   );
 
@@ -119,9 +119,10 @@ test("reports Android not hearing that the opening page shows", async () => {
   const reported = vi.spyOn(window, "reportError").mockReturnValue(undefined);
   const error = { code: "internal", message: "timed out" } as const;
 
-  await showOpeningPage(undefined, "android", opened(), () =>
-    Promise.resolve({ status: "error", error }),
-  );
+  await showOpeningPage(undefined, "android", {
+    open: opened(),
+    tell: () => Promise.resolve({ status: "error", error }),
+  });
 
   expect(reported).toHaveBeenCalledWith(error);
 });
