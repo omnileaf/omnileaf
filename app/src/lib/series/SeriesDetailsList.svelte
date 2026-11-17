@@ -51,7 +51,7 @@
     <dd class={["wrap-anywhere", VALUE]}>
       {overview.title}
       {#if titleSource !== undefined}
-        <span class="block text-caption text-muted">{titleSource}</span>
+        <span class="block text-caption text-muted">{titleSource.words}</span>
       {/if}
     </dd>
   </div>
@@ -61,7 +61,8 @@
       <dd class={["wrap-anywhere", VALUE]}>
         <CreatorNames {names} creators={overview.creators} from={overview.id} />
         {#if peopleSource !== undefined}
-          <span class="block text-caption text-muted">{peopleSource}</span>
+          <span class="block text-caption text-muted">{peopleSource.words}</span
+          >
         {/if}
       </dd>
     </div>
@@ -72,7 +73,7 @@
       <dd class={VALUE}>
         {year.fromFile}
         <span class="block text-caption text-muted"
-          >{sourceLine(year.source, false)}</span
+          >{sourceLine(year.source, false)?.words}</span
         >
       </dd>
     </div>
