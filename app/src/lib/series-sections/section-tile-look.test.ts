@@ -71,17 +71,39 @@ function styleOf(element: Element | null): CSSStyleDeclaration {
   return getComputedStyle(element);
 }
 
-async function drawTiles(
-  platform: "linux" | "ios" | "macos" = "linux",
-): Promise<{
+type DrawnPlatform = "linux" | "ios" | "macos" | "android";
+
+interface Screen {
+  readonly window: { readonly width: number; readonly height: number };
+  readonly booksColumn: number;
+}
+
+const DESKTOP_SCREEN: Screen = {
+  window: DESKTOP_WINDOW,
+  booksColumn: BOOKS_COLUMN,
+};
+
+const SCREENS = {
+  linux: DESKTOP_SCREEN,
+  ios: DESKTOP_SCREEN,
+  macos: DESKTOP_SCREEN,
+  android: { window: ANDROID_PHONE_WINDOW, booksColumn: PHONE_BOOKS_COLUMN },
+} satisfies Record<DrawnPlatform, Screen>;
+
+async function drawTiles(platform: DrawnPlatform = "linux"): Promise<{
   readonly list: HTMLElement;
   readonly gap: HTMLElement;
   readonly link: HTMLElement;
   readonly started: HTMLElement;
 }> {
+  const screen = SCREENS[platform];
+  await page.viewport(screen.window.width, screen.window.height);
   followCorePlatform(platform);
   document.documentElement.dataset.theme = "light";
-  await render(SectionCoversHarness, { tiles: TILES, width: BOOKS_COLUMN });
+  await render(SectionCoversHarness, {
+    tiles: TILES,
+    width: screen.booksColumn,
+  });
   return {
     list: page.getByRole("list", { name: "Volumes" }).element() as HTMLElement,
     gap: page.getByRole("img", { name: GAP_NAME }).element() as HTMLElement,
@@ -90,25 +112,6 @@ async function drawTiles(
       .element() as HTMLElement,
     started: page
       .getByRole("link", { name: "Volume 7 Page 42 of 190" })
-      .element() as HTMLElement,
-  };
-}
-
-async function drawAndroidPhoneTiles(): Promise<{
-  readonly list: HTMLElement;
-  readonly link: HTMLElement;
-}> {
-  await page.viewport(ANDROID_PHONE_WINDOW.width, ANDROID_PHONE_WINDOW.height);
-  followCorePlatform("android");
-  document.documentElement.dataset.theme = "light";
-  await render(SectionCoversHarness, {
-    tiles: TILES,
-    width: PHONE_BOOKS_COLUMN,
-  });
-  return {
-    list: page.getByRole("list", { name: "Volumes" }).element() as HTMLElement,
-    link: page
-      .getByRole("link", { name: "Volume 4 Read" })
       .element() as HTMLElement,
   };
 }
@@ -135,18 +138,9 @@ test("fits six covers a row in the series page's books column", async () => {
 test.each(["1", LARGEST_TEXT_SCALE])(
   "fits three covers a row on an Android phone at text scale %s",
   async (scale) => {
-    await page.viewport(
-      ANDROID_PHONE_WINDOW.width,
-      ANDROID_PHONE_WINDOW.height,
-    );
     document.documentElement.style.setProperty("--text-scale", scale);
-    followCorePlatform("android");
-    await render(SectionCoversHarness, {
-      tiles: TILES,
-      width: PHONE_BOOKS_COLUMN,
-    });
 
-    const list = page.getByRole("list", { name: "Volumes" }).element();
+    const { list } = await drawTiles("android");
 
     expect(columnsOf(list)).toBe(COVERS_A_ROW_ON_A_PHONE_BOARD);
   },
@@ -287,7 +281,7 @@ test("leaves an unfinished volume without the check badge", async () => {
 });
 
 test("spaces an Android phone's covers 8px across and 16px down", async () => {
-  const { list } = await drawAndroidPhoneTiles();
+  const { list } = await drawTiles("android");
   const grid = getComputedStyle(list);
 
   expect([grid.columnGap, grid.rowGap]).toEqual([
@@ -296,8 +290,8 @@ test("spaces an Android phone's covers 8px across and 16px down", async () => {
   ]);
 });
 
-test("names an Android phone's volume in Material type under a flat cover", async () => {
-  const { link } = await drawAndroidPhoneTiles();
+test("names an Android volume in Material type under a flat cover", async () => {
+  const { link } = await drawTiles("android");
   const cover = styleOf(link.firstElementChild);
   const [title, meta] = Array.from(
     link.lastElementChild?.children ?? [],
@@ -334,8 +328,8 @@ test("names an Android phone's volume in Material type under a flat cover", asyn
   });
 });
 
-test("marks a finished volume on an Android phone with an accent circle at its cover's top start", async () => {
-  const { link } = await drawAndroidPhoneTiles();
+test("marks a finished Android volume with an accent circle at its cover's top start", async () => {
+  const { link } = await drawTiles("android");
   const mark = link.firstElementChild?.querySelector("[data-read-mark]");
   const style = styleOf(mark ?? null);
 
@@ -361,8 +355,8 @@ test("marks a finished volume on an Android phone with an accent circle at its c
   });
 });
 
-test("draws the shared check icon inside an Android phone's read mark", async () => {
-  const { link } = await drawAndroidPhoneTiles();
+test("draws the shared check icon inside an Android volume's read mark", async () => {
+  const { link } = await drawTiles("android");
   const check = link.querySelector('[data-read-mark] [data-icon="check"]');
 
   expect([
