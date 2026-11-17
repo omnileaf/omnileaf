@@ -17,7 +17,7 @@ import {
 } from "#lib/ipc/bindings.ts";
 import { Notices } from "#lib/notices/notices.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
-import { swipeAcross } from "#lib/series/row-swipe-finger.ts";
+import { swipeAcross } from "../../../tests/components/row-swipe-finger";
 import Toasts from "#lib/notices/Toasts.svelte";
 
 import { clearToasts } from "../../../tests/components/clear-toasts";

@@ -5,7 +5,7 @@ import { render } from "vitest-browser-svelte";
 import "../../app.css";
 
 import { ACT_PAST_OPEN_PX } from "#lib/series/row-swipe.svelte.ts";
-import { swipeAcross } from "#lib/series/row-swipe-finger.ts";
+import { swipeAcross } from "../../../tests/components/row-swipe-finger";
 import type { SwipeSide } from "#lib/series/swipe.ts";
 
 import type { SwipeAction } from "./SwipeActions.svelte";
