@@ -810,3 +810,54 @@ test("keeps every drawn row in place on each frame while scrolling up through ro
     Array.from({ length: FRAMES_SCROLLED }, () => SCROLL_STEP),
   );
 });
+
+const SIZING_ROWS = 3000;
+const ROWS_BEFORE_RESIZING = 200;
+
+const sizedCell = createRawSnippet((sample: () => Sample) => ({
+  render: () =>
+    `<p style="block-size: calc(3.5em * var(--text-scale)); box-sizing: content-box; padding-block-end: 5%">${sample().name}</p>`,
+}));
+
+test.each([
+  {
+    change: "the list grows narrower",
+    resize: (list: HTMLElement | SVGElement) => {
+      list.style.inlineSize = "50%";
+    },
+  },
+  {
+    change: "its text grows larger",
+    resize: (list: HTMLElement | SVGElement) => {
+      list.style.fontSize = "20px";
+    },
+  },
+  {
+    change: "the text scale grows",
+    resize: () => {
+      document.documentElement.style.setProperty("--text-scale", "1.5");
+      onTestFinished(() => {
+        document.documentElement.style.removeProperty("--text-scale");
+      });
+    },
+  },
+])("measures rows afresh once $change", async ({ resize }) => {
+  const { list, frame } = await renderStackedRows(SIZING_ROWS, sizedCell);
+  window.scrollTo(
+    0,
+    frame.getBoundingClientRect().top +
+      window.scrollY +
+      frame.getBoundingClientRect().height *
+        (ROWS_BEFORE_RESIZING / SIZING_ROWS),
+  );
+  await settled();
+
+  resize(list.element());
+  await settled();
+
+  const row = list.getByRole("listitem").first().element();
+  expect(frame.getBoundingClientRect().height).toBeCloseTo(
+    SIZING_ROWS * row.getBoundingClientRect().height,
+    0,
+  );
+});

@@ -61,6 +61,12 @@
     readonly headingStride: number;
   }
 
+  interface Sizing {
+    readonly inlineSize: number;
+    readonly fontSize: string;
+    readonly textScale: string;
+  }
+
   interface Shown {
     readonly start: number;
     readonly end: number;
@@ -73,6 +79,7 @@
   let measure: Measure | undefined = $state();
   let seen: Seen = $state({ top: 0, bottom: 0 });
   let rowSizes: ReadonlyMap<string, number> = $state(new Map());
+  let sizedFor: Sizing | undefined;
 
   const knownTotal = $derived(
     total !== undefined && total >= items.length ? total : undefined,
@@ -257,6 +264,24 @@
     );
   }
 
+  function sizingOf(grid: HTMLUListElement): Sizing {
+    const style = getComputedStyle(grid);
+    return {
+      inlineSize: grid.getBoundingClientRect().width,
+      fontSize: style.fontSize,
+      textScale: style.getPropertyValue("--text-scale"),
+    };
+  }
+
+  function isSameSizing(one: Sizing, other: Sizing | undefined): boolean {
+    return (
+      other !== undefined &&
+      one.inlineSize === other.inlineSize &&
+      one.fontSize === other.fontSize &&
+      one.textScale === other.textScale
+    );
+  }
+
   async function remeasureRows(
     shownFrame: HTMLDivElement,
     grid: HTMLUListElement,
@@ -264,15 +289,22 @@
     if (heights === undefined) {
       return false;
     }
+    const sizing = sizingOf(grid);
+    const isResized = !isSameSizing(sizing, sizedFor);
+    const kept = isResized ? new Map<string, number>() : rowSizes;
     const changes = [...drawnRowSizes(grid)].filter(
-      ([itemKey, size]) => rowSizes.get(itemKey) !== size,
+      ([itemKey, size]) => kept.get(itemKey) !== size,
     );
-    if (changes.length === 0) {
+    if (!isResized && changes.length === 0) {
       return false;
     }
+    sizedFor = sizing;
     const atTop = heights.rowAt(seen.top);
     const before = heights.offsetOf(atTop);
-    rowSizes = new Map([...rowSizes, ...changes]);
+    rowSizes = new Map([
+      ...[...kept].filter(([itemKey]) => indexByKey.has(itemKey)),
+      ...changes,
+    ]);
     const moved = heights.offsetOf(atTop) - before;
     if (moved !== 0) {
       await tick();
