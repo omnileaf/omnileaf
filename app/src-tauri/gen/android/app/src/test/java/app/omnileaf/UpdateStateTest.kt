@@ -95,12 +95,11 @@ class UpdateStateTest {
     }
 
     @Test
-    fun `remembers the skipped, snoozed and notified versions`() {
+    fun `remembers the skipped and snoozed versions`() {
         state.skip(ReleaseVersion(0, 3, 0))
         state.snooze(ReleaseVersion(0, 4, 0), CHECKED)
-        state.markNotified(ReleaseVersion(0, 4, 0))
 
         val expected = UpdateChoices(ReleaseVersion(0, 3, 0), Snooze(ReleaseVersion(0, 4, 0), snoozedAt = CHECKED))
-        assertEquals(expected to ReleaseVersion(0, 4, 0), state.choices to state.notifiedVersion)
+        assertEquals(expected, state.choices)
     }
 }

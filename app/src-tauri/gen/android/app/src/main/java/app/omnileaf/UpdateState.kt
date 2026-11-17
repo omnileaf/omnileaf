@@ -12,7 +12,6 @@ private const val LATEST_HEADLINE = "latestHeadline"
 private const val CHECKED_AT = "checkedAt"
 private const val ATTEMPTED_AT = "attemptedAt"
 private const val LAST_OUTCOME = "lastOutcome"
-private const val NOTIFIED_VERSION = "notifiedVersion"
 
 internal interface UpdateStore {
     fun snapshot(): Map<String, String>
@@ -45,7 +44,6 @@ internal class UpdateState(
             val stored = store.snapshot()[LAST_OUTCOME]
             return UpdateOutcome.entries.find { it.name == stored }
         }
-    val notifiedVersion: ReleaseVersion? get() = store.snapshot().version(NOTIFIED_VERSION)
     val attemptedAt: Instant? get() = store.snapshot().instant(ATTEMPTED_AT)
 
     fun skip(version: ReleaseVersion) = store.write(mapOf(SKIPPED_VERSION to version.toString()))
@@ -56,8 +54,6 @@ internal class UpdateState(
     ) {
         store.write(mapOf(SNOOZED_VERSION to version.toString(), SNOOZED_AT to now.toEpochMilli().toString()))
     }
-
-    fun markNotified(version: ReleaseVersion) = store.write(mapOf(NOTIFIED_VERSION to version.toString()))
 
     fun markAttempted(now: Instant) = store.write(mapOf(ATTEMPTED_AT to now.toEpochMilli().toString()))
 
