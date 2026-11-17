@@ -16,10 +16,16 @@ function folder(id: string, kind: LibraryFolder["kind"]): LibraryFolder {
 
 const HOME = folder("home", "home");
 
-test("says nothing when only the home folder is there", () => {
+test("says nothing when only an empty home folder is there", () => {
   expect(
     librarySummaryOf({ kind: "loaded", home: HOME, linked: [] }, 0),
   ).toBeUndefined();
+});
+
+test("counts the series alone when they all sit in the home folder", () => {
+  expect(
+    librarySummaryOf({ kind: "loaded", home: HOME, linked: [] }, 128),
+  ).toBe("128 series");
 });
 
 test("counts the linked folders beside the series, leaving out the home folder", () => {

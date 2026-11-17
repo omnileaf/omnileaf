@@ -5,11 +5,15 @@ export function librarySummaryOf(
   folders: ReadFolders,
   seriesCount: number,
 ): string | undefined {
-  if (folders.kind !== "loaded" || folders.linked.length === 0) {
+  if (folders.kind !== "loaded") {
     return undefined;
   }
-  return m.settings_summary_pair({
-    first: m.settings_folder_count({ count: folders.linked.length }),
-    second: m.library_series_count({ count: seriesCount }),
-  });
+  const series = m.library_series_count({ count: seriesCount });
+  if (folders.linked.length > 0) {
+    return m.settings_summary_pair({
+      first: m.settings_folder_count({ count: folders.linked.length }),
+      second: series,
+    });
+  }
+  return seriesCount > 0 ? series : undefined;
 }
