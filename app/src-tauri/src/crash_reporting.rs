@@ -207,6 +207,7 @@ mod tests {
             source_code: "repo.example.org/omnileaf".to_owned(),
             is_development_build: true,
             window_backdrop: WindowBackdrop::None,
+            checks_for_updates: false,
         }
     }
 

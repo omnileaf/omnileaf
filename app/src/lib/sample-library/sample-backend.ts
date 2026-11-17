@@ -1215,6 +1215,7 @@ export function sampleBackend(
       sourceCode: "repo.example.org/omnileaf",
       isDevelopmentBuild: true,
       windowBackdrop: scenario.backdrop,
+      checksForUpdates: false,
     }),
     libraryProblem: () => null,
     homeArrival: () => null,

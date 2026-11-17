@@ -216,6 +216,7 @@ impl Core {
                 source_code: ProjectLink::SourceCode.address().to_owned(),
                 is_development_build: BuildProfile::CURRENT == BuildProfile::Debug,
                 window_backdrop: WindowBackdrop::None,
+                checks_for_updates: false,
             },
         }
     }
@@ -225,6 +226,16 @@ impl Core {
         Self {
             app_info: AppInfo {
                 window_backdrop,
+                ..self.app_info
+            },
+        }
+    }
+
+    #[must_use]
+    pub fn with_update_check(self) -> Self {
+        Self {
+            app_info: AppInfo {
+                checks_for_updates: true,
                 ..self.app_info
             },
         }

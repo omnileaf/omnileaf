@@ -275,6 +275,7 @@ export type AppInfo = {
 	sourceCode: string,
 	isDevelopmentBuild: boolean,
 	windowBackdrop: WindowBackdrop,
+	checksForUpdates: boolean,
 };
 
 export type AppLock = {
