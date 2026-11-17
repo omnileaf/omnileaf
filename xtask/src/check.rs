@@ -458,6 +458,10 @@ pub(crate) const STEPS: &[Step] = &[
             "omnileaf-folder-access",
             "--package",
             "omnileaf-formats",
+            "--package",
+            "omnileaf-engine",
+            "--package",
+            "omnileaf-libarchive",
             "--features",
             "omnileaf-formats/rar",
             "--all-targets",
@@ -644,7 +648,13 @@ pub(crate) fn run_all<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::cell::RefCell;
+    use crate::{lint_sync::SOURCE_ROOTS, workspace};
+    use std::{
+        cell::RefCell,
+        collections::{BTreeMap, BTreeSet},
+        ffi::OsStr,
+        path::Path,
+    };
 
     struct FakeRunner {
         failing: Option<&'static str>,
@@ -848,6 +858,107 @@ mod tests {
         );
     }
 
+    const ANDROID_CFG: &str = r#"target_os = "android""#;
+
+    fn manifest_of<'a>(path: &str, manifests: &BTreeMap<&str, &'a [u8]>) -> Option<&'a [u8]> {
+        if !SOURCE_ROOTS.iter().any(|root| path.starts_with(root)) {
+            return None;
+        }
+        Path::new(path)
+            .ancestors()
+            .filter_map(Path::to_str)
+            .find_map(|folder| manifests.get(folder).copied())
+    }
+
+    fn is_rust_with_android_cfg(path: &str, bytes: &[u8]) -> bool {
+        let is_rust = Path::new(path).extension() == Some(OsStr::new("rs"));
+        is_rust && String::from_utf8_lossy(bytes).contains(ANDROID_CFG)
+    }
+
+    fn package_name(manifest: &[u8]) -> String {
+        String::from_utf8_lossy(manifest)
+            .lines()
+            .find_map(|line| line.strip_prefix("name = \"")?.strip_suffix('"'))
+            .unwrap()
+            .to_owned()
+    }
+
+    fn packages_with_android_cfg(files: &[(String, Vec<u8>)]) -> BTreeSet<String> {
+        let manifests: BTreeMap<&str, &[u8]> = files
+            .iter()
+            .filter_map(|(path, bytes)| Some((path.strip_suffix("/Cargo.toml")?, bytes.as_slice())))
+            .collect();
+        files
+            .iter()
+            .filter(|(path, bytes)| is_rust_with_android_cfg(path, bytes))
+            .filter_map(|(path, _)| manifest_of(path, &manifests))
+            .map(package_name)
+            .collect()
+    }
+
+    fn file(path: &str, contents: &str) -> (String, Vec<u8>) {
+        (path.to_owned(), contents.as_bytes().to_vec())
+    }
+
+    fn manifest(folder: &str, package: &str) -> (String, Vec<u8>) {
+        file(
+            &format!("{folder}/Cargo.toml"),
+            &format!("[package]\nname = \"{package}\"\n"),
+        )
+    }
+
+    const ANDROID_ONLY_FUNCTION: &str = "#[cfg(target_os = \"android\")]\nfn on_android() {}\n";
+
+    #[test]
+    fn finds_an_android_cfg_in_any_target_of_a_crate() {
+        let files = [
+            manifest("crates/in-tests", "in-tests"),
+            file("crates/in-tests/tests/watch.rs", ANDROID_ONLY_FUNCTION),
+            manifest("crates/in-build-script", "in-build-script"),
+            file("crates/in-build-script/build.rs", ANDROID_ONLY_FUNCTION),
+            manifest("crates/outer/inner", "inner"),
+            file("crates/outer/inner/src/lib.rs", ANDROID_ONLY_FUNCTION),
+            manifest("app/src-tauri", "app"),
+            file("app/src-tauri/benches/open.rs", ANDROID_ONLY_FUNCTION),
+        ];
+
+        let packages = packages_with_android_cfg(&files);
+
+        assert_eq!(
+            packages,
+            BTreeSet::from(["app", "in-build-script", "in-tests", "inner"].map(String::from))
+        );
+    }
+
+    #[test]
+    fn leaves_out_android_cfgs_outside_the_source_roots() {
+        let files = [
+            manifest("xtask", "xtask"),
+            file("xtask/src/check.rs", ANDROID_ONLY_FUNCTION),
+        ];
+
+        let packages = packages_with_android_cfg(&files);
+
+        assert_eq!(packages, BTreeSet::new());
+    }
+
+    #[test]
+    fn the_android_rust_lint_covers_every_crate_with_an_android_cfg() {
+        let files = workspace::repository_files(&workspace::root()).unwrap();
+        let android_crates = packages_with_android_cfg(&files);
+
+        let linted: BTreeSet<String> = step(Group::Android, "android rust lint")
+            .args
+            .windows(2)
+            .filter(|pair| pair[0] == "--package")
+            .map(|pair| pair[1].to_owned())
+            .collect();
+
+        assert!(android_crates.contains("omnileaf-app"));
+        let unlinted: Vec<&String> = android_crates.difference(&linted).collect();
+        assert_eq!(unlinted, Vec::<&String>::new());
+    }
+
     #[test]
     fn the_ios_group_checks_the_ios_only_code_before_running_the_app() {
         assert_eq!(
@@ -930,31 +1041,31 @@ mod tests {
         );
     }
 
-    fn rust_step(name: &str) -> &'static Step {
+    fn step(group: Group, name: &str) -> &'static Step {
         STEPS
             .iter()
-            .find(|step| step.group == Group::Rust && step.name == name)
+            .find(|step| step.group == group && step.name == name)
             .unwrap()
     }
 
     #[test]
     fn runs_only_its_partition_of_the_tests() {
-        let args = args_with_partition(rust_step("test"), Some("hash:2/3"));
+        let args = args_with_partition(step(Group::Rust, "test"), Some("hash:2/3"));
 
         assert_eq!(args.last_chunk(), Some(&["--partition", "hash:2/3"]));
     }
 
     #[test]
     fn runs_every_test_without_a_partition() {
-        let args = args_with_partition(rust_step("test"), None);
+        let args = args_with_partition(step(Group::Rust, "test"), None);
 
-        assert_eq!(args, rust_step("test").args);
+        assert_eq!(args, step(Group::Rust, "test").args);
     }
 
     #[test]
     fn leaves_the_other_steps_whole_with_a_partition() {
-        let args = args_with_partition(rust_step("lint"), Some("hash:2/3"));
+        let args = args_with_partition(step(Group::Rust, "lint"), Some("hash:2/3"));
 
-        assert_eq!(args, rust_step("lint").args);
+        assert_eq!(args, step(Group::Rust, "lint").args);
     }
 }
