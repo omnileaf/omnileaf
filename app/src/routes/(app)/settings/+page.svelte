@@ -7,6 +7,7 @@
   import { getOpensOnSetting } from "#lib/general/opens-on.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { readFolderList } from "#lib/library/library-folders.svelte.ts";
+  import { librarySummaryOf } from "#lib/settings/library-summary.ts";
   import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
@@ -67,17 +68,9 @@
       readFolderList(commands.libraryFolders),
       commands.librarySeriesCount(NEW_LIBRARY_LISTING.filter),
     ]).then(([folders, series]) => {
-      if (
-        folders.kind !== "loaded" ||
-        series.status !== "ok" ||
-        folders.linked.length === 0
-      ) {
-        return;
+      if (series.status === "ok") {
+        librarySummary = librarySummaryOf(folders, series.data);
       }
-      librarySummary = m.settings_summary_pair({
-        first: m.settings_folder_count({ count: folders.linked.length }),
-        second: m.library_series_count({ count: series.data }),
-      });
     });
   });
   const width = new WindowWidth();
