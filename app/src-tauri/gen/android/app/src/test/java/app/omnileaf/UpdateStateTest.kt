@@ -64,6 +64,18 @@ class UpdateStateTest {
     }
 
     @Test
+    fun `notes an attempt before its outcome is known`() {
+        state.record(CheckResult.UpToDate, CHECKED)
+
+        state.markAttempted(CHECKED.plusSeconds(60))
+
+        assertEquals(
+            Triple(CHECKED.plusSeconds(60), CHECKED, UpdateOutcome.UP_TO_DATE),
+            Triple(state.attemptedAt, state.checkedAt, state.lastOutcome),
+        )
+    }
+
+    @Test
     fun `keeps the last reached check time while rate limited or failing`() {
         state.record(CheckResult.UpToDate, CHECKED)
 
