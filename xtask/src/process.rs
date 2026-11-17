@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{
-    check::{self, Runner, Step},
+    check::{self, Program, Runner, Step},
     workspace,
 };
 
@@ -23,8 +23,12 @@ pub(crate) struct Process {
 
 impl Process {
     pub(crate) fn in_workspace() -> Self {
+        Self::at(workspace::root())
+    }
+
+    fn at(root: PathBuf) -> Self {
         Self {
-            root: workspace::root(),
+            root,
             env: Vec::new(),
             test_partition: None,
         }
@@ -39,21 +43,25 @@ impl Process {
         self.test_partition = partition;
         self
     }
+
+    fn command(&self, step: &Step) -> Command {
+        let mut command = command_in_workspace(&step.program);
+        command
+            .args(check::args_with_partition(
+                step,
+                self.test_partition.as_deref(),
+            ))
+            .envs(self.env.iter().map(|(key, value)| (key, value)))
+            .current_dir(&self.root);
+        command
+    }
 }
 
 impl Runner for Process {
     #[expect(clippy::print_stdout, reason = "progress output for the developer")]
     fn run(&self, step: &Step) -> io::Result<bool> {
         println!("==> {}", step.name);
-        command_for(step.program)
-            .args(check::args_with_partition(
-                step,
-                self.test_partition.as_deref(),
-            ))
-            .envs(self.env.iter().map(|(key, value)| (key, value)))
-            .current_dir(&self.root)
-            .status()
-            .map(|status| status.success())
+        self.command(step).status().map(|status| status.success())
     }
 }
 
@@ -82,6 +90,13 @@ pub(crate) fn command_for(program: impl AsRef<OsStr>) -> Command {
     match found {
         Some(found) => Command::new(found),
         None => Command::new(program),
+    }
+}
+
+fn command_in_workspace(program: &Program) -> Command {
+    match program {
+        Program::OnPath(name) => command_for(name),
+        Program::InWorkspace(script) => Command::new(script),
     }
 }
 
@@ -162,7 +177,7 @@ mod tests {
         let step = Step {
             name: "probe",
             group: crate::check::Group::Rust,
-            program,
+            program: Program::OnPath(program),
             args,
         };
 
