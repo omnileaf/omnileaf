@@ -153,6 +153,9 @@
     page.route.id === SEARCH_ROUTE_ID &&
       phoneOf(data.appInfo.platform, width.current) === "ios",
   );
+  const isTabBarAfterPage = $derived(
+    phoneOf(data.appInfo.platform, width.current) !== undefined,
+  );
   const isSearchViewOpen = $derived(
     page.route.id === SEARCH_ROUTE_ID &&
       phoneOf(data.appInfo.platform, width.current) === "android",
@@ -234,9 +237,7 @@
   />
 {/snippet}
 
-<div
-  class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row windows:desktop-shell:bg-shell-ground"
->
+{#snippet navigation()}
   {#if page.route.id !== EDIT_DETAILS_ROUTE}
     {#key language.resolved}
       {#if hasTopTabBar(data.appInfo.platform, width.current)}
@@ -258,6 +259,14 @@
       {/if}
     {/key}
   {/if}
+{/snippet}
+
+<div
+  class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row windows:desktop-shell:bg-shell-ground"
+>
+  {#if !isTabBarAfterPage}
+    {@render navigation()}
+  {/if}
   <SwipeableMain
     isIos={data.appInfo.platform === "ios"}
     isAndroid={data.appInfo.platform === "android"}
@@ -267,6 +276,9 @@
       {@render children()}
     {/key}
   </SwipeableMain>
+  {#if isTabBarAfterPage}
+    {@render navigation()}
+  {/if}
   <div
     class="relative z-notice order-1 desktop-shell:max-medium:fixed desktop-shell:max-medium:inset-x-none desktop-shell:max-medium:inset-be-none"
   >
