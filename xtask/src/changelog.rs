@@ -24,10 +24,38 @@ pub(crate) struct Heading {
     heading: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub(crate) struct Config {
+#[derive(Deserialize)]
+struct ConfigFile {
+    headline: String,
     types: Vec<Heading>,
     areas: Vec<Heading>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(try_from = "ConfigFile")]
+pub(crate) struct Config {
+    headline: String,
+    types: Vec<Heading>,
+    areas: Vec<Heading>,
+}
+
+impl TryFrom<ConfigFile> for Config {
+    type Error = String;
+
+    fn try_from(file: ConfigFile) -> Result<Self, Self::Error> {
+        let config = Self {
+            headline: file.headline,
+            types: file.types,
+            areas: file.areas,
+        };
+        match config.type_position(&config.headline) {
+            Some(_) => Ok(config),
+            None => Err(format!(
+                "the headline `{}` must be one of the types",
+                config.headline
+            )),
+        }
+    }
 }
 
 impl Config {
@@ -353,9 +381,20 @@ fn contributors(fragments: &[Fragment]) -> Vec<&str> {
     logins
 }
 
+fn headline<'a>(fragments_in_report_order: &'a [Fragment], config: &Config) -> Option<&'a str> {
+    fragments_in_report_order
+        .iter()
+        .find(|fragment| fragment.kind == config.headline)
+        .or_else(|| fragments_in_report_order.first())
+        .map(|fragment| fragment.summary.as_str())
+}
+
 pub(crate) fn render_markdown(fragments: Vec<Fragment>, config: &Config) -> String {
     let fragments = in_report_order(fragments, config);
-    let mut sections = Vec::new();
+    let mut sections: Vec<String> = headline(&fragments, config)
+        .map(str::to_owned)
+        .into_iter()
+        .collect();
     for kind in &config.types {
         let lines: Vec<String> = fragments
             .iter()
@@ -519,6 +558,7 @@ mod tests {
     use super::*;
 
     const CONFIG_JSON: &str = r#"{
+        "headline": "feat",
         "types": [
             {"id": "breaking", "heading": "Breaking changes"},
             {"id": "sec", "heading": "Security"},
@@ -857,6 +897,8 @@ mod tests {
         assert_eq!(
             markdown,
             "\
+Section tabs on Android.
+
 ## Breaking changes
 
 - **Library:** Old folders need adding again.
@@ -877,10 +919,69 @@ Contributors: @hubot, @octocat
     }
 
     #[test]
+    fn heads_the_markdown_with_the_first_new_entry() {
+        let fragments = vec![
+            valid("sec", "library", &[], "Archives stay inside."),
+            valid("feat", "reader", &[], "Pages turn faster."),
+        ];
+
+        let markdown = render_markdown(fragments, &config());
+
+        assert!(
+            markdown.starts_with("Pages turn faster.\n\n## Security\n"),
+            "{markdown}"
+        );
+    }
+
+    #[test]
+    fn heads_the_markdown_with_the_first_entry_when_nothing_is_new() {
+        let fragments = vec![
+            valid("fix", "reader", &[], "The page stays put."),
+            valid("sec", "library", &[], "Archives stay inside."),
+        ];
+
+        let markdown = render_markdown(fragments, &config());
+
+        assert!(
+            markdown.starts_with("Archives stay inside.\n\n## Security\n"),
+            "{markdown}"
+        );
+    }
+
+    #[test]
+    fn heads_the_markdown_with_the_type_the_config_names() {
+        let fix_first: Config = serde_json::from_str(
+            &CONFIG_JSON.replace(r#""headline": "feat""#, r#""headline": "fix""#),
+        )
+        .unwrap();
+        let fragments = vec![
+            valid("feat", "reader", &[], "Pages turn faster."),
+            valid("fix", "library", &[], "Scans finish."),
+        ];
+
+        let markdown = render_markdown(fragments, &fix_first);
+
+        assert!(
+            markdown.starts_with("Scans finish.\n\n## New\n"),
+            "{markdown}"
+        );
+    }
+
+    #[test]
+    fn refuses_a_headline_that_is_not_a_type() {
+        let unknown_headline =
+            CONFIG_JSON.replace(r#""headline": "feat""#, r#""headline": "chore""#);
+
+        let error = serde_json::from_str::<Config>(&unknown_headline).unwrap_err();
+
+        assert!(error.to_string().contains("`chore`"), "{error}");
+    }
+
+    #[test]
     fn leaves_out_a_type_nobody_used() {
         let markdown = render_markdown(vec![valid("fix", "reader", &[], "Done.")], &config());
 
-        assert_eq!(markdown, "## Fixed\n\n- **Reader:** Done.\n");
+        assert_eq!(markdown, "Done.\n\n## Fixed\n\n- **Reader:** Done.\n");
     }
 
     #[test]
@@ -943,7 +1044,7 @@ Contributors: @hubot, @octocat
 
         assert_eq!(
             markdown,
-            "## Fixed\n\n- **Reader:** Done.\n\nContributors: @octocat\n"
+            "Done.\n\n## Fixed\n\n- **Reader:** Done.\n\nContributors: @octocat\n"
         );
         assert!(json.contains("\"version\": \"2.0.0\""));
     }

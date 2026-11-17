@@ -1,4 +1,5 @@
 {
+  "headline": "feat",
   "types": [
     { "id": "breaking", "heading": "Breaking changes" },
     { "id": "sec", "heading": "Security" },
