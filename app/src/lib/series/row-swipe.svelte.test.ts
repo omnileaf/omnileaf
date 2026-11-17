@@ -1,9 +1,9 @@
 import { afterEach, expect, test } from "vitest";
 
-import { RowSwipe } from "./row-swipe.svelte";
+import { ACT_PAST_OPEN_PX, RowSwipe } from "./row-swipe.svelte";
 
 const NARROW_ROW_PX = 288;
-const CAPSULE = { revealPx: () => 112, actPastOpenPx: 48 };
+const CAPSULE = { revealPx: () => 112, actPastOpenPx: ACT_PAST_OPEN_PX };
 
 let row: HTMLElement | undefined;
 
