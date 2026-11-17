@@ -122,8 +122,8 @@ pub use home_folder_setting::{
 pub use lane::LaneStopped;
 pub use library::{Library, LibraryError, LibraryFolders, OpenTree, ShownInTree};
 pub use library_book::{
-    BookCursor, BookId, BookReading, BooksShown, ReadMark, SeriesBook, SeriesBookListing,
-    SeriesBookPage,
+    BookCursor, BookFileState, BookId, BookReading, BooksShown, ReadMark, SeriesBook,
+    SeriesBookListing, SeriesBookPage,
 };
 pub use library_category::{CategoryId, LibraryCategory};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
@@ -185,8 +185,8 @@ pub use series_details::{
     SourcedLanguage, SourcedYear,
 };
 pub use series_overview::{
-    CreatorRole, CreatorSeries, RelatedReason, RelatedSeries, SeriesCreator, SeriesOverview,
-    SeriesSection,
+    CreatorRole, CreatorSeries, RelatedReason, RelatedSeries, SeriesConnection, SeriesCreator,
+    SeriesOverview, SeriesSection,
 };
 pub use series_volume::SeriesVolume;
 pub use skipped_types::SkippedType;

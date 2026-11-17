@@ -24,10 +24,12 @@ interface Revealed {
 }
 
 export const REVEALED_PX = 112;
+export const ACT_PAST_OPEN_PX = 48;
 
 export interface OpenAction {
   readonly revealPx: () => number;
   readonly actPastOpenPx: number;
+  readonly closedRowClearsItsActions?: boolean;
 }
 
 const FIXED_ACTION: OpenAction = {
@@ -135,6 +137,10 @@ export class RowSwipe {
         rowWidth: press.width,
         openPx: Math.abs(press.base),
         actPastOpenPx: action.actPastOpenPx,
+        closedActPx:
+          action.closedRowClearsItsActions === true
+            ? action.revealPx() + action.actPastOpenPx
+            : 0,
       },
       this.canSwipe,
     );

@@ -27,6 +27,12 @@ const VOLUME_SEVEN_COVER =
   "thumb/v1/0190a3e4-0000-8000-8000-000000000007/1/1" as CoverPath;
 const READ_MARK_SIZE = 24;
 const READ_MARK_INSET = "6px";
+const ANDROID_COVERS_ACROSS = "8px";
+const ANDROID_COVERS_DOWN = "16px";
+const ANDROID_READ_MARK_INSET = "4px";
+const ANDROID_COVER_CORNER = "4px";
+const READ_CHECK_SIZE = 14;
+const ANDROID_READ_CHECK_SIZE = 16;
 
 function volume(
   first: number,
@@ -45,7 +51,7 @@ function volume(
       pageCount: 190,
       isBookmarked: false,
       isNew: false,
-      isFileMissing: false,
+      file: { kind: "present" },
       kind: "volume",
       numbers: { first, last: first },
       volume: null,
@@ -67,17 +73,39 @@ function styleOf(element: Element | null): CSSStyleDeclaration {
   return getComputedStyle(element);
 }
 
-async function drawTiles(
-  platform: "linux" | "ios" | "macos" = "linux",
-): Promise<{
+type DrawnPlatform = "linux" | "ios" | "macos" | "android";
+
+interface Screen {
+  readonly window: { readonly width: number; readonly height: number };
+  readonly booksColumn: number;
+}
+
+const DESKTOP_SCREEN: Screen = {
+  window: DESKTOP_WINDOW,
+  booksColumn: BOOKS_COLUMN,
+};
+
+const SCREENS = {
+  linux: DESKTOP_SCREEN,
+  ios: DESKTOP_SCREEN,
+  macos: DESKTOP_SCREEN,
+  android: { window: ANDROID_PHONE_WINDOW, booksColumn: PHONE_BOOKS_COLUMN },
+} satisfies Record<DrawnPlatform, Screen>;
+
+async function drawTiles(platform: DrawnPlatform = "linux"): Promise<{
   readonly list: HTMLElement;
   readonly gap: HTMLElement;
   readonly link: HTMLElement;
   readonly started: HTMLElement;
 }> {
+  const screen = SCREENS[platform];
+  await page.viewport(screen.window.width, screen.window.height);
   followCorePlatform(platform);
   document.documentElement.dataset.theme = "light";
-  await render(SectionCoversHarness, { tiles: TILES, width: BOOKS_COLUMN });
+  await render(SectionCoversHarness, {
+    tiles: TILES,
+    width: screen.booksColumn,
+  });
   return {
     list: page.getByRole("list", { name: "Volumes" }).element() as HTMLElement,
     gap: page.getByRole("img", { name: GAP_NAME }).element() as HTMLElement,
@@ -112,18 +140,9 @@ test("fits six covers a row in the series page's books column", async () => {
 test.each(["1", LARGEST_TEXT_SCALE])(
   "fits three covers a row on an Android phone at text scale %s",
   async (scale) => {
-    await page.viewport(
-      ANDROID_PHONE_WINDOW.width,
-      ANDROID_PHONE_WINDOW.height,
-    );
     document.documentElement.style.setProperty("--text-scale", scale);
-    followCorePlatform("android");
-    await render(SectionCoversHarness, {
-      tiles: TILES,
-      width: PHONE_BOOKS_COLUMN,
-    });
 
-    const list = page.getByRole("list", { name: "Volumes" }).element();
+    const { list } = await drawTiles("android");
 
     expect(columnsOf(list)).toBe(COVERS_A_ROW_ON_A_PHONE_BOARD);
   },
@@ -262,3 +281,110 @@ test("leaves an unfinished volume without the check badge", async () => {
 
   expect(started.querySelector("[data-read-mark]")).toBeNull();
 });
+
+test("spaces an Android phone's covers 8px across and 16px down", async () => {
+  const { list } = await drawTiles("android");
+  const grid = getComputedStyle(list);
+
+  expect([grid.columnGap, grid.rowGap]).toEqual([
+    ANDROID_COVERS_ACROSS,
+    ANDROID_COVERS_DOWN,
+  ]);
+});
+
+test("names an Android volume in Material type under a flat cover", async () => {
+  const { link } = await drawTiles("android");
+  const cover = styleOf(link.firstElementChild);
+  const [title, meta] = Array.from(
+    link.lastElementChild?.children ?? [],
+    (part) => getComputedStyle(part),
+  );
+
+  expect({
+    corner: cover.borderTopLeftRadius,
+    edge: cover.borderTopWidth,
+    title: [
+      title?.fontSize,
+      title?.lineHeight,
+      title?.fontWeight,
+      title?.letterSpacing,
+    ],
+    meta: [
+      meta?.fontSize,
+      meta?.lineHeight,
+      meta?.fontWeight,
+      meta?.letterSpacing,
+      meta?.color,
+    ],
+  }).toEqual({
+    corner: ANDROID_COVER_CORNER,
+    edge: "0px",
+    title: ["14px", "20px", "400", "0.25px"],
+    meta: [
+      "12px",
+      "16px",
+      "400",
+      "0.4px",
+      resolvedColour("--secondary-text", "color"),
+    ],
+  });
+});
+
+test("rounds an Android missing run and focus outline to the cover's corner", async () => {
+  const { gap, link } = await drawTiles("android");
+
+  expect({
+    cover: styleOf(link.firstElementChild).borderTopLeftRadius,
+    gap: styleOf(gap.firstElementChild).borderTopLeftRadius,
+    link: styleOf(link).borderTopLeftRadius,
+  }).toEqual({
+    cover: ANDROID_COVER_CORNER,
+    gap: ANDROID_COVER_CORNER,
+    link: ANDROID_COVER_CORNER,
+  });
+});
+
+test("marks a finished Android volume with an accent circle at its cover's top start", async () => {
+  const { link } = await drawTiles("android");
+  const mark = link.firstElementChild?.querySelector("[data-read-mark]");
+  const style = styleOf(mark ?? null);
+
+  expect({
+    size: [
+      mark?.getBoundingClientRect().width,
+      mark?.getBoundingClientRect().height,
+    ],
+    isRound: Number.parseFloat(style.borderTopLeftRadius) >= READ_MARK_SIZE / 2,
+    fill: style.backgroundColor,
+    ink: style.color,
+    top: style.insetBlockStart,
+    start: style.insetInlineStart,
+    ring: style.boxShadow,
+  }).toEqual({
+    size: [READ_MARK_SIZE, READ_MARK_SIZE],
+    isRound: true,
+    fill: resolvedColour("--primary", "backgroundColor"),
+    ink: resolvedColour("--primary-foreground", "color"),
+    top: ANDROID_READ_MARK_INSET,
+    start: ANDROID_READ_MARK_INSET,
+    ring: "none",
+  });
+});
+
+test.each<[DrawnPlatform, number]>([
+  ["linux", READ_CHECK_SIZE],
+  ["ios", READ_CHECK_SIZE],
+  ["macos", READ_CHECK_SIZE],
+  ["android", ANDROID_READ_CHECK_SIZE],
+])(
+  "draws the shared check icon inside %s's read mark at %dpx",
+  async (platform, size) => {
+    const { link } = await drawTiles(platform);
+    const check = link.querySelector('[data-read-mark] [data-icon="check"]');
+
+    expect([
+      check?.getBoundingClientRect().width,
+      check?.getBoundingClientRect().height,
+    ]).toEqual([size, size]);
+  },
+);

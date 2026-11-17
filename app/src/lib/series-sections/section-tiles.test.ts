@@ -24,7 +24,7 @@ function book(name: string, shape: Partial<SeriesBook>): SeriesBook {
     pageCount: null,
     isBookmarked: false,
     isNew: false,
-    isFileMissing: false,
+    file: { kind: "present" },
     kind: null,
     numbers: null,
     volume: null,

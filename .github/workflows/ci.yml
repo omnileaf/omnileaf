@@ -2,7 +2,7 @@ name: ci
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
   push:
     branches: [main]
   merge_group:
@@ -29,13 +29,30 @@ jobs:
     timeout-minutes: 10
     env:
       BASE: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.merge_group.base_sha }}
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
+      labels: ${{ steps.labels.outputs.labels }}
       native: ${{ steps.areas.outputs.native }}
       app: ${{ steps.areas.outputs.app }}
       site: ${{ steps.areas.outputs.site }}
       vendor: ${{ steps.areas.outputs.vendor }}
       admin: ${{ steps.areas.outputs.admin }}
     steps:
+      - name: Read the pull request's labels as they are now
+        id: labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
+        run: |
+          labels='[]'
+          if [ "$EVENT" = pull_request ]; then
+            labels=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PULL_REQUEST" --jq '[.labels[].name]')
+          fi
+          echo "labels=$labels" | tee -a "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
@@ -61,7 +78,8 @@ jobs:
 
   changelog:
     name: changelog
-    if: ${{ github.event_name == 'pull_request' }}
+    needs: changes
+    if: ${{ !cancelled() && github.event_name == 'pull_request' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -78,11 +96,11 @@ jobs:
           shared-key: xtask
           save-if: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
 
-      - name: Check the changelog fragments
+      - name: Check the changelog fragments and archives
         run: cargo xtask changes check
 
       - name: Require a fragment for a change people see
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog') && github.event.pull_request.user.login != 'dependabot[bot]' }}
+        if: ${{ !contains(fromJSON(needs.changes.outputs.labels), 'no-changelog') && github.event.pull_request.user.login != 'dependabot[bot]' }}
         run: cargo xtask changes require --base HEAD^1
 
   secrets:
@@ -187,7 +205,7 @@ jobs:
   rust-macos:
     name: rust gate (macos ${{ matrix.part }})
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.native != 'false' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')) }}
+    if: ${{ !cancelled() && needs.changes.outputs.native != 'false' && (github.event_name != 'pull_request' || contains(fromJSON(needs.changes.outputs.labels), 'macos')) }}
     runs-on: macos-15
     timeout-minutes: 30
     strategy:
@@ -323,7 +341,7 @@ jobs:
   fixtures-macos:
     name: fixtures (macos)
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.native != 'false' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')) }}
+    if: ${{ !cancelled() && needs.changes.outputs.native != 'false' && (github.event_name != 'pull_request' || contains(fromJSON(needs.changes.outputs.labels), 'macos')) }}
     runs-on: macos-15
     timeout-minutes: 20
     steps:
@@ -705,7 +723,8 @@ jobs:
 
   android:
     name: android
-    if: github.event_name == 'push' || github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'mobile')
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event_name == 'schedule' || contains(fromJSON(needs.changes.outputs.labels), 'mobile')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
@@ -792,7 +811,8 @@ jobs:
 
   ios:
     name: ios
-    if: github.event_name == 'push' || github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'mobile')
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event_name == 'schedule' || contains(fromJSON(needs.changes.outputs.labels), 'mobile')) }}
     runs-on: macos-15
     timeout-minutes: 60
     steps:
@@ -879,7 +899,7 @@ jobs:
   app-macos:
     name: app (macos)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.native != 'false' || needs.changes.outputs.app != 'false') && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')) }}
+    if: ${{ !cancelled() && (needs.changes.outputs.native != 'false' || needs.changes.outputs.app != 'false') && (github.event_name != 'pull_request' || contains(fromJSON(needs.changes.outputs.labels), 'macos')) }}
     runs-on: macos-15
     timeout-minutes: 40
     steps:

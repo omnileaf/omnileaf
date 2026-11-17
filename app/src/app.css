@@ -461,6 +461,8 @@
   --spacing-setup-button: 7.5rem;
   --spacing-setup-hero-icon: 2.5rem;
   --spacing-android-hero-icon: 2rem;
+  --spacing-lock-art: 5rem;
+  --spacing-lock-note-end: 1.25rem;
   --spacing-setup-app-icon: 4rem;
   --spacing-toolbar: 3.5rem;
   --spacing-toolbar-rule: 1rem;
@@ -1108,6 +1110,7 @@
   --color-android-container-low: var(--android-container-low);
   --color-android-container: var(--android-container);
   --color-android-container-high: var(--android-container-high);
+  --color-android-container-highest: var(--android-container-highest);
   --color-android-tonal: var(--android-tonal);
   --color-android-outline: var(--android-outline);
   --color-android-inverse-primary: var(--android-inverse-primary);

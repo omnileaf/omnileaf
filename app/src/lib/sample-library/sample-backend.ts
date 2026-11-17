@@ -1,6 +1,7 @@
 import {
   type AdultContent,
   type AppLock,
+  type BookFileState,
   DEFAULT_LIBRARY_VIEW,
   type DetailEdits,
   type FileOutcome,
@@ -13,6 +14,7 @@ import {
   type LibraryView,
   type Platform,
   type RemovalFailure,
+  type SeriesConnection,
   type SeriesFormat,
   type SignInOutcome,
   type SmartFilter,
@@ -733,6 +735,19 @@ export function sampleBackend(
     MISSING_FOLDER_SERIES.has(series.number);
   const isConnected = (series: SampleSeries): boolean =>
     missingFolder.isFound || !MISSING_FOLDER_SERIES.has(series.number);
+  const connectionOf = (series: SampleSeries): SeriesConnection =>
+    isConnected(series) || booksOf(series).length === 0
+      ? { kind: "connected" }
+      : { kind: "notConnected" };
+  const wireFileState = (
+    series: SampleSeries,
+    book: SampleBook,
+  ): BookFileState => {
+    if (!isConnected(series)) {
+      return { kind: "notConnected" };
+    }
+    return book.file === "missing" ? { kind: "missing" } : { kind: "present" };
+  };
   const hasBooksToFind = (series: SampleSeries): boolean =>
     !isOutOfReach(series) && booksOf(series).length > 0;
   const facts: SeriesFacts = {
@@ -1029,7 +1044,7 @@ export function sampleBackend(
       pageCount: book.pageCount,
       isBookmarked: book.isBookmarked,
       isNew: book.isNew,
-      isFileMissing: book.file === "missing",
+      file: wireFileState(series, book),
       ...numberingOf(book.title),
     };
   }
@@ -1248,7 +1263,7 @@ export function sampleBackend(
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
     systemAppLanguage: () => ({ offered: false, tag: null }),
-    systemBoldText: () => false,
+    watchSystemBoldText: () => null,
     systemClock: () => "followsLanguage",
     appLock: () => {
       if (scenario.platform !== "android") {
@@ -1753,6 +1768,7 @@ export function sampleBackend(
         readCount: booksOf(series).filter(isRead).length,
         bookmarkCount: booksOf(series).filter((book) => book.isBookmarked)
           .length,
+        connection: connectionOf(series),
         cover: coverOf(series),
         folder: LIBRARY_FOLDER_NAME,
         upNext: booksOf(series).length === 0 ? null : upNextOf(series),

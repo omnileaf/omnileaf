@@ -20,6 +20,7 @@ pub struct SeriesOverview {
     pub book_count: u32,
     pub read_count: u32,
     pub bookmark_count: u32,
+    pub connection: SeriesConnection,
     pub cover: Option<CoverPath>,
     pub folder: Option<String>,
     /// The book reading goes on from, absent once every book is read.
@@ -37,6 +38,30 @@ pub struct SeriesOverview {
     pub missing_volumes: Vec<NumberRange>,
     /// Absent when the series holds no volume and no chapter filed inside one.
     pub last_volume: Option<BookNumber>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum SeriesConnection {
+    Connected,
+    PartlyConnected { books_not_connected: u32 },
+    NotConnected,
+}
+
+impl SeriesConnection {
+    const fn of(book_count: u32, books_not_connected: u32) -> Self {
+        match books_not_connected {
+            0 => Self::Connected,
+            books_not_connected if books_not_connected >= book_count => Self::NotConnected,
+            books_not_connected => Self::PartlyConnected {
+                books_not_connected,
+            },
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
@@ -146,6 +171,7 @@ impl SeriesOverview {
             book_count: overview.book_count,
             read_count: overview.read_count,
             bookmark_count: overview.bookmark_count,
+            connection: SeriesConnection::of(overview.book_count, overview.books_not_connected),
             cover: overview.cover.map(CoverPath),
             folder: overview
                 .folder
@@ -250,27 +276,48 @@ mod tests {
     const SECONDS_PER_PAGE: u32 = 12;
     const BOOKMARKED_BOOKS: u32 = 3;
 
+    fn catalog_overview() -> catalog::SeriesOverview {
+        catalog::SeriesOverview {
+            id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
+            title: "Sample Series 04".to_owned(),
+            file_title: "Sample Series 04".to_owned(),
+            title_source: None,
+            year: None,
+            language: None,
+            book_count: 8,
+            read_count: 2,
+            cover: None,
+            folder: None,
+            pages_left: Some(PAGES_LEFT),
+            is_rated_adult: false,
+            is_marked_adult: false,
+            bookmark_count: BOOKMARKED_BOOKS,
+            books_not_connected: 0,
+        }
+    }
+
     fn overview_with(pages_left: Option<u32>, seconds_per_page: Option<u32>) -> SeriesOverview {
         SeriesOverview::new(
             catalog::SeriesOverview {
-                id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
-                title: "Sample Series 04".to_owned(),
-                file_title: "Sample Series 04".to_owned(),
-                title_source: None,
-                year: None,
-                language: None,
-                book_count: 8,
-                read_count: 2,
-                cover: None,
-                folder: None,
                 pages_left,
-                is_rated_adult: false,
-                is_marked_adult: false,
-                bookmark_count: BOOKMARKED_BOOKS,
+                ..catalog_overview()
             },
             None,
             seconds_per_page,
         )
+    }
+
+    fn connection_of(book_count: u32, books_not_connected: u32) -> SeriesConnection {
+        SeriesOverview::new(
+            catalog::SeriesOverview {
+                book_count,
+                books_not_connected,
+                ..catalog_overview()
+            },
+            None,
+            None,
+        )
+        .connection
     }
 
     fn sample_overview() -> SeriesOverview {
@@ -299,6 +346,43 @@ mod tests {
                 source: catalog::ValueSource::FileName,
             },
         }
+    }
+
+    #[test]
+    fn shows_a_series_with_every_book_connected_as_connected() {
+        assert_eq!(connection_of(8, 0), SeriesConnection::Connected);
+    }
+
+    #[test]
+    fn shows_a_series_with_some_books_not_connected_as_partly_connected_with_their_count() {
+        assert_eq!(
+            connection_of(8, 3),
+            SeriesConnection::PartlyConnected {
+                books_not_connected: 3
+            }
+        );
+    }
+
+    #[test]
+    fn shows_a_series_with_every_book_not_connected_as_not_connected() {
+        assert_eq!(connection_of(8, 8), SeriesConnection::NotConnected);
+    }
+
+    #[test]
+    fn tells_the_interface_a_series_connection_by_its_kind() {
+        let connection = connection_of(8, 3);
+
+        let json = serde_json::to_value(connection).unwrap();
+
+        assert_eq!(
+            json,
+            serde_json::json!({ "kind": "partlyConnected", "booksNotConnected": 3 })
+        );
+    }
+
+    #[test]
+    fn shows_a_series_with_no_books_as_connected() {
+        assert_eq!(connection_of(0, 0), SeriesConnection::Connected);
     }
 
     #[test]

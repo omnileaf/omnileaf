@@ -19,8 +19,8 @@ use std::{
 
 use books::write_book;
 use omnileaf_engine::{
-    FolderProblem, LibraryListing, NetworkShare, RescanOutcome, ShareAddress, ShareLookup,
-    ShareSignIn, UnreachableShare,
+    BookFileState, FolderProblem, LibraryListing, NetworkShare, RescanOutcome, SeriesBookListing,
+    SeriesConnection, SeriesId, ShareAddress, ShareLookup, ShareSignIn, UnreachableShare,
 };
 use scanned::Scanned;
 use support::ScratchFolder;
@@ -102,6 +102,29 @@ impl Shelf {
 }
 
 impl Shelf {
+    async fn series_connection(&self, title: &str) -> (SeriesConnection, Vec<BookFileState>) {
+        let library = &self.scanned.library;
+        let page = library
+            .series(LibraryListing::default(), None)
+            .await
+            .unwrap();
+        let series: SeriesId = page
+            .series
+            .into_iter()
+            .find(|series| series.title == title)
+            .unwrap()
+            .id;
+        let overview = library.series_overview(series).await.unwrap();
+        let books = library
+            .series_books(series, SeriesBookListing::default(), None)
+            .await
+            .unwrap();
+        (
+            overview.connection,
+            books.books.iter().map(|book| book.file).collect(),
+        )
+    }
+
     async fn connections(&self) -> Vec<(String, bool)> {
         let page = self
             .scanned
@@ -395,4 +418,35 @@ async fn lists_a_series_of_a_hidden_missing_folder_nowhere() {
         .unwrap();
 
     assert_eq!(shelf.connections().await, Vec::<(String, bool)>::new());
+}
+
+#[tokio::test]
+async fn shows_a_series_and_its_books_as_connected_while_their_folder_is_there() {
+    let shelf = Shelf::new("missing-overview-connected").await;
+
+    assert_eq!(
+        shelf.series_connection(SERIES_01).await,
+        (SeriesConnection::Connected, vec![BookFileState::Present])
+    );
+}
+
+#[tokio::test]
+async fn shows_a_series_of_a_missing_folder_and_its_books_as_not_connected() {
+    let shelf = Shelf::new("missing-overview-not-connected").await;
+    shelf.move_away().await;
+
+    shelf
+        .scanned
+        .library
+        .show_missing_folder(shelf.scanned.id, true)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        shelf.series_connection(SERIES_01).await,
+        (
+            SeriesConnection::NotConnected,
+            vec![BookFileState::NotConnected]
+        )
+    );
 }

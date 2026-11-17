@@ -35,6 +35,13 @@ function attributeValues(filter: string, pattern: RegExp): string[] {
   return [...filter.matchAll(pattern)].map((found) => found[1] ?? "");
 }
 
+async function handledConfigChanges(): Promise<string[]> {
+  const manifest = await readManifest();
+  return (
+    /android:configChanges="([^"]*)"/.exec(manifest)?.[1]?.split("|") ?? []
+  );
+}
+
 async function intentFilters(): Promise<IntentFilter[]> {
   const manifest = await readManifest();
   return [...manifest.matchAll(/<intent-filter>([\s\S]*?)<\/intent-filter>/g)]
@@ -118,4 +125,16 @@ test("runs the daily update check as a job only the system can start", async () 
     permission: "android.permission.BIND_JOB_SERVICE",
     exported: "false",
   });
+});
+
+test("keeps the page open when Android's Bold text changes", async () => {
+  const handled = await handledConfigChanges();
+
+  expect(handled).toContain("fontWeightAdjustment");
+});
+
+test("keeps the page open when Android's font size or display size changes", async () => {
+  const handled = await handledConfigChanges();
+
+  expect(handled).toEqual(expect.arrayContaining(["fontScale", "density"]));
 });

@@ -31,7 +31,7 @@ export const commands = {
 	turnAppLockOff: () => typedError<null, IpcError>(__TAURI_INVOKE("turn_app_lock_off")),
 	rememberAppLockWords: (words: LockWords) => typedError<null, IpcError>(__TAURI_INVOKE("remember_app_lock_words", { words })),
 	chooseLockAfter: (lockAfter: LockAfter) => typedError<null, IpcError>(__TAURI_INVOKE("choose_lock_after", { lockAfter })),
-	systemBoldText: () => typedError<boolean, IpcError>(__TAURI_INVOKE("system_bold_text")),
+	watchSystemBoldText: (onChange: Channel<boolean>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_bold_text", { onChange })),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
 	dark: ColourRoles,
@@ -296,6 +296,8 @@ export type BookFile = {
 	name: string,
 	fileType: FileType | null,
 };
+
+export type BookFileState = { kind: "present" } | { kind: "missing" } | { kind: "notConnected" };
 
 export type BookKind = "volume" | "chapter" | "special";
 
@@ -730,7 +732,7 @@ export type LibraryWriter = {
 	seriesCount: number,
 };
 
-export type LockAfter = "immediately" | "oneMinute" | "fiveMinutes" | "fifteenMinutes" | "thirtyMinutes" | "oneHour";
+export type LockAfter = "immediately" | "oneMinute" | "fiveMinutes" | "thirtyMinutes";
 
 export type LockWords = {
 	title: string,
@@ -935,8 +937,7 @@ export type SeriesBook = {
 	isBookmarked: boolean,
 	/**  Whether the library found the book since its series was last looked at. */
 	isNew: boolean,
-	/**  Whether the book's file was moved or deleted; never, while the library keeps no book without its file. */
-	isFileMissing: boolean,
+	file: BookFileState,
 	/**  Absent, like the numbers, volume and section, for a book found before the library read numbers from names, until it is scanned again. */
 	kind: BookKind | null,
 	numbers: NumberRange | null,
@@ -958,6 +959,8 @@ export type SeriesBookPage = {
 	books: SeriesBook[],
 	next: string & { readonly __brand: "BookCursor" } | null,
 };
+
+export type SeriesConnection = { kind: "connected" } | { kind: "partlyConnected"; booksNotConnected: number } | { kind: "notConnected" };
 
 export type SeriesCreator = {
 	name: string,
@@ -1007,6 +1010,7 @@ export type SeriesOverview = {
 	bookCount: number,
 	readCount: number,
 	bookmarkCount: number,
+	connection: SeriesConnection,
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	folder: string | null,
 	/**  The book reading goes on from, absent once every book is read. */

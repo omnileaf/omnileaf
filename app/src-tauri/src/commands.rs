@@ -82,7 +82,7 @@ macro_rules! app_commands {
             turn_app_lock_off,
             remember_app_lock_words,
             choose_lock_after,
-            system_bold_text,
+            watch_system_bold_text,
             wallpaper_colours,
             accent_colours,
             capture_volume_keys,
@@ -520,8 +520,8 @@ async fn choose_lock_after(app: AppHandle, lock_after: LockAfter) -> Result<(), 
 
 #[tauri::command]
 #[specta::specta]
-async fn system_bold_text(app: AppHandle) -> Result<bool, IpcError> {
-    system_bold_text::read(&app).await
+async fn watch_system_bold_text(app: AppHandle, on_change: Channel<bool>) -> Result<(), IpcError> {
+    system_bold_text::watch(&app, on_change).await
 }
 
 #[tauri::command]
