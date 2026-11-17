@@ -4,24 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.Duration
 
-private class FakeUpdateCheckJobs : UpdateCheckJobs {
-    var period: Duration? = null
-        private set
-    var schedules = 0
-        private set
-
-    override fun isScheduled(): Boolean = period != null
-
-    override fun schedule(period: Duration) {
-        this.period = period
-        schedules += 1
-    }
-
-    override fun cancel() {
-        period = null
-    }
-}
-
 class BackgroundUpdateCheckTest {
     private val jobs = FakeUpdateCheckJobs()
     private val background = BackgroundUpdateCheck(jobs)
