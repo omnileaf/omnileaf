@@ -29,6 +29,7 @@
     type IpcError,
     type RemovalTarget,
   } from "#lib/ipc/bindings.ts";
+  import { readAllFolders } from "#lib/library/library-folders.svelte.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import ActiveFilters from "#lib/library/ActiveFilters.svelte";
   import AddFolderButton from "#lib/library/AddFolderButton.svelte";
@@ -691,17 +692,7 @@
   }
 
   async function loadFolders(): Promise<void> {
-    const found: LibraryFolder[] = [];
-    let after: Parameters<typeof commands.libraryFolders>[0] = null;
-    do {
-      const page = await commands.libraryFolders(after);
-      if (page.status === "error") {
-        return;
-      }
-      found.push(...page.data.folders);
-      after = page.data.next;
-    } while (after !== null);
-    folders = found;
+    folders = (await readAllFolders(commands.libraryFolders)) ?? folders;
   }
 
   $effect(() => {
