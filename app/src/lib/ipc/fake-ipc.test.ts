@@ -25,6 +25,7 @@ const backend: Partial<FakeBackend> = {
     sourceCode: "repo.example.org/omnileaf",
     isDevelopmentBuild: true,
     windowBackdrop: "none",
+    checksForUpdates: false,
   }),
   seriesOverview: () => {
     throw new CommandFailure(MISSING_SERIES);

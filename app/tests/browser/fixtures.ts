@@ -51,6 +51,7 @@ export function fakeAppInfo(platform: Platform): AppInfo {
     sourceCode: FAKE_SOURCE_CODE,
     isDevelopmentBuild: false,
     windowBackdrop: "none",
+    checksForUpdates: false,
   };
 }
 

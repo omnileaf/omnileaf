@@ -8,6 +8,7 @@ fn details() -> VersionDetails {
             source_code: "repo.example.org/omnileaf".to_owned(),
             is_development_build: false,
             window_backdrop: WindowBackdrop::None,
+            checks_for_updates: false,
         },
         build: BuildProfile::Release,
         architecture: "aarch64".to_owned(),
