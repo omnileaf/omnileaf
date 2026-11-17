@@ -483,7 +483,7 @@ async fn finds_the_file_of_a_series_first_book_to_show_in_its_folder() {
         .unwrap();
     let first = page.series.first().unwrap();
 
-    let file = library.series_file(first.id).await.unwrap().unwrap();
+    let file = library.series_in_folder(first.id).await.unwrap().unwrap();
 
     assert_eq!(
         (file.parent().map(Path::to_path_buf), file.is_file()),

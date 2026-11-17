@@ -1554,7 +1554,7 @@ impl Library {
             .await?)
     }
 
-    pub async fn series_file(&self, id: SeriesId) -> Result<Option<PathBuf>, LibraryError> {
+    pub async fn series_in_folder(&self, id: SeriesId) -> Result<Option<PathBuf>, LibraryError> {
         if let Some(book) = self.first_book_to_read(id).await? {
             return Ok(file_to_show(&book));
         }

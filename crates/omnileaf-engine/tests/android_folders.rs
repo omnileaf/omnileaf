@@ -392,5 +392,5 @@ async fn finds_the_tree_and_folder_to_show_for_a_series_in_an_android_folder() {
         .unwrap();
     assert_eq!(target.tree.uri().as_str(), COMICS_TREE);
     assert_eq!(target.folder, book_target.folder);
-    assert_eq!(library.series_file(series.id).await.unwrap(), None);
+    assert_eq!(library.series_in_folder(series.id).await.unwrap(), None);
 }

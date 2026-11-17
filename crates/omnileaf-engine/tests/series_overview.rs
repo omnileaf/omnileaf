@@ -407,7 +407,7 @@ async fn shows_the_folder_a_series_books_left() {
     let series = sample.series_named(FIRST_SERIES).await;
     sample.empty_by_a_rescan(FIRST_SERIES).await;
 
-    let shown = sample.library.series_file(series).await.unwrap();
+    let shown = sample.library.series_in_folder(series).await.unwrap();
 
     assert_eq!(shown, Some(sample.series_folder(FIRST_SERIES)));
 }
