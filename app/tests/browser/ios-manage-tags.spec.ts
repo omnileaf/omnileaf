@@ -15,6 +15,10 @@ const FIRST_TAGS: readonly LibraryTag[] = [
   { name: "Seinen", seriesCount: 7 },
 ];
 const SHORT_SWIPE = 0.25;
+const FULL_SWIPE = 0.75;
+const NUDGE = 0.08;
+const JUST_PAST_ACTIONS_PX = 10;
+const PAST_ACTIONS_AND_MARGIN_PX = 50;
 
 let tags: LibraryTag[] = [...FIRST_TAGS];
 
@@ -25,6 +29,14 @@ test.use({
     removeLibraryTag: (tag) => {
       tags = tags.filter((one) => one.name !== tag);
       return [];
+    },
+    labelSeries: (_series, changes) => {
+      tags = FIRST_TAGS.filter(
+        (tag) =>
+          changes.tagsAdded.includes(tag.name) ||
+          tags.some((one) => one.name === tag.name),
+      );
+      return null;
     },
   },
 });
@@ -46,7 +58,19 @@ function swipedOf(page: Page, tag: string): Locator {
 
 async function swipeTowardStart(target: Locator, share: number): Promise<void> {
   const box = await boxOf(target);
-  const across = -box.width * share;
+  await swipeTowardStartBy(target, box.width * share);
+}
+
+async function actionsWidthOf(swiped: Locator): Promise<number> {
+  return swiped.evaluate(
+    (row) =>
+      row.nextElementSibling?.getBoundingClientRect().width ?? Number.NaN,
+  );
+}
+
+async function swipeTowardStartBy(target: Locator, px: number): Promise<void> {
+  const box = await boxOf(target);
+  const across = -px;
   const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   const at = (moved: number) => ({
     pointerType: "touch",
@@ -141,6 +165,63 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
     await expectOpenAtItsActions(swipedOf(page, "Seinen"));
     expect(await isUncovered(remove)).toBe(true);
     await tap(remove);
+
+    await expect(rowOf(page, "Seinen")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+  });
+
+  test("deletes a tag from a full swipe toward the start and brings it back on Undo", async ({
+    page,
+  }) => {
+    await swipeTowardStart(swipedOf(page, "Seinen"), FULL_SWIPE);
+
+    await expect(rowOf(page, "Seinen")).toHaveCount(0);
+    const undo = page.getByRole("button", { name: "Undo" });
+    await expect(undo).toBeVisible();
+    await settle(undo);
+    await undo.click();
+
+    await expect(rowOf(page, "Seinen")).toBeVisible();
+  });
+
+  test("keeps an open row open on a nudge toward the start and deletes on a swipe past its actions", async ({
+    page,
+  }) => {
+    await swipeTowardStart(swipedOf(page, "Seinen"), SHORT_SWIPE);
+    await settle(rowOf(page, "Seinen"));
+
+    await swipeTowardStart(swipedOf(page, "Seinen"), NUDGE);
+    await settle(rowOf(page, "Seinen"));
+    await expectOpenAtItsActions(swipedOf(page, "Seinen"));
+
+    await swipeTowardStart(swipedOf(page, "Seinen"), SHORT_SWIPE);
+    await expect(rowOf(page, "Seinen")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+  });
+
+  test("only opens a closed row swiped just past its actions", async ({
+    page,
+  }) => {
+    const actionsPx = await actionsWidthOf(swipedOf(page, "Seinen"));
+
+    await swipeTowardStartBy(
+      swipedOf(page, "Seinen"),
+      actionsPx + JUST_PAST_ACTIONS_PX,
+    );
+
+    await settle(rowOf(page, "Seinen"));
+    await expectOpenAtItsActions(swipedOf(page, "Seinen"));
+  });
+
+  test("deletes a closed row swiped past its actions and a margin", async ({
+    page,
+  }) => {
+    const actionsPx = await actionsWidthOf(swipedOf(page, "Seinen"));
+
+    await swipeTowardStartBy(
+      swipedOf(page, "Seinen"),
+      actionsPx + PAST_ACTIONS_AND_MARGIN_PX,
+    );
 
     await expect(rowOf(page, "Seinen")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();

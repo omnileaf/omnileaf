@@ -1,7 +1,11 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import type { OpenAction, RowSwipe } from "#lib/series/row-swipe.svelte.ts";
+  import {
+    ACT_PAST_OPEN_PX,
+    type OpenAction,
+    type RowSwipe,
+  } from "#lib/series/row-swipe.svelte.ts";
 
   export interface SwipeAction {
     readonly name: string;
@@ -15,11 +19,13 @@
     swipe,
     key,
     actions,
+    onFullSwipe,
     children,
   }: {
     swipe: RowSwipe;
     key: string;
     actions: readonly SwipeAction[];
+    onFullSwipe: () => void;
     children: Snippet;
   } = $props();
 
@@ -28,7 +34,8 @@
 
   const opensOnActions: OpenAction = {
     revealPx: () => strip?.getBoundingClientRect().width ?? 0,
-    actPastOpenPx: 0,
+    actPastOpenPx: ACT_PAST_OPEN_PX,
+    closedRowClearsItsActions: true,
   };
 
   const isOpen = $derived(swipe.sideOf(key) !== undefined);
@@ -54,7 +61,10 @@
       swipe.moved(event);
     }}
     onpointerup={() => {
-      swipe.released(opensOnActions);
+      const outcome = swipe.released(opensOnActions);
+      if (outcome.kind === "act" && outcome.side === "towardStart") {
+        onFullSwipe();
+      }
     }}
     onpointercancel={() => {
       swipe.cancelled();

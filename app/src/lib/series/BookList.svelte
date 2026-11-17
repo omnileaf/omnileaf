@@ -27,7 +27,7 @@
   import PhoneBookRowText from "./PhoneBookRowText.svelte";
   import type { Selection } from "#lib/page/selection.svelte.ts";
   import BookSheet from "./BookSheet.svelte";
-  import { REVEALED_PX, RowSwipe } from "./row-swipe.svelte";
+  import { ACT_PAST_OPEN_PX, REVEALED_PX, RowSwipe } from "./row-swipe.svelte";
   import type { SwipeOutcome } from "./swipe";
   import { getSwipeActionsSetting } from "./swipe-actions.svelte";
 
@@ -36,7 +36,6 @@
   const SWIPE_ICON_SIZE = 20;
   const CAPSULE_GAP_PX = 8;
   const CAPSULE_WIDEST_REVEAL_PX = 156;
-  const CAPSULE_ACT_PAST_OPEN_PX = 48;
   const RUN_HEADING = `ps-native-row-start pbs-lg pbe-sm ${ANDROID_SUBHEADING}`;
 
   interface PhoneList {
@@ -330,7 +329,7 @@
               phone?.isSwipeCapsule === true
                 ? {
                     revealPx: () => capsuleRevealPx(event.currentTarget),
-                    actPastOpenPx: CAPSULE_ACT_PAST_OPEN_PX,
+                    actPastOpenPx: ACT_PAST_OPEN_PX,
                   }
                 : undefined,
             ),
