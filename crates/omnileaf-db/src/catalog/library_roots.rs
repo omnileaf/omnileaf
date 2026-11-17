@@ -8,28 +8,33 @@ use crate::{
         cursor::Position,
         native_path,
         page::{Page, PageRequest},
-        root::{APPLE_BOOKMARK_LOCATOR, AppleBookmark, LibraryRoot, RootId, RootKind, stored_root},
+        root::{
+            APPLE_BOOKMARK_LOCATOR, AppleBookmark, LibraryRoot, RootId, RootKind, stored_root,
+            stored_root_columns,
+        },
     },
 };
 
-const IN_ADDED_ORDER: &str = "SELECT
-        id, kind, locator_kind, location, bookmark, tree_name, tree_place, added_at_ms,
-        unavailable_since_ms, shows_while_missing
-    FROM library_root
+const IN_ADDED_ORDER: &str = concat!(
+    "SELECT ",
+    stored_root_columns!(),
+    " FROM library_root
     WHERE id > ?1
     ORDER BY id
-    LIMIT ?2";
-const ONE_ROOT: &str = "SELECT
-        id, kind, locator_kind, location, bookmark, tree_name, tree_place, added_at_ms,
-        unavailable_since_ms, shows_while_missing
-    FROM library_root
-    WHERE id = ?1";
-const MISSING: &str = "SELECT
-        id, kind, locator_kind, location, bookmark, tree_name, tree_place, added_at_ms,
-        unavailable_since_ms, shows_while_missing
-    FROM library_root
+    LIMIT ?2"
+);
+const ONE_ROOT: &str = concat!(
+    "SELECT ",
+    stored_root_columns!(),
+    " FROM library_root WHERE id = ?1"
+);
+const MISSING: &str = concat!(
+    "SELECT ",
+    stored_root_columns!(),
+    " FROM library_root
     WHERE unavailable_since_ms IS NOT NULL
-    ORDER BY id";
+    ORDER BY id"
+);
 const BOOKMARKED: &str = "SELECT id, location, bookmark, unavailable_since_ms
     FROM library_root
     WHERE kind = ?1 AND locator_kind = ?2
