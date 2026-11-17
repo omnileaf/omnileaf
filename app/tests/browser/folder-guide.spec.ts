@@ -25,11 +25,19 @@ const EXAMPLE = [
   ["Sample Series 05.cbz", "A one-shot"],
 ] as const;
 
+const GUIDE_TITLE = "How folders are read";
+
+function guideHeading(page: Page): Locator {
+  return page.getByRole("heading", { name: GUIDE_TITLE }).last();
+}
+
+async function expectGuideShown(page: Page): Promise<void> {
+  await expect(guideHeading(page)).toBeVisible();
+}
+
 async function openGuide(page: Page): Promise<void> {
   await page.goto("/settings/library/folders");
-  await expect(
-    page.getByRole("heading", { name: "How folders are read" }).last(),
-  ).toBeVisible();
+  await expectGuideShown(page);
 }
 
 function example(page: Page): Locator {
@@ -110,4 +118,36 @@ test("has no accessibility violations", async ({ page }) => {
   await openGuide(page);
 
   expect(await accessibilityViolations(page)).toEqual([]);
+});
+
+test.describe("the guide in Settings > Library", { tag: "@native" }, () => {
+  function guideRow(page: Page): Locator {
+    return page.getByRole("link", { name: GUIDE_TITLE, exact: true });
+  }
+
+  test("lists the guide last, with no summary", async ({ page }) => {
+    await page.goto("/settings/library");
+
+    const entries = page
+      .getByRole("list")
+      .filter({ has: guideRow(page) })
+      .getByRole("listitem");
+
+    await expect(entries.last().getByRole("link")).toHaveAccessibleName(
+      GUIDE_TITLE,
+    );
+  });
+
+  test("opens the guide from its row, and Back returns to Library", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library");
+
+    await guideRow(page).click();
+    await expectGuideShown(page);
+    await page.getByRole("link", { name: "Back to Library" }).click();
+
+    await expect(page).toHaveURL(/\/settings\/library$/);
+    await expect(guideRow(page)).toBeVisible();
+  });
 });
