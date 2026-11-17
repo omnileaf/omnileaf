@@ -4,7 +4,7 @@ Every change a reader of the app would notice gets one small file in this folder
 
 ## When you need one
 
-A pull request needs a fragment when it changes `app/src`, `app/src-tauri/src`, `app/messages`, `crates/*/src` or `crates/*/android`. Tests, docs, CI and dependency updates do not. If a change in those folders is invisible to people, such as a refactor, put the `no-changelog` label on the pull request instead.
+A pull request needs a fragment when it changes `app/src`, `app/src-tauri/src`, `app/messages`, `crates/*/src` or `crates/*/android`. Tests, docs, CI and dependency updates do not. If a change in those folders is invisible to people, such as a refactor, put the `no-changelog` label on the pull request instead. CI re-runs on its own when the label changes, except on a pull request from a fork, where a maintainer re-runs it by hand.
 
 ## The file
 

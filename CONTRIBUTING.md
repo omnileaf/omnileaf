@@ -90,6 +90,8 @@ Review goes through the same binary, never over HTTP: `omnileaf-relay reports li
 
 CI runs the three macOS gates (`rust gate (macos)`, `app (macos)` and `fixtures (macos)`) on every push to `main` and every night, not on each push to a pull request. GitHub gives a repository five macOS jobs at a time on every plan below Enterprise, so running them on every pull request push would leave other runs waiting. Those three checks show as skipped on a pull request, which still satisfies them, and Linux and Windows run on every push as before. Add the `macos` label to a pull request that changes platform-specific code to run them there before it merges.
 
+CI reads the `no-changelog`, `macos` and `mobile` labels when it starts. Adding or removing one of them later re-runs CI on its own for a branch in this repository; for a pull request from a fork, a maintainer re-runs CI by hand after changing the label.
+
 ### Before you push
 
 Run `cargo xtask install-hooks` once per clone. Git then runs `cargo xtask pre-push` before every push, which checks the branch you have checked out in well under a minute: formatting, the content policy, the sync rules and the comment rules every time, the Rust licences when a `Cargo.toml`, `Cargo.lock` or `about.toml` changed, and the interface build, which checks the JavaScript licences, when a `package.json` or the pnpm lockfile changed. It needs a clean working tree, so it checks exactly what you push, and it names any other branch in the same push that it left unchecked.
