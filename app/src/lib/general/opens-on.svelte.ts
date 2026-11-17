@@ -20,7 +20,6 @@ function isOpeningPlace(stored: string | null): stored is OpeningPlace {
   return OPENING_PLACES.some((place) => place === stored);
 }
 
-/** Where Omnileaf opens when it starts: the library, History, or the last book, in the reader where it was left. */
 export class OpensOnSetting {
   choice: OpeningPlace = $state("library");
 
