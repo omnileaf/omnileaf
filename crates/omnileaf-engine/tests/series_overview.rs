@@ -13,7 +13,7 @@ use std::{fs, path::PathBuf};
 
 use omnileaf_engine::{
     BookReading, BooksShown, Changed, DetailEdits, FileFate, FolderKind, Library, LibraryError,
-    LibraryListing, ReadMark, RemovalTarget, SeriesBook, SeriesBookListing, SeriesId,
+    LibraryListing, ReadMark, RemovalTarget, SeriesBook, SeriesBookListing, SeriesId, ShownOnDisk,
     SortDirection,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
@@ -409,7 +409,10 @@ async fn shows_the_folder_a_series_books_left() {
 
     let shown = sample.library.series_in_folder(series).await.unwrap();
 
-    assert_eq!(shown, Some(sample.series_folder(FIRST_SERIES)));
+    assert_eq!(
+        shown,
+        Some(ShownOnDisk::Folder(sample.series_folder(FIRST_SERIES)))
+    );
 }
 
 #[tokio::test]

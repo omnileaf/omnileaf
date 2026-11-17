@@ -1551,10 +1551,15 @@ impl Library {
             .await?)
     }
 
-    pub async fn series_in_folder(&self, id: SeriesId) -> Result<Option<PathBuf>, LibraryError> {
+    pub async fn series_in_folder(
+        &self,
+        id: SeriesId,
+    ) -> Result<Option<ShownOnDisk>, LibraryError> {
         Ok(match self.series_place(id).await? {
-            Some(SeriesPlace::Book(book)) => file_to_show(&book),
-            Some(SeriesPlace::Emptied(emptied)) => path_on_disk(&emptied.root, &emptied.folder),
+            Some(SeriesPlace::Book(book)) => file_to_show(&book).map(ShownOnDisk::File),
+            Some(SeriesPlace::Emptied(emptied)) => {
+                path_on_disk(&emptied.root, &emptied.folder).map(ShownOnDisk::Folder)
+            }
             None => None,
         })
     }
@@ -2551,6 +2556,12 @@ fn overview_with_books(
 pub struct ShownInTree {
     pub tree: AndroidTree,
     pub folder: PathBuf,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ShownOnDisk {
+    File(PathBuf),
+    Folder(PathBuf),
 }
 
 enum SeriesPlace {

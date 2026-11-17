@@ -121,7 +121,7 @@ pub use home_folder_setting::{
     HomeArrival, HomeAtLaunch, HomeChoice, HomeFolderError, HomeFolderSetting,
 };
 pub use lane::LaneStopped;
-pub use library::{Library, LibraryError, LibraryFolders, OpenTree, ShownInTree};
+pub use library::{Library, LibraryError, LibraryFolders, OpenTree, ShownInTree, ShownOnDisk};
 pub use library_book::{
     BookCursor, BookFileState, BookId, BookReading, BooksShown, ReadMark, SeriesBook,
     SeriesBookListing, SeriesBookPage,
