@@ -713,7 +713,6 @@ async fn folder_series_count(
     Ok(library.folder_series_count(folder, filter).await?)
 }
 
-/// Counts the series of many folders at once, in the order given.
 #[tauri::command]
 #[specta::specta]
 async fn folder_series_counts(
@@ -774,7 +773,6 @@ async fn writer_series(
     Ok(library.writer_series(writer, listing, after).await?)
 }
 
-/// Counts the series of many writers at once, in the order given.
 #[tauri::command]
 #[specta::specta]
 async fn writer_series_counts(
@@ -971,7 +969,6 @@ async fn open_book(
     Ok(router.open_book(&library, id, undecodable).await?)
 }
 
-/// Opens the next file handed to the app, by the file manager or a second launch.
 #[tauri::command]
 #[specta::specta]
 async fn file_to_open(
@@ -990,14 +987,12 @@ async fn watch_open_with(app: AppHandle, on_handed: Channel<String>) -> Result<(
     open_with::watch(&app, on_handed).await
 }
 
-/// Takes the one `content://` document an Android request handed to the app, to open with the next `file_to_open`.
 #[tauri::command]
 #[specta::specta]
 async fn queue_document_to_open(app: AppHandle, uri: String) -> Result<(), IpcError> {
     document_handover::queue(&app, uri).await
 }
 
-/// Says what dragging these paths over the window would hold, from the paths alone.
 #[tauri::command]
 #[specta::specta]
 async fn inspect_drop(
