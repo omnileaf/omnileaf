@@ -8,10 +8,9 @@ import {
   shownPage,
   useAppSession,
 } from "./app-session.ts";
-import { pollUntil } from "./webdriver.ts";
+import { followRecreatedScreen } from "./recreated-screen.ts";
 
 const BACK_KEY = 4;
-const NEW_SCREEN_TIMEOUT_MS = 30_000;
 const RIGHT_TO_LEFT_LANGUAGE = "ar";
 
 const appSession = useAppSession();
@@ -30,13 +29,6 @@ afterAll(async () => {
 
 async function pressBack(): Promise<void> {
   await appSession().runMobileCommand("pressKey", { keycode: BACK_KEY });
-}
-
-async function newWindow(
-  known: readonly string[],
-): Promise<string | undefined> {
-  const windows = await appSession().windows();
-  return windows.find((handle) => !known.includes(handle));
 }
 
 async function localeCommand(...args: readonly string[]): Promise<string> {
@@ -60,14 +52,7 @@ async function setAppLanguages(languages: string): Promise<void> {
 async function recreateTheScreenWithAppLanguages(
   languages: string,
 ): Promise<void> {
-  const known = await appSession().windows();
-  await setAppLanguages(languages);
-  const created = await pollUntil(
-    () => newWindow(known),
-    NEW_SCREEN_TIMEOUT_MS,
-    "the recreated activity's web view",
-  );
-  await appSession().switchToWindow(created);
+  await followRecreatedScreen(appSession(), () => setAppLanguages(languages));
 }
 
 test("goes up from a Settings page to Settings and then to Library", async () => {
