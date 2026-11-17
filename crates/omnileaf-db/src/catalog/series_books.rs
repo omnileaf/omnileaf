@@ -16,15 +16,26 @@ use crate::{
     reading_order::{KeyRange, last_first_keys, section_keys, volume_keys},
 };
 
-macro_rules! books_in_series {
-    ($direction:literal $(, $condition:expr)*) => {
+macro_rules! books_with_reading {
+    ($condition:expr) => {
         concat!(
             "SELECT book.id, book.reading_order_key,
                 book_state.is_read, book_state.is_started, book_state.position_page
             FROM book
             LEFT JOIN book_state ON book_state.book_id = book.id
-            WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = :series)",
-            $(" AND ", $condition,)*
+            WHERE ",
+            $condition
+        )
+    };
+}
+
+macro_rules! books_in_series {
+    ($direction:literal $(, $condition:expr)*) => {
+        concat!(
+            books_with_reading!(concat!(
+                "book.series_local_id = (SELECT local_id FROM series WHERE id = :series)",
+                $(" AND ", $condition,)*
+            )),
             " ORDER BY book.reading_order_key ", $direction, ", book.id ", $direction
         )
     };
@@ -128,15 +139,11 @@ const NEXT_BOOKMARKED_IN_RANGE: &str =
 const LAST_BOOKMARKED_IN_RANGE: &str = books_in_series!("DESC", bookmarked!(), in_range!());
 const PREVIOUS_BOOKMARKED_IN_RANGE: &str =
     books_in_series!("DESC", bookmarked!(), after_cursor!("<"), in_range!());
-const UP_NEXT: &str = concat!(
-    "SELECT book.id, book.reading_order_key,
-        book_state.is_read, book_state.is_started, book_state.position_page
-    FROM book
-    LEFT JOIN book_state ON book_state.book_id = book.id
-    WHERE book.id = (SELECT ",
+const UP_NEXT: &str = books_with_reading!(concat!(
+    "book.id = (SELECT ",
     book_up_next!(),
     " FROM series WHERE series.id = :series)"
-);
+));
 const BOOK_DETAILS: &str = "SELECT book.title, book.added_at_ms, book.page_count,
         book.kind, book.first_number, book.last_number, book.number_source,
         book.volume_number, book.volume_source,
