@@ -25,6 +25,7 @@ export const commands = {
 	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),
 	watchSystemContrast: (onChange: Channel<SystemContrast>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_contrast", { onChange })),
 	systemAppLanguage: () => typedError<SystemAppLanguage, IpcError>(__TAURI_INVOKE("system_app_language")),
+	takeRestoredRoute: () => typedError<string | null, IpcError>(__TAURI_INVOKE("take_restored_route")),
 	systemClock: () => typedError<SystemClock, IpcError>(__TAURI_INVOKE("system_clock")),
 	appLock: () => typedError<AppLock, IpcError>(__TAURI_INVOKE("app_lock")),
 	turnAppLockOn: (promptTitle: string) => typedError<AppLockTurning, IpcError>(__TAURI_INVOKE("turn_app_lock_on", { promptTitle })),

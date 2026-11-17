@@ -45,6 +45,7 @@ use crate::{
     open_with,
     problem_reporting::{self, ShownProblemReport},
     report_sending::{self, ProblemReportStatus, SentProblemReport, SentReportKey},
+    restored_route,
     screen_orientation::{self, ScreenOrientation},
     screen_reader,
     share_sign_in::{self, SignInOutcome},
@@ -76,6 +77,7 @@ macro_rules! app_commands {
             allow_back_swipe,
             watch_system_contrast,
             system_app_language,
+            take_restored_route,
             system_clock,
             app_lock,
             turn_app_lock_on,
@@ -477,6 +479,12 @@ async fn watch_system_contrast(
 #[specta::specta]
 async fn system_app_language(app: AppHandle) -> Result<SystemAppLanguage, IpcError> {
     system_app_language::read(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn take_restored_route(app: AppHandle) -> Result<Option<String>, IpcError> {
+    restored_route::take(&app).await
 }
 
 #[tauri::command]

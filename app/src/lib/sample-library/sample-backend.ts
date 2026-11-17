@@ -1264,6 +1264,7 @@ export function sampleBackend(
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
     systemAppLanguage: () => ({ offered: false, tag: null }),
+    takeRestoredRoute: () => null,
     watchSystemBoldText: () => null,
     systemClock: () => "followsLanguage",
     appLock: () => {
