@@ -162,3 +162,43 @@ test("starts at the row the screen's top falls in among rows of different height
   expect([window.start, window.end]).toEqual([3, 5]);
   expect(window.before).toBe(HEADING + 256);
 });
+
+test("estimates rows not yet drawn from the median measured row", () => {
+  const stack = remeasured(
+    stackOf(runsOf(5)),
+    new Map([
+      [1, 200],
+      [2, 40],
+      [3, 60],
+    ]),
+  );
+
+  expect(offsetOf(stack, 6) - offsetOf(stack, 4)).toBe(2 * 60);
+});
+
+test("estimates from the middle two rows when an even number are measured", () => {
+  const stack = remeasured(
+    stackOf(runsOf(5)),
+    new Map([
+      [1, 60],
+      [2, 200],
+      [3, 10],
+      [4, 40],
+    ]),
+  );
+
+  expect(offsetOf(stack, 6) - offsetOf(stack, 5)).toBe(50);
+});
+
+test("estimates headings not yet drawn from the heading stride alone", () => {
+  const stack = remeasured(
+    stackOf(runsOf(1, 1)),
+    new Map([
+      [0, 30],
+      [1, 90],
+    ]),
+  );
+
+  expect(offsetOf(stack, 3) - offsetOf(stack, 2)).toBe(HEADING);
+  expect(offsetOf(stack, 4) - offsetOf(stack, 3)).toBe(90);
+});

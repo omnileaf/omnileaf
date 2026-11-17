@@ -25,33 +25,46 @@ export interface StackWindow {
 }
 
 export function rowHeights(layout: RowLayout): RowHeights {
-  return measuredRowHeights(layout, new Map());
+  return laidOut(layout, new Map());
 }
 
 export function remeasured(
   heights: RowHeights,
   measurements: ReadonlyMap<number, number>,
 ): RowHeights {
-  return measuredRowHeights(
+  return laidOut(
     heights.layout,
     new Map([...heights.measured, ...measurements]),
   );
 }
 
-function measuredRowHeights(
+function laidOut(
   layout: RowLayout,
   measured: ReadonlyMap<number, number>,
 ): RowHeights {
   const { count, isHeading, strides } = layout;
+  const measuredRows = [...measured].flatMap(([index, height]) =>
+    isHeading[index] === true ? [] : [height],
+  );
+  const estimatedRow = medianOf(measuredRows) ?? strides.row;
   const offsets = [0];
   let offset = 0;
   for (let index = 0; index < count; index += 1) {
     offset +=
       measured.get(index) ??
-      (isHeading[index] === true ? strides.heading : strides.row);
+      (isHeading[index] === true ? strides.heading : estimatedRow);
     offsets.push(offset);
   }
   return { layout, measured, offsets };
+}
+
+function medianOf(values: readonly number[]): number | undefined {
+  const sorted = values.toSorted((one, other) => one - other);
+  const lowerMiddle = sorted[Math.floor((sorted.length - 1) / 2)];
+  const upperMiddle = sorted[Math.ceil((sorted.length - 1) / 2)];
+  return lowerMiddle === undefined || upperMiddle === undefined
+    ? undefined
+    : (lowerMiddle + upperMiddle) / 2;
 }
 
 export function offsetOf(heights: RowHeights, index: number): number {
