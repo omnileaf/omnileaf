@@ -21,7 +21,9 @@ class RouteToRestoreTest {
     fun `hands nothing over on a fresh start`() {
         val saved = RouteToRestore(null)
 
-        assertNull(saved.take())
+        val taken = saved.take()
+
+        assertNull(taken)
     }
 
     @Test
@@ -38,27 +40,35 @@ class RouteToRestoreTest {
         val saved = RouteToRestore(SERIES_PAGE)
         saved.take()
 
-        assertEquals("/settings/appearance", saved.toSave(SETTINGS_PAGE_URL))
+        val route = saved.toSave(SETTINGS_PAGE_URL)
+
+        assertEquals("/settings/appearance", route)
     }
 
     @Test
     fun `saves again a route the page has not taken yet`() {
         val saved = RouteToRestore(SERIES_PAGE)
 
-        assertEquals(SERIES_PAGE, saved.toSave("http://tauri.localhost/"))
+        val route = saved.toSave("http://tauri.localhost/")
+
+        assertEquals(SERIES_PAGE, route)
     }
 
     @Test
     fun `saves nothing for a page outside the app`() {
         val saved = RouteToRestore(null)
 
-        assertNull(saved.toSave("http://example.com/settings"))
+        val route = saved.toSave("http://example.com/settings")
+
+        assertNull(route)
     }
 
     @Test
     fun `saves nothing before the web view has a page`() {
         val saved = RouteToRestore(null)
 
-        assertNull(saved.toSave(null))
+        val route = saved.toSave(null)
+
+        assertNull(route)
     }
 }
