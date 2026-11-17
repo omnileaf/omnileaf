@@ -4,6 +4,7 @@ import java.time.Instant
 
 private const val AUTOMATIC = "automatic"
 private const val NOTIFIES = "notifies"
+private const val REFUSED_NOTICES = "refusedNotices"
 private const val SKIPPED_VERSION = "skippedVersion"
 private const val SNOOZED_VERSION = "snoozedVersion"
 private const val SNOOZED_AT = "snoozedAt"
@@ -36,6 +37,7 @@ internal class UpdateState(
     var notifies: Boolean
         get() = store.snapshot()[NOTIFIES].toBoolean()
         set(value) = store.write(mapOf(NOTIFIES to value.toString()))
+    val hasRefusedNotices: Boolean get() = store.snapshot()[REFUSED_NOTICES].toBoolean()
     val choices: UpdateChoices get() = store.snapshot().choices()
     val latest: PublishedRelease? get() = store.snapshot().latest()
     val checkedAt: Instant? get() = store.snapshot().instant(CHECKED_AT)
@@ -59,6 +61,8 @@ internal class UpdateState(
     ) {
         store.write(mapOf(SNOOZED_VERSION to version.toString(), SNOOZED_AT to now.toEpochMilli().toString()))
     }
+
+    fun rememberNoticesRefused() = store.write(mapOf(REFUSED_NOTICES to true.toString()))
 
     fun markAttempted(now: Instant) = store.write(mapOf(ATTEMPTED_AT to now.toEpochMilli().toString()))
 
