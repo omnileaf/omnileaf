@@ -132,6 +132,14 @@ impl Library {
             .unwrap()
     }
 
+    async fn up_next_in(&self, thousandths: u32) -> Option<(String, u32)> {
+        self.volume_overview(thousandths)
+            .await
+            .unwrap()
+            .up_next
+            .map(|book| (book.title, book.position))
+    }
+
     async fn numbers(&self) -> Vec<StoredNumbers> {
         self.database
             .read(|connection| {
@@ -946,6 +954,68 @@ async fn counts_no_pages_for_a_volume_while_a_chapter_has_no_page_count() {
     .map(|found| found.unwrap().page_count);
 
     assert_eq!(counted, [None, Some(1)]);
+}
+
+#[tokio::test]
+async fn goes_on_inside_a_volume_from_its_started_chapter_before_any_unread_one() {
+    let library = Library::open("volume-up-next-started").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change(
+            "INSERT INTO book_state (book_id, is_read, position_page)
+            SELECT id, title = 'v02 c005', iif(title = 'v02 c007', 3, NULL) FROM book
+            WHERE title IN ('v02 c005', 'v02 c007')",
+        )
+        .await;
+
+    let up_next = library.up_next_in(2000).await;
+
+    assert_eq!(up_next, Some(("v02 c007".to_owned(), 4)));
+}
+
+#[tokio::test]
+async fn goes_on_inside_a_volume_from_its_first_chapter_not_read_whatever_is_started_outside_it() {
+    let library = Library::open("volume-up-next-unread").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change(
+            "INSERT INTO book_state (book_id, is_read, position_page)
+            SELECT id, title = 'v02 c005', iif(title = 'v03 c009', 3, NULL) FROM book
+            WHERE title IN ('v02 c005', 'v03 c009')",
+        )
+        .await;
+
+    let up_next = [
+        library.up_next_in(2000).await,
+        library.up_next_in(3000).await,
+    ];
+
+    assert_eq!(
+        up_next,
+        [
+            Some(("v02 c006".to_owned(), 3)),
+            Some(("v03 c009".to_owned(), 6))
+        ]
+    );
+}
+
+#[tokio::test]
+async fn has_nothing_up_next_inside_a_volume_whose_chapters_are_all_read() {
+    let library = Library::open("volume-up-next-none").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change(
+            "INSERT INTO book_state (book_id, is_read)
+            SELECT id, 1 FROM book WHERE title LIKE 'v02 %'",
+        )
+        .await;
+
+    let up_next = [
+        library.up_next_in(2000).await,
+        library.up_next_in(3000).await,
+    ];
+
+    assert_eq!(up_next, [None, Some(("v03 c009".to_owned(), 6))]);
 }
 
 #[tokio::test]

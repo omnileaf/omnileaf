@@ -6,7 +6,11 @@ use rusqlite::{Connection, OptionalExtension, Row};
 use crate::{
     Error,
     catalog::{
-        BookNumber, Cover, ValueSource, cover::stored_cover, native_path, series_books::in_range,
+        BookNumber, BookSummary, Cover, ValueSource,
+        cover::stored_cover,
+        native_path,
+        series_books::{in_range, up_next_in_range},
+        staged_rows::snapshot,
     },
     reading_order::volume_keys,
 };
@@ -51,6 +55,7 @@ pub struct VolumeOverview {
     pub book_count: u32,
     pub read_count: u32,
     pub page_count: Option<u32>,
+    pub up_next: Option<BookSummary>,
     /// The cover of the volume's first chapter that has a file.
     pub cover: Option<Cover>,
     /// Where that chapter's file lies in its library folder, whose parent is the volume's folder.
@@ -66,8 +71,9 @@ pub fn series_volume(
     series: SeriesId,
     volume: BookNumber,
 ) -> Result<Option<VolumeOverview>, Error> {
+    let _snapshot = snapshot(connection)?;
     let keys = volume_keys(volume);
-    Ok(connection
+    let Some(mut found) = connection
         .prepare(VOLUME_OF_SERIES)?
         .query_row(
             rusqlite::named_params! {
@@ -78,7 +84,12 @@ pub fn series_volume(
             overview,
         )
         .optional()?
-        .filter(|found| found.book_count > 0))
+        .filter(|found| found.book_count > 0)
+    else {
+        return Ok(None);
+    };
+    found.up_next = up_next_in_range(connection, series, &keys)?;
+    Ok(Some(found))
 }
 
 fn overview(row: &Row<'_>) -> rusqlite::Result<VolumeOverview> {
@@ -90,6 +101,7 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<VolumeOverview> {
         book_count: row.get("book_count")?,
         read_count: row.get("read_count")?,
         page_count: row.get("page_count")?,
+        up_next: None,
         cover,
         cover_location,
         volume_source: row.get("volume_source")?,
