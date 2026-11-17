@@ -3,7 +3,14 @@ import { promisify } from "node:util";
 
 import { expect, test } from "vitest";
 
-import { SHOWN_PATH, useAppSession } from "./app-session.ts";
+import {
+  clickWhenShown,
+  mainNavigationLink,
+  settingsRow,
+  SHOWN_PATH,
+  shownPage,
+  useAppSession,
+} from "./app-session.ts";
 import {
   chooseOnTheIcon,
   NEW_TASK,
@@ -75,6 +82,12 @@ async function reclaimTheAppInTheBackground(): Promise<void> {
   );
 }
 
+async function openAppearanceSettings(): Promise<void> {
+  await clickWhenShown(appSession(), mainNavigationLink("Settings"));
+  await clickWhenShown(appSession(), settingsRow("Appearance"));
+  await shownPage(appSession(), "Appearance");
+}
+
 test("publishes Screenshot mode with its state, Continue reading and Search the library", async () => {
   await expect
     .poll(publishedShortcuts, { timeout: PUBLISHED_TIMEOUT_MS })
@@ -125,4 +138,25 @@ test("coming back after Android reclaimed the app does not choose again the shor
   await searchAfterAnyEarlierChoice();
 
   expect(await appSession().run(TOLD_SCREENSHOT_MODE_CHANGED)).toBe(false);
+});
+
+test("a shortcut chosen after Android reclaimed the app opens its page instead of the page left", async () => {
+  await openAppearanceSettings();
+  await reclaimTheAppInTheBackground();
+
+  await chooseOnTheIcon("searchLibrary");
+  await followRestartedApp(appSession());
+
+  await appSession().waitUntil(ON_LIBRARY_SEARCH, "library search");
+  expect(await appSession().run(SHOWN_PATH)).toBe("/search");
+});
+
+test("coming back from the launcher after Android reclaimed the app keeps the page left", async () => {
+  await openAppearanceSettings();
+  await reclaimTheAppInTheBackground();
+
+  await openFromTheLauncher();
+  await followRestartedApp(appSession());
+
+  expect(await shownPage(appSession(), "Appearance")).toBe("Appearance");
 });
