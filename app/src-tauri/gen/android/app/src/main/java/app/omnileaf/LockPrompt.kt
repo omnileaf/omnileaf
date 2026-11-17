@@ -7,6 +7,7 @@ internal class LockPrompt {
     fun open(): Boolean {
         if (isOpen) return false
         isOpen = true
+        isWaitingForFocus = false
         return true
     }
 

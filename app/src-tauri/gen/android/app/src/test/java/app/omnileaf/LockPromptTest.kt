@@ -60,6 +60,15 @@ class LockPromptTest {
     }
 
     @Test
+    fun `does not ask on focus after the prompt opened while waiting`() {
+        prompt.waitForFocus()
+        prompt.open()
+        prompt.close()
+
+        assertEquals(false, prompt.focusArrived())
+    }
+
+    @Test
     fun `does not wait for focus while the prompt is already open`() {
         prompt.open()
 
