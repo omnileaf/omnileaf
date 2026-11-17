@@ -63,6 +63,7 @@ mod tree_storage;
 mod version_details;
 mod volume_keys;
 mod wallpaper_colours;
+mod whats_new;
 mod window_backdrop;
 
 use std::{
@@ -147,6 +148,7 @@ pub fn run() {
             };
             let window_backdrop = main_window::open(app, window_backdrop)?;
             app.manage(core_of_this_build(window_backdrop));
+            app.manage(whats_new::bundled_notes()?);
             crash_reporting::install(app.handle());
             report_relay::install(app.handle());
             app.manage(launch);
