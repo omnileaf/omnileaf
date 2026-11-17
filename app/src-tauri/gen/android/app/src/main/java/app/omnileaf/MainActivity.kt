@@ -51,6 +51,7 @@ class MainActivity : TauriActivity() {
         super.onConfigurationChanged(newConfig)
         turnScreen(newConfig)
         webView?.followFontScale(newConfig)
+        appLock.followConfiguration(newConfig)
     }
 
     /** AndroidX's Activity Result API and startActivity still launch every screen through this deprecated override. */
