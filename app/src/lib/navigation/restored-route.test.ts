@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest";
 
-import { takeRestoredRoute, tellOpeningPageShown } from "./restored-route";
+import { showOpeningPage, takeRestoredRoute } from "./restored-route";
 
 const SETTINGS_PAGE = "/settings/appearance";
 
@@ -10,6 +10,10 @@ function saved(route: string | null) {
 
 function told() {
   return vi.fn(() => Promise.resolve({ status: "ok" as const, data: null }));
+}
+
+function opened() {
+  return vi.fn(() => Promise.resolve());
 }
 
 afterEach(() => {
@@ -62,12 +66,44 @@ test("doesn't ask anywhere but Android", async () => {
   expect(ask).not.toHaveBeenCalled();
 });
 
+test("opens the restored page", async () => {
+  const open = opened();
+
+  await showOpeningPage(SETTINGS_PAGE, "android", open, told());
+
+  expect(open).toHaveBeenCalledWith(SETTINGS_PAGE);
+});
+
+test("opens no page when Android saved none", async () => {
+  const open = opened();
+
+  await showOpeningPage(undefined, "android", open, told());
+
+  expect(open).not.toHaveBeenCalled();
+});
+
 test("tells Android the opening page shows", async () => {
   const tell = told();
 
-  await tellOpeningPageShown("android", tell);
+  await showOpeningPage(undefined, "android", opened(), tell);
 
   expect(tell).toHaveBeenCalledTimes(1);
+});
+
+test("tells Android only once the restored page has opened", async () => {
+  const steps: string[] = [];
+  const open = async () => {
+    await Promise.resolve();
+    steps.push("opened");
+  };
+  const tell = () => {
+    steps.push("told");
+    return Promise.resolve({ status: "ok" as const, data: null });
+  };
+
+  await showOpeningPage(SETTINGS_PAGE, "android", open, tell);
+
+  expect(steps).toEqual(["opened", "told"]);
 });
 
 test("doesn't tell anywhere but Android that the opening page shows", async () => {
@@ -75,7 +111,7 @@ test("doesn't tell anywhere but Android that the opening page shows", async () =
 
   await Promise.all(
     (["ios", "linux", "macos", "windows"] as const).map((platform) =>
-      tellOpeningPageShown(platform, tell),
+      showOpeningPage(undefined, platform, opened(), tell),
     ),
   );
 
@@ -86,7 +122,7 @@ test("reports Android not hearing that the opening page shows", async () => {
   const reported = vi.spyOn(window, "reportError").mockReturnValue(undefined);
   const error = { code: "internal", message: "timed out" } as const;
 
-  await tellOpeningPageShown("android", () =>
+  await showOpeningPage(undefined, "android", opened(), () =>
     Promise.resolve({ status: "error", error }),
   );
 

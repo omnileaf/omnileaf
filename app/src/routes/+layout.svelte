@@ -1,9 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { afterNavigate, goto } from "$app/navigation";
+  import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
-  import type { ResolvedPathname } from "$app/types";
 
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
   import {
@@ -30,7 +29,7 @@
   import IconActionsSync from "#lib/icon-actions/IconActionsSync.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
   import { followHistoryForBack } from "#lib/navigation/android-back.ts";
-  import { tellOpeningPageShown } from "#lib/navigation/restored-route.ts";
+  import { showOpeningPage } from "#lib/navigation/restored-route.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
     languageSettingForDocument,
@@ -151,18 +150,9 @@
   followHistoryForBack(() => data.appInfo.platform);
   afterNavigate(({ type }) => {
     if (type === "enter") {
-      void showOpeningPage(data.pageToRestore);
+      void showOpeningPage(data.pageToRestore, data.appInfo.platform);
     }
   });
-
-  async function showOpeningPage(
-    restored: ResolvedPathname | undefined,
-  ): Promise<void> {
-    if (restored !== undefined) {
-      await goto(restored);
-    }
-    await tellOpeningPageShown(data.appInfo.platform);
-  }
 
   function settleScreenshotMode(): void {
     screenshotMode.settle();

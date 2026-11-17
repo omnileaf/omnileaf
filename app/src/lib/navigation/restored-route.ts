@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import type { ResolvedPathname } from "$app/types";
 import { commands, type Platform } from "#lib/ipc/bindings.ts";
 
@@ -6,6 +7,8 @@ import { resolvedPathOf } from "./app-path";
 type AskForSavedRoute = typeof commands.takeRestoredRoute;
 
 type TellOpeningPageShown = typeof commands.openingPageShown;
+
+type OpenPage = (page: ResolvedPathname) => Promise<void>;
 
 const KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN = {
   android: true,
@@ -32,9 +35,9 @@ export async function takeRestoredRoute(
     : resolvedPathOf(new URL(taken.data, location.href));
 }
 
-export async function tellOpeningPageShown(
+async function tellOpeningPageShown(
   platform: Platform,
-  tell: TellOpeningPageShown = () => commands.openingPageShown(),
+  tell: TellOpeningPageShown,
 ): Promise<void> {
   if (!KEEPS_THE_ROUTE_OF_A_REBUILT_SCREEN[platform]) {
     return;
@@ -43,4 +46,16 @@ export async function tellOpeningPageShown(
   if (told.status === "error") {
     reportError(told.error);
   }
+}
+
+export async function showOpeningPage(
+  page: ResolvedPathname | undefined,
+  platform: Platform,
+  open: OpenPage = goto,
+  tell: TellOpeningPageShown = () => commands.openingPageShown(),
+): Promise<void> {
+  if (page !== undefined) {
+    await open(page);
+  }
+  await tellOpeningPageShown(platform, tell);
 }
