@@ -143,23 +143,63 @@ test("fills the screen again once its styles lay items as tall as they are wide 
   );
 });
 
-async function renderSeparatedRows(rows: number) {
-  const screen = await render(VirtualGrid<Sample>, {
-    items: samples(rows),
-    key: (sample: Sample) => sample.id,
-    label: LABEL,
-    isComplete: true,
-    cell,
-    class: "grid-cols-1",
-    itemClass: "border-be-8 border-solid last:border-be-0",
-  });
+interface Rows {
+  readonly items: readonly Sample[];
+  readonly cell: typeof cell;
+  readonly class?: string;
+  readonly itemClass?: string;
+  readonly isHeading?: (sample: Sample) => boolean;
+  readonly itemRole?: (sample: Sample) => "listitem" | "presentation";
+  readonly onRevealReady?: (reveal: Reveal) => void;
+  readonly baseElement?: HTMLElement;
+}
+
+async function renderRows({ baseElement = document.body, ...props }: Rows) {
+  const screen = await render(
+    VirtualGrid<Sample>,
+    {
+      key: (sample: Sample) => sample.id,
+      label: LABEL,
+      isComplete: true,
+      class: "grid-cols-1",
+      ...props,
+    },
+    { baseElement },
+  );
   const list = screen.getByRole("list", { name: LABEL });
   await expect.element(list.getByRole("listitem").first()).toBeVisible();
   await settled();
   const frame = list.element().parentElement;
   if (frame === null) {
-    throw new Error("the grid has no frame");
+    throw new Error("the list has no frame");
   }
+  return { screen, list, frame };
+}
+
+const SEPARATED_ROWS = {
+  columns: 1,
+  class: "grid-cols-1",
+  itemClass: "border-be-8 border-solid last:border-be-0",
+} as const;
+
+const SEPARATED_PAIRS = {
+  columns: 2,
+  class: "grid-cols-2",
+  itemClass: "border-be-8 border-solid [&:nth-last-child(-n+2)]:border-be-0",
+} as const;
+
+async function renderSeparatedRows(
+  rows: number,
+  {
+    columns,
+    ...layout
+  }: typeof SEPARATED_ROWS | typeof SEPARATED_PAIRS = SEPARATED_ROWS,
+) {
+  const { list, frame } = await renderRows({
+    items: samples(rows * columns),
+    cell,
+    ...layout,
+  });
   const room = frame.getBoundingClientRect().height;
   return { list, frame, room, stride: room / rows };
 }
@@ -174,19 +214,21 @@ function addSpace(place: "before" | "after", height: number): HTMLDivElement {
   return space;
 }
 
-test("keeps the room of every row once only the last, which has no separator, is laid out", async () => {
+test("keeps the room of every row once only the last few, the last with no separator, are laid out", async () => {
   const rows = 10;
   const { list, frame, room, stride } = await renderSeparatedRows(rows);
   addSpace("after", room * 4);
 
   window.scrollTo(0, frame.offsetTop + (rows + 1.5) * stride);
-  await expect.poll(() => list.getByRole("listitem").elements().length).toBe(1);
+  await expect
+    .poll(() => list.getByText("Sample 1", { exact: true }).elements())
+    .toHaveLength(0);
   await settled();
 
   expect(frame.getBoundingClientRect().height).toBe(room);
 });
 
-test("keeps the room of every row once only the first is laid out below the screen", async () => {
+test("keeps the room of every row once only the first few are laid out below the screen", async () => {
   const { list, frame, room, stride } = await renderSeparatedRows(3);
 
   addSpace(
@@ -194,7 +236,45 @@ test("keeps the room of every row once only the first is laid out below the scre
     window.innerHeight + 1.5 * stride - frame.getBoundingClientRect().top,
   );
   window.dispatchEvent(new Event("resize"));
-  await expect.poll(() => list.getByRole("listitem").elements().length).toBe(1);
+  await expect
+    .poll(() => list.getByText("Sample 3", { exact: true }).elements())
+    .toHaveLength(0);
+  await settled();
+
+  expect(frame.getBoundingClientRect().height).toBe(room);
+});
+
+test("keeps the room of every row once only the last, which has no separator, is laid out in a grid", async () => {
+  const rows = 10;
+  const { list, frame, room, stride } = await renderSeparatedRows(
+    rows,
+    SEPARATED_PAIRS,
+  );
+  addSpace("after", room * 4);
+
+  window.scrollTo(0, frame.offsetTop + (rows + 1.5) * stride);
+  await expect
+    .poll(() => list.getByRole("listitem").elements().length)
+    .toBe(SEPARATED_PAIRS.columns);
+  await settled();
+
+  expect(frame.getBoundingClientRect().height).toBe(room);
+});
+
+test("keeps the room of every row once only the first is laid out below the screen in a grid", async () => {
+  const { list, frame, room, stride } = await renderSeparatedRows(
+    3,
+    SEPARATED_PAIRS,
+  );
+
+  addSpace(
+    "before",
+    window.innerHeight + 1.5 * stride - frame.getBoundingClientRect().top,
+  );
+  window.dispatchEvent(new Event("resize"));
+  await expect
+    .poll(() => list.getByRole("listitem").elements().length)
+    .toBe(SEPARATED_PAIRS.columns);
   await settled();
 
   expect(frame.getBoundingClientRect().height).toBe(room);
@@ -472,34 +552,19 @@ function expectedTopOf(index: number): number {
   return headings * HEADING_HEIGHT + (index - headings) * ROW_HEIGHT;
 }
 
-async function renderRuns(
+function renderRuns(
   onRevealReady?: (reveal: Reveal) => void,
   baseElement: HTMLElement = document.body,
 ) {
-  const screen = await render(
-    VirtualGrid<Sample>,
-    {
-      items: RUN_ITEMS,
-      key: (sample: Sample) => sample.id,
-      label: LABEL,
-      isComplete: true,
-      cell: runCell,
-      class: "grid-cols-1",
-      isHeading: isRunHeading,
-      itemRole: (sample: Sample) =>
-        isRunHeading(sample) ? "presentation" : "listitem",
-      ...(onRevealReady === undefined ? {} : { onRevealReady }),
-    },
-    { baseElement },
-  );
-  const list = screen.getByRole("list", { name: LABEL });
-  await expect.element(list.getByRole("listitem").first()).toBeVisible();
-  await settled();
-  const frame = list.element().parentElement;
-  if (frame === null) {
-    throw new Error("the list has no frame");
-  }
-  return { list, frame };
+  return renderRows({
+    items: RUN_ITEMS,
+    cell: runCell,
+    isHeading: isRunHeading,
+    itemRole: (sample: Sample) =>
+      isRunHeading(sample) ? "presentation" : "listitem",
+    ...(onRevealReady === undefined ? {} : { onRevealReady }),
+    baseElement,
+  });
 }
 
 test("makes room for every row and every shorter heading row", async () => {
@@ -538,13 +603,18 @@ test("keeps each heading row at its own height", async () => {
   );
 });
 
-test("brings a row far down into view when revealed", async () => {
+function appendScroller(): HTMLDivElement {
   const scroller = document.createElement("div");
   scroller.style.cssText = `block-size: ${String(SCROLLER_HEIGHT)}px; overflow-y: auto`;
   document.body.append(scroller);
   onTestFinished(() => {
     scroller.remove();
   });
+  return scroller;
+}
+
+test("brings a row far down into view when revealed", async () => {
+  const scroller = appendScroller();
   let reveal: Reveal | undefined;
   await renderRuns((ready) => {
     reveal = ready;
@@ -558,4 +628,185 @@ test("brings a row far down into view when revealed", async () => {
   const box = revealed?.getBoundingClientRect();
   expect(box?.top).toBeGreaterThanOrEqual(view.top);
   expect(box?.bottom).toBeLessThanOrEqual(view.bottom);
+});
+
+const SHORT_ROW = 56;
+const TALL_ROW = 88;
+const GROWN_ROW = 120;
+const MIXED_PATTERN = 3;
+
+const isTallRow = (sample: Sample) =>
+  Number(sample.id) % MIXED_PATTERN === MIXED_PATTERN - 1;
+
+const mixedCell = createRawSnippet((sample: () => Sample) => ({
+  render: () =>
+    `<p style="block-size: ${String(isTallRow(sample()) ? TALL_ROW : SHORT_ROW)}px">${sample().name}</p>`,
+}));
+
+function mixedTopOf(index: number): number {
+  const talls = Math.floor(index / MIXED_PATTERN);
+  return talls * TALL_ROW + (index - talls) * SHORT_ROW;
+}
+
+const shortCell = createRawSnippet((sample: () => Sample) => ({
+  render: () =>
+    `<p data-sample="${sample().id}" style="block-size: ${String(SHORT_ROW)}px">${sample().name}</p>`,
+}));
+
+function growRow(index: number): void {
+  const grown = document.createElement("style");
+  grown.textContent = `[data-sample="${String(index)}"] { block-size: ${String(GROWN_ROW)}px !important; }`;
+  document.head.append(grown);
+  onTestFinished(() => {
+    grown.remove();
+  });
+}
+
+function renderStackedRows(count: number, rowCell = mixedCell) {
+  return renderRows({ items: samples(count), cell: rowCell });
+}
+
+async function scrollToEnd(): Promise<void> {
+  let height: number;
+  do {
+    height = document.documentElement.scrollHeight;
+    window.scrollTo(0, height);
+    await settled();
+  } while (document.documentElement.scrollHeight !== height);
+}
+
+test("makes room for single-column rows of different heights at the sum of their heights", async () => {
+  const rows = 9;
+
+  const { frame } = await renderStackedRows(rows);
+
+  expect(frame.getBoundingClientRect().height).toBe(mixedTopOf(rows));
+});
+
+test("leaves no blank space after the last of many rows of different heights", async () => {
+  const { list, frame } = await renderStackedRows(3000);
+
+  await scrollToEnd();
+
+  const last = list.getByText("Sample 3000", { exact: true });
+  await expect.element(last).toBeInTheDocument();
+  expect(last.element().closest("li")?.getBoundingClientRect().bottom).toBe(
+    frame.getBoundingClientRect().bottom,
+  );
+});
+
+test("keeps the row at the top of the screen in place when a row above it grows", async () => {
+  const { list, frame } = await renderStackedRows(3000, shortCell);
+  const atTop = 30;
+  window.scrollTo(
+    0,
+    frame.getBoundingClientRect().top + window.scrollY + atTop * SHORT_ROW,
+  );
+  await settled();
+  const row = list.getByText(`Sample ${String(atTop + 1)}`, { exact: true });
+  const before = row.element().getBoundingClientRect().top;
+
+  growRow(atTop - 2);
+  await settled();
+
+  expect(row.element().getBoundingClientRect().top).toBe(before);
+});
+
+function unhandledRejections(): unknown[] {
+  const reasons: unknown[] = [];
+  const record = (event: PromiseRejectionEvent) => {
+    reasons.push(event.reason);
+    event.preventDefault();
+  };
+  window.addEventListener("unhandledrejection", record);
+  onTestFinished(() => {
+    window.removeEventListener("unhandledrejection", record);
+  });
+  return reasons;
+}
+
+test("stops looking at its rows once taken down while a grown row moves them", async () => {
+  const rejections = unhandledRejections();
+  const { screen, frame } = await renderStackedRows(3000, shortCell);
+  const atTop = 30;
+  window.scrollTo(
+    0,
+    frame.getBoundingClientRect().top + window.scrollY + atTop * SHORT_ROW,
+  );
+  await settled();
+  const takeDown = new MutationObserver(() => {
+    takeDown.disconnect();
+    void screen.unmount();
+  });
+  takeDown.observe(frame, { attributeFilter: ["style"] });
+
+  growRow(atTop - 2);
+  await settled();
+
+  expect(rejections).toEqual([]);
+});
+
+test("reveals nothing once taken down", async () => {
+  let reveal: Reveal | undefined;
+  const { screen } = await renderRuns((ready) => {
+    reveal = ready;
+  });
+  await screen.unmount();
+  const far = 3000;
+
+  const revealed = await reveal?.(far);
+
+  expect(revealed).toBeUndefined();
+});
+
+test("reveals nothing once taken down while bringing the row into view", async () => {
+  const rejections = unhandledRejections();
+  const scroller = appendScroller();
+  let reveal: Reveal | undefined;
+  const { screen, frame } = await renderRuns((ready) => {
+    reveal = ready;
+  }, scroller);
+  const takeDown = new MutationObserver(() => {
+    takeDown.disconnect();
+    void screen.unmount();
+  });
+  takeDown.observe(frame, { attributeFilter: ["style"] });
+  const far = 3000;
+
+  const revealed = await reveal?.(far);
+
+  expect(revealed).toBeUndefined();
+  expect(rejections).toEqual([]);
+});
+
+const SCROLL_STEP = 20;
+const FRAMES_SCROLLED = 30;
+const FAR_DOWN = 2 / 3;
+
+function firstRowOnScreen(list: Element): Element {
+  const row = [...list.children].find(
+    (item) => item.getBoundingClientRect().top >= 0,
+  );
+  if (row === undefined) {
+    throw new Error("no row is on the screen");
+  }
+  return row;
+}
+
+test("keeps every drawn row in place on each frame while scrolling up through rows not measured yet", async () => {
+  const { list, frame } = await renderStackedRows(3000);
+  window.scrollTo(0, frame.getBoundingClientRect().height * FAR_DOWN);
+  await settled();
+  const row = firstRowOnScreen(list.element());
+  const tops = [row.getBoundingClientRect().top];
+
+  for (let step = 0; step < FRAMES_SCROLLED; step += 1) {
+    window.scrollBy(0, -SCROLL_STEP);
+    await nextFrame();
+    tops.push(row.getBoundingClientRect().top);
+  }
+
+  expect(tops.slice(1).map((top, index) => top - (tops[index] ?? 0))).toEqual(
+    Array.from({ length: FRAMES_SCROLLED }, () => SCROLL_STEP),
+  );
 });
