@@ -13,6 +13,7 @@ mod dev;
 mod device_choice;
 mod devices;
 mod doctor;
+mod files;
 mod fixtures;
 mod fresh;
 mod fuzz_seeds;
@@ -102,9 +103,9 @@ enum Fragments {
         #[arg(long)]
         skip: bool,
     },
-    /// Print the release notes the fragments make.
+    /// Print the release notes under a one-line headline, reading a full release from its archive in `.changes/released` and a pre-release or the unreleased notes from the fragments.
     Notes {
-        /// The version the notes are for; `unreleased` when left out.
+        /// The version the notes are for, such as 1.2.0 or 1.2.0-rc.1; the unreleased notes when left out.
         #[arg(long)]
         version: Option<String>,
         /// What to print: markdown for the release page, json for the app's What's new notice.
