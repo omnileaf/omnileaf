@@ -23,6 +23,11 @@ jobs:
           PULL_REQUEST: ${{ github.event.pull_request.number }}
         run: |
           run_field() { gh run view "$run" --json "$1" --jq ".$1"; }
+          current_head() { gh pr view "$PULL_REQUEST" --json headRefOid --jq .headRefOid; }
+          exit_if_head_moved() {
+            latest_head=$(current_head)
+            if [ "$latest_head" != "$head" ]; then exit 0; fi
+          }
           wait_until_completed() {
             for _ in $(seq 60); do
               status=$(run_field status)
@@ -33,7 +38,7 @@ jobs:
             return 1
           }
 
-          head=$(gh pr view "$PULL_REQUEST" --json headRefOid --jq .headRefOid)
+          head=$(current_head)
           run=$(gh run list --workflow ci.yml --event pull_request --commit "$head" --limit 1 --json databaseId --jq '.[0].databaseId // empty')
           if [ -z "$run" ]; then exit 0; fi
 
@@ -42,12 +47,14 @@ jobs:
           if [ "$status" != completed ]; then
             labels_read=$(gh run view "$run" --json jobs --jq 'any(.jobs[]; .name == "changed areas" and (.status == "in_progress" or .status == "completed"))')
             if [ "$labels_read" = false ]; then exit 0; fi
+            exit_if_head_moved
             gh run cancel "$run" || [ "$(run_field status)" = completed ]
             wait_until_completed
           fi
 
           attempt=$(run_field attempt)
           if [ "$attempt" -gt "$seen" ]; then exit 0; fi
+          exit_if_head_moved
           if ! gh run rerun "$run"; then
             attempt=$(run_field attempt)
             status=$(run_field status)
