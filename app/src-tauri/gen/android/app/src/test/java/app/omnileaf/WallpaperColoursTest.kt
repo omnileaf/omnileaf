@@ -26,6 +26,10 @@ class WallpaperColoursTest {
             shown(system.system_surface_container_low_light, system.system_surface_container_low_dark),
             scheme.roles[SchemeRole.SURFACE_CONTAINER_LOW],
         )
+        assertEquals(
+            shown(system.system_secondary_light, system.system_secondary_dark),
+            scheme.roles[SchemeRole.SECONDARY],
+        )
     }
 
     @Test
@@ -39,6 +43,10 @@ class WallpaperColoursTest {
         assertEquals(
             shown(system.system_neutral2_500, system.system_neutral2_400),
             scheme.roles[SchemeRole.OUTLINE],
+        )
+        assertEquals(
+            shown(system.system_accent2_600, system.system_accent2_200),
+            scheme.roles[SchemeRole.SECONDARY],
         )
     }
 

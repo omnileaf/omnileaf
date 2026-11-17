@@ -9,6 +9,7 @@ internal enum class SchemeRole(
 ) {
     PRIMARY("primary"),
     ON_PRIMARY("onPrimary"),
+    SECONDARY("secondary"),
     SECONDARY_CONTAINER("secondaryContainer"),
     ON_SECONDARY_CONTAINER("onSecondaryContainer"),
     TERTIARY_CONTAINER("tertiaryContainer"),
@@ -48,6 +49,7 @@ internal fun roleColours(): SchemeResources =
     mapOf(
         SchemeRole.PRIMARY to ThemedColour(system.system_primary_light, system.system_primary_dark),
         SchemeRole.ON_PRIMARY to ThemedColour(system.system_on_primary_light, system.system_on_primary_dark),
+        SchemeRole.SECONDARY to ThemedColour(system.system_secondary_light, system.system_secondary_dark),
         SchemeRole.SECONDARY_CONTAINER to
             ThemedColour(system.system_secondary_container_light, system.system_secondary_container_dark),
         SchemeRole.ON_SECONDARY_CONTAINER to
@@ -88,6 +90,7 @@ internal fun paletteTones(): SchemeResources =
     mapOf(
         SchemeRole.PRIMARY to ThemedColour(system.system_accent1_600, system.system_accent1_200),
         SchemeRole.ON_PRIMARY to ThemedColour(system.system_accent1_0, system.system_accent1_800),
+        SchemeRole.SECONDARY to ThemedColour(system.system_accent2_600, system.system_accent2_200),
         SchemeRole.SECONDARY_CONTAINER to ThemedColour(system.system_accent2_100, system.system_accent2_700),
         SchemeRole.ON_SECONDARY_CONTAINER to ThemedColour(system.system_accent2_900, system.system_accent2_100),
         SchemeRole.TERTIARY_CONTAINER to ThemedColour(system.system_accent3_100, system.system_accent3_700),
