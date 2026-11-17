@@ -132,15 +132,17 @@ test("coming back after Android reclaimed the app does not choose again the shor
   expect(await appSession().run(TOLD_SCREENSHOT_MODE_CHANGED)).toBe(false);
 });
 
-test("a shortcut chosen after Android reclaimed the app opens its page instead of the page left", async () => {
+test("a shortcut chosen after Android reclaimed the app drops the page left", async () => {
   await openSettingsPage(appSession(), "Appearance");
   await reclaimTheAppInTheBackground();
 
-  await chooseOnTheIcon("searchLibrary");
+  await chooseOnTheIcon("screenshotMode");
   await followRestartedApp(appSession());
+  await appSession().waitFor(TURNED_ON_NOTICE);
+  await (await appSession().waitFor(TURN_OFF)).click();
 
-  await appSession().waitUntil(ON_LIBRARY_SEARCH, "library search");
-  expect(await appSession().run(SHOWN_PATH)).toBe("/search");
+  expect(await shownPage(appSession(), "Library")).toBe("Library");
+  expect(await appSession().run(SHOWN_PATH)).toBe("/");
 });
 
 test("coming back from the launcher after Android reclaimed the app keeps the page left", async () => {
