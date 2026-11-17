@@ -54,21 +54,24 @@ export function sectionTileLook(platform: Platform): SectionTileLook {
   return SECTION_TILE_LOOKS[platform];
 }
 
-const COVERS_FILL_THE_ROW =
-  "grid-template-columns: repeat(auto-fill, minmax(calc(var(--spacing-book-cover-min) * var(--text-scale)), 1fr))";
-const THREE_COVERS_A_ROW = "grid-template-columns: repeat(3, minmax(0, 1fr))";
-
-export function coversTrack(platform: Platform, width: WidthClass): string {
-  return phoneOf(platform, width) === "android"
-    ? THREE_COVERS_A_ROW
-    : COVERS_FILL_THE_ROW;
+export interface CoversGrid {
+  readonly track: string;
+  readonly gap: string;
 }
 
-const ANDROID_PHONE_GAP = "gap-x-sm gap-y-lg";
-const COVERS_GAP = "gap-x-lg gap-y-cover-row";
+const COVERS_GRID: CoversGrid = {
+  track:
+    "grid-template-columns: repeat(auto-fill, minmax(calc(var(--spacing-book-cover-min) * var(--text-scale)), 1fr))",
+  gap: "gap-x-lg gap-y-cover-row",
+};
 
-export function coversGap(platform: Platform, width: WidthClass): string {
+const ANDROID_PHONE_GRID: CoversGrid = {
+  track: "grid-template-columns: repeat(3, minmax(0, 1fr))",
+  gap: "gap-x-sm gap-y-lg",
+};
+
+export function coversGrid(platform: Platform, width: WidthClass): CoversGrid {
   return phoneOf(platform, width) === "android"
-    ? ANDROID_PHONE_GAP
-    : COVERS_GAP;
+    ? ANDROID_PHONE_GRID
+    : COVERS_GRID;
 }
