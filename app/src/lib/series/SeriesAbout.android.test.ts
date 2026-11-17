@@ -4,7 +4,11 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
-import type { Platform, SeriesOverview } from "#lib/ipc/bindings.ts";
+import type {
+  Platform,
+  SeriesDetails,
+  SeriesOverview,
+} from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import SeriesAbout from "./SeriesAbout.svelte";
@@ -44,13 +48,13 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function heroOn(platform: Platform) {
+async function heroOn(platform: Platform, details?: SeriesDetails) {
   await page.viewport(PHONE.width, PHONE.height);
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   await render(SeriesAbout, {
     overview: OVERVIEW,
-    details: undefined,
+    details,
     cover: { kind: "none" },
     coverUrl: () => "",
     isWide: false,
@@ -186,4 +190,60 @@ test("keeps an iPhone's details as a side by side list in a card", async () => {
 
   expect(drawn.isStacked).toBe(false);
   expect(drawn.card).toBe("1px");
+});
+
+const SOURCED: SeriesDetails = {
+  title: { fromFile: OVERVIEW.title, source: "folderName", edited: null },
+  people: { fromFile: [], edited: null },
+  tags: { fromFile: [], edited: null },
+  summary: { fromFile: null, edited: null },
+  year: null,
+  language: null,
+  isMarkedAdult: false,
+  isRatedAdult: false,
+};
+
+function middle(box: DOMRect): number {
+  return box.top + box.height / 2;
+}
+
+async function sourcedDetailsOn(platform: Platform) {
+  await heroOn(platform, SOURCED);
+  await page.getByRole("button", { name: "Details" }).click();
+  await expect
+    .element(page.getByText("From the folder name", { exact: true }))
+    .toBeVisible();
+  return {
+    source: page.getByText("From the folder name", { exact: true }).element(),
+  };
+}
+
+test("draws where an Android phone's detail came from as a footnote line with its icon", async () => {
+  const { source } = await sourcedDetailsOn("android");
+  const icon = source.querySelector("[data-icon]");
+  if (icon === null) {
+    throw new Error("the source line drew no icon");
+  }
+  const style = getComputedStyle(source);
+  const iconBox = icon.getBoundingClientRect();
+
+  expect(icon.getAttribute("data-icon")).toBe("folder");
+  expect([iconBox.width, iconBox.height]).toEqual([14, 14]);
+  expect(
+    Math.abs(middle(iconBox) - middle(source.getBoundingClientRect())),
+  ).toBeLessThanOrEqual(1);
+  expect([
+    style.fontSize,
+    style.lineHeight,
+    style.letterSpacing,
+    style.color,
+    style.columnGap,
+    style.marginBlockStart,
+  ]).toEqual(["12px", "16px", "0.4px", "rgb(88, 97, 90)", "4px", "2px"]);
+});
+
+test("keeps an iPhone's details without source icons", async () => {
+  const { source } = await sourcedDetailsOn("ios");
+
+  expect(source.querySelector("[data-icon]")).toBeNull();
 });
