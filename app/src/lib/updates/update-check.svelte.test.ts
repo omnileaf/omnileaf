@@ -64,6 +64,9 @@ function asks(overrides: Partial<UpdateAsks> = {}): UpdateAsks {
     status: () => Promise.resolve({ status: "ok", data: UNCHECKED }),
     check: checked("upToDate"),
     checkIfDue: checked("upToDate"),
+    snooze: () => Promise.resolve({ status: "ok", data: UNCHECKED }),
+    skip: () => Promise.resolve({ status: "ok", data: UNCHECKED }),
+    openReleasePage: () => Promise.resolve({ status: "ok", data: null }),
     setAutomatic: (isOn) =>
       Promise.resolve({
         status: "ok",
@@ -359,6 +362,136 @@ test("hands on the error when the automatic check could not be changed", async (
   await check.setAutomatic(true);
 
   expect([check.isAutomatic, onFailure.mock.calls]).toEqual([
+    false,
+    [[BROKEN]],
+  ]);
+});
+
+const SHOWN: UpdateStatus = {
+  isAutomatic: false,
+  release: {
+    kind: "newer",
+    version: "0.2.0",
+    headline: "Series pages show Volumes, Chapters and Specials as tabs",
+    releasePage: "https://github.com/omnileaf/omnileaf/releases/tag/v0.2.0",
+    notice: "shown",
+  },
+};
+
+test("offers the banner only for a newer release whose notice is shown", async () => {
+  const shownRelease = await Promise.all(
+    [UNCHECKED, UP_TO_DATE, NEWER, SHOWN].map(async (status) => {
+      const check = new UpdateCheck(
+        failures,
+        asks({ status: () => Promise.resolve({ status: "ok", data: status }) }),
+      );
+      await check.load();
+      return check.shownRelease?.version;
+    }),
+  );
+
+  expect(shownRelease).toEqual([undefined, undefined, undefined, "0.2.0"]);
+});
+
+test("puts off the version the person saw, following the status Android returns", async () => {
+  const snoozed: string[] = [];
+  const check = new UpdateCheck(
+    failures,
+    asks({
+      status: () => Promise.resolve({ status: "ok", data: SHOWN }),
+      snooze: (version) => {
+        snoozed.push(version);
+        return Promise.resolve({ status: "ok", data: NEWER });
+      },
+    }),
+  );
+  await check.load();
+
+  await check.snooze("0.2.0");
+
+  expect([snoozed, check.shownRelease]).toEqual([["0.2.0"], undefined]);
+});
+
+test("skips the version the person saw, following the status Android returns", async () => {
+  const skipped: string[] = [];
+  const check = new UpdateCheck(
+    failures,
+    asks({
+      status: () => Promise.resolve({ status: "ok", data: SHOWN }),
+      skip: (version) => {
+        skipped.push(version);
+        return Promise.resolve({ status: "ok", data: NEWER });
+      },
+    }),
+  );
+  await check.load();
+
+  await check.skip("0.2.0");
+
+  expect([skipped, check.shownRelease]).toEqual([["0.2.0"], undefined]);
+});
+
+test("hands on the error when a choice could not be kept", async () => {
+  const onFailure = vi.fn();
+  const refuse = () =>
+    Promise.resolve({ status: "error", error: BROKEN } as const);
+  const check = new UpdateCheck(
+    onFailure,
+    asks({ snooze: refuse, skip: refuse }),
+  );
+
+  await check.snooze("0.2.0");
+  await check.skip("0.2.0");
+
+  expect(onFailure.mock.calls).toEqual([[BROKEN], [BROKEN]]);
+});
+
+test("says so when the browser could not open the release page, until it opens", async () => {
+  let isBrowserMissing = true;
+  const onFailure = vi.fn();
+  const check = new UpdateCheck(
+    onFailure,
+    asks({
+      openReleasePage: () =>
+        Promise.resolve(
+          isBrowserMissing
+            ? ({
+                status: "error",
+                error: {
+                  code: "browserUnavailable",
+                  message: "the browser could not be opened",
+                },
+              } as const)
+            : ({ status: "ok", data: null } as const),
+        ),
+    }),
+  );
+
+  await check.openReleasePage();
+  const failedFirst = check.hasOpeningFailed;
+  isBrowserMissing = false;
+  await check.openReleasePage();
+
+  expect([failedFirst, check.hasOpeningFailed, onFailure.mock.calls]).toEqual([
+    true,
+    false,
+    [],
+  ]);
+});
+
+test("hands on any other error from opening the release page", async () => {
+  const onFailure = vi.fn();
+  const check = new UpdateCheck(
+    onFailure,
+    asks({
+      openReleasePage: () =>
+        Promise.resolve({ status: "error", error: BROKEN }),
+    }),
+  );
+
+  await check.openReleasePage();
+
+  expect([check.hasOpeningFailed, onFailure.mock.calls]).toEqual([
     false,
     [[BROKEN]],
   ]);

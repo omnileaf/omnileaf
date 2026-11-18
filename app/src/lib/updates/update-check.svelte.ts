@@ -4,6 +4,7 @@ import {
   type CheckOutcome,
   commands,
   type IpcError,
+  type NewerRelease,
   type UpdateStatus,
 } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
@@ -17,6 +18,9 @@ export interface UpdateAsks {
   readonly check: () => Promise<Answered<CheckedForUpdates>>;
   readonly checkIfDue: () => Promise<Answered<CheckedForUpdates>>;
   readonly setAutomatic: (isOn: boolean) => Promise<Answered<UpdateStatus>>;
+  readonly snooze: (version: string) => Promise<Answered<UpdateStatus>>;
+  readonly skip: (version: string) => Promise<Answered<UpdateStatus>>;
+  readonly openReleasePage: () => Promise<Answered<null>>;
 }
 
 export type CheckPhase = "resting" | "checking" | "failed";
@@ -26,6 +30,9 @@ const UPDATE_ASKS: UpdateAsks = {
   check: commands.checkForUpdates,
   checkIfDue: commands.checkForUpdatesIfDue,
   setAutomatic: commands.setAutomaticUpdateCheck,
+  snooze: commands.snoozeUpdate,
+  skip: commands.skipUpdate,
+  openReleasePage: commands.openReleasePage,
 };
 
 const FAILED_OUTCOMES: ReadonlySet<CheckOutcome> = new Set([
@@ -67,6 +74,7 @@ function releaseHint(status: UpdateStatus | null): string | undefined {
 export class UpdateCheck {
   status: UpdateStatus | null = $state(null);
   phase: CheckPhase = $state("resting");
+  hasOpeningFailed = $state(false);
 
   constructor(
     private readonly onFailure: (error: IpcError) => void,
@@ -124,6 +132,38 @@ export class UpdateCheck {
     if (isOn) {
       await this.checkIfDue();
     }
+  }
+
+  get shownRelease(): NewerRelease | undefined {
+    const release = this.status?.release;
+    return release?.kind === "newer" && release.notice === "shown"
+      ? release
+      : undefined;
+  }
+
+  async snooze(version: string): Promise<void> {
+    this.#follow(await this.asks.snooze(version));
+  }
+
+  async skip(version: string): Promise<void> {
+    this.#follow(await this.asks.skip(version));
+  }
+
+  async openReleasePage(): Promise<void> {
+    const opened = await this.asks.openReleasePage();
+    this.hasOpeningFailed =
+      opened.status === "error" && opened.error.code === "browserUnavailable";
+    if (opened.status === "error" && !this.hasOpeningFailed) {
+      this.#report(opened.error);
+    }
+  }
+
+  #follow(chosen: Answered<UpdateStatus>): void {
+    if (chosen.status === "error") {
+      this.#report(chosen.error);
+      return;
+    }
+    this.status = chosen.data;
   }
 
   #report(error: IpcError): void {
