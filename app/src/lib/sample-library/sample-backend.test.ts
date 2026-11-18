@@ -193,6 +193,16 @@ test("can't open Volume 6 when its file is of a type this version doesn't read",
   });
 });
 
+test("can't open a book whose folder is missing, as not connected", async () => {
+  const { backend } = backendFor("?missing=folder");
+
+  const opening = (async () => backend.openBook(sampleBookId(3, 1), []))();
+
+  await expect(opening).rejects.toMatchObject({
+    error: { code: "bookNotConnected" },
+  });
+});
+
 test("names Volume 6's file as a CBR file when this version can't read it", async () => {
   const { backend } = backendFor("volume6=unsupported");
 

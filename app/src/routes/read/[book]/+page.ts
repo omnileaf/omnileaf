@@ -17,6 +17,7 @@ const UNSUPPORTED = "unsupported";
 const SHOWN_ON_FAILURE = {
   bookNotFound: MISSING,
   bookUnreadable: UNREADABLE,
+  bookNotConnected: UNREADABLE,
   bookTypeUnsupported: UNSUPPORTED,
   fileTypeRead: FAILED,
   folderPickerUnavailable: FAILED,

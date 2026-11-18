@@ -43,6 +43,7 @@ pub(crate) enum IpcErrorCode {
     CursorForAnotherList,
     BookNotFound,
     BookUnreadable,
+    BookNotConnected,
     BookTypeUnsupported,
     FileTypeRead,
     #[expect(
@@ -311,6 +312,10 @@ impl From<OpenBookError> for IpcError {
             OpenBookError::BookNotFound { .. } => {
                 (IpcErrorCode::BookNotFound, "that book isn't in the library")
             }
+            OpenBookError::NotConnected { .. } => (
+                IpcErrorCode::BookNotConnected,
+                "the book's folder or drive isn't there",
+            ),
             OpenBookError::Unreadable { .. } | OpenBookError::FolderClosed { .. } => (
                 IpcErrorCode::BookUnreadable,
                 "the book's file could not be read",
@@ -501,6 +506,15 @@ mod tests {
                 IpcErrorCode::Internal,
             ]
         );
+    }
+
+    #[test]
+    fn tells_the_interface_a_book_whose_folder_is_away_isnt_connected() {
+        let id = BookId::try_from("0190a3e4-0000-8000-8000-000000000002".to_owned()).unwrap();
+
+        let error = IpcError::from(OpenBookError::NotConnected { id });
+
+        assert_eq!(error.code, IpcErrorCode::BookNotConnected);
     }
 
     #[test]

@@ -73,6 +73,7 @@ const FAILURES = {
   cursorForAnotherList: ADDING_FAILED,
   bookNotFound: ADDING_FAILED,
   bookUnreadable: ADDING_FAILED,
+  bookNotConnected: ADDING_FAILED,
   bookTypeUnsupported: ADDING_FAILED,
   fileTypeRead: ADDING_FAILED,
   bookmarksNotKept: ADDING_FAILED,

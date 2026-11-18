@@ -55,6 +55,7 @@ const SEND_OUTCOMES = {
   cursorForAnotherList: "notSent",
   bookNotFound: "notSent",
   bookUnreadable: "notSent",
+  bookNotConnected: "notSent",
   bookTypeUnsupported: "notSent",
   fileTypeRead: "notSent",
   bookmarksNotKept: "notSent",

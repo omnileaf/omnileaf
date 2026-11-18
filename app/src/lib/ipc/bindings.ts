@@ -631,7 +631,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "defaultViewerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "appLockUnavailable" | "updateCheckUnavailable" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "defaultViewerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookNotConnected" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "appLockUnavailable" | "updateCheckUnavailable" | "internal";
 
 export type KnownRelease = { kind: "unchecked" } | { kind: "upToDate" } | {
 	kind: "newer",
