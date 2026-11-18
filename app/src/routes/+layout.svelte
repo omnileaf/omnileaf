@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   import { page } from "$app/state";
 
@@ -106,6 +106,18 @@
   let { data, children }: LayoutProps = $props();
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
+  const keepsThemeNatively = untrack(() => data.appInfo.platform) === "android";
+  let isThemeKept = $state(!keepsThemeNatively);
+  if (keepsThemeNatively) {
+    void commands.rememberedTheme().then((kept) => {
+      if (kept.status === "ok") {
+        themeSetting.adopt(kept.data);
+      } else {
+        reportError(kept.error);
+      }
+      isThemeKept = true;
+    });
+  }
   const colours = setColoursSetting(coloursSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
   const screenshotMode = setScreenshotMode(
@@ -203,6 +215,9 @@
   }
 
   $effect(() => {
+    if (!isThemeKept) {
+      return;
+    }
     void followWindowBackdropOnceThemed(
       data.appInfo.windowBackdrop,
       commands.matchSystemBars(
