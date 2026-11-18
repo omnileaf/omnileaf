@@ -25,8 +25,14 @@ const FOLDER: MissingFolder = {
 let asked: string[] = [];
 let missingAnswers: (MissingFolder | null)[] = [];
 
+const SHELF = new FakeShelf([READ, READ, UNREAD, UNREAD]);
+for (const book of SHELF.books) {
+  book.file = { kind: "notConnected" };
+}
+const UP_NEXT = SHELF.titleOf(2);
+
 function awayShelf(): FakeBackend {
-  const shelf = new FakeShelf([READ, READ, UNREAD, UNREAD]).backend();
+  const shelf = SHELF.backend();
   return {
     ...shelf,
     seriesOverview: async (id) => ({
@@ -38,6 +44,10 @@ function awayShelf(): FakeBackend {
       return missingAnswers.length > 1
         ? (missingAnswers.shift() ?? null)
         : (missingAnswers[0] ?? null);
+    },
+    bookMissingFolder: (id) => {
+      asked.push(`book ${id}`);
+      return FOLDER;
     },
     rescanLibraryFolder: (id) => {
       asked.push(`rescan ${id}`);
@@ -135,6 +145,35 @@ test.describe(
           `series ${SERIES_ID}`,
         ]);
       await expect(notice(page, "Still not connected")).toHaveCount(0);
+    });
+
+    test("says why instead of opening a book that isn't connected", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES_ID}`);
+
+      await page
+        .getByRole("button", { name: new RegExp(`^${SHELF.titleOf(0)}`) })
+        .click();
+
+      await expect(
+        notice(page, `${SHELF.titleOf(0)} isn’t connected`),
+      ).toContainText("It can’t be opened until its folder or drive is back.");
+      expect(new URL(page.url()).pathname).toBe(`/series/${SERIES_ID}`);
+    });
+
+    test("turns Continue into Find the folder for the next book", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES_ID}`);
+
+      await page
+        .getByRole("button", { name: `Find the folder for ${UP_NEXT}` })
+        .click();
+
+      await expect
+        .poll(() => asked)
+        .toEqual([`book ${SHELF.idOf(2)}`, `relocate ${FOLDER.folder.id}`]);
     });
 
     for (const colorScheme of ["light", "dark"] as const) {
