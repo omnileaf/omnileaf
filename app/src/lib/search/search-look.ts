@@ -88,6 +88,11 @@ export const ANDROID_SEARCH_LOOK: SearchLook = {
   notConnected: ANDROID_NOT_CONNECTED_RESULT,
 };
 
+export const ANDROID_TABLET_SEARCH_LOOK: SearchLook = {
+  ...TODAYS_SEARCH_LOOK,
+  notConnected: ANDROID_NOT_CONNECTED_RESULT,
+};
+
 export const MACOS_SEARCH_LOOK: SearchLook = {
   ...TODAYS_SEARCH_LOOK,
   heading:
@@ -117,6 +122,9 @@ export function searchLook(
   }
   if (phone === "android") {
     return ANDROID_SEARCH_LOOK;
+  }
+  if (platform === "android") {
+    return ANDROID_TABLET_SEARCH_LOOK;
   }
   return phone === "ios" ? NATIVE_SEARCH_LOOK : TODAYS_SEARCH_LOOK;
 }

@@ -365,8 +365,9 @@ async function renderAway(
     onOpen?: (series: LibrarySeries) => void;
     onFind?: (series: LibrarySeries) => void;
   } = {},
+  width = 390,
 ) {
-  await page.viewport(390, 800);
+  await page.viewport(width, 800);
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   return render(SearchResults, {
@@ -431,4 +432,23 @@ test("tags no series off an Android phone", async () => {
   const screen = await renderAway("windows");
 
   expect(screen.getByText("Not connected").elements()).toHaveLength(0);
+});
+
+test("dims and tags a series that isn't connected on an Android tablet", async () => {
+  const found: string[] = [];
+  const screen = await renderAway(
+    "android",
+    { onFind: ({ title }) => found.push(title) },
+    900,
+  );
+
+  const away = screen.getByRole("option", { name: /The Harbour Letters/ });
+  const cover = away.element().querySelector('[data-slot="list-cover"]');
+  await screen.getByTitle("Find the folder").first().click();
+
+  await expect.element(away.getByText("Not connected")).toBeVisible();
+  expect({
+    opacity: cover === null ? undefined : getComputedStyle(cover).opacity,
+    found,
+  }).toEqual({ opacity: "0.45", found: ["The Harbour Letters"] });
 });
