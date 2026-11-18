@@ -4,15 +4,15 @@ use crate::{
     Error,
     catalog::root::{
         LibraryRoot, RootId, RootKind, RootLocator, forget_root, relocate_root, stored_location,
-        stored_root,
+        stored_root, stored_root_columns,
     },
 };
 
-const HOME_ROOT: &str = "SELECT
-        id, kind, locator_kind, location, bookmark, tree_name, tree_place, added_at_ms,
-        unavailable_since_ms, shows_while_missing
-    FROM library_root
-    WHERE kind = ?1";
+const HOME_ROOT: &str = concat!(
+    "SELECT ",
+    stored_root_columns!(),
+    " FROM library_root WHERE kind = ?1"
+);
 
 pub fn home_root(connection: &Connection) -> Result<Option<LibraryRoot>, Error> {
     Ok(connection
