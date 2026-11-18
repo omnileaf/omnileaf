@@ -26,15 +26,18 @@ internal class UpdateCheckRunner(
             }
         if (!isFirstWaiting) return
         executor.execute {
-            val run = attempt(checking::check)
-            val answers = synchronized(waitingOnCheck) { waitingOnCheck.toList().also { waitingOnCheck.clear() } }
-            answers.forEach { it(run) }
+            val outcome = runCatching { attempt(checking::check) }
+            val answers = takeWaiting()
+            outcome.onSuccess { run -> answers.forEach { it(run) } }.getOrThrow()
         }
     }
 
     fun checkIfDue(answer: (CheckRun) -> Unit) {
         executor.execute { answer(attempt(checking::checkIfDue)) }
     }
+
+    private fun takeWaiting(): List<(CheckRun) -> Unit> =
+        synchronized(waitingOnCheck) { waitingOnCheck.toList().also { waitingOnCheck.clear() } }
 }
 
 @Suppress("TooGenericExceptionCaught")

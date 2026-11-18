@@ -1,6 +1,7 @@
 package app.omnileaf
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.time.Clock
 import java.time.Instant
@@ -64,6 +65,25 @@ class UpdateCheckRunnerTest {
         executor.runAll()
 
         assertEquals(listOf(CheckRun.Broke(bug)) to null, answers to state.attemptedAt)
+    }
+
+    @Test
+    fun `checks again after a check that died of an error`() {
+        var isOutOfMemory = true
+        val runner =
+            runnerOver {
+                if (isOutOfMemory) throw OutOfMemoryError("pthread_create failed")
+                feed.fetchLatest()
+            }
+        val answers = mutableListOf<CheckRun>()
+        runner.check(answers::add)
+        assertThrows(OutOfMemoryError::class.java) { executor.runAll() }
+        isOutOfMemory = false
+
+        runner.check(answers::add)
+        executor.runAll()
+
+        assertEquals(listOf(CheckRun.Ended(CheckResult.UpToDate)) to 1, answers to feed.requests)
     }
 
     @Test
