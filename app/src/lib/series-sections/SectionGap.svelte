@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { FolderSearch } from "@lucide/svelte";
-
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { NumberRange } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -21,7 +20,7 @@
   class="flex flex-col gap-cover-caption"
 >
   <span class={look.gap}>
-    <FolderSearch size={ICON_SIZE} aria-hidden="true" />
+    <Icon name="folder-search" size={ICON_SIZE} />
   </span>
   <span class="flex flex-col min-inline-none">
     <span class={look.title}>{words.title}</span>

@@ -19,14 +19,14 @@ const TILE_LINK =
   "flex flex-col gap-cover-caption min-inline-none focus-visible:focus-ring";
 const COVER_BOX = "relative block aspect-cover overflow-hidden bg-chip";
 const MISSING_RUN_BOX =
-  "flex aspect-cover items-center justify-center border border-dashed border-muted text-muted";
+  "flex aspect-cover items-center justify-center border border-dashed text-muted";
 
 const SHADCN_TILE: SectionTileLook = {
   link: `${TILE_LINK} rounded-cover`,
   cover: `${COVER_BOX} rounded-cover border border-cover-edge`,
   readMark: `${READ_MARK_CIRCLE} inset-e-read-mark-inset inset-bs-read-mark-inset ring-2 ring-background`,
   readCheckSize: 14,
-  gap: `${MISSING_RUN_BOX} rounded-cover`,
+  gap: `${MISSING_RUN_BOX} rounded-cover border-muted`,
   title: "truncate text-small font-medium",
   meta: "truncate text-caption text-muted",
 };
@@ -36,7 +36,7 @@ const ANDROID_TILE: SectionTileLook = {
   cover: `${COVER_BOX} rounded-native-cover`,
   readMark: `${READ_MARK_CIRCLE} inset-s-xs inset-bs-xs`,
   readCheckSize: 16,
-  gap: `${MISSING_RUN_BOX} rounded-native-cover`,
+  gap: `${MISSING_RUN_BOX} rounded-native-cover border-native-gap-edge`,
   title:
     "truncate text-native-tile-title/native-tile-title font-native-tile-title tracking-native-tile-title",
   meta: "truncate text-native-tile-meta/native-tile-meta font-native-tile-meta tracking-native-tile-meta text-muted",
