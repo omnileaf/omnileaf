@@ -14,8 +14,9 @@ import {
   NEW_TASK,
   openFromTheLauncher,
 } from "./icon-action-intent.ts";
+import { isRecord } from "./json.ts";
 import { followRestartedApp } from "./restarted-app.ts";
-import { savedOnThePhone } from "./saved-local-storage.ts";
+import { waitUntilSavedOnThePhone } from "./saved-local-storage.ts";
 import { pollUntil, xpath } from "./webdriver.ts";
 
 const APP_ID = "app.omnileaf";
@@ -60,24 +61,18 @@ function isSavedOff(saved: string | undefined): boolean {
   }
   const settings: unknown = JSON.parse(saved);
   return (
-    typeof settings === "object" &&
-    settings !== null &&
-    "activity" in settings &&
-    typeof settings.activity === "object" &&
-    settings.activity !== null &&
-    "kind" in settings.activity &&
+    isRecord(settings) &&
+    isRecord(settings.activity) &&
     settings.activity.kind === "off"
   );
 }
 
-/** Android's WebView writes localStorage to disk about a second after the page sets it, so stopping the app sooner loses the change. */
 async function turnScreenshotModeBackOff(): Promise<void> {
   await appSession().waitFor(TURNED_ON_NOTICE);
   await (await appSession().waitFor(TURN_OFF)).click();
-  await pollUntil(
-    async () =>
-      isSavedOff(await savedOnThePhone(SCREENSHOT_MODE_KEY)) ? true : undefined,
-    ADB_TIMEOUT_MS,
+  await waitUntilSavedOnThePhone(
+    SCREENSHOT_MODE_KEY,
+    isSavedOff,
     "Screenshot mode to be saved off on the phone",
   );
 }

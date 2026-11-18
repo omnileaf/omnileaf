@@ -1,6 +1,8 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
+import { pollUntil } from "./webdriver.ts";
+
 const APP_ID = "app.omnileaf";
 const SAVED_LOCAL_STORAGE = "app_webview/Default/Local Storage/leveldb";
 const ADB_TIMEOUT_MS = 30_000;
@@ -49,9 +51,7 @@ export function lastSavedValue(log: Buffer, key: string): string | undefined {
     : value.subarray(1).toString("utf16le");
 }
 
-export async function savedOnThePhone(
-  key: string,
-): Promise<string | undefined> {
+async function savedOnThePhone(key: string): Promise<string | undefined> {
   const { stdout } = await run(
     "adb",
     [
@@ -69,4 +69,17 @@ export async function savedOnThePhone(
     },
   );
   return lastSavedValue(stdout, key);
+}
+
+/** Android's WebView writes localStorage to disk about a second after the page sets it, so stopping the app sooner loses the change. */
+export async function waitUntilSavedOnThePhone(
+  key: string,
+  isWanted: (saved: string | undefined) => boolean,
+  what: string,
+): Promise<void> {
+  await pollUntil(
+    async () => (isWanted(await savedOnThePhone(key)) ? true : undefined),
+    ADB_TIMEOUT_MS,
+    what,
+  );
 }

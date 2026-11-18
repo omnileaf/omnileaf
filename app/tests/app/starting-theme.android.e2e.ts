@@ -7,7 +7,7 @@ import { openSettingsPage, useAppSession } from "./app-session.ts";
 import { capability } from "./app-under-test.ts";
 import { openFromTheLauncher } from "./icon-action-intent.ts";
 import { followRestartedApp } from "./restarted-app.ts";
-import { savedOnThePhone } from "./saved-local-storage.ts";
+import { waitUntilSavedOnThePhone } from "./saved-local-storage.ts";
 import { segmentedOption } from "./segmented-control.ts";
 import { pollUntil } from "./webdriver.ts";
 
@@ -73,15 +73,10 @@ async function chooseTheme(label: string): Promise<void> {
   await (await appSession().waitFor(segmentedOption("//main", label))).click();
 }
 
-async function savedTheme(): Promise<string | undefined> {
-  return savedOnThePhone(THEME_KEY);
-}
-
-/** Chromium writes localStorage to disk a few seconds after the page sets it, so an update that kills the app sooner loses the choice. */
 async function waitForSavedTheme(theme: string): Promise<void> {
-  await pollUntil(
-    async () => ((await savedTheme()) === theme ? true : undefined),
-    ADB_TIMEOUT_MS,
+  await waitUntilSavedOnThePhone(
+    THEME_KEY,
+    (saved) => saved === theme,
     `the ${theme} theme to be saved on the phone`,
   );
 }
