@@ -1,4 +1,4 @@
-import { FolderCheck, TriangleAlert } from "@lucide/svelte";
+import { FolderCheck, TriangleAlert, Unplug } from "@lucide/svelte";
 
 import { assertNever } from "#lib/assert-never.ts";
 
@@ -40,6 +40,20 @@ function placeOf({ folder, problem }: MissingFolder): string {
     default:
       return assertNever(problem);
   }
+}
+
+export function noticeNotConnected(
+  notices: Notices,
+  title: string,
+  find: () => void,
+): void {
+  notices.show({
+    tone: "plain",
+    icon: Unplug,
+    title: m.missing_not_connected_title({ title }),
+    body: m.missing_not_connected_body(),
+    action: { label: m.missing_find_folder(), run: find },
+  });
 }
 
 export function noticeFolderBack(

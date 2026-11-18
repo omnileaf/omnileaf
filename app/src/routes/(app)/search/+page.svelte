@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowLeft, Unplug } from "@lucide/svelte";
+  import { ArrowLeft } from "@lucide/svelte";
   import { onMount, type Snippet, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -26,6 +26,7 @@
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
+  import { noticeNotConnected } from "#lib/library/missing-folder-notices.ts";
   import { noticingFolderFinder } from "#lib/library/noticing-folder-finder.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import {
@@ -253,23 +254,13 @@
 
   function open(series: LibrarySeries): void {
     if (marksNotConnected && !series.isConnected) {
-      sayNotConnected(series.title, () => {
+      noticeNotConnected(notices, series.title, () => {
         findSeriesFolder(series);
       });
       return;
     }
     rememberSearch();
     void goto(resolve("/(app)/series/[id]", { id: series.id }));
-  }
-
-  function sayNotConnected(title: string, find: () => void): void {
-    notices.show({
-      tone: "plain",
-      icon: Unplug,
-      title: m.search_not_connected_title({ title }),
-      body: m.search_not_connected_body(),
-      action: { label: m.missing_find_folder(), run: find },
-    });
   }
 
   function findSeriesFolder(series: LibrarySeries): void {
@@ -588,7 +579,7 @@
             void chapters.loadAll();
           }}
           onNotConnected={(hit: ChapterHit) => {
-            sayNotConnected(hit.title, () => {
+            noticeNotConnected(notices, hit.title, () => {
               findChapterFolder(hit);
             });
           }}
