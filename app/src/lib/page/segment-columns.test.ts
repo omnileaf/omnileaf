@@ -51,7 +51,7 @@ test("needs room for the widest segment in every column when the columns are equ
   const space = 330;
 
   expect(
-    columnsThatFit({ widths, space, gap: GAP, hasEqualColumns: true }),
+    columnsThatFit({ widths, space, gap: GAP, fitsOneRowByWidest: true }),
   ).toBe(2);
 });
 
@@ -60,7 +60,7 @@ test("keeps equal columns on one row once the widest segment fits in each", () =
   const space = 412;
 
   expect(
-    columnsThatFit({ widths, space, gap: GAP, hasEqualColumns: true }),
+    columnsThatFit({ widths, space, gap: GAP, fitsOneRowByWidest: true }),
   ).toBe(4);
 });
 
@@ -78,4 +78,32 @@ test("stacks segments that may span once two of the others no longer fit side by
   expect(
     columnsThatFit({ widths, space: 250, gap: GAP, spansLastRow: true }),
   ).toBe(1);
+});
+
+test("wraps segments that may span once three of the widest no longer fit on one row, though their own widths would", () => {
+  const widths = [50, 80, 130];
+
+  expect(
+    columnsThatFit({
+      widths,
+      space: 300,
+      gap: GAP,
+      fitsOneRowByWidest: true,
+      spansLastRow: true,
+    }),
+  ).toBe(2);
+});
+
+test("keeps segments that may span on one row while three of the widest fit", () => {
+  const widths = [50, 80, 130];
+
+  expect(
+    columnsThatFit({
+      widths,
+      space: 398,
+      gap: GAP,
+      fitsOneRowByWidest: true,
+      spansLastRow: true,
+    }),
+  ).toBe(3);
 });

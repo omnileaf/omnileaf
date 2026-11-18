@@ -14,6 +14,7 @@ import {
 } from "./fixtures.ts";
 import { settleBarTitle } from "./series-bar.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
+import { fitPhoneToShowRow } from "./show-row-fit.ts";
 
 const TABLET = { width: 820, height: 1180 };
 const NARROWEST_WINDOW = { width: 200, height: 568 };
@@ -280,18 +281,21 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
       scale: undefined,
       viewport: undefined,
       lines: 1,
+      fitsShowRow: true,
     },
     {
       name: "two lines at the largest text",
       scale: LARGEST_TEXT_SCALE,
       viewport: undefined,
       lines: 2,
+      fitsShowRow: false,
     },
     {
       name: "today's one line on a tablet at the largest text",
       scale: LARGEST_TEXT_SCALE,
       viewport: TABLET,
       lines: 1,
+      fitsShowRow: false,
     },
   ]) {
     test(`gives every book's title ${look.name}`, async ({
@@ -311,6 +315,9 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
       }
 
       await openSeries(page);
+      if (look.fitsShowRow && platform === "android") {
+        await fitPhoneToShowRow(page);
+      }
       const long = bookRows(page).nth(1).getByText(LONG_BOOK_TITLE);
       const short = bookRows(page).nth(2).getByText(shelf.titleOf(2));
 

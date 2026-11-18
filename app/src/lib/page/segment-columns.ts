@@ -2,7 +2,7 @@ export interface SegmentRoom {
   readonly widths: readonly number[];
   readonly space: number;
   readonly gap: number;
-  readonly hasEqualColumns?: boolean;
+  readonly fitsOneRowByWidest?: boolean;
   readonly spansLastRow?: boolean;
 }
 
@@ -10,14 +10,14 @@ export function columnsThatFit({
   widths,
   space,
   gap,
-  hasEqualColumns = false,
+  fitsOneRowByWidest = false,
   spansLastRow = false,
 }: SegmentRoom): number {
   const count = widths.length;
   const widest = Math.max(...widths);
   const spanOf = (columns: number, total: number): number =>
     total + (columns - 1) * gap;
-  const oneRow = hasEqualColumns
+  const oneRow = fitsOneRowByWidest
     ? count * widest
     : widths.reduce((sum, width) => sum + width, 0);
   if (spanOf(count, oneRow) <= space) {
@@ -61,7 +61,7 @@ export function followFittingColumns(
   track: HTMLElement,
   ruler: HTMLElement,
   onFit: (columns: number) => void,
-  layout: Pick<SegmentRoom, "hasEqualColumns" | "spansLastRow"> = {},
+  layout: Pick<SegmentRoom, "fitsOneRowByWidest" | "spansLastRow"> = {},
 ): () => void {
   const fit = (): void => {
     const rulerWidth = ruler.getBoundingClientRect().width;

@@ -42,11 +42,20 @@
   interface PhoneTools {
     readonly variant: ButtonVariant;
     readonly foldsShownWhenCrowded: boolean;
+    readonly wrapsShownInEqualRows: boolean;
   }
 
   const PHONE_TOOLS: Readonly<Record<PhonePlatform, PhoneTools>> = {
-    ios: { variant: "secondary", foldsShownWhenCrowded: true },
-    android: { variant: "plain", foldsShownWhenCrowded: false },
+    ios: {
+      variant: "secondary",
+      foldsShownWhenCrowded: true,
+      wrapsShownInEqualRows: false,
+    },
+    android: {
+      variant: "plain",
+      foldsShownWhenCrowded: false,
+      wrapsShownInEqualRows: true,
+    },
   };
   const ICON_SIZE = 16;
 
@@ -158,7 +167,8 @@
       labelledBy={showLabelId}
       size="small"
       isFullWidth
-      spansLastRow={phonePlatform === "android"}
+      spansLastRow={tools.wrapsShownInEqualRows}
+      fitsOneRowByWidest={tools.wrapsShownInEqualRows}
       segmentClass={[
         "min-inline-native-target",
         phonePlatform === "android" && "max-medium:px-md",

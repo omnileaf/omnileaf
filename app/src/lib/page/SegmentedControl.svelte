@@ -28,6 +28,7 @@
     readonly hasWindowsLook?: boolean;
     readonly hasEqualColumns?: boolean;
     readonly spansLastRow?: boolean;
+    readonly fitsOneRowByWidest?: boolean;
     readonly onChoose: (option: Option) => void;
     readonly onFit?: ((isOneRow: boolean) => void) | undefined;
     readonly class?: ClassValue;
@@ -117,6 +118,7 @@
     hasWindowsLook = false,
     hasEqualColumns = false,
     spansLastRow = false,
+    fitsOneRowByWidest = false,
     onChoose,
     onFit,
     class: className,
@@ -178,7 +180,10 @@
       (fitted) => {
         fittedColumns = fitted;
       },
-      { hasEqualColumns: hasEqualMacosColumns, spansLastRow },
+      {
+        fitsOneRowByWidest: hasEqualMacosColumns || fitsOneRowByWidest,
+        spansLastRow,
+      },
     );
   });
 

@@ -1,8 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
-import { boxOf, expect, test, tokenColour } from "./fixtures.ts";
+import { boxOf, expect, setTextScale, test, tokenColour } from "./fixtures.ts";
 import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
+import { fitPhoneToShowRow } from "./show-row-fit.ts";
 
 const TONAL_BAR = "rgb(233, 240, 232)";
 const OTHER_SERIES = {
@@ -16,6 +17,9 @@ const OTHER_SERIES = {
 } as const;
 
 const PIXEL_9_PRO = { width: 412, height: 915 };
+const BOARD_PHONE = { width: 390, height: 844 };
+const LARGER_TEXT_SCALE = 1.3;
+const SHOW_CHOICES = ["All", "Unread", "Bookmarked"] as const;
 const STATUS_BAR = 24;
 const NAVIGATION_BAR = 24;
 const TOP_APP_BAR = 64;
@@ -39,6 +43,21 @@ async function openSeries(page: Page): Promise<void> {
     { top: STATUS_BAR, bottom: NAVIGATION_BAR },
   );
   await page.goto(`/series/${SERIES_ID}`);
+}
+
+function showChoice(page: Page, name: string): Locator {
+  return page
+    .getByRole("radiogroup", { name: "Show" })
+    .getByRole("radio", { name, exact: true });
+}
+
+async function showRows(page: Page): Promise<string[][]> {
+  const tops = await Promise.all(
+    SHOW_CHOICES.map(async (name) => (await boxOf(showChoice(page, name))).y),
+  );
+  return [...new Set(tops)].map((top) =>
+    SHOW_CHOICES.filter((_, index) => tops[index] === top),
+  );
 }
 
 function topAppBar(page: Page): Locator {
@@ -295,6 +314,54 @@ test.describe(
     });
   },
 );
+
+for (const phone of [BOARD_PHONE, PIXEL_9_PRO]) {
+  test.describe(
+    `the Show choices on an Android phone ${String(phone.width)} wide as the text grows`,
+    { tag: "@native" },
+    () => {
+      test.use({
+        viewport: phone,
+        backend: new FakeShelf([READ]).backend(),
+      });
+
+      test.beforeEach(({ platform }) => {
+        test.skip(platform !== "android", "Android's Show choices");
+      });
+
+      test("keeps All, Unread and Bookmarked on one row at the default text size once the widest fits each column", async ({
+        page,
+      }) => {
+        await openSeries(page);
+        await fitPhoneToShowRow(page);
+
+        await expect.poll(() => showRows(page)).toEqual([[...SHOW_CHOICES]]);
+      });
+
+      test("wraps into two equal columns at larger text, Bookmarked across both below", async ({
+        page,
+      }) => {
+        await setTextScale(page, LARGER_TEXT_SCALE);
+        await openSeries(page);
+
+        await expect
+          .poll(() => showRows(page))
+          .toEqual([["All", "Unread"], ["Bookmarked"]]);
+        const [all, unread, bookmarked] = await Promise.all([
+          boxOf(showChoice(page, "All")),
+          boxOf(showChoice(page, "Unread")),
+          boxOf(showChoice(page, "Bookmarked")),
+        ]);
+        expect(unread.width).toBeCloseTo(all.width, 0);
+        expect(bookmarked.x).toBe(all.x);
+        expect(bookmarked.x + bookmarked.width).toBeCloseTo(
+          unread.x + unread.width,
+          0,
+        );
+      });
+    },
+  );
+}
 
 test.describe(
   "showing a series' folder on an Android phone",
