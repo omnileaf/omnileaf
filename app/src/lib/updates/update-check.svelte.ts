@@ -64,7 +64,10 @@ export class UpdateCheck {
   status: UpdateStatus | null = $state(null);
   phase: CheckPhase = $state("resting");
 
-  constructor(private readonly asks: UpdateAsks) {}
+  constructor(
+    private readonly onFailure: (error: IpcError) => void,
+    private readonly asks: UpdateAsks,
+  ) {}
 
   get hint(): string | undefined {
     return checkHint(this.phase, this.status);
@@ -72,9 +75,11 @@ export class UpdateCheck {
 
   async load(): Promise<void> {
     const known = await this.asks.status();
-    if (known.status === "ok") {
-      this.status = known.data;
+    if (known.status === "error") {
+      this.onFailure(known.error);
+      return;
     }
+    this.status = known.data;
   }
 
   async check(): Promise<void> {
@@ -84,6 +89,7 @@ export class UpdateCheck {
     this.phase = "checking";
     const checked = await this.asks.check();
     if (checked.status === "error") {
+      this.onFailure(checked.error);
       this.phase = "failed";
       return;
     }
@@ -99,6 +105,6 @@ function isFailure(outcome: CheckOutcome | null): boolean {
 let appUpdateCheck: UpdateCheck | undefined;
 
 export function updateCheckForApp(): UpdateCheck {
-  appUpdateCheck ??= new UpdateCheck(UPDATE_ASKS);
+  appUpdateCheck ??= new UpdateCheck(reportError, UPDATE_ASKS);
   return appUpdateCheck;
 }

@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import type {
   AppInfo,
@@ -57,6 +57,8 @@ function checked(
   return () => Promise.resolve({ status: "ok", data: { outcome, status } });
 }
 
+const failures = () => undefined;
+
 function asks(overrides: Partial<UpdateAsks> = {}): UpdateAsks {
   return {
     status: () => Promise.resolve({ status: "ok", data: UNCHECKED }),
@@ -96,6 +98,7 @@ test("offers the check only in an Android build that has it", () => {
 
 test("loads the status Android keeps", async () => {
   const check = new UpdateCheck(
+    failures,
     asks({ status: () => Promise.resolve({ status: "ok", data: NEWER }) }),
   );
 
@@ -105,7 +108,10 @@ test("loads the status Android keeps", async () => {
 });
 
 test("follows the status a check returns", async () => {
-  const check = new UpdateCheck(asks({ check: checked("available", NEWER) }));
+  const check = new UpdateCheck(
+    failures,
+    asks({ check: checked("available", NEWER) }),
+  );
 
   await check.check();
 
@@ -115,7 +121,10 @@ test("follows the status a check returns", async () => {
 test("marks a check that could not reach GitHub as failed, keeping the status", async () => {
   const phases = await Promise.all(
     (["offline", "rateLimited", "failed"] as const).map(async (outcome) => {
-      const check = new UpdateCheck(asks({ check: checked(outcome, NEWER) }));
+      const check = new UpdateCheck(
+        failures,
+        asks({ check: checked(outcome, NEWER) }),
+      );
       await check.check();
       return [check.phase, check.status];
     }),
@@ -126,6 +135,7 @@ test("marks a check that could not reach GitHub as failed, keeping the status", 
 
 test("marks a check the app could not ask as failed", async () => {
   const check = new UpdateCheck(
+    failures,
     asks({ check: () => Promise.resolve({ status: "error", error: BROKEN }) }),
   );
 
@@ -137,6 +147,7 @@ test("marks a check the app could not ask as failed", async () => {
 test("shows the check running until it answers", async () => {
   let answer: () => void = () => undefined;
   const check = new UpdateCheck(
+    failures,
     asks({
       check: () =>
         new Promise((resolve) => {
@@ -161,6 +172,7 @@ test("shows the check running until it answers", async () => {
 test("asks once for a tap while a check is still running", async () => {
   let asked = 0;
   const check = new UpdateCheck(
+    failures,
     asks({
       check: () => {
         asked += 1;
@@ -172,4 +184,28 @@ test("asks once for a tap while a check is still running", async () => {
   await Promise.all([check.check(), check.check()]);
 
   expect(asked).toBe(1);
+});
+
+test("hands on the error when the status could not be read", async () => {
+  const onFailure = vi.fn();
+  const check = new UpdateCheck(
+    onFailure,
+    asks({ status: () => Promise.resolve({ status: "error", error: BROKEN }) }),
+  );
+
+  await check.load();
+
+  expect([check.status, onFailure.mock.calls]).toEqual([null, [[BROKEN]]]);
+});
+
+test("hands on the error when the app could not ask for a check", async () => {
+  const onFailure = vi.fn();
+  const check = new UpdateCheck(
+    onFailure,
+    asks({ check: () => Promise.resolve({ status: "error", error: BROKEN }) }),
+  );
+
+  await check.check();
+
+  expect(onFailure.mock.calls).toEqual([[BROKEN]]);
 });
