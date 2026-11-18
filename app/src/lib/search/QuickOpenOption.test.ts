@@ -2,7 +2,11 @@ import { clearMocks, mockConvertFileSrc, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
-import { commands, type LibrarySeries } from "#lib/ipc/bindings.ts";
+import {
+  commands,
+  type LibrarySeries,
+  type MissingFolder,
+} from "#lib/ipc/bindings.ts";
 
 import QuickOpenOptionHarness from "./QuickOpenOptionHarness.svelte";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
@@ -68,4 +72,31 @@ test("offers a series by its real title and cover while Screenshot mode is off",
   const option = screen.getByRole("option");
   await expect.element(option.getByText(REAL_TITLE)).toBeVisible();
   await expect.element(option.getByRole("presentation")).toBeInTheDocument();
+});
+
+const AWAY_FOLDER: MissingFolder = {
+  folder: {
+    id: "0190a3e4-0000-7000-8000-0000000000f1" as MissingFolder["folder"]["id"],
+    kind: "linked",
+    name: "Manga (NAS)",
+    location: "/storage/1A2B-3C4D/Manga (NAS)",
+    isAvailable: false,
+  },
+  problem: { kind: "driveDisconnected" },
+  hiddenSeries: 0,
+  isShownAnyway: true,
+};
+
+test("names the folder to find by a stand-in while Screenshot mode is on", async () => {
+  const screen = await render(QuickOpenOptionHarness, {
+    id: "option",
+    choice: { kind: "findFolder", missing: AWAY_FOLDER },
+    isActive: false,
+    usesStandIns: true,
+    onChoose: () => undefined,
+  });
+
+  const option = screen.getByRole("option");
+  await expect.element(option.getByText("Find the folder")).toBeVisible();
+  expect(option.getByText("Manga (NAS)").elements()).toHaveLength(0);
 });

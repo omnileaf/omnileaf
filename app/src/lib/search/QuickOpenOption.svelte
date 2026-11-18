@@ -20,6 +20,7 @@
   } from "#lib/library/series-look.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
 
   import { LIBRARY_STATES } from "./places";
   import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
@@ -118,7 +119,9 @@
         return {
           icon: FolderSearch,
           label: m.missing_find_folder(),
-          detail: choice.missing.folder.name,
+          detail: usesStandIns
+            ? folderStandIn(choice.missing.folder.name)
+            : choice.missing.folder.name,
         };
     }
   });

@@ -198,7 +198,10 @@
     const page = await commands.readingHistory(null, { kind: "unfinished" });
     const shown =
       page.status === "ok" ? page.data.entries.slice(0, UNFINISHED_SHOWN) : [];
-    awayBooks = marksAway ? await awayFoldersOf(shown) : new Map();
+    awayBooks =
+      marksAway && missingFolders.length > 0
+        ? await awayFoldersOf(shown)
+        : new Map();
     unfinished = shown;
     if (text === "") {
       selectFirstChoice();
