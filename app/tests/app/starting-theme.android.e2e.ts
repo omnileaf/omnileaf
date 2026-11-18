@@ -7,6 +7,7 @@ import { mainNavigationLink, useAppSession } from "./app-session.ts";
 import { capability } from "./app-under-test.ts";
 import { openFromTheLauncher } from "./icon-action-intent.ts";
 import { followRestartedApp } from "./restarted-app.ts";
+import { lastSavedValue } from "./saved-local-storage.ts";
 import { segmentedOption } from "./segmented-control.ts";
 import { pollUntil, xpath } from "./webdriver.ts";
 
@@ -21,6 +22,8 @@ const NIGHT_QUALIFIER = /\snight\s/;
 const APP_PROCESS_RECORD = `:${APP_ID}/u`;
 const PROCESS_RECORD_SEPARATOR = "*APP*";
 const CONFIGURATION_LINE = "Configuration={";
+const THEME_KEY = "omnileaf.theme";
+const SAVED_LOCAL_STORAGE = "app_webview/Default/Local Storage/leveldb";
 
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const APPEARANCE_LINK = xpath(
@@ -74,6 +77,35 @@ async function chooseTheme(label: string): Promise<void> {
   await (await appSession().waitFor(SETTINGS_LINK)).click();
   await (await appSession().waitFor(APPEARANCE_LINK)).click();
   await (await appSession().waitFor(segmentedOption("//main", label))).click();
+}
+
+async function savedTheme(): Promise<string | undefined> {
+  const { stdout } = await run(
+    "adb",
+    [
+      "exec-out",
+      "run-as",
+      APP_ID,
+      "sh",
+      "-c",
+      `cat '${SAVED_LOCAL_STORAGE}'/*.log`,
+    ],
+    {
+      timeout: ADB_TIMEOUT_MS,
+      maxBuffer: ADB_OUTPUT_MAX_BYTES,
+      encoding: "buffer",
+    },
+  );
+  return lastSavedValue(stdout, THEME_KEY);
+}
+
+/** Chromium writes localStorage to disk a few seconds after the page sets it, so an update that kills the app sooner loses the choice. */
+async function waitForSavedTheme(theme: string): Promise<void> {
+  await pollUntil(
+    async () => ((await savedTheme()) === theme ? true : undefined),
+    ADB_TIMEOUT_MS,
+    `the ${theme} theme to be saved on the phone`,
+  );
 }
 
 async function updateTheApp(): Promise<void> {
@@ -134,6 +166,7 @@ test(
   async () => {
     await chooseTheme("Light");
     await waitForAppNightMode("notnight");
+    await waitForSavedTheme("light");
 
     await updateTheApp();
     await openFromTheLauncher();
