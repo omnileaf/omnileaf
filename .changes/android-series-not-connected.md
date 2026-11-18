@@ -4,4 +4,4 @@ area: series
 credit: [kaiserbh]
 ---
 
-On Android phones, a series whose folder or drive is away says so on its page, with its cover dimmed, and offers Find the folder and Check again. Its books and Continue offer Find the folder instead of failing to open, and reading state, tags and progress stay as they were.
+On Android phones, a series whose folder or drive is away says so on its page, dims its cover and offers Find the folder, and its away books show why instead of failing to open. When only some books are away, a card names them. Reading progress stays as it was.
