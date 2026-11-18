@@ -855,7 +855,7 @@ mod tests {
         let folder = ScratchFolder::new("progress-warns-once");
         let mut keeper = keeper(&folder);
         let log = CapturedLog::default();
-        let _logging = tracing::subscriber::set_default(log.subscriber());
+        let _capturing = log.capture();
         refuse_saves(&keeper).await;
         read(&mut keeper, book(1), 3).await;
 
@@ -887,7 +887,7 @@ mod tests {
         let folder = ScratchFolder::new("progress-warns-after-nothing-unsaved");
         let mut keeper = keeper(&folder);
         let log = CapturedLog::default();
-        let _logging = tracing::subscriber::set_default(log.subscriber());
+        let _capturing = log.capture();
         refuse_saves(&keeper).await;
         read(&mut keeper, book(1), 3).await;
         keeper.save().await.unwrap_err();
