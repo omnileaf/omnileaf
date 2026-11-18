@@ -76,7 +76,7 @@ export class UpdateCheck {
   async load(): Promise<void> {
     const known = await this.asks.status();
     if (known.status === "error") {
-      this.onFailure(known.error);
+      this.#report(known.error);
       return;
     }
     this.status = known.data;
@@ -89,12 +89,17 @@ export class UpdateCheck {
     this.phase = "checking";
     const checked = await this.asks.check();
     if (checked.status === "error") {
-      this.onFailure(checked.error);
       this.phase = "failed";
+      this.#report(checked.error);
       return;
     }
     this.status = checked.data.status;
     this.phase = isFailure(checked.data.outcome) ? "failed" : "resting";
+  }
+
+  #report(error: IpcError): void {
+    const { onFailure } = this;
+    onFailure(error);
   }
 }
 

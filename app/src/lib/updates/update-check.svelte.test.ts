@@ -209,3 +209,35 @@ test("hands on the error when the app could not ask for a check", async () => {
 
   expect(onFailure.mock.calls).toEqual([[BROKEN]]);
 });
+
+test("calls the failure handler on its own, as the browser's reportError needs", async () => {
+  const receivers: unknown[] = [];
+  function onFailure(this: unknown): void {
+    receivers.push(this);
+  }
+  const check = new UpdateCheck(
+    onFailure,
+    asks({
+      status: () => Promise.resolve({ status: "error", error: BROKEN }),
+      check: () => Promise.resolve({ status: "error", error: BROKEN }),
+    }),
+  );
+
+  await check.load();
+  await check.check();
+
+  expect(receivers).toEqual([undefined, undefined]);
+});
+
+test("marks the check failed even when the failure handler throws", async () => {
+  const check = new UpdateCheck(
+    () => {
+      throw new TypeError("Illegal invocation");
+    },
+    asks({ check: () => Promise.resolve({ status: "error", error: BROKEN }) }),
+  );
+
+  await check.check().catch(() => undefined);
+
+  expect(check.phase).toBe("failed");
+});
