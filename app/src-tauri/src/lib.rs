@@ -32,6 +32,8 @@ mod open_with;
 mod power_mode;
 mod problem_reporting;
 mod put_away;
+#[cfg(any(all(target_os = "android", not(debug_assertions)), test))]
+mod release_log;
 #[cfg(target_os = "android")]
 mod report_downloads;
 mod report_relay;
@@ -70,9 +72,7 @@ use omnileaf_engine::{
     WindowBackdrop, describe_error,
 };
 use tauri::{App, Manager};
-use tracing_subscriber::{
-    Layer, filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt,
-};
+use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
     library_events::LibraryChangesForwarding,
@@ -93,7 +93,7 @@ pub fn run() {
     tls_provider::install_default();
     let recent_log = RecentLog::default();
     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::INFO))
+        .with(console_log())
         .with(recent_log.clone())
         .init();
     let config = RuntimeConfig::from_environment();
@@ -197,6 +197,20 @@ fn with_android_plugins(app: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri
         .plugin(icon_actions::plugin())
         .plugin(volume_keys::plugin())
         .plugin(open_with::plugin())
+}
+
+/// Android sends a release build's standard output to logcat, which other apps and bug reports can read.
+#[cfg(all(target_os = "android", not(debug_assertions)))]
+fn console_log<S: tracing::Subscriber>() -> impl Layer<S> {
+    release_log::ReleaseLog::new(std::io::stdout)
+}
+
+#[cfg(not(all(target_os = "android", not(debug_assertions))))]
+fn console_log<S>() -> impl Layer<S>
+where
+    S: tracing::Subscriber + for<'span> tracing_subscriber::registry::LookupSpan<'span>,
+{
+    tracing_subscriber::fmt::layer().with_filter(tracing_subscriber::filter::LevelFilter::INFO)
 }
 
 fn open_library(app: &App, config: &RuntimeConfig) -> Result<Option<HomeArrival>, Box<dyn Error>> {
