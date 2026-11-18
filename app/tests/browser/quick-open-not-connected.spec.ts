@@ -15,6 +15,11 @@ import {
 import { sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(6);
+const AWAY_SERIES = sampleSeries(1, 7).map((series) => ({
+  ...series,
+  isConnected: false,
+}));
+const AWAY_SERIES_ID = AWAY_SERIES[0]?.id ?? "";
 const STARTED_AT_MS = 1_790_000_000_000;
 const AWAY_BOOK = "0190a3e4-0000-8000-8000-0000000000b1";
 
@@ -60,6 +65,11 @@ test.use({
       next: null,
     }),
     bookMissingFolder: (book) => (book === AWAY_BOOK ? FOLDER : null),
+    librarySearch: () => ({ series: AWAY_SERIES, next: null }),
+    seriesMissingFolder: (id) => {
+      asked.push(`series ${id}`);
+      return FOLDER;
+    },
     relocateLibraryFolder: (id) => {
       asked.push(`relocate ${id}`);
       return null;
@@ -113,6 +123,25 @@ test.describe(
       await page.keyboard.press("Enter");
 
       await expect.poll(() => asked).toEqual([`relocate ${FOLDER.folder.id}`]);
+      expect(new URL(page.url()).pathname).toBe("/");
+    });
+
+    test("tags a series that isn't connected and finds its folder with Enter", async ({
+      page,
+    }) => {
+      await openQuickOpen(page);
+      await page.keyboard.type("sample");
+      const series = quickOpen(page).getByRole("group", {
+        name: "Series and books",
+      });
+      await expect(series.getByText("Not connected")).toBeVisible();
+      await expect(series).toContainText("Finds the folder");
+
+      await page.keyboard.press("Enter");
+
+      await expect
+        .poll(() => asked)
+        .toEqual([`series ${AWAY_SERIES_ID}`, `relocate ${FOLDER.folder.id}`]);
       expect(new URL(page.url()).pathname).toBe("/");
     });
 
