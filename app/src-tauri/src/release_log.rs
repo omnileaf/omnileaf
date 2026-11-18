@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{io::Write, panic::PanicHookInfo};
 
 use tracing::{
     Event, Level, Subscriber,
@@ -60,6 +60,19 @@ fn is_event_name(name: &str) -> bool {
             .all(|character| character.is_ascii_lowercase() || character == '_')
 }
 
+pub(crate) fn panic_report<W>(make_writer: W) -> impl Fn(&PanicHookInfo<'_>) + Send + Sync + 'static
+where
+    W: for<'writer> MakeWriter<'writer> + Send + Sync + 'static,
+{
+    move |info| {
+        let line = info.location().map_or_else(
+            || "panic".to_owned(),
+            |location| format!("panic at {}:{}", location.file(), location.line()),
+        );
+        write_line(make_writer.make_writer(), &line);
+    }
+}
+
 fn write_line(mut writer: impl Write, line: &str) {
     let _ = writeln!(writer, "{line}");
 }
@@ -67,13 +80,13 @@ fn write_line(mut writer: impl Write, line: &str) {
 #[cfg(test)]
 mod tests {
     use std::{
-        io,
+        io, panic,
         sync::{Arc, Mutex},
     };
 
     use tracing_subscriber::{fmt::MakeWriter, layer::SubscriberExt};
 
-    use super::ReleaseLog;
+    use super::{ReleaseLog, panic_report};
 
     const PRIVATE_PATH: &str = "/storage/emulated/0/Comics/Diary of a Secret";
     const PRIVATE_URI: &str =
@@ -161,5 +174,23 @@ mod tests {
         });
 
         assert_eq!(text, "");
+    }
+
+    #[test]
+    fn reports_a_panic_by_where_it_happened_only() {
+        let written = Written::default();
+        let previous = panic::take_hook();
+        panic::set_hook(Box::new(panic_report(written.clone())));
+
+        let caught = panic::catch_unwind(|| panic!("invalid entry {PRIVATE_PATH}/003.jpg"));
+        panic::set_hook(previous);
+
+        let text = written.text();
+        assert!(caught.is_err());
+        assert!(
+            text.starts_with("panic at app/src-tauri/src/release_log.rs:"),
+            "{text}"
+        );
+        assert!(!text.contains("Diary"), "{text}");
     }
 }
