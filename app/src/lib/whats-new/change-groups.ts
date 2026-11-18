@@ -24,3 +24,15 @@ export function changeGroups(notes: VersionNotes): readonly ChangeGroup[] {
       summaries: entries.map((entry) => entry.summary),
     }));
 }
+
+export function firstChangeGroups(
+  notes: VersionNotes,
+  most: number,
+): readonly ChangeGroup[] {
+  let left = most;
+  return changeGroups(notes).flatMap(({ kind, summaries }) => {
+    const kept = summaries.slice(0, left);
+    left -= kept.length;
+    return kept.length === 0 ? [] : [{ kind, summaries: kept }];
+  });
+}
