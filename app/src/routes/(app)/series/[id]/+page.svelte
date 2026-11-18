@@ -39,6 +39,7 @@
   import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { SERIES_CONTINUE_WORDS } from "#lib/series/continue-card.ts";
   import ContinueCard from "#lib/series/ContinueCard.svelte";
   import { seriesBookList } from "#lib/series/series-books.svelte.ts";
   import { listedSeriesBooks } from "#lib/series/listed-series-books.svelte.ts";
@@ -418,7 +419,13 @@
             onShowFolder={showInFolder}
           />
         {:else}
-          <ContinueCard {overview} {cover} {coverUrl} isWide={isWide.current} />
+          <ContinueCard
+            progress={overview}
+            words={SERIES_CONTINUE_WORDS}
+            {cover}
+            {coverUrl}
+            isWide={isWide.current}
+          />
           {#key foundId}
             <SeriesSections
               sections={found.overview.sections}

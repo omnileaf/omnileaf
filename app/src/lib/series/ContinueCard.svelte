@@ -11,7 +11,7 @@
   } from "#lib/components/ui/card/index.ts";
   import { Progress } from "#lib/components/ui/progress/index.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
-  import type { SeriesBook, SeriesOverview } from "#lib/ipc/bindings.ts";
+  import type { SeriesBook } from "#lib/ipc/bindings.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
   import type { ShownCover } from "#lib/library/series-look.ts";
@@ -21,15 +21,18 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
 
+  import type { ContinueProgress, ContinueWords } from "./continue-card.ts";
   import ContinueLink from "./ContinueLink.svelte";
 
   let {
-    overview,
+    progress,
+    words,
     cover,
     coverUrl,
     isWide,
   }: {
-    overview: SeriesOverview;
+    progress: ContinueProgress;
+    words: ContinueWords;
     cover: ShownCover;
     coverUrl: CoverUrl;
     isWide: boolean;
@@ -44,12 +47,12 @@
   const titleId = $props.id();
   const countId = `${titleId}-count`;
   const next = $derived(
-    overview.upNext?.reading.state === "read" ? null : overview.upNext,
+    progress.upNext?.reading.state === "read" ? null : progress.upNext,
   );
 
   function heading(book: SeriesBook | null): string {
     if (book === null) {
-      return m.series_all_read();
+      return words.allRead();
     }
     return book.reading.state === "started"
       ? m.series_card_continue()
@@ -57,17 +60,17 @@
   }
 
   function withTimeLeft(place: string): string {
-    return overview.secondsLeft === null || !smartFeatures.showsTimeLeft
+    return progress.secondsLeft === null || !smartFeatures.showsTimeLeft
       ? place
       : m.series_time_left({
           where: place,
-          time: readingTime(overview.secondsLeft),
+          time: readingTime(progress.secondsLeft),
         });
   }
 
   function where(book: SeriesBook | null): string {
     if (book === null) {
-      return m.series_all_read_body();
+      return words.allReadBody();
     }
     const { title, reading, pageCount } = book;
     if (reading.state === "started") {
@@ -114,16 +117,16 @@
     </CardDescription>
     <Progress
       aria-labelledby={countId}
-      max={overview.bookCount}
-      value={overview.readCount}
+      max={progress.bookCount}
+      value={progress.readCount}
     />
     <p
       id={countId}
       class="text-small text-muted tabular-nums android:max-medium:tracking-native-row-subtitle"
     >
-      {m.series_read_count({
-        read: overview.readCount,
-        total: overview.bookCount,
+      {words.readCount({
+        read: progress.readCount,
+        total: progress.bookCount,
       })}
     </p>
     {#if next !== null}
@@ -152,14 +155,14 @@
     >
       <Progress
         aria-labelledby={countId}
-        max={overview.bookCount}
-        value={overview.readCount}
+        max={progress.bookCount}
+        value={progress.readCount}
         class="expanded:flex-1 expanded:basis-series-card-progress expanded:min-inline-series-card-progress"
       />
       <p id={countId} class="text-small text-nowrap text-muted tabular-nums">
-        {m.series_read_count({
-          read: overview.readCount,
-          total: overview.bookCount,
+        {words.readCount({
+          read: progress.readCount,
+          total: progress.bookCount,
         })}
       </p>
       {#if next !== null && isWide}
