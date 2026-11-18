@@ -1381,6 +1381,17 @@ test("finds the missing folder of a series and a book only while they aren't con
   ]);
 });
 
+test("finds no missing folder for a series or a book the library doesn't hold", async () => {
+  const { backend } = backendFor("?missing=folder");
+
+  const found = await Promise.all([
+    backend.seriesMissingFolder(sampleSeriesId(999)),
+    backend.bookMissingFolder(sampleBookId(999, 1)),
+  ]);
+
+  expect(found).toEqual([null, null]);
+});
+
 test("lists the series of a folder found again as connected", async () => {
   const { backend } = backendFor("?missing=folder");
   const [missing] = await backend.missingLibraryFolders();

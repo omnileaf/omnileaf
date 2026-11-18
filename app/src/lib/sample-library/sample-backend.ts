@@ -824,8 +824,9 @@ export function sampleBackend(
     };
   }
 
-  function missingFolderHolding(series: SampleSeries) {
+  function missingFolderHolding(series: SampleSeries | undefined) {
     return scenario.missing === "none" ||
+      series === undefined ||
       connectionOf(series).kind === "connected"
       ? null
       : missingFolderEntry(scenario.missing);
@@ -939,10 +940,12 @@ export function sampleBackend(
     );
   }
 
+  function locateSeries(id: string): SampleSeries | undefined {
+    return library.find((series) => sampleSeriesId(series.number) === id);
+  }
+
   function seriesWith(id: string): SampleSeries {
-    const found = library.find(
-      (series) => sampleSeriesId(series.number) === id,
-    );
+    const found = locateSeries(id);
     if (found === undefined) {
       throw failure("seriesNotFound", "that series isn't in the library");
     }
@@ -1406,8 +1409,8 @@ export function sampleBackend(
       scenario.missing === "none" || missingFolder.isFound
         ? []
         : [missingFolderEntry(scenario.missing)],
-    seriesMissingFolder: (id) => missingFolderHolding(seriesWith(id)),
-    bookMissingFolder: (id) => missingFolderHolding(bookWith(id).series),
+    seriesMissingFolder: (id) => missingFolderHolding(locateSeries(id)),
+    bookMissingFolder: (id) => missingFolderHolding(locateBook(id)?.series),
     libraryHiddenSeriesCount: hiddenSeries,
     showMissingLibraryFolder: (_id, isShown) => {
       missingFolder.isShownAnyway = isShown;
