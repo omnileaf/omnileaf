@@ -5,12 +5,7 @@
   import { columnsOf, optionId, type Reveal } from "./grid-keys";
   import { rowWindow, type Seen } from "./row-window";
   import { scrollerOf } from "./scroller";
-  import {
-    headingsBefore,
-    offsetOf,
-    type Stack,
-    stackWindow,
-  } from "./stack-window";
+  import { RowHeights, stackWindow } from "./stack-window";
 
   interface Listbox {
     readonly id: string;
@@ -81,26 +76,24 @@
     total !== undefined && total >= items.length ? total : undefined,
   );
   const count = $derived(knownTotal ?? items.length);
-  const headingCounts = $derived(
-    isHeading === undefined ? undefined : headingsBefore(items.map(isHeading)),
+  const headings = $derived(
+    isHeading === undefined ? undefined : items.map(isHeading),
   );
-  const stack: Stack | undefined = $derived(
-    headingCounts === undefined ||
-      measure === undefined ||
-      measure.columns !== 1
+  const heights: RowHeights | undefined = $derived(
+    headings === undefined || measure === undefined || measure.columns !== 1
       ? undefined
-      : {
+      : new RowHeights({
           count,
-          heights: { row: measure.rowStride, heading: measure.headingStride },
-          headingsBefore: headingCounts,
-        },
+          isHeading: headings,
+          strides: { row: measure.rowStride, heading: measure.headingStride },
+        }),
   );
   const shown: Shown | undefined = $derived.by(() => {
     if (measure === undefined) {
       return undefined;
     }
-    if (stack !== undefined) {
-      return stackWindow(stack, seen, EXTRA_ROWS);
+    if (heights !== undefined) {
+      return stackWindow(heights, seen, EXTRA_ROWS);
     }
     const rows = rowWindow({ count, ...measure }, seen, EXTRA_ROWS);
     return {
@@ -225,9 +218,9 @@
   }
 
   function placeOf(index: number, at: Measure): { top: number; size: number } {
-    if (stack !== undefined) {
-      const top = offsetOf(stack, index);
-      return { top, size: offsetOf(stack, index + 1) - top };
+    if (heights !== undefined) {
+      const top = heights.offsetOf(index);
+      return { top, size: heights.offsetOf(index + 1) - top };
     }
     return {
       top: Math.floor(index / at.columns) * at.rowStride,
