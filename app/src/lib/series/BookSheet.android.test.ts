@@ -155,3 +155,34 @@ test("keeps marking a book that isn't connected", async () => {
 
   expect(heard).toEqual(["mark unread"]);
 });
+
+test("offers the same actions for a book that isn't connected on an Android tablet", async () => {
+  await page.viewport(900, 800);
+  followCorePlatform("android");
+  const heard: string[] = [];
+  const away: SeriesBook = { ...STARTED, file: { kind: "notConnected" } };
+  await render(BookSheet, {
+    book: away,
+    isOnPhone: false,
+    onMark: (mark: ReadMark) => heard.push(`mark ${mark}`),
+    onSelect: () => heard.push("select"),
+    onShowFile: () => heard.push("show file"),
+    onDelete: () => heard.push("delete"),
+    onFind: () => heard.push("find"),
+  });
+  await page.getByRole("button", { name: `More for ${away.title}` }).click();
+  await expect.element(page.getByRole("dialog")).toBeVisible();
+
+  const names = actionNames();
+  await page.getByRole("button", { name: "Find the folder" }).click();
+
+  expect({
+    first: names.find((name) => name !== ""),
+    marks: names.filter((name) => name.startsWith("Mark")),
+    heard,
+  }).toEqual({
+    first: "Find the folder",
+    marks: ["Mark read", "Mark unread"],
+    heard: ["find"],
+  });
+});

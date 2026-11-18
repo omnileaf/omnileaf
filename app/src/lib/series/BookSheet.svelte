@@ -69,10 +69,11 @@
       ? m.series_continue_reading()
       : m.series_start_reading(),
   );
-  const marks = $derived(isOnPhone ? actions.marks : [actions.mark]);
+  const isAndroid = currentPlatform() === "android";
+  const marks = $derived(isAndroid ? actions.marks : [actions.mark]);
   const isFileThere = $derived(book.file.kind === "present");
   const find = $derived(
-    isOnPhone && book.file.kind === "notConnected" ? onFind : undefined,
+    isAndroid && book.file.kind === "notConnected" ? onFind : undefined,
   );
   let isOpen = $state(false);
 

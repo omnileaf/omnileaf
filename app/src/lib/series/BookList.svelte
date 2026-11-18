@@ -11,7 +11,7 @@
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import { ANDROID_SUBHEADING } from "#lib/library/filter-sheet-look.ts";
-  import type { PhonePlatform } from "#lib/page/platform.ts";
+  import { currentPlatform, type PhonePlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { chapterRunWords } from "#lib/series-sections/book-number-words.ts";
   import {
@@ -45,7 +45,6 @@
     readonly more: "menu" | "sheet";
     readonly longPress: "menu" | "pick";
     readonly isSwipeCapsule: boolean;
-    readonly marksNotConnected: boolean;
   }
 
   const PHONE_LISTS: Readonly<Record<PhonePlatform, PhoneList>> = {
@@ -56,7 +55,6 @@
       more: "menu",
       longPress: "menu",
       isSwipeCapsule: true,
-      marksNotConnected: false,
     },
     android: {
       plate: "-ms-page-start -me-page-end",
@@ -65,7 +63,6 @@
       more: "sheet",
       longPress: "pick",
       isSwipeCapsule: false,
-      marksNotConnected: true,
     },
   };
 
@@ -113,6 +110,7 @@
     onFindFolder?: ((book: SeriesBook) => void) | undefined;
   } = $props();
 
+  const marksNotConnected = currentPlatform() === "android";
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_LISTS[phonePlatform],
   );
@@ -252,6 +250,10 @@
       side === undefined ? "nothing" : swipeActions.actionFor(side)}
     {@const mark = bookActions(book.reading).mark}
     {@const isCapsule = phone?.isSwipeCapsule === true && action === "markRead"}
+    {@const whyAway =
+      marksNotConnected && book.file.kind === "notConnected"
+        ? onNotConnected
+        : undefined}
     <div class="relative overflow-hidden">
       {#if side !== undefined && action === "markRead"}
         <div
@@ -359,7 +361,17 @@
           event.preventDefault();
         }}
       >
-        {#if phone === undefined}
+        {#if phone === undefined && whyAway !== undefined}
+          <button
+            type="button"
+            class="flex flex-1 items-center self-stretch text-start min-inline-none"
+            onclick={() => {
+              whyAway(book);
+            }}
+          >
+            <BookRowText {book} isNotConnected />
+          </button>
+        {:else if phone === undefined}
           <a
             href={resolve("/read/[book]", { book: book.id })}
             draggable="false"
@@ -368,10 +380,6 @@
             <BookRowText {book} />
           </a>
         {:else}
-          {@const whyAway =
-            phone.marksNotConnected && book.file.kind === "notConnected"
-              ? onNotConnected
-              : undefined}
           <Item
             look="row"
             class={[
@@ -455,7 +463,7 @@
               : () => {
                   onRemoveBookmark(book.id);
                 }}
-            onShowFile={onShowFile === undefined || phone === undefined
+            onShowFile={onShowFile === undefined
               ? undefined
               : () => {
                   onShowFile(book.id);
@@ -465,7 +473,7 @@
               : () => {
                   onDelete(book.id);
                 }}
-            onFind={onFindFolder === undefined || phone === undefined
+            onFind={onFindFolder === undefined
               ? undefined
               : () => {
                   onFindFolder(book);

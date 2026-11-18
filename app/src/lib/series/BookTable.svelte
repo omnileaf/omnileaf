@@ -12,7 +12,9 @@
     TableRow,
   } from "#lib/components/ui/table/index.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
+  import NotConnectedTag from "#lib/library/NotConnectedTag.svelte";
   import { openMenuFromKeys } from "#lib/page/menu-keys.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import VirtualTable from "#lib/virtual-grid/VirtualTable.svelte";
 
@@ -40,6 +42,7 @@
     onBookmark,
     onDelete,
     onShowInFolder,
+    onNotConnected,
     hasContextMenu = false,
     selectAllBox = $bindable(null),
   }: {
@@ -55,9 +58,12 @@
     onBookmark?: ((books: BookId[]) => void) | undefined;
     onDelete?: ((books: BookId[]) => void) | undefined;
     onShowInFolder?: ((book: BookId) => void) | undefined;
+    onNotConnected?: ((book: SeriesBook) => void) | undefined;
     hasContextMenu?: boolean;
     selectAllBox?: HTMLElement | null;
   } = $props();
+
+  const marksNotConnected = currentPlatform() === "android";
 
   let menuBook: SeriesBook | undefined = $state();
 
@@ -164,6 +170,10 @@
         {#snippet row(book: SeriesBook, rowIndex: number)}
           {@const isPicked = selection.has(book.id)}
           {@const added = dates.format(book.addedAtMs)}
+          {@const whyAway =
+            marksNotConnected && book.file.kind === "notConnected"
+              ? onNotConnected
+              : undefined}
           <TableRow
             aria-rowindex={rowIndex}
             data-book-id={book.id}
@@ -196,19 +206,32 @@
             </TableCell>
             <TableCell>
               <span class="flex items-center gap-icon-gap min-inline-none">
-                <a
-                  href={resolve("/read/[book]", { book: book.id })}
-                  draggable="false"
-                  class={[
-                    "truncate font-medium",
-                    book.reading.state === "read" && !isPicked
-                      ? "text-muted"
-                      : "text-foreground",
-                    isPicked && "macos:text-inherit",
-                  ]}
-                >
-                  {book.title}
-                </a>
+                {#if whyAway === undefined}
+                  <a
+                    href={resolve("/read/[book]", { book: book.id })}
+                    draggable="false"
+                    class={[
+                      "truncate font-medium",
+                      book.reading.state === "read" && !isPicked
+                        ? "text-muted"
+                        : "text-foreground",
+                      isPicked && "macos:text-inherit",
+                    ]}
+                  >
+                    {book.title}
+                  </a>
+                {:else}
+                  <button
+                    type="button"
+                    class="flex items-center gap-sm text-start font-medium text-muted min-inline-none"
+                    onclick={() => {
+                      whyAway(book);
+                    }}
+                  >
+                    <span class="truncate">{book.title}</span>
+                    <NotConnectedTag />
+                  </button>
+                {/if}
                 <BookMarks {book} />
               </span>
             </TableCell>

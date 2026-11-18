@@ -680,6 +680,7 @@
             askToRemoveBooks(picked);
           }
         : undefined}
+      {onNotConnected}
     />
     {#if selection.count > 0 && platform !== "windows"}
       <SelectionBar
@@ -733,7 +734,7 @@
             askToRemoveBooks([book]);
           }
         : undefined}
-      onShowFile={phonePlatform === "android" ? onShowInFolder : undefined}
+      onShowFile={platform === "android" ? onShowInFolder : undefined}
       onSwiped={(
         book: SeriesBook,
         read: ReadMark,

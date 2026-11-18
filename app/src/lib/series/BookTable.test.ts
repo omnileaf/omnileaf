@@ -168,3 +168,37 @@ test("rounds the picked row's ends and inks its title in the on-accent colour on
   ]);
   expect(title.color).toBe(resolvedColour("--color-on-accent", "color"));
 });
+
+test("keeps a book that isn't connected from opening and tags it on a wide Android tablet", async () => {
+  await page.viewport(1280, 800);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("android");
+  document.body.append(document.createElement("main"));
+  const touched: string[] = [];
+  const books = BOOKS.map((book) =>
+    book.position === 3
+      ? { ...book, file: { kind: "notConnected" as const } }
+      : book,
+  );
+  const screen = await render(BookTable, {
+    books,
+    dates: new Intl.DateTimeFormat("en"),
+    isComplete: true,
+    onNearEnd: () => undefined,
+    selection: new Selection<BookId>(),
+    isPickingAll: false,
+    onPickAll: () => undefined,
+    onClear: () => undefined,
+    onMark: () => undefined,
+    onNotConnected: ({ title }: SeriesBook) => touched.push(title),
+  });
+
+  const away = screen.getByRole("button", { name: /^Volume 3/ });
+  await away.click();
+
+  await expect.element(away.getByText("Not connected")).toBeVisible();
+  expect({
+    links: screen.getByRole("link", { name: /^Volume/ }).elements().length,
+    touched,
+  }).toEqual({ links: 3, touched: ["Volume 3"] });
+});
