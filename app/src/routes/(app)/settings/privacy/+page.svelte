@@ -23,6 +23,7 @@
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { screenshotModeSummary } from "#lib/screenshot-mode/status.ts";
   import SettingsEntries from "#lib/settings/SettingsEntries.svelte";
+  import { offersUpdateCheck } from "#lib/updates/update-check.svelte.ts";
 
   import type { PageProps } from "./$types";
 
@@ -50,13 +51,14 @@
   const screenshotMode = getScreenshotMode();
   const timeFormat = getTimeFormatSetting();
   const sendsReportsOnItsOwn = $derived(crashReports.choice === "always");
+  const checksForUpdates = $derived(offersUpdateCheck(data.appInfo));
 
   const headingId = $props.id();
   const hintId = `${headingId}-hint`;
 </script>
 
 {#snippet nothingLeaves()}
-  {#if !sendsReportsOnItsOwn}
+  {#if !sendsReportsOnItsOwn || checksForUpdates}
     <p
       class={[
         "flex items-start text-muted",
@@ -73,11 +75,16 @@
         />
       {/if}
       <span class="min-inline-none">
-        <WidthWording
-          wording={isPointer(data.appInfo.platform)
-            ? NOTHING_LEAVES_ON_DESKTOP
-            : NOTHING_LEAVES_ON_TOUCH}
-        />
+        {#if !sendsReportsOnItsOwn}
+          <WidthWording
+            wording={isPointer(data.appInfo.platform)
+              ? NOTHING_LEAVES_ON_DESKTOP
+              : NOTHING_LEAVES_ON_TOUCH}
+          />
+        {/if}
+        {#if checksForUpdates}
+          {m.privacy_checks_for_updates()}
+        {/if}
       </span>
     </p>
   {/if}

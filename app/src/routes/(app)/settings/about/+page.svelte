@@ -25,6 +25,7 @@
   import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
   import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import type { AboutLook } from "#lib/about/look.ts";
   import {
@@ -121,6 +122,18 @@
     >
       {#if offersUpdateCheck(data.appInfo)}
         <UpdateCheckRow checking={updateCheck} {look} />
+        <li>
+          <SettingSwitch
+            label={m.about_check_automatically()}
+            description={updateCheck.isAutomatic
+              ? m.about_check_automatically_on()
+              : m.about_check_automatically_off()}
+            isOn={updateCheck.isAutomatic}
+            onToggle={() => {
+              void updateCheck.setAutomatic(!updateCheck.isAutomatic);
+            }}
+          />
+        </li>
       {/if}
       <AboutPageRow
         route="/(app)/settings/about/report"
