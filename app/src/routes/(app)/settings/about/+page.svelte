@@ -14,7 +14,6 @@
   import { Item } from "#lib/components/ui/item/index.ts";
   import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
-  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -23,12 +22,11 @@
     updateCheckForApp,
   } from "#lib/updates/update-check.svelte.ts";
   import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
-  import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
   import { whatsNewRowHint } from "#lib/whats-new/about-row.ts";
 
-  import type { AboutLook } from "#lib/about/look.ts";
+  import { type AboutLook, ROW_LISTS } from "#lib/about/look.ts";
   import {
     buildDateText,
     builtOn,
@@ -112,14 +110,7 @@
     </p>
   </div>
   <div>
-    <ul
-      class={look === "android"
-        ? FLUSH_LIST
-        : [
-            "divide-y divide-border overflow-hidden rounded-list border border-border bg-card",
-            GROUP_PLATE,
-          ]}
-    >
+    <ul class={ROW_LISTS[look]}>
       {#if offersUpdateCheck(data.appInfo)}
         <UpdateCheckRow checking={updateCheck} {look} />
         <li>
