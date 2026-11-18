@@ -9,6 +9,7 @@
   import RowText from "#lib/about/RowText.svelte";
   import UpdateCheckRow from "#lib/about/UpdateCheckRow.svelte";
   import UpdateBanner from "#lib/updates/UpdateBanner.svelte";
+  import UpdateNoticeRow from "#lib/updates/UpdateNoticeRow.svelte";
   import { Bug, FileText, Info, Send, Sparkles } from "@lucide/svelte";
 
   import { Item } from "#lib/components/ui/item/index.ts";
@@ -125,6 +126,7 @@
             }}
           />
         </li>
+        <UpdateNoticeRow isAutomatic={updateCheck.isAutomatic} />
       {/if}
       {#if whatsNewHint !== undefined}
         <AboutPageRow
