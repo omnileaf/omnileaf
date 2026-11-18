@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 #[cfg(target_os = "android")]
-pub(crate) use android::{match_theme, plugin, remembered_preference};
+pub(crate) use android::{match_theme, plugin};
 #[cfg(target_os = "ios")]
 pub(crate) use ios::match_theme;
 
@@ -15,7 +15,7 @@ pub(crate) enum Theme {
     Dark,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(rename_all = "lowercase")]
 pub(crate) enum ThemePreference {
     System,
@@ -86,7 +86,7 @@ impl PageBackground {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[cfg_attr(
     not(any(target_os = "android", test)),
@@ -111,44 +111,6 @@ impl StartingTheme {
             ThemePreference::Dark => Self::Dark,
         }
     }
-
-    fn preference(self) -> ThemePreference {
-        match self {
-            Self::Device => ThemePreference::System,
-            Self::Light => ThemePreference::Light,
-            Self::Dark => ThemePreference::Dark,
-        }
-    }
-}
-
-#[cfg_attr(
-    not(any(target_os = "android", test)),
-    expect(dead_code, reason = "only Android starts in a remembered theme")
-)]
-#[derive(Debug, Deserialize)]
-struct RememberedTheme {
-    theme: Option<StartingTheme>,
-}
-
-#[cfg_attr(
-    not(any(target_os = "android", test)),
-    expect(dead_code, reason = "only Android starts in a remembered theme")
-)]
-impl RememberedTheme {
-    fn preference(&self) -> Option<ThemePreference> {
-        self.theme.map(StartingTheme::preference)
-    }
-}
-
-#[cfg(not(target_os = "android"))]
-#[expect(
-    clippy::unused_async,
-    reason = "only Android waits for the theme it remembered"
-)]
-pub(crate) async fn remembered_preference(
-    _app: &tauri::AppHandle,
-) -> Result<Option<ThemePreference>, crate::ipc_error::IpcError> {
-    Ok(None)
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
@@ -240,11 +202,10 @@ mod android {
         plugin::{Builder, PluginHandle, TauriPlugin, mobile::PluginInvokeError},
     };
 
-    use super::{BarIcons, RememberedTheme, Theme, ThemePreference, WindowBackground};
+    use super::{BarIcons, Theme, ThemePreference, WindowBackground};
     use crate::ipc_error::IpcError;
 
     const PLUGIN_NAME: &str = "system-bars";
-    const REMEMBERED_THEME: &str = "rememberedTheme";
     const ANDROID_PACKAGE: &str = "app.omnileaf";
     const ANDROID_PLUGIN_CLASS: &str = "SystemBarsPlugin";
     const SHOW_ICONS: &str = "showIcons";
@@ -258,19 +219,6 @@ mod android {
         NotRegistered,
         #[error("restyle the system bars and the window behind the interface")]
         Restyle(#[from] PluginInvokeError),
-    }
-
-    pub(crate) async fn remembered_preference(
-        app: &AppHandle,
-    ) -> Result<Option<ThemePreference>, IpcError> {
-        let bars = app
-            .try_state::<SystemBars>()
-            .ok_or_else(|| IpcError::internal(&SystemBarsError::NotRegistered))?;
-        bars.0
-            .run_mobile_plugin_async::<RememberedTheme>(REMEMBERED_THEME, ())
-            .await
-            .map(|remembered| remembered.preference())
-            .map_err(|error| IpcError::internal(&SystemBarsError::from(error)))
     }
 
     pub(crate) fn plugin() -> TauriPlugin<Wry> {
@@ -354,8 +302,8 @@ mod tests {
     use omnileaf_system_bars::InterfaceStyle;
 
     use super::{
-        BarIcons, PageBackground, RememberedTheme, StartingTheme, Theme, ThemePreference,
-        WindowBackground, interface_style, window_theme,
+        BarIcons, PageBackground, StartingTheme, Theme, ThemePreference, WindowBackground,
+        interface_style, window_theme,
     };
 
     const THEME_CSS: &str = include_str!("../../src/theme.css");
@@ -363,32 +311,6 @@ mod tests {
     const ANDROID_WINDOW_TOKEN: &str = "--android-palette-window:";
     const ANDROID_COLORS: &str = include_str!("../gen/android/app/src/main/res/values/colors.xml");
 
-    #[test]
-    fn reads_the_theme_android_remembered_as_the_page_s_preference() {
-        let sent = ["DEVICE", "LIGHT", "DARK"]
-            .map(|theme| serde_json::json!({ "theme": theme }))
-            .map(|reply| serde_json::from_value::<RememberedTheme>(reply).unwrap());
-
-        let preferences = sent.map(|remembered| remembered.preference());
-
-        assert_eq!(
-            preferences,
-            [
-                Some(ThemePreference::System),
-                Some(ThemePreference::Light),
-                Some(ThemePreference::Dark)
-            ]
-        );
-    }
-
-    #[test]
-    fn reads_no_preference_before_android_remembered_a_theme() {
-        let sent = serde_json::json!({ "theme": null });
-
-        let remembered: RememberedTheme = serde_json::from_value(sent).unwrap();
-
-        assert_eq!(remembered.preference(), None);
-    }
     fn first_android_window_colour(css: &str) -> String {
         let (_, rest) = css
             .split_once(ANDROID_WINDOW_TOKEN)
