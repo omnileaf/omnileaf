@@ -84,6 +84,7 @@
     onBookmark,
     onRemoveBookmark,
     onDelete,
+    onShowFile,
     onSwiped,
     onNotConnected,
   }: {
@@ -101,6 +102,7 @@
     onBookmark?: ((book: BookId) => void) | undefined;
     onRemoveBookmark?: ((book: BookId) => void) | undefined;
     onDelete?: ((book: BookId) => void) | undefined;
+    onShowFile?: ((book: BookId) => void) | undefined;
     onSwiped: (
       book: SeriesBook,
       mark: ReadMark,
@@ -450,6 +452,11 @@
               ? undefined
               : () => {
                   onRemoveBookmark(book.id);
+                }}
+            onShowFile={onShowFile === undefined || phone === undefined
+              ? undefined
+              : () => {
+                  onShowFile(book.id);
                 }}
             onDelete={onDelete === undefined
               ? undefined

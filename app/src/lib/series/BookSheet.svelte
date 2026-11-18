@@ -6,6 +6,7 @@
     Ellipsis,
     Eye,
     EyeOff,
+    FolderOpen,
     ListChecks,
     Play,
     Trash,
@@ -20,6 +21,8 @@
   import { ITEM_LOOKS, ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
+  import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { bookActions } from "./book-actions";
@@ -36,6 +39,7 @@
     onSelect,
     onBookmark,
     onRemoveBookmark,
+    onShowFile,
     onDelete,
   }: {
     book: SeriesBook;
@@ -44,6 +48,7 @@
     onSelect: () => void;
     onBookmark?: (() => void) | undefined;
     onRemoveBookmark?: (() => void) | undefined;
+    onShowFile?: (() => void) | undefined;
     onDelete?: (() => void) | undefined;
   } = $props();
 
@@ -54,6 +59,8 @@
     isOnPhone ? `${ITEM_LOOKS.row} ${ROW_FOCUS_RING}` : ACTION,
   );
   const actions = $derived(bookActions(book.reading));
+  const marks = $derived(isOnPhone ? actions.marks : [actions.mark]);
+  const isFileThere = $derived(book.file.kind === "present");
   let isOpen = $state(false);
 
   function close(): void {
@@ -134,23 +141,25 @@
             : m.series_start_reading()}
         </span>
       </a>
-      <Button
-        type="button"
-        look="row"
-        class={action}
-        onclick={() => {
-          close();
-          onMark(actions.mark);
-        }}
-      >
-        {#if actions.mark === "read"}
-          <Eye size={ICON_SIZE} aria-hidden="true" />
-          <span data-slot="item-title">{m.series_mark_read()}</span>
-        {:else}
-          <EyeOff size={ICON_SIZE} aria-hidden="true" />
-          <span data-slot="item-title">{m.series_mark_unread()}</span>
-        {/if}
-      </Button>
+      {#each marks as mark (mark)}
+        <Button
+          type="button"
+          look="row"
+          class={action}
+          onclick={() => {
+            close();
+            onMark(mark);
+          }}
+        >
+          {#if mark === "read"}
+            <Eye size={ICON_SIZE} aria-hidden="true" />
+            <span data-slot="item-title">{m.series_mark_read()}</span>
+          {:else}
+            <EyeOff size={ICON_SIZE} aria-hidden="true" />
+            <span data-slot="item-title">{m.series_mark_unread()}</span>
+          {/if}
+        </Button>
+      {/each}
       {#if book.isBookmarked && onRemoveBookmark !== undefined}
         <Button
           type="button"
@@ -190,8 +199,30 @@
         <ListChecks size={ICON_SIZE} aria-hidden="true" />
         <span data-slot="item-title">{m.series_select()}</span>
       </Button>
-      {#if onDelete !== undefined}
+      {#if onShowFile !== undefined || onDelete !== undefined}
         <hr class="my-xs border-border" />
+      {/if}
+      {#if onShowFile !== undefined}
+        <Button
+          type="button"
+          look="row"
+          aria-disabled={!isFileThere}
+          class={[
+            action,
+            "aria-disabled:cursor-default aria-disabled:text-foreground/38 aria-disabled:hover:bg-transparent",
+          ]}
+          onclick={() => {
+            if (isFileThere) {
+              close();
+              onShowFile();
+            }
+          }}
+        >
+          <FolderOpen size={ICON_SIZE} aria-hidden="true" />
+          <span data-slot="item-title">{showFileLabel(currentPlatform())}</span>
+        </Button>
+      {/if}
+      {#if onDelete !== undefined}
         <Button
           type="button"
           look="row"
