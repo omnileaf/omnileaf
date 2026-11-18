@@ -45,6 +45,13 @@ class WindowBackground {
 class SystemBarsPlugin(
     activity: Activity,
 ) : Plugin(activity) {
+    private val remembered = RememberedTheme(activity.applicationContext)
+
+    @Command
+    fun rememberedTheme(invoke: Invoke) {
+        invoke.resolve(rememberedThemeReply(remembered.stored()))
+    }
+
     @Command
     fun showIcons(invoke: Invoke) {
         val icons = invoke.parseArgs(BarIcons::class.java)
