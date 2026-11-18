@@ -229,3 +229,19 @@ test("reports a lookup that fails and finds nothing", async () => {
     ["error folderUnreadable"],
   ]);
 });
+
+test("reports an error with no receiver, as the window's reportError needs", async () => {
+  const record = new FinderRecord({ status: "error", error: FAILED });
+  const receivers: unknown[] = [];
+  const finder = new FolderFinder(record.relocate, {
+    ...record.events,
+    onError(this: unknown) {
+      receivers.push(this);
+    },
+  });
+
+  await finder.relocate(MOVED);
+  await finder.findFrom(Promise.resolve({ status: "error", error: FAILED }));
+
+  expect(receivers).toEqual([undefined, undefined]);
+});

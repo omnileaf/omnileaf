@@ -16,7 +16,9 @@ export function noticingFolderFinder(
   return new FolderFinder(
     ({ folder }) => commands.relocateLibraryFolder(folder.id, new Channel()),
     {
-      onError: reportError,
+      onError: (error) => {
+        reportError(error);
+      },
       onShareStillUnreachable: (missing) => {
         noticeFolderStillMissing(notices, missing);
       },
