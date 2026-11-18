@@ -1,0 +1,152 @@
+import type { Locator, Page } from "@playwright/test";
+
+import type { MissingFolder } from "../../src/lib/ipc/bindings.ts";
+
+import type { FakeBackend } from "./fake-backend.ts";
+import { accessibilityViolations, expect, test } from "./fixtures.ts";
+import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
+
+const READ = { state: "read" } as const;
+const UNREAD = { state: "notStarted" } as const;
+
+const FOLDER: MissingFolder = {
+  folder: {
+    id: "0190a3e4-0000-7000-8000-0000000000f1" as MissingFolder["folder"]["id"],
+    kind: "linked",
+    name: "Comics",
+    location: "/storage/1A2B-3C4D/Comics",
+    isAvailable: false,
+  },
+  problem: { kind: "driveDisconnected" },
+  hiddenSeries: 0,
+  isShownAnyway: true,
+};
+
+let asked: string[] = [];
+let missingAnswers: (MissingFolder | null)[] = [];
+
+function awayShelf(): FakeBackend {
+  const shelf = new FakeShelf([READ, READ, UNREAD, UNREAD]).backend();
+  return {
+    ...shelf,
+    seriesOverview: async (id) => ({
+      ...(await shelf.seriesOverview(id)),
+      connection: { kind: "notConnected" },
+    }),
+    seriesMissingFolder: (id) => {
+      asked.push(`series ${id}`);
+      return missingAnswers.length > 1
+        ? (missingAnswers.shift() ?? null)
+        : (missingAnswers[0] ?? null);
+    },
+    rescanLibraryFolder: (id) => {
+      asked.push(`rescan ${id}`);
+      return {
+        id,
+        name: FOLDER.folder.name,
+        outcome: { kind: "unreachable" },
+      };
+    },
+    relocateLibraryFolder: (id) => {
+      asked.push(`relocate ${id}`);
+      return null;
+    },
+  };
+}
+
+test.use({ backend: awayShelf() });
+
+function card(page: Page): Locator {
+  return page
+    .getByRole("status")
+    .filter({ hasText: `${SERIES_TITLE} isn’t connected` });
+}
+
+function notice(page: Page, title: string): Locator {
+  return page
+    .getByRole("listitem")
+    .filter({ has: page.getByText(title, { exact: true }) });
+}
+
+test.describe(
+  "a series that isn't connected on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's Not connected look");
+      asked = [];
+      missingAnswers = [FOLDER];
+    });
+
+    test("dims the cover, tags the count line and warns above Continue", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES_ID}`);
+
+      await expect(card(page)).toContainText(
+        "Its folder or drive may be disconnected. You can still change its reading state and tags. Your reading progress is safe.",
+      );
+      await expect(
+        page.getByRole("img", { name: `Cover of ${SERIES_TITLE}` }),
+      ).toHaveCSS("opacity", "0.45");
+      await expect(
+        page.getByRole("region", { name: "About" }).getByText("Not connected"),
+      ).toBeVisible();
+    });
+
+    test("finds the folder from the card", async ({ page }) => {
+      await page.goto(`/series/${SERIES_ID}`);
+
+      await card(page).getByRole("button", { name: "Find the folder" }).click();
+
+      await expect
+        .poll(() => asked)
+        .toEqual([`series ${SERIES_ID}`, `relocate ${FOLDER.folder.id}`]);
+    });
+
+    test("says it's still not connected when checking again finds the folder away", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES_ID}`);
+
+      await card(page).getByRole("button", { name: "Check again" }).click();
+
+      await expect(notice(page, "Still not connected")).toBeVisible();
+      expect(asked).toEqual([
+        `series ${SERIES_ID}`,
+        `rescan ${FOLDER.folder.id}`,
+        `series ${SERIES_ID}`,
+      ]);
+    });
+
+    test("says nothing when checking again finds the folder back", async ({
+      page,
+    }) => {
+      missingAnswers = [FOLDER, null];
+      await page.goto(`/series/${SERIES_ID}`);
+
+      await card(page).getByRole("button", { name: "Check again" }).click();
+
+      await expect
+        .poll(() => asked)
+        .toEqual([
+          `series ${SERIES_ID}`,
+          `rescan ${FOLDER.folder.id}`,
+          `series ${SERIES_ID}`,
+        ]);
+      await expect(notice(page, "Still not connected")).toHaveCount(0);
+    });
+
+    for (const colorScheme of ["light", "dark"] as const) {
+      test(`passes the accessibility checks in the ${colorScheme} theme`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme });
+        await page.goto(`/series/${SERIES_ID}`);
+        await expect(card(page)).toBeVisible();
+
+        expect(await accessibilityViolations(page)).toEqual([]);
+      });
+    }
+  },
+);
