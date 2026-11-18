@@ -24,3 +24,9 @@ export const SERIES_CONTINUE_WORDS: ContinueWords = {
   allReadBody: m.series_all_read_body,
   readCount: m.series_read_count,
 };
+
+export const VOLUME_CONTINUE_WORDS: ContinueWords = {
+  allRead: m.series_volume_all_read,
+  allReadBody: m.series_volume_all_read_body,
+  readCount: m.series_volume_read_count,
+};
