@@ -18,8 +18,6 @@
     type ChapterHit,
     type ChapterHitPage,
     commands,
-    type IpcError,
-    type MissingFolder,
     type LibrarySearch,
     DEFAULT_LIBRARY_VIEW,
     type LibrarySeries,
@@ -290,27 +288,11 @@
   }
 
   function findSeriesFolder(series: LibrarySeries): void {
-    void findFolderFrom(commands.seriesMissingFolder(series.id));
+    void folderFinder.findFrom(commands.seriesMissingFolder(series.id));
   }
 
   function findChapterFolder(hit: ChapterHit): void {
-    void findFolderFrom(commands.bookMissingFolder(hit.book));
-  }
-
-  async function findFolderFrom(
-    lookup: Promise<
-      | { status: "ok"; data: MissingFolder | null }
-      | { status: "error"; error: IpcError }
-    >,
-  ): Promise<void> {
-    const missing = await lookup;
-    if (missing.status === "error") {
-      reportError(missing.error);
-    } else if (missing.data === null) {
-      await lookAgain(searchKey);
-    } else {
-      folderFinder.find(missing.data);
-    }
+    void folderFinder.findFrom(commands.bookMissingFolder(hit.book));
   }
 
   function focusField(): void {

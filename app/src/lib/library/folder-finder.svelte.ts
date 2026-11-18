@@ -9,6 +9,11 @@ export type RelocateFolder = (
   missing: MissingFolder,
 ) => ReturnType<typeof commands.relocateLibraryFolder>;
 
+export type MissingFolderLookup = Promise<
+  | { readonly status: "ok"; readonly data: MissingFolder | null }
+  | { readonly status: "error"; readonly error: IpcError }
+>;
+
 export interface FolderFinderEvents {
   readonly onError: (error: IpcError) => void;
   readonly onShareStillUnreachable: (missing: MissingFolder) => void;
@@ -42,6 +47,17 @@ export class FolderFinder {
       return;
     }
     void this.relocate(missing);
+  }
+
+  async findFrom(lookup: MissingFolderLookup): Promise<void> {
+    const missing = await lookup;
+    if (missing.status === "error") {
+      this.events.onError(missing.error);
+    } else if (missing.data === null) {
+      await this.events.onSettled();
+    } else {
+      this.find(missing.data);
+    }
   }
 
   continueChoosing(): void {
