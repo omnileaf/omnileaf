@@ -3,7 +3,7 @@ import { afterEach, expect, test } from "vitest";
 
 import { commands, type LibraryFolder } from "#lib/ipc/bindings.ts";
 
-import { LibraryFolders } from "./library-folders.svelte";
+import { LibraryFolders, readFolderList } from "./library-folders.svelte";
 
 type WireFolder = Omit<LibraryFolder, "id"> & { readonly id: string };
 type Answer = (folders: readonly WireFolder[]) => void;
@@ -22,6 +22,15 @@ const COMICS: WireFolder = {
   location: "/media/Sample Comics",
   isAvailable: true,
 };
+
+const MANGA: WireFolder = {
+  id: "3",
+  kind: "linked",
+  name: "Manga",
+  location: "/media/Manga",
+  isAvailable: true,
+};
+const SECOND_PAGE = "after-comics";
 
 afterEach(() => {
   clearMocks();
@@ -113,4 +122,34 @@ test("leaves the count out when the books couldn't be counted", async () => {
   const books = await folders.countBooks(comics);
 
   expect(books).toBeUndefined();
+});
+
+test("reads the folders on every page, home apart from the linked ones", async () => {
+  mockIPC((_command, args) =>
+    (args as { after: string | null }).after === null
+      ? { folders: [HOME, COMICS], next: SECOND_PAGE }
+      : { folders: [MANGA], next: null },
+  );
+
+  const folders = await readFolderList(commands.libraryFolders);
+
+  expect(folders).toEqual({
+    kind: "loaded",
+    home: HOME,
+    linked: [COMICS, MANGA],
+  });
+});
+
+test("reads no folders when a later page fails", async () => {
+  mockIPC((_command, args) => {
+    if ((args as { after: string | null }).after === null) {
+      return { folders: [HOME, COMICS], next: SECOND_PAGE };
+    }
+    // eslint-disable-next-line @typescript-eslint/only-throw-error -- a failed command rejects with its plain error object, which is what the bindings read
+    throw { code: "internal", message: "the second page is gone" };
+  });
+
+  const folders = await readFolderList(commands.libraryFolders);
+
+  expect(folders).toEqual({ kind: "failed" });
 });

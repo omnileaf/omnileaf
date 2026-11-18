@@ -30,6 +30,7 @@ test.use({
     ...onPlatform("android").backend,
     libraryFolders: () => ({
       folders: [
+        { ...FOLDER, id: "home", kind: "home", name: "Omnileaf" },
         { ...FOLDER, id: "comics", name: "Comics" },
         { ...FOLDER, id: "manga", name: "Manga" },
       ],

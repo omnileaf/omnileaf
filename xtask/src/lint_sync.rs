@@ -26,7 +26,7 @@ const MIGRATION_WRITES: &[(&str, &str)] = &[
 ];
 const SQL_EXTENSION: &str = ".sql";
 const RUST_EXTENSION: &str = ".rs";
-const SOURCE_ROOTS: &[&str] = &["crates/", "app/src-tauri/"];
+pub(crate) const SOURCE_ROOTS: &[&str] = &["crates/", "app/src-tauri/"];
 const INTEGRATION_TESTS: &str = "/tests/";
 const STATEMENT_END: char = ';';
 
