@@ -26,9 +26,14 @@ internal class UpdateCheckRunner(
             }
         if (!isFirstWaiting) return
         executor.execute {
-            val outcome = runCatching { attempt(checking::check) }
-            val answers = takeWaiting()
-            outcome.onSuccess { run -> answers.forEach { it(run) } }.getOrThrow()
+            var answers = emptyList<(CheckRun) -> Unit>()
+            val run =
+                try {
+                    attempt(checking::check)
+                } finally {
+                    answers = takeWaiting()
+                }
+            answers.forEach { it(run) }
         }
     }
 
