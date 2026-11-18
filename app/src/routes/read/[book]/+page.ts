@@ -12,12 +12,13 @@ import type { PageLoad } from "./$types";
 const MISSING: BookProblem = "missing";
 const UNREADABLE: BookProblem = "unreadable";
 const FAILED: BookProblem = "failed";
+const NOT_CONNECTED: BookProblem = "notConnected";
 const UNSUPPORTED = "unsupported";
 
 const SHOWN_ON_FAILURE = {
   bookNotFound: MISSING,
   bookUnreadable: UNREADABLE,
-  bookNotConnected: UNREADABLE,
+  bookNotConnected: NOT_CONNECTED,
   bookTypeUnsupported: UNSUPPORTED,
   fileTypeRead: FAILED,
   folderPickerUnavailable: FAILED,

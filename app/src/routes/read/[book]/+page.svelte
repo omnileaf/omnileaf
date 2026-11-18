@@ -1,11 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { refreshAll } from "$app/navigation";
   import { page } from "$app/state";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { libraryBookFileShower } from "#lib/page/show-file.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
+  import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
+  import { noticingFolderFinder } from "#lib/library/noticing-folder-finder.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import Toasts from "#lib/notices/Toasts.svelte";
   import { getBookPresence } from "#lib/reader/book-presence.svelte.ts";
@@ -28,6 +31,13 @@
     ),
   );
   const isFound = $derived(shown.kind === "found");
+  const folderFinder = noticingFolderFinder(notices, refreshAll);
+
+  function findFolder(): void {
+    if (shown.kind !== "found" && shown.place !== null) {
+      void folderFinder.findFrom(commands.bookMissingFolder(shown.place.id));
+    }
+  }
   const bookPresence = getBookPresence();
   const theme = getThemeSetting();
   let damagedBookRead: string | undefined = $state();
@@ -105,8 +115,10 @@
     place={shown.place}
     platform={data.appInfo.platform}
     onShowFile={showFile}
+    onFind={findFolder}
   />
 {/if}
+<FindFolderSheet finder={folderFinder} platform={data.appInfo.platform} />
 <div class="fixed inset-x-none inset-be-none z-notice">
   <Toasts
     {notices}
