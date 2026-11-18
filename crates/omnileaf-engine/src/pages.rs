@@ -249,9 +249,12 @@ impl Pages {
         let (opened, sizes, probed, direction) = self
             .lane
             .run(move || {
-                let opened = shared.books.open(file, &located)?;
+                let opened = shared
+                    .books
+                    .open(file, &located)
+                    .map_err(|source| OpenBookError::refused(id, file_type, &root, source))?;
                 let direction = written_direction(&mut opened.lock());
-                Ok::<_, FormatError>(match known {
+                Ok::<_, OpenBookError>(match known {
                     Some(sizes) if sizes.len() == opened.page_count => {
                         (opened, sizes, None, direction)
                     }
@@ -266,8 +269,7 @@ impl Pages {
                     }
                 })
             })
-            .await?
-            .map_err(|source| OpenBookError::refused(id, file_type, &root, source))?;
+            .await??;
         match probed {
             Some(window) if window.len() < opened.page_count => {
                 self.fill_sizes_later(&opened, found.file, sizes.clone(), window);
