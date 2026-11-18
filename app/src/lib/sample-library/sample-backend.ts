@@ -1260,6 +1260,7 @@ export function sampleBackend(
       );
     },
     matchSystemBars: () => null,
+    rememberedTheme: () => null,
     followBackHistory: () => null,
     watchBackSwipes: () => null,
     allowBackSwipe: () => null,
