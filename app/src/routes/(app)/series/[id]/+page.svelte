@@ -115,13 +115,14 @@
   const width = new WindowWidth();
   const phone = $derived(phoneOf(data.appInfo.platform, width.current));
   const isAndroidPhone = $derived(phone === "android");
+  const marksNotConnected = $derived(data.appInfo.platform === "android");
   const editsInSheet = $derived(isWide.current || phone === "ios");
   const hasToolbar = $derived(
     DESKTOPS.includes(data.appInfo.platform) && isWide.current,
   );
   const notices = getNotices();
   const isNotConnected = $derived(
-    isAndroidPhone && found?.overview.connection.kind === "notConnected",
+    marksNotConnected && found?.overview.connection.kind === "notConnected",
   );
   const folderFinder = noticingFolderFinder(notices, () => {
     readAgain();
@@ -180,7 +181,7 @@
   const partlyAway = $derived.by(() => {
     const connection = found?.overview.connection;
     if (
-      !isAndroidPhone ||
+      !marksNotConnected ||
       overview === undefined ||
       connection?.kind !== "partlyConnected"
     ) {

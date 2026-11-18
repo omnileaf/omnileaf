@@ -37,12 +37,7 @@
   import NotConnectedTag from "#lib/library/NotConnectedTag.svelte";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import {
-    currentPlatform,
-    isPhone,
-    isPointer,
-    phoneOf,
-  } from "#lib/page/platform.ts";
+  import { currentPlatform, isPhone, isPointer } from "#lib/page/platform.ts";
   import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -122,11 +117,8 @@
 
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const isAndroidPhone = $derived(
-    phoneOf(platform, width.current) === "android",
-  );
   const isNotConnected = $derived(
-    isAndroidPhone && overview.connection.kind === "notConnected",
+    platform === "android" && overview.connection.kind === "notConnected",
   );
   const detailsRow = $derived(
     isPhone(platform, width.current) ? DETAILS_ROWS[platform] : undefined,

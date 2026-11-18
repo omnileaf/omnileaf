@@ -31,7 +31,9 @@
     phoneOf(platform, width.current) === "android",
   );
   const find = $derived(
-    isAndroidPhone && book.file.kind === "notConnected" ? onFind : undefined,
+    platform === "android" && book.file.kind === "notConnected"
+      ? onFind
+      : undefined,
   );
   const look = $derived.by(() => {
     if (platform === "macos" || platform === "windows") {
