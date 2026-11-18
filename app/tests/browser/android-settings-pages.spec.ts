@@ -6,7 +6,7 @@ import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
 test.use({ backend: { ...DEFAULT_BACKEND, appLock: () => NEW_APP_LOCK } });
 
 const TITLE_BAR_HEIGHT = 44;
-const LANGUAGE_GAP = 8;
+const GAP_AND_LINE_ABOVE_GROUP = 9;
 const PERMISSION_ROW_INSET = 12;
 
 interface PageStart {
@@ -120,7 +120,7 @@ test.describe(
       ).toHaveCSS("padding-top", "0px");
     });
 
-    test("sets General's language row 8px under the radios", async ({
+    test("sets General's language row under a line 8px below the radios", async ({
       page,
     }) => {
       await page.goto("/settings/general");
@@ -132,25 +132,9 @@ test.describe(
       );
 
       expect(language.y - (radios.y + radios.height)).toBeCloseTo(
-        LANGUAGE_GAP,
+        GAP_AND_LINE_ABOVE_GROUP,
         0,
       );
-    });
-
-    test("runs Advanced's Navigation and Undo headings straight on from the rows above them", async ({
-      page,
-    }) => {
-      await page.goto("/settings/advanced");
-      const row = await boxOf(page.getByRole("link", { name: /Animations/ }));
-      const navigation = page.getByRole("heading", { name: "Navigation" });
-      const navigationBox = await boxOf(navigation);
-      const note = await boxOf(
-        page.getByText("Off, tapping the open tab does nothing."),
-      );
-      const undo = await boxOf(page.getByRole("heading", { name: "Undo" }));
-
-      expect(navigationBox.y - (row.y + row.height)).toBeCloseTo(0, 0);
-      expect(undo.y - (note.y + note.height)).toBeGreaterThanOrEqual(0);
     });
 
     test("pads a radio row with a hint 4px above and below its words", async ({

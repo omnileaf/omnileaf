@@ -72,7 +72,11 @@
     ]}
   />
   {#if android.isOn}
-    <section aria-labelledby={navigationHeadingId} class="flex flex-col">
+    <section
+      data-settings-group
+      aria-labelledby={navigationHeadingId}
+      class="flex flex-col"
+    >
       <h2 id={navigationHeadingId} class={FLUSH_LIST_HEADING}>
         {m.navigation_settings_title()}
       </h2>
@@ -80,6 +84,7 @@
     </section>
   {/if}
   <section
+    data-settings-group
     aria-labelledby={undoHeadingId}
     class={[
       "flex flex-col rounded-card border border-border bg-card android:max-medium:border-0",

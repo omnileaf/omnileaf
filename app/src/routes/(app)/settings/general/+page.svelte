@@ -112,7 +112,7 @@
           opensOn.choose(place);
         }}
       />
-      <div class="mbs-sm flex flex-col">
+      <div data-settings-group class="flex flex-col">
         <SettingChoiceRow
           title={m.language_label()}
           value={languageName(
@@ -136,6 +136,8 @@
             language.choose(choice);
           }}
         />
+      </div>
+      <div data-settings-group class="flex flex-col">
         <div class="-mx-page-start -me-page-end">
           <h2 class={dateHeading}>{m.general_dates_and_numbers()}</h2>
         </div>

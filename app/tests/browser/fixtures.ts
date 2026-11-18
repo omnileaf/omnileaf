@@ -21,6 +21,7 @@ import { NEW_ADULT_CONTENT } from "../../src/lib/library/adult-content.ts";
 import { NEW_LIBRARY_TABS } from "../../src/lib/library/library-tabs.ts";
 import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 import type { ScreenSize } from "../../src/lib/library/library-view.ts";
+import type { KeptReport } from "../../src/lib/problem-report/your-reports.svelte.ts";
 import {
   CommandFailure,
   type FakeBackend,
@@ -449,6 +450,15 @@ export async function screenshotPixels(page: Page, clip: Box): Promise<Pixels> {
 export function pixelAt(pixels: Pixels, x: number, y: number): number[] {
   const start = (y * pixels.width + x) * RGBA_CHANNELS;
   return pixels.rgba.slice(start, start + RGBA_CHANNELS);
+}
+
+export async function keepReports(
+  page: Page,
+  reports: readonly KeptReport[],
+): Promise<void> {
+  await page.addInitScript((kept) => {
+    window.localStorage.setItem("omnileaf.yourReports", kept);
+  }, JSON.stringify(reports));
 }
 
 export async function leaveAndComeBack(page: Page): Promise<void> {

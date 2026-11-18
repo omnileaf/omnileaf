@@ -178,7 +178,7 @@
     !android.isOn && "gap-xl",
   ]}
 >
-  <div class={["flex flex-col", !android.isOn && "gap-sm"]}>
+  <div data-settings-group class={["flex flex-col", !android.isOn && "gap-sm"]}>
     <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
       {m.reading_defaults_intro()}
     </p>
@@ -260,7 +260,7 @@
     </section>
   {/if}
   {#if android.isOn}
-    <div class="flex flex-col">
+    <div data-settings-group class="flex flex-col">
       <h2 id={endId} class={FLUSH_LIST_HEADING}>{m.reader_end_of_book()}</h2>
       {@render skipSwitch()}
     </div>
@@ -276,7 +276,7 @@
     class={android.isOn ? "" : SETTING_CARD}
   />
   {#if android.isOn}
-    <div class="flex flex-col">
+    <div data-settings-group class="flex flex-col">
       <h2 id={swipesId} class={FLUSH_LIST_HEADING}>{m.reading_swipes()}</h2>
       {#each SWIPES as { side, label } (side)}
         <SettingChoiceRow

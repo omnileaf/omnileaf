@@ -74,8 +74,10 @@
   title={m.screenshot_mode_title()}
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-xl android:max-medium:mbs-none">
-  <div class="flex flex-col gap-sm">
+<div
+  class="mbs-pane-gap flex flex-col gap-xl android:max-medium:mbs-none android:max-medium:gap-none"
+>
+  <div data-settings-group class="flex flex-col gap-sm">
     <p class="text-detail text-muted">{m.screenshot_mode_intro()}</p>
     <div class={android.isOn ? FLAT_CARD : [CARD, "divide-y divide-border"]}>
       <SettingSwitch
@@ -126,7 +128,11 @@
     </div>
   </div>
 
-  <section aria-labelledby={quicklyId} class={CARD}>
+  <section
+    data-settings-group
+    aria-labelledby={quicklyId}
+    class={android.isOn ? FLAT_CARD : CARD}
+  >
     <h2
       id={quicklyId}
       class={android.isOn
