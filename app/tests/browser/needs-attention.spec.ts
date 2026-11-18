@@ -219,6 +219,53 @@ test.describe("on a phone", () => {
     expect(asked).toEqual([`relocate ${FOLDER_ID}`]);
   });
 
+  test.describe("with a folder on a network share it can't reach", () => {
+    const ON_A_SHARE = {
+      ...COMICS,
+      problem: {
+        kind: "shareUnreachable",
+        share: { server: "nas", name: "nas/comics" },
+      },
+    } as MissingFolder;
+
+    test.beforeEach(() => {
+      missing = [ON_A_SHARE];
+    });
+
+    test("asks to choose the share again before Android's picker, as the library does", async ({
+      page,
+    }) => {
+      await openLibraryOnAPhone(page);
+      await dot(page).click();
+
+      await sheet(page)
+        .getByRole("button", { name: "Choose it again" })
+        .click();
+
+      await expect(
+        page.getByRole("dialog", { name: "Choose Comics again" }),
+      ).toBeVisible();
+      expect(asked).toEqual([]);
+    });
+
+    test("finds the folder once choosing it again goes on", async ({
+      page,
+    }) => {
+      await openLibraryOnAPhone(page);
+      await dot(page).click();
+      await sheet(page)
+        .getByRole("button", { name: "Choose it again" })
+        .click();
+
+      await page
+        .getByRole("dialog", { name: "Choose Comics again" })
+        .getByRole("button", { name: "Continue" })
+        .click();
+
+      await expect.poll(() => asked).toEqual([`relocate ${FOLDER_ID}`]);
+    });
+  });
+
   test("closes the sheet with Escape and goes back to the dot", async ({
     page,
   }) => {

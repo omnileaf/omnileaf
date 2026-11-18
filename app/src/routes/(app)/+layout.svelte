@@ -42,6 +42,8 @@
   import TopTabBar from "#lib/navigation/TopTabBar.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import Toasts from "#lib/notices/Toasts.svelte";
+  import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
+  import { noticingFolderFinder } from "#lib/library/noticing-folder-finder.ts";
   import { fixProblem } from "#lib/problems/fix-problem.ts";
   import {
     NeedsAttention,
@@ -123,6 +125,9 @@
       reportError,
     ),
   );
+  const folderFinder = noticingFolderFinder(notices, () =>
+    needsAttention.gather(),
+  );
   let isShowingShortcuts = $state(false);
 
   function goBack(): void {
@@ -187,7 +192,7 @@
   });
 
   function fix(problem: Problem): void {
-    void fixProblem(problem).then(() => needsAttention.gather());
+    void fixProblem(problem, folderFinder).then(() => needsAttention.gather());
   }
 
   async function showHomeArrival(arrival: HomeArrival): Promise<void> {
@@ -334,6 +339,7 @@
     onFix={fix}
   />
 {/key}
+<FindFolderSheet finder={folderFinder} platform={data.appInfo.platform} />
 <ScreenshotModeNotice platform={data.appInfo.platform} />
 <LowSpaceNotice {storage} device={wordingContext.device} />
 <AppKeyboardShortcuts
