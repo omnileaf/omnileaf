@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import { boxOf, expect, setTextScale, test, tokenColour } from "./fixtures.ts";
 import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
+import { fitPhoneToShowRow } from "./show-row-fit.ts";
 
 const TONAL_BAR = "rgb(233, 240, 232)";
 const OTHER_SERIES = {
@@ -328,10 +329,11 @@ for (const phone of [BOARD_PHONE, PIXEL_9_PRO]) {
         test.skip(platform !== "android", "Android's Show choices");
       });
 
-      test("keeps All, Unread and Bookmarked on one row at the default text size", async ({
+      test("keeps All, Unread and Bookmarked on one row at the default text size once the widest fits each column", async ({
         page,
       }) => {
         await openSeries(page);
+        await fitPhoneToShowRow(page);
 
         await expect.poll(() => showRows(page)).toEqual([[...SHOW_CHOICES]]);
       });
