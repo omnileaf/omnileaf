@@ -1,6 +1,5 @@
 <script lang="ts">
   import { ArrowLeft, Unplug } from "@lucide/svelte";
-  import { Channel } from "@tauri-apps/api/core";
   import { onMount, type Snippet, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -27,11 +26,7 @@
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
-  import { FolderFinder } from "#lib/library/folder-finder.svelte.ts";
-  import {
-    noticeFolderBack,
-    noticeFolderStillMissing,
-  } from "#lib/library/missing-folder-notices.ts";
+  import { noticingFolderFinder } from "#lib/library/noticing-folder-finder.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import {
     type FilterCondition,
@@ -159,18 +154,8 @@
     ).notConnected !== undefined,
   );
   const notices = getNotices();
-  const folderFinder = new FolderFinder(
-    ({ folder }) => commands.relocateLibraryFolder(folder.id, new Channel()),
-    {
-      onError: reportError,
-      onShareStillUnreachable: (missing) => {
-        noticeFolderStillMissing(notices, missing);
-      },
-      onShareBack: (missing) => {
-        noticeFolderBack(notices, missing);
-      },
-      onSettled: () => lookAgain(searchKey),
-    },
+  const folderFinder = noticingFolderFinder(notices, () =>
+    lookAgain(searchKey),
   );
   const listsChapterTitles = $derived(
     data.appInfo.platform === "macos" || isAndroidPhone,
