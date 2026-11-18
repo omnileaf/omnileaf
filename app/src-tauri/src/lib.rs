@@ -1,4 +1,5 @@
 mod app_lock;
+mod app_updates;
 mod back_navigation;
 mod back_swipe;
 mod commands;
@@ -182,7 +183,8 @@ pub fn run() {
 
 #[cfg(target_os = "android")]
 fn with_android_plugins(app: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
-    app.plugin(omnileaf_folder_access::init())
+    let app = app
+        .plugin(omnileaf_folder_access::init())
         .plugin(system_bars::plugin())
         .plugin(power_mode::plugin())
         .plugin(system_contrast::plugin())
@@ -198,7 +200,12 @@ fn with_android_plugins(app: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri
         .plugin(icon_actions::plugin())
         .plugin(volume_keys::plugin())
         .plugin(open_with::plugin())
-        .plugin(restored_route::plugin())
+        .plugin(restored_route::plugin());
+    if cfg!(feature = "update-check") {
+        app.plugin(app_updates::plugin())
+    } else {
+        app
+    }
 }
 
 fn open_library(app: &App, config: &RuntimeConfig) -> Result<Option<HomeArrival>, Box<dyn Error>> {

@@ -34,6 +34,9 @@ export const commands = {
 	turnAppLockOff: () => typedError<null, IpcError>(__TAURI_INVOKE("turn_app_lock_off")),
 	rememberAppLockWords: (words: LockWords) => typedError<null, IpcError>(__TAURI_INVOKE("remember_app_lock_words", { words })),
 	chooseLockAfter: (lockAfter: LockAfter) => typedError<null, IpcError>(__TAURI_INVOKE("choose_lock_after", { lockAfter })),
+	updateStatus: () => typedError<UpdateStatus, IpcError>(__TAURI_INVOKE("update_status")),
+	checkForUpdates: () => typedError<CheckedForUpdates, IpcError>(__TAURI_INVOKE("check_for_updates")),
+	checkForUpdatesIfDue: () => typedError<CheckedForUpdates, IpcError>(__TAURI_INVOKE("check_for_updates_if_due")),
 	watchSystemBoldText: (onChange: Channel<boolean>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_bold_text", { onChange })),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
@@ -367,6 +370,13 @@ export type ChapterVolume = {
 	startedCount: number,
 };
 
+export type CheckOutcome = "upToDate" | "available" | "offline" | "rateLimited" | "failed";
+
+export type CheckedForUpdates = {
+	outcome: CheckOutcome | null,
+	status: UpdateStatus,
+};
+
 export type ChosenHomeFolder = {
 	location: string,
 	choice: HomeChoice,
@@ -605,7 +615,11 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "defaultViewerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "appLockUnavailable" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "defaultViewerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "appLockUnavailable" | "updateCheckUnavailable" | "internal";
+
+export type KnownRelease = { kind: "unchecked" } | { kind: "upToDate" } | {
+	kind: "newer",
+} & NewerRelease;
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],
@@ -763,6 +777,13 @@ export type MissingFolder = {
 export type NetworkShare = {
 	server: string,
 	name: string,
+};
+
+export type NewerRelease = {
+	version: string,
+	headline: string | null,
+	releasePage: string | null,
+	notice: UpdateNotice,
 };
 
 export type NumberRange = {
@@ -1152,6 +1173,13 @@ export type TrayMenu = {
 export type TrayShortcut = {
 	letter: string,
 	shift: boolean,
+};
+
+export type UpdateNotice = "shown" | "snoozed" | "skipped";
+
+export type UpdateStatus = {
+	isAutomatic: boolean,
+	release: KnownRelease,
 };
 
 export type ValueSource = "folderName" | "fileName" | "files";
