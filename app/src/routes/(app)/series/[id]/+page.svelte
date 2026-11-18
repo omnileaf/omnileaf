@@ -483,7 +483,8 @@
         {:else}
           {#if isNotConnected}
             <SeriesNotConnectedCard
-              title={overview.title}
+              title={m.series_not_connected_title({ title: overview.title })}
+              body={m.series_not_connected_body()}
               onFind={findFolder}
               onCheckAgain={() => {
                 void checkAgain();
