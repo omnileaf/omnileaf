@@ -13,6 +13,7 @@ import {
   shownPage,
   useAppSession,
 } from "./app-session.ts";
+import { segmentedOption } from "./segmented-control.ts";
 import { type Locator, pollUntil, xpath } from "./webdriver.ts";
 
 const PIN = "1234";
@@ -38,14 +39,9 @@ const LOCK_SWITCH_LABEL = "Lock Omnileaf";
 const LOCK_SWITCH = xpath(
   `//main//*[@role='switch'][starts-with(normalize-space(), '${LOCK_SWITCH_LABEL}')]`,
 );
-const LOCK_AFTER = xpath(
-  "//main//button[starts-with(normalize-space(), 'Lock after')]",
-);
-const IMMEDIATELY = xpath(
-  "//*[@role='radio'][starts-with(normalize-space(), 'Immediately')]",
-);
+const IMMEDIATELY = segmentedOption("//main", "Immediately");
 const UNLOCK_BUTTON = xpath("//android.widget.Button[@text='Unlock']");
-const LOCKS_IMMEDIATELY = `return [...document.querySelectorAll("main button")].some((button) => button.textContent.startsWith("Lock after") && button.textContent.includes("Immediately"));`;
+const LOCKS_IMMEDIATELY = `return [...document.querySelectorAll("main [role=radio]")].some((radio) => radio.textContent.trim().startsWith("Immediately") && radio.getAttribute("aria-checked") === "true");`;
 const LOCK_SWITCH_IS_ON = `[...document.querySelectorAll("main [role=switch]")].some((lockSwitch) => lockSwitch.textContent.trim().startsWith("${LOCK_SWITCH_LABEL}") && lockSwitch.getAttribute("aria-checked") === "true")`;
 const IS_LOCK_ON = `return ${LOCK_SWITCH_IS_ON};`;
 const IS_LOCK_OFF = `return !${LOCK_SWITCH_IS_ON};`;
@@ -108,7 +104,6 @@ async function lockImmediately(): Promise<void> {
   await clickWhenShown(appSession(), LOCK_SWITCH);
   await answerScreenLock();
   await appSession().waitUntil(IS_LOCK_ON, "app lock to turn on");
-  await clickWhenShown(appSession(), LOCK_AFTER);
   await clickWhenShown(appSession(), IMMEDIATELY);
   await appSession().waitUntil(
     LOCKS_IMMEDIATELY,
