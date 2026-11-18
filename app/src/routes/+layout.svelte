@@ -96,6 +96,7 @@
   } from "#lib/screenshot-mode/shortcut-setting.svelte.ts";
   import { shortcut } from "#lib/shortcut.ts";
   import FileDropSync from "#lib/drop/FileDropSync.svelte";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import FileOpenSync from "#lib/open-file/FileOpenSync.svelte";
   import TrayMenuSync from "#lib/tray/TrayMenuSync.svelte";
 
@@ -125,7 +126,7 @@
   const screenshotMode = setScreenshotMode(
     screenshotModeForDocument({
       setOn: (isOn) => commands.setScreenshotMode(isOn),
-      reportFailure: reportError,
+      reportFailure,
     }),
   );
   const startsInScreenshotMode = screenshotMode.isOn;

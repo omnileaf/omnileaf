@@ -6,6 +6,7 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import { historyList } from "#lib/history/history-list.svelte.ts";
   import SessionProgress from "#lib/history/SessionProgress.svelte";
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
@@ -93,7 +94,7 @@
     void books.start();
     return listenForLibraryChanges(() => {
       void books.load();
-    }, reportError);
+    }, reportFailure);
   });
 </script>
 

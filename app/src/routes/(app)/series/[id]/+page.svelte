@@ -34,6 +34,7 @@
   import { phoneOf } from "#lib/page/platform.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
   import { checkFolderAgain } from "#lib/library/folder-check.ts";
   import { noticeNotConnected } from "#lib/library/missing-folder-notices.ts";
@@ -361,7 +362,7 @@
     void loadLabelSupport();
     return listenForLibraryChanges(() => {
       readAgain();
-    }, reportError);
+    }, reportFailure);
   });
 
   async function loadDetailEditSupport(): Promise<void> {
@@ -408,7 +409,7 @@
       () => {
         readAgain();
       },
-      reportError,
+      reportFailure,
     );
   });
 </script>
@@ -645,7 +646,7 @@
     editedSeries = undefined;
     readAgain();
   }}
-  onError={reportError}
+  onError={reportFailure}
 />
 
 <FindFolderSheet finder={folderFinder} platform={data.appInfo.platform} />
@@ -655,6 +656,6 @@
     bind:isOpen={isLabelling}
     series={[foundId]}
     startsAtTags={false}
-    onError={reportError}
+    onError={reportFailure}
   />
 {/if}

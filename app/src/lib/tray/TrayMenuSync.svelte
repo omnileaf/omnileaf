@@ -4,6 +4,7 @@
   import { goto } from "$app/navigation";
   import type { ResolvedPathname } from "$app/types";
   import { assertNever } from "#lib/assert-never.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
   import { lastUnfinishedBookPage } from "#lib/history/last-book.ts";
   import { commands, events, type TrayItemChosen } from "#lib/ipc/bindings.ts";
@@ -66,13 +67,16 @@
       listenFor(
         (handler) => events.trayItemChosen.listen(handler),
         choose,
-        reportError,
+        reportFailure,
       ),
-      listenForLibraryChanges(() => void checkForBookToContinue(), reportError),
+      listenForLibraryChanges(
+        () => void checkForBookToContinue(),
+        reportFailure,
+      ),
       listenFor(
         (handler) => events.readingSaved.listen(handler),
         () => void checkForBookToContinue(),
-        reportError,
+        reportFailure,
       ),
     ];
     return () => {

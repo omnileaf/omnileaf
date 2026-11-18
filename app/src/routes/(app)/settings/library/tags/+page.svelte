@@ -7,6 +7,7 @@
   import { Input } from "#lib/components/ui/input/index.ts";
   import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import { commands, type LibraryTag } from "#lib/ipc/bindings.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
@@ -89,7 +90,7 @@
     void loadTags();
     return listenForLibraryChanges(() => {
       void loadTags();
-    }, reportError);
+    }, reportFailure);
   });
 </script>
 

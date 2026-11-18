@@ -3,6 +3,7 @@
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
@@ -53,7 +54,7 @@
       }
     },
     onFailed: (error) => {
-      reportFileFailure(notices, error, reportError);
+      reportFileFailure(notices, error, reportFailure);
     },
   });
 
@@ -72,7 +73,7 @@
   onMount(() => {
     const stop = listenForWindowDrag((drag) => {
       void drop.handle(drag);
-    }, reportError);
+    }, reportFailure);
     for (const type of ALT_TRACKING_EVENTS) {
       window.addEventListener(type, followAlt as EventListener);
     }

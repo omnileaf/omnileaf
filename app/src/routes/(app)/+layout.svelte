@@ -20,6 +20,7 @@
     tapOpenTabSettingForDocument,
   } from "#lib/navigation/tap-open-tab.svelte.ts";
   import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { openTabTap } from "#lib/navigation/open-tab-tap.ts";
@@ -112,7 +113,7 @@
       });
     }
   }
-  const storage = setStorageCheck(new StorageCheck(commands, reportError));
+  const storage = setStorageCheck(new StorageCheck(commands, reportFailure));
   const updateCheck = updateCheckForApp();
   const needsAttention = setNeedsAttention(
     new NeedsAttention(
@@ -120,7 +121,7 @@
         missingFolders: () => commands.missingLibraryFolders(),
         storageUse: () => storage.use,
       },
-      reportError,
+      reportFailure,
     ),
   );
   let isShowingShortcuts = $state(false);
@@ -220,7 +221,7 @@
   }
 
   onMount(() => {
-    preloadCode(READER_ROUTE).catch(reportError);
+    preloadCode(READER_ROUTE).catch(reportFailure);
     const arrival = takeHomeArrival(data.homeArrival);
     if (arrival !== null) {
       void showHomeArrival(arrival);
@@ -230,7 +231,7 @@
     checkForUpdatesIfDue();
     return listenForLibraryChanges(() => {
       void needsAttention.gather();
-    }, reportError);
+    }, reportFailure);
   });
 </script>
 

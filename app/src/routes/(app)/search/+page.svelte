@@ -46,6 +46,7 @@
   import PageToolbar from "#lib/page/PageToolbar.svelte";
   import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import { backIcon } from "#lib/page/top-bar.ts";
   import { hasTopTabBar, phoneOf } from "#lib/page/platform.ts";
   import { GROUPED_GROUND } from "#lib/page/plates.ts";
@@ -385,7 +386,7 @@
         void results.load();
         void found.load();
       }
-    }, reportError),
+    }, reportFailure),
   );
 </script>
 
