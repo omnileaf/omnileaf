@@ -354,5 +354,9 @@
     platform={data.appInfo.platform}
     {quickOpen}
     usesStandIns={screenshotMode.isOn}
+    finder={folderFinder}
+    missingFolders={needsAttention.problems.flatMap((problem) =>
+      problem.kind === "missingFolder" ? [problem.missing] : [],
+    )}
   />
 {/key}

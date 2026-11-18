@@ -1590,6 +1590,7 @@
   "quick_open_actions": "Actions",
   "quick_open_resume": "{book}, page {page}",
   "quick_open_enter_continues": "Enter continues",
+  "quick_open_enter_finds_folder": "Finds the folder",
   "quick_open_show_unread": "Show unread",
   "quick_open_show_started": "Show started",
   "quick_open_show_finished": "Show finished",
