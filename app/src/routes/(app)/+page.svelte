@@ -139,6 +139,7 @@
   } from "#lib/updates/update-check.svelte.ts";
 
   import type { PageProps } from "./$types";
+  import LibraryWhatsNew from "#lib/whats-new/LibraryWhatsNew.svelte";
 
   let { data }: PageProps = $props();
 
@@ -791,6 +792,16 @@
   }
 
   let removing = $state<RemovalTarget[] | undefined>();
+  const isAnotherSheetOpen = $derived(
+    removing !== undefined ||
+      unlinking !== undefined ||
+      choosingAgain !== undefined ||
+      isLabelling ||
+      editedSeries !== undefined ||
+      needsAttention.isShown ||
+      isFilterOpen ||
+      isViewOpen,
+  );
   let isRemoving = $state(false);
 
   async function removeFromLibrary(deleteFiles: boolean): Promise<void> {
@@ -1029,6 +1040,12 @@
     onError={reportError}
   />
 {/if}
+
+<LibraryWhatsNew
+  platform={data.appInfo.platform}
+  installed={data.appInfo.version}
+  isLibraryBusy={selection.isSelecting || isAnotherSheetOpen}
+/>
 
 <EditDetailsDialog
   series={editedSeries}

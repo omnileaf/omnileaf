@@ -1,7 +1,7 @@
 import type { Platform, WhatsNew } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
-const LISTS_WHATS_NEW_IN_ABOUT = {
+const HAS_WHATS_NEW = {
   android: true,
   ios: false,
   macos: false,
@@ -9,11 +9,15 @@ const LISTS_WHATS_NEW_IN_ABOUT = {
   linux: false,
 } as const satisfies Record<Platform, boolean>;
 
+export function hasWhatsNew(platform: Platform): boolean {
+  return HAS_WHATS_NEW[platform];
+}
+
 export function whatsNewRowHint(
   platform: Platform,
   { installed, earlier }: WhatsNew,
 ): string | undefined {
-  if (!LISTS_WHATS_NEW_IN_ABOUT[platform] || installed === null) {
+  if (!hasWhatsNew(platform) || installed === null) {
     return undefined;
   }
   return earlier.length === 0
