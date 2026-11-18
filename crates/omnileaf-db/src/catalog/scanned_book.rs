@@ -9,6 +9,7 @@ use crate::{
         BookDetails, NamedSeries, NewBook, NewSeries, Numbering, RootId,
         book::{BookFiler, Filing},
         book_details::DetailsRecorder,
+        emptied_series_place::FilingPlaces,
         folder_joins::{FolderJoins, FoundIn},
         native_path,
         series::SeriesAdder,
@@ -76,6 +77,7 @@ struct Recorder<'t> {
     series: SeriesAdder<'t>,
     folders: FolderJoins<'t>,
     books: BookFiler<'t>,
+    places: FilingPlaces<'t>,
     details: DetailsRecorder<'t>,
     file: Statement<'t>,
     series_of_book: Statement<'t>,
@@ -97,6 +99,7 @@ impl<'t> Recorder<'t> {
             series: SeriesAdder::new(transaction)?,
             folders: FolderJoins::new(transaction)?,
             books: BookFiler::new(transaction, filing)?,
+            places: FilingPlaces::new(transaction)?,
             details: DetailsRecorder::new(transaction)?,
             file: transaction.prepare(RECORD_FILE)?,
             series_of_book: transaction.prepare(SERIES_OF_BOOK)?,
@@ -123,6 +126,7 @@ impl<'t> Recorder<'t> {
             numbering: scanned.numbering,
             name_language: scanned.name_language.clone(),
         };
+        let held_before = self.places.held_before_filing(book.id(), &scanned.file)?;
         self.books.file(&book, &scanned.file)?;
         self.books
             .record_page_count(book.id(), scanned.page_count)?;
@@ -136,6 +140,7 @@ impl<'t> Recorder<'t> {
             i64::try_from(file.size_bytes).unwrap_or(i64::MAX),
             file.modified_at_ms,
         ))?;
+        self.places.remember_emptied(&held_before)?;
         Ok(self
             .series_of_book
             .query_row([book.id().as_bytes()], |row| stored_id(row, "id"))?)
