@@ -949,6 +949,49 @@
   "whats_new_feat_in": "⟦Ñéŵ íñ {version}·······⟧",
   "whats_new_perf_in": "⟦Ƒášţéŕ íñ {version}········⟧",
   "whats_new_fix_in": "⟦Ƒíẋéð íñ {version}········⟧",
+  "whats_new_earlier": "⟦Éáŕļíéŕ ṽéŕšíöñš·······⟧",
+  "whats_new_first_release": "⟦Ƒíŕšţ ŕéļéášé······⟧",
+  "whats_new_fixes_only": "⟦Ƒíẋéš öñļý····⟧",
+  "whats_new_count_breaking": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "⟦{formattedCount} ƀŕéáķíñĝ··········⟧"
+      }
+    }
+  ],
+  "whats_new_count_sec": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "⟦{formattedCount} šéçûŕíţý··········⟧"
+      }
+    }
+  ],
+  "whats_new_count_feat": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "⟦{formattedCount} ñéŵ········⟧"
+      }
+    }
+  ],
+  "whats_new_count_perf": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "⟦{formattedCount} ƒášţéŕ··········⟧"
+      }
+    }
+  ],
+  "whats_new_count_fix": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "⟦{formattedCount} ƒíẋéð·········⟧"
+      }
+    }
+  ],
   "licences_intro": "⟦Ṁáðé ƒŕöɱ ţĥé þáçķáĝéš ţĥíš ƀûíļð öƒ Öɱñíļéáƒ ûšéš. Éáçĥ öþéñš íţš ļíçéñçé ţéẋţ.································⟧",
   "licences_show_all": [
     {

@@ -949,6 +949,49 @@
   "whats_new_feat_in": "New in {version}",
   "whats_new_perf_in": "Faster in {version}",
   "whats_new_fix_in": "Fixed in {version}",
+  "whats_new_earlier": "Earlier versions",
+  "whats_new_first_release": "First release",
+  "whats_new_fixes_only": "Fixes only",
+  "whats_new_count_breaking": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "{formattedCount} breaking"
+      }
+    }
+  ],
+  "whats_new_count_sec": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "{formattedCount} security"
+      }
+    }
+  ],
+  "whats_new_count_feat": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "{formattedCount} new"
+      }
+    }
+  ],
+  "whats_new_count_perf": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "{formattedCount} faster"
+      }
+    }
+  ],
+  "whats_new_count_fix": [
+    {
+      "declarations": ["input count", "local formattedCount = count: number"],
+      "match": {
+        "*": "{formattedCount} fixed"
+      }
+    }
+  ],
   "licences_intro": "Made from the packages this build of Omnileaf uses. Each opens its licence text.",
   "licences_show_all": [
     {
