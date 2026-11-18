@@ -7,8 +7,6 @@ mod book_numbering;
 mod book_numbers;
 mod bookmark_access;
 mod books_removal;
-#[cfg(test)]
-mod captured_log;
 mod clock;
 mod cover_path;
 mod cover_thumbnails;
