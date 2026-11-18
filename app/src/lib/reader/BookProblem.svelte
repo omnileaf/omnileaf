@@ -6,6 +6,7 @@
     FolderSearch,
     Library,
     TriangleAlert,
+    Unplug,
   } from "@lucide/svelte";
   import { untrack } from "svelte";
 
@@ -48,6 +49,11 @@
       title: m.reader_failed_title,
       body: m.reader_failed,
     },
+    notConnected: {
+      icon: Unplug,
+      title: m.reader_not_connected,
+      body: m.reader_not_connected_body,
+    },
   } satisfies Record<BookProblem, unknown>;
 
   let {
@@ -55,11 +61,13 @@
     place,
     platform,
     onShowFile,
+    onFind,
   }: {
     kind: BookProblem;
     place: BookPlace | null;
     platform: Platform;
     onShowFile: (() => void) | undefined;
+    onFind?: (() => void) | undefined;
   } = $props();
 
   const inLibraryPlace = $derived(
@@ -80,6 +88,11 @@
   const look = $derived(bookProblemLook(platform, width.current));
   const actions = $derived(
     problemActionGroup(platform, width.current, TODAYS_PROBLEM_ACTIONS),
+  );
+  const backLook = $derived(
+    kind === "notConnected" && onFind !== undefined
+      ? actions.other
+      : actions.main,
   );
 </script>
 
@@ -103,13 +116,25 @@
         <EmptyDescription class="text-small">{saying.body()}</EmptyDescription>
       </div>
       <div class={actions.group}>
+        {#if kind === "notConnected" && onFind !== undefined}
+          <button type="button" class={actions.main} onclick={onFind}>
+            <ReaderIcon
+              name="folder-search"
+              fallback={FolderSearch}
+              isKit={look.hasKitIcons}
+              size={BUTTON_ICON_SIZE}
+              kitSize={KIT_BUTTON_ICON_SIZE}
+            />
+            {m.missing_find_folder()}
+          </button>
+        {/if}
         {#if seriesHref === undefined}
-          <a href={libraryHref} class={actions.main}>
+          <a href={libraryHref} class={backLook}>
             <Library size={BUTTON_ICON_SIZE} aria-hidden="true" />
             {m.reader_back_label()}
           </a>
         {:else}
-          <a href={seriesHref} class={actions.main}>
+          <a href={seriesHref} class={backLook}>
             <ArrowLeft size={BUTTON_ICON_SIZE} aria-hidden="true" />
             {m.reader_back_to_the_series()}
           </a>

@@ -3,7 +3,7 @@ import { hasIdShape } from "#lib/ipc/id-shape.ts";
 
 export type BookId = OpenedBook["id"];
 
-export type BookProblem = "missing" | "unreadable" | "failed";
+export type BookProblem = "missing" | "unreadable" | "failed" | "notConnected";
 
 export type BookShown =
   | { readonly kind: "found"; readonly book: OpenedBook }
