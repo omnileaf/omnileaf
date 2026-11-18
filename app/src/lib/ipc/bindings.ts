@@ -43,6 +43,10 @@ export const commands = {
 	snoozeUpdate: (version: string) => typedError<UpdateStatus, IpcError>(__TAURI_INVOKE("snooze_update", { version })),
 	skipUpdate: (version: string) => typedError<UpdateStatus, IpcError>(__TAURI_INVOKE("skip_update", { version })),
 	openReleasePage: () => typedError<null, IpcError>(__TAURI_INVOKE("open_release_page")),
+	updateNotices: () => typedError<UpdateNotices, IpcError>(__TAURI_INVOKE("update_notices")),
+	turnUpdateNoticesOn: () => typedError<UpdateNoticeTurning, IpcError>(__TAURI_INVOKE("turn_update_notices_on")),
+	turnUpdateNoticesOff: () => typedError<null, IpcError>(__TAURI_INVOKE("turn_update_notices_off")),
+	rememberUpdateNoticeWords: (words: UpdateNoticeWords) => typedError<null, IpcError>(__TAURI_INVOKE("remember_update_notice_words", { words })),
 	watchSystemBoldText: (onChange: Channel<boolean>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_bold_text", { onChange })),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
@@ -1203,6 +1207,20 @@ export type TrayShortcut = {
 };
 
 export type UpdateNotice = "shown" | "snoozed" | "skipped";
+
+export type UpdateNoticeTurning = "turnedOn" | "refused" | "blocked";
+
+export type UpdateNoticeWords = {
+	channel: string,
+	title: string,
+	viewRelease: string,
+	skip: string,
+};
+
+export type UpdateNotices = {
+	isOn: boolean,
+	canShow: boolean,
+};
 
 export type UpdateStatus = {
 	isAutomatic: boolean,

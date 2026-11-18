@@ -59,6 +59,7 @@ use crate::{
     system_contrast::{self, SystemContrast},
     system_settings, system_sign_in,
     tray::{TrayItemChosen, TrayMenu},
+    update_notices::{self, UpdateNoticeTurning, UpdateNoticeWords, UpdateNotices},
     version_details,
     volume_keys::{self, PageTurn},
     wallpaper_colours::{self, AccentColours, WallpaperColours},
@@ -97,6 +98,10 @@ macro_rules! app_commands {
             snooze_update,
             skip_update,
             open_release_page,
+            update_notices,
+            turn_update_notices_on,
+            turn_update_notices_off,
+            remember_update_notice_words,
             watch_system_bold_text,
             wallpaper_colours,
             accent_colours,
@@ -636,6 +641,33 @@ async fn skip_update(app: AppHandle, version: String) -> Result<UpdateStatus, Ip
 #[specta::specta]
 async fn open_release_page(app: AppHandle) -> Result<(), IpcError> {
     app_updates::open_release_page(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn update_notices(app: AppHandle) -> Result<UpdateNotices, IpcError> {
+    update_notices::read(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn turn_update_notices_on(app: AppHandle) -> Result<UpdateNoticeTurning, IpcError> {
+    update_notices::turn_on(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn turn_update_notices_off(app: AppHandle) -> Result<(), IpcError> {
+    update_notices::turn_off(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn remember_update_notice_words(
+    app: AppHandle,
+    words: UpdateNoticeWords,
+) -> Result<(), IpcError> {
+    update_notices::remember_words(&app, words).await
 }
 
 #[tauri::command]
