@@ -90,6 +90,10 @@ macro_rules! app_commands {
             update_status,
             check_for_updates,
             check_for_updates_if_due,
+            set_automatic_update_check,
+            snooze_update,
+            skip_update,
+            open_release_page,
             watch_system_bold_text,
             wallpaper_colours,
             accent_colours,
@@ -561,6 +565,30 @@ async fn check_for_updates(app: AppHandle) -> Result<CheckedForUpdates, IpcError
 #[specta::specta]
 async fn check_for_updates_if_due(app: AppHandle) -> Result<CheckedForUpdates, IpcError> {
     app_updates::check_if_due(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn set_automatic_update_check(app: AppHandle, is_on: bool) -> Result<UpdateStatus, IpcError> {
+    app_updates::set_automatic(&app, is_on).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn snooze_update(app: AppHandle, version: String) -> Result<UpdateStatus, IpcError> {
+    app_updates::snooze(&app, &version).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn skip_update(app: AppHandle, version: String) -> Result<UpdateStatus, IpcError> {
+    app_updates::skip(&app, &version).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn open_release_page(app: AppHandle) -> Result<(), IpcError> {
+    app_updates::open_release_page(&app).await
 }
 
 #[tauri::command]

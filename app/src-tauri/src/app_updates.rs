@@ -4,10 +4,14 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 #[cfg(not(target_os = "android"))]
-pub(crate) use elsewhere::{check, check_if_due, status};
+pub(crate) use elsewhere::{
+    check, check_if_due, open_release_page, set_automatic, skip, snooze, status,
+};
 
 #[cfg(target_os = "android")]
-pub(crate) use android::{check, check_if_due, plugin, status};
+pub(crate) use android::{
+    check, check_if_due, open_release_page, plugin, set_automatic, skip, snooze, status,
+};
 
 #[cfg_attr(
     not(target_os = "android"),
@@ -61,6 +65,19 @@ pub(crate) struct UpdateStatus {
     release: KnownRelease,
 }
 
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(dead_code, reason = "only Android checks for updates")
+)]
+impl UpdateStatus {
+    fn release_page(&self) -> Option<&str> {
+        match &self.release {
+            KnownRelease::Newer(newer) => newer.release_page.as_deref(),
+            KnownRelease::Unchecked | KnownRelease::UpToDate => None,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum CheckOutcome {
@@ -76,6 +93,24 @@ pub(crate) enum CheckOutcome {
 pub(crate) struct CheckedForUpdates {
     outcome: Option<CheckOutcome>,
     status: UpdateStatus,
+}
+
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(dead_code, reason = "only Android checks for updates")
+)]
+#[derive(Debug, Serialize)]
+struct AutomaticCheck {
+    automatic: bool,
+}
+
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(dead_code, reason = "only Android checks for updates")
+)]
+#[derive(Debug, Serialize)]
+struct ChosenVersion<'a> {
+    version: &'a str,
 }
 
 #[cfg(not(target_os = "android"))]
@@ -100,6 +135,31 @@ mod elsewhere {
     ) -> Result<CheckedForUpdates, IpcError> {
         Err(IpcError::update_check_unavailable())
     }
+
+    pub(crate) async fn set_automatic<R: Runtime>(
+        _app: &AppHandle<R>,
+        _is_on: bool,
+    ) -> Result<UpdateStatus, IpcError> {
+        Err(IpcError::update_check_unavailable())
+    }
+
+    pub(crate) async fn snooze<R: Runtime>(
+        _app: &AppHandle<R>,
+        _version: &str,
+    ) -> Result<UpdateStatus, IpcError> {
+        Err(IpcError::update_check_unavailable())
+    }
+
+    pub(crate) async fn skip<R: Runtime>(
+        _app: &AppHandle<R>,
+        _version: &str,
+    ) -> Result<UpdateStatus, IpcError> {
+        Err(IpcError::update_check_unavailable())
+    }
+
+    pub(crate) async fn open_release_page<R: Runtime>(_app: &AppHandle<R>) -> Result<(), IpcError> {
+        Err(IpcError::update_check_unavailable())
+    }
 }
 
 #[cfg(target_os = "android")]
@@ -111,8 +171,12 @@ mod android {
         AppHandle, Manager, Wry,
         plugin::{Builder, PluginHandle, TauriPlugin, mobile::PluginInvokeError},
     };
+    use tauri_plugin_opener::OpenerExt;
 
-    use super::{ANSWER_TIMEOUT, CHECK_TIMEOUT, CheckedForUpdates, UpdateStatus};
+    use super::{
+        ANSWER_TIMEOUT, AutomaticCheck, CHECK_TIMEOUT, CheckedForUpdates, ChosenVersion,
+        UpdateStatus,
+    };
     use crate::ipc_error::IpcError;
 
     const PLUGIN_NAME: &str = "updates";
@@ -121,6 +185,9 @@ mod android {
     const STATUS: &str = "status";
     const CHECK: &str = "check";
     const CHECK_IF_DUE: &str = "checkIfDue";
+    const SET_AUTOMATIC: &str = "setAutomatic";
+    const SNOOZE: &str = "snooze";
+    const SKIP: &str = "skip";
 
     struct UpdatesPlugin(PluginHandle<Wry>);
 
@@ -130,6 +197,8 @@ mod android {
         Plugin(#[from] PluginInvokeError),
         #[error("Android's update check took too long to answer")]
         TimedOut,
+        #[error("no newer release has a page to open")]
+        NoReleasePage,
     }
 
     pub(crate) fn plugin() -> TauriPlugin<Wry> {
@@ -152,6 +221,32 @@ mod android {
 
     pub(crate) async fn check_if_due(app: &AppHandle) -> Result<CheckedForUpdates, IpcError> {
         ask(app, CHECK_IF_DUE, (), CHECK_TIMEOUT).await
+    }
+
+    pub(crate) async fn set_automatic(
+        app: &AppHandle,
+        is_on: bool,
+    ) -> Result<UpdateStatus, IpcError> {
+        let choice = AutomaticCheck { automatic: is_on };
+        ask(app, SET_AUTOMATIC, choice, ANSWER_TIMEOUT).await
+    }
+
+    pub(crate) async fn snooze(app: &AppHandle, version: &str) -> Result<UpdateStatus, IpcError> {
+        ask(app, SNOOZE, ChosenVersion { version }, ANSWER_TIMEOUT).await
+    }
+
+    pub(crate) async fn skip(app: &AppHandle, version: &str) -> Result<UpdateStatus, IpcError> {
+        ask(app, SKIP, ChosenVersion { version }, ANSWER_TIMEOUT).await
+    }
+
+    pub(crate) async fn open_release_page(app: &AppHandle) -> Result<(), IpcError> {
+        let status = status(app).await?;
+        let page = status
+            .release_page()
+            .ok_or_else(|| IpcError::internal(&UpdatesError::NoReleasePage))?;
+        app.opener()
+            .open_url(page, None::<&str>)
+            .map_err(|error| IpcError::browser_unavailable(&error))
     }
 
     async fn ask<T: DeserializeOwned>(
@@ -290,6 +385,22 @@ mod tests {
     }
 
     #[test]
+    fn sends_the_keys_android_reads() {
+        let sent = [
+            serde_json::to_value(AutomaticCheck { automatic: true }).unwrap(),
+            serde_json::to_value(ChosenVersion { version: "0.3.0" }).unwrap(),
+        ];
+
+        assert_eq!(
+            sent,
+            [
+                serde_json::json!({ "automatic": true }),
+                serde_json::json!({ "version": "0.3.0" }),
+            ]
+        );
+    }
+
+    #[test]
     fn waits_out_a_check_queued_behind_a_due_check() {
         let two_fetches_in_a_row = LONGEST_RELEASE_FETCH * 2;
 
@@ -297,6 +408,23 @@ mod tests {
             CHECK_TIMEOUT > two_fetches_in_a_row,
             "{CHECK_TIMEOUT:?} gives up before {two_fetches_in_a_row:?}"
         );
+    }
+
+    #[test]
+    fn opens_the_page_of_a_newer_release_only() {
+        let page = "https://github.com/omnileaf/omnileaf/releases/tag/v0.3.0";
+        let statuses = [
+            newer(Some(page)),
+            newer(None),
+            UpdateStatus {
+                is_automatic: true,
+                release: KnownRelease::UpToDate,
+            },
+        ];
+
+        let pages = statuses.each_ref().map(UpdateStatus::release_page);
+
+        assert_eq!(pages, [Some(page), None, None]);
     }
 }
 
@@ -314,12 +442,16 @@ mod elsewhere_tests {
                 super::status(app).await.err(),
                 super::check(app).await.err(),
                 super::check_if_due(app).await.err(),
+                super::set_automatic(app, true).await.err(),
+                super::snooze(app, "0.3.0").await.err(),
+                super::skip(app, "0.3.0").await.err(),
+                super::open_release_page(app).await.err(),
             ]
         });
 
         assert_eq!(
             answers,
-            [(); 3].map(|()| Some(IpcError::update_check_unavailable()))
+            [(); 7].map(|()| Some(IpcError::update_check_unavailable()))
         );
     }
 }
