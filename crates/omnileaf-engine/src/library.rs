@@ -1641,6 +1641,15 @@ impl Library {
         }))
     }
 
+    pub(crate) async fn is_book_not_connected(&self, book: BookId) -> Result<bool, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| missing_root_of_book(connection, book.0))
+            .await?
+            .is_some())
+    }
+
     pub(crate) async fn book_to_open(
         &self,
         book: BookId,

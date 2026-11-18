@@ -193,6 +193,14 @@ impl Reader {
         books.books.iter().map(|book| book.page_count).collect()
     }
 
+    fn move_folder_away(&self) {
+        fs::rename(
+            self.comics.path().join(FOLDER),
+            self.comics.path().join(format!("{FOLDER}, moved")),
+        )
+        .unwrap();
+    }
+
     fn cut_short(&self) {
         let archive = cbz(&page_entries(&portrait_pages(SEED)), Compression::Deflated).unwrap();
         let entry = usize::try_from(PAGES_LEFT_WHOLE).unwrap();
@@ -708,6 +716,41 @@ async fn refuses_to_open_a_book_the_library_does_not_hold() {
 
     assert!(
         matches!(opened, Err(OpenBookError::BookNotFound { id }) if id == book),
+        "{opened:?}"
+    );
+}
+
+#[tokio::test]
+async fn refuses_to_open_a_book_whose_folder_is_missing_as_not_connected() {
+    let reader = Reader::with_book("missing-folder").await;
+    let book = reader.book().await;
+    reader.move_folder_away();
+    reader.library.rescan_folders().await.unwrap();
+
+    let opened = reader
+        .router
+        .open_book(&reader.library, book, NOTHING_UNDECODABLE)
+        .await;
+
+    assert!(
+        matches!(opened, Err(OpenBookError::NotConnected { id }) if id == book),
+        "{opened:?}"
+    );
+}
+
+#[tokio::test]
+async fn refuses_to_open_a_book_whose_folder_went_away_since_the_last_check_as_not_connected() {
+    let reader = Reader::with_book("folder-gone-since").await;
+    let book = reader.book().await;
+    reader.move_folder_away();
+
+    let opened = reader
+        .router
+        .open_book(&reader.library, book, NOTHING_UNDECODABLE)
+        .await;
+
+    assert!(
+        matches!(opened, Err(OpenBookError::NotConnected { id }) if id == book),
         "{opened:?}"
     );
 }
