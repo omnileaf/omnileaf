@@ -12,9 +12,16 @@
 
   let { checking, look }: { checking: UpdateCheck; look: AboutLook } = $props();
 
+  let checkedHint: string | undefined = $state();
+
   onMount(() => {
     void checking.load();
   });
+
+  async function check(): Promise<void> {
+    await checking.check();
+    checkedHint = checking.hint;
+  }
 </script>
 
 <li>
@@ -26,7 +33,7 @@
         look="row"
         aria-busy={checking.phase === "checking"}
         onclick={() => {
-          void checking.check();
+          void check();
         }}
       >
         <RowText
@@ -39,5 +46,5 @@
       </Button>
     {/snippet}
   </Item>
-  <span role="status" class="sr-only">{checking.hint}</span>
+  <span role="status" class="sr-only">{checkedHint}</span>
 </li>
