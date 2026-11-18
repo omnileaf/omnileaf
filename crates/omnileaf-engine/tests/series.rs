@@ -14,7 +14,7 @@ use std::{
 
 use omnileaf_engine::{
     BookId, Clock, Inclusion, Library, LibraryFilter, LibraryListing, LibrarySeries, LibrarySort,
-    LibrarySortBy, ReadMark, SeriesBookListing, SeriesId, ShownOnDisk, SortDirection,
+    LibrarySortBy, ReadMark, SeriesBookListing, SeriesId, SeriesShown, ShownOnDisk, SortDirection,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
@@ -483,9 +483,9 @@ async fn finds_the_file_of_a_series_first_book_to_show_in_its_folder() {
         .unwrap();
     let first = page.series.first().unwrap();
 
-    let shown = library.series_in_folder(first.id).await.unwrap().unwrap();
+    let shown = library.series_shown(first.id).await.unwrap();
 
-    let ShownOnDisk::File(file) = shown else {
+    let Some(SeriesShown::Disk(ShownOnDisk::File(file))) = shown else {
         panic!("expected a file to show, got {shown:?}");
     };
     assert_eq!(

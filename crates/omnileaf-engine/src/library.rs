@@ -1568,28 +1568,8 @@ impl Library {
             .await?)
     }
 
-    pub async fn series_in_folder(
-        &self,
-        id: SeriesId,
-    ) -> Result<Option<ShownOnDisk>, LibraryError> {
-        Ok(match self.series_place(id).await? {
-            Some(SeriesPlace::Book(book)) => file_to_show(&book).map(ShownOnDisk::File),
-            Some(SeriesPlace::Emptied(emptied)) => {
-                path_on_disk(&emptied.root, &emptied.folder).map(ShownOnDisk::Folder)
-            }
-            None => None,
-        })
-    }
-
-    pub async fn series_in_android_tree(
-        &self,
-        id: SeriesId,
-    ) -> Result<Option<ShownInTree>, LibraryError> {
-        Ok(match self.series_place(id).await? {
-            Some(SeriesPlace::Book(book)) => shown_in_tree(book),
-            Some(SeriesPlace::Emptied(emptied)) => folder_in_tree(emptied.root, emptied.folder),
-            None => None,
-        })
+    pub async fn series_shown(&self, id: SeriesId) -> Result<Option<SeriesShown>, LibraryError> {
+        Ok(self.series_place(id).await?.map(SeriesPlace::shown))
     }
 
     async fn series_place(&self, id: SeriesId) -> Result<Option<SeriesPlace>, LibraryError> {
@@ -2599,9 +2579,37 @@ pub enum ShownOnDisk {
     Folder(PathBuf),
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SeriesShown {
+    Tree(ShownInTree),
+    Disk(ShownOnDisk),
+}
+
 enum SeriesPlace {
     Book(BookToRead),
     Emptied(EmptiedFolder),
+}
+
+impl SeriesPlace {
+    fn shown(self) -> SeriesShown {
+        match self {
+            Self::Book(book) => match book.root {
+                RootLocator::AndroidTree(tree) => SeriesShown::Tree(ShownInTree {
+                    tree,
+                    folder: folder_holding(&book.location),
+                }),
+                root @ (RootLocator::Path(_) | RootLocator::AppleBookmark { .. }) => {
+                    SeriesShown::Disk(ShownOnDisk::File(root_folder(&root).join(&book.location)))
+                }
+            },
+            Self::Emptied(EmptiedFolder { root, folder }) => match root {
+                RootLocator::AndroidTree(tree) => SeriesShown::Tree(ShownInTree { tree, folder }),
+                root @ (RootLocator::Path(_) | RootLocator::AppleBookmark { .. }) => {
+                    SeriesShown::Disk(ShownOnDisk::Folder(root_folder(&root).join(folder)))
+                }
+            },
+        }
+    }
 }
 
 struct EmptiedFolder {
@@ -2637,30 +2645,24 @@ fn emptied_folder(
 }
 
 fn shown_in_tree(found: BookToRead) -> Option<ShownInTree> {
-    let folder = found
-        .location
-        .parent()
-        .map(Path::to_path_buf)
-        .unwrap_or_default();
-    folder_in_tree(found.root, folder)
-}
-
-fn folder_in_tree(root: RootLocator, folder: PathBuf) -> Option<ShownInTree> {
-    match root {
-        RootLocator::AndroidTree(tree) => Some(ShownInTree { tree, folder }),
+    match found.root {
+        RootLocator::AndroidTree(tree) => Some(ShownInTree {
+            tree,
+            folder: folder_holding(&found.location),
+        }),
         RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => None,
     }
 }
 
-fn file_to_show(book: &BookToRead) -> Option<PathBuf> {
-    path_on_disk(&book.root, &book.location)
+fn folder_holding(location: &Path) -> PathBuf {
+    location.parent().map(Path::to_path_buf).unwrap_or_default()
 }
 
-fn path_on_disk(root: &RootLocator, location: &Path) -> Option<PathBuf> {
-    match root {
+fn file_to_show(book: &BookToRead) -> Option<PathBuf> {
+    match book.root {
         RootLocator::AndroidTree(_) => None,
         RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
-            Some(root_folder(root).join(location))
+            Some(root_folder(&book.root).join(&book.location))
         }
     }
 }

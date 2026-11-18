@@ -15,8 +15,8 @@ use omnileaf_engine::{
     PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary,
     ReadingWeek, RemovalPreview, RemovalReport, RemovalTarget, ReportCode, ResourceRouter,
     RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
-    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SeriesVolume, ShownOnDisk,
-    SpellingSuggestion, StorageUse, UtcOffset, WriterCursor, WriterPage,
+    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SeriesShown, SeriesVolume,
+    ShownOnDisk, SpellingSuggestion, StorageUse, UtcOffset, WriterCursor, WriterPage,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -1643,15 +1643,13 @@ async fn show_series_in_folder(
     library: State<'_, Library>,
     series: SeriesId,
 ) -> Result<(), IpcError> {
-    if let Some(shown) = library.series_in_android_tree(series).await? {
-        return show_tree_folder(&app, &shown).await;
-    }
-    let Some(shown) = library.series_in_folder(series).await? else {
+    let Some(shown) = library.series_shown(series).await? else {
         return Err(LibraryError::SeriesNotFound { id: series }.into());
     };
     match shown {
-        ShownOnDisk::File(file) => show_in_file_manager(&app, &file),
-        ShownOnDisk::Folder(folder) => open_in_file_manager(&app, &folder),
+        SeriesShown::Tree(in_tree) => show_tree_folder(&app, &in_tree).await,
+        SeriesShown::Disk(ShownOnDisk::File(file)) => show_in_file_manager(&app, &file),
+        SeriesShown::Disk(ShownOnDisk::Folder(folder)) => open_in_file_manager(&app, &folder),
     }
 }
 

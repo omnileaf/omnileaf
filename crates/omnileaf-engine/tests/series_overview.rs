@@ -13,8 +13,8 @@ use std::{fs, path::PathBuf};
 
 use omnileaf_engine::{
     BookReading, BooksShown, Changed, DetailEdits, FileFate, FolderKind, Library, LibraryError,
-    LibraryListing, ReadMark, RemovalTarget, SeriesBook, SeriesBookListing, SeriesId, ShownOnDisk,
-    SortDirection,
+    LibraryListing, ReadMark, RemovalTarget, SeriesBook, SeriesBookListing, SeriesId, SeriesShown,
+    ShownOnDisk, SortDirection,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -416,11 +416,13 @@ async fn shows_the_folder_a_series_books_left() {
     let series = sample.series_named(FIRST_SERIES).await;
     sample.empty_by_a_rescan(FIRST_SERIES).await;
 
-    let shown = sample.library.series_in_folder(series).await.unwrap();
+    let shown = sample.library.series_shown(series).await.unwrap();
 
     assert_eq!(
         shown,
-        Some(ShownOnDisk::Folder(sample.series_folder(FIRST_SERIES)))
+        Some(SeriesShown::Disk(ShownOnDisk::Folder(
+            sample.series_folder(FIRST_SERIES)
+        )))
     );
 }
 
@@ -430,13 +432,13 @@ async fn shows_the_folder_above_a_series_folder_that_is_gone() {
     let series = sample.series_named(FIRST_SERIES).await;
     sample.remove_folder_by_a_rescan(FIRST_SERIES).await;
 
-    let shown = sample.library.series_in_folder(series).await.unwrap();
+    let shown = sample.library.series_shown(series).await.unwrap();
 
     assert_eq!(
         shown,
-        Some(ShownOnDisk::Folder(
+        Some(SeriesShown::Disk(ShownOnDisk::Folder(
             sample.comics.path().join(SAMPLE_LIBRARY_NAME)
-        ))
+        )))
     );
 }
 

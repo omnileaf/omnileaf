@@ -17,7 +17,7 @@ use std::{
 use omnileaf_engine::{
     AndroidTree, BooksRemoval, FileChanges, FolderKind, Library, LibraryError, LibraryFolder,
     LibraryListing, PowerMode, RESCAN_EVERY, RescanConditions, RescanOutcome, Resource,
-    ResourceRouter, RootLocator, SeriesBookListing, TreeUri,
+    ResourceRouter, RootLocator, SeriesBookListing, SeriesShown, ShownInTree, TreeUri,
 };
 use omnileaf_testkit::SAMPLE_LIBRARY_NAME;
 use stepped_clock::SteppedClock;
@@ -335,11 +335,7 @@ async fn finds_the_tree_and_folder_a_series_books_left_in_an_android_folder() {
         .into_iter()
         .find(|series| series.title == EMPTIED_SERIES)
         .unwrap();
-    let before = library
-        .series_in_android_tree(series.id)
-        .await
-        .unwrap()
-        .unwrap();
+    let before = in_tree(library.series_shown(series.id).await.unwrap()).unwrap();
     let series_folder = tree
         .scratch
         .path()
@@ -350,9 +346,9 @@ async fn finds_the_tree_and_folder_a_series_books_left_in_an_android_folder() {
     }
     rescan_linked(&library).await;
 
-    let target = library.series_in_android_tree(series.id).await.unwrap();
+    let target = in_tree(library.series_shown(series.id).await.unwrap()).unwrap();
 
-    assert_eq!(target, Some(before));
+    assert_eq!(target, before);
 }
 
 #[tokio::test]
@@ -378,9 +374,9 @@ async fn finds_the_folder_above_a_series_folder_gone_from_an_android_folder() {
     .unwrap();
     rescan_linked(&library).await;
 
-    let target = library.series_in_android_tree(series.id).await.unwrap();
+    let target = in_tree(library.series_shown(series.id).await.unwrap()).unwrap();
 
-    assert_eq!(target.map(|shown| shown.folder), Some(PathBuf::new()));
+    assert_eq!(target.folder, PathBuf::new());
 }
 
 #[tokio::test]
@@ -407,11 +403,7 @@ async fn finds_the_tree_and_folder_to_show_for_a_series_in_an_android_folder() {
         .unwrap()
         .id;
 
-    let target = library
-        .series_in_android_tree(series.id)
-        .await
-        .unwrap()
-        .unwrap();
+    let target = in_tree(library.series_shown(series.id).await.unwrap()).unwrap();
 
     let book_target = library
         .book_in_android_tree(first_book)
@@ -420,5 +412,11 @@ async fn finds_the_tree_and_folder_to_show_for_a_series_in_an_android_folder() {
         .unwrap();
     assert_eq!(target.tree.uri().as_str(), COMICS_TREE);
     assert_eq!(target.folder, book_target.folder);
-    assert_eq!(library.series_in_folder(series.id).await.unwrap(), None);
+}
+
+fn in_tree(shown: Option<SeriesShown>) -> Option<ShownInTree> {
+    match shown {
+        Some(SeriesShown::Tree(in_tree)) => Some(in_tree),
+        Some(SeriesShown::Disk(_)) | None => None,
+    }
 }
