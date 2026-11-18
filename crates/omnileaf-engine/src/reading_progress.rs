@@ -479,13 +479,11 @@ mod tests {
     use std::sync::atomic::{AtomicU64, Ordering};
 
     use omnileaf_db::{Config, Database, store::reading_state};
-    use omnileaf_testkit::ScratchFolder;
+    use omnileaf_testkit::{CapturedLog, ScratchFolder};
     use tokio::time::Duration;
 
     use super::*;
-    use crate::{
-        Clock, SystemClock, captured_log::CapturedLog, library_book::sample_book_id as book,
-    };
+    use crate::{Clock, SystemClock, library_book::sample_book_id as book};
 
     const PAGE_COUNT: usize = 8;
     const LAST_PAGE: u32 = 7;

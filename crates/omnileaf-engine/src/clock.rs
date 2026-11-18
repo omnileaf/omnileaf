@@ -33,7 +33,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
-    use crate::captured_log::CapturedLog;
+    use omnileaf_testkit::CapturedLog;
 
     #[test]
     fn warns_when_it_reads_a_clock_set_before_1970_as_the_epoch() {
