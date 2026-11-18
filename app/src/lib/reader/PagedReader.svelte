@@ -1376,6 +1376,7 @@
           class="pointer-events-none absolute inset-x-none inset-be-reader-bar-bottom flex justify-center"
         >
           <span
+            data-reader-resting-count
             class={cn(
               "rounded-full px-sm py-2xs text-caption font-semibold tabular-nums",
               chrome.floats
