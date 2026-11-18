@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, untrack } from "svelte";
 
-  import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
 
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
@@ -29,7 +28,6 @@
   import IconActionsSync from "#lib/icon-actions/IconActionsSync.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
   import { followHistoryForBack } from "#lib/navigation/android-back.ts";
-  import { showOpeningPage } from "#lib/navigation/restored-route.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
     languageSettingForDocument,
@@ -160,11 +158,6 @@
   const bookPresence = setBookPresence(new BookPresence());
   setPreviousScreens(new PreviousScreens());
   followHistoryForBack(() => data.appInfo.platform);
-  afterNavigate(({ type }) => {
-    if (type === "enter") {
-      void showOpeningPage(data.pageToRestore, data.appInfo.platform);
-    }
-  });
 
   function settleScreenshotMode(): void {
     screenshotMode.settle();
