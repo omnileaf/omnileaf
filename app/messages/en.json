@@ -1132,7 +1132,6 @@
   "appearance_colours_omnileaf_hint": "The app's own theme. The default.",
   "appearance_colours_wallpaper": "From your wallpaper",
   "appearance_colours_wallpaper_hint": "Colours Android picks from your wallpaper.",
-  "appearance_colours_android_version": "Android 12 and later.",
   "appearance_colours_covers": "Covers and pages keep their own colours.",
   "appearance_windows_colour_settings": "Windows colour settings",
   "appearance_windows_colour_settings_failed": "Couldn't open Windows colour settings",

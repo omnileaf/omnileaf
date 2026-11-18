@@ -79,7 +79,6 @@
         onPhone.isOn && "-mx-page-start -me-page-end ps-lg pe-lg",
       ]}
     >
-      <p>{m.appearance_colours_android_version()}</p>
       <p>{m.appearance_colours_covers()}</p>
     </div>
   </div>
