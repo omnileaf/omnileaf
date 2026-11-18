@@ -11,9 +11,11 @@ import {
   DEFAULT_BACKEND,
   expect,
   FAKE_APP_VERSION,
+  framesPassed,
   onPlatform,
   test,
 } from "./fixtures.ts";
+import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const SEEN_KEY = "omnileaf.whatsNewSeen";
 
@@ -47,6 +49,47 @@ function whatsNew(page: Page): Locator {
 
 async function seenVersion(page: Page): Promise<string | null> {
   return page.evaluate((key) => localStorage.getItem(key), SEEN_KEY);
+}
+
+const LIBRARY = sampleSeries(3);
+
+interface HeldNotice {
+  answer: PromiseWithResolvers<undefined>;
+  asked: number;
+}
+
+function heldNotice(): HeldNotice {
+  return { answer: Promise.withResolvers<undefined>(), asked: 0 };
+}
+
+let notice = heldNotice();
+
+function busyLibraryBackend(): FakeBackend {
+  return {
+    ...updatedBackend({
+      ...DEFAULT_BACKEND,
+      librarySeries: pagedSeries(() => LIBRARY),
+      librarySeriesCount: () => LIBRARY.length,
+    }),
+    whatsNewNotice: async (lastSeen) => {
+      notice.asked += 1;
+      await notice.answer.promise;
+      return noticeAfter(lastSeen);
+    },
+  };
+}
+
+async function answerNoticeWhileBusy(page: Page): Promise<void> {
+  await expect.poll(() => notice.asked).toBe(1);
+  notice.answer.resolve(undefined);
+  await framesPassed(page);
+}
+
+async function openLibraryWithSeries(page: Page): Promise<void> {
+  await page.goto("/");
+  await expect(page.getByRole("list", { name: "Series" })).toContainText(
+    LIBRARY[0]?.title ?? "",
+  );
 }
 
 test.describe(
@@ -124,6 +167,49 @@ test.describe(
         expect(await accessibilityViolations(page)).toEqual([]);
       });
     }
+
+    test.describe("while the library is busy", () => {
+      test.use({ backend: busyLibraryBackend() });
+
+      test.beforeEach(() => {
+        notice = heldNotice();
+      });
+
+      test("waits while another sheet is open over the library", async ({
+        page,
+      }) => {
+        await openLibraryWithSeries(page);
+        await page.getByRole("button", { name: /^Sort and filter/ }).click();
+        const filter = page.getByRole("dialog", { name: "Sort and filter" });
+        await expect(filter).toBeVisible();
+        await answerNoticeWhileBusy(page);
+        await expect(whatsNew(page)).toHaveCount(0);
+
+        await page.keyboard.press("Escape");
+
+        await expect(filter).toHaveCount(0);
+        await expect(whatsNew(page)).toBeVisible();
+      });
+
+      test("waits while series are being picked", async ({ page }) => {
+        await openLibraryWithSeries(page);
+        await page
+          .getByRole("list", { name: "Series" })
+          .getByRole("link")
+          .first()
+          .focus();
+        await page.keyboard.press("Space");
+        await expect(
+          page.getByRole("list", { name: "Series" }).getByRole("checkbox"),
+        ).not.toHaveCount(0);
+        await answerNoticeWhileBusy(page);
+        await expect(whatsNew(page)).toHaveCount(0);
+
+        await page.keyboard.press("Escape");
+
+        await expect(whatsNew(page)).toBeVisible();
+      });
+    });
 
     test.describe("with a crash report left from last time", () => {
       test.use({
