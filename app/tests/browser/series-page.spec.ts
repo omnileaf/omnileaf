@@ -25,7 +25,7 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 import { NOT_STARTED as UNOPENED, readerBook } from "./reader-book.ts";
-import { fitPhoneToShowRow } from "./show-row-fit.ts";
+import { fitPhoneToShowRow, showChoices } from "./show-row-fit.ts";
 import { settleBarTitle } from "./series-bar.ts";
 import {
   BOOKS_PER_PAGE,
@@ -172,12 +172,6 @@ function selectAllControl(page: Page): Locator {
   return isWide(page)
     ? bookTable(page).getByRole("checkbox", { name: "Select all" })
     : page.getByRole("button", { name: "Select all" });
-}
-
-function showChoices(page: Page): Locator {
-  return page
-    .getByRole("group", { name: "Show" })
-    .or(page.getByRole("radiogroup", { name: "Show" }));
 }
 
 function shown(page: Page, name: string): Locator {

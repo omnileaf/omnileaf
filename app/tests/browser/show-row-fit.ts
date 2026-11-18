@@ -1,8 +1,8 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { viewportOf } from "./fixtures.ts";
 
-function showChoices(page: Page) {
+export function showChoices(page: Page): Locator {
   return page
     .getByRole("group", { name: "Show" })
     .or(page.getByRole("radiogroup", { name: "Show" }));
