@@ -276,6 +276,30 @@ async fn finds_no_volume_where_no_chapter_is_filed_in_one() {
     assert_eq!(none, [true, true]);
 }
 
+#[tokio::test]
+async fn serves_each_volume_of_chapters_with_its_chapters_read_and_started() {
+    let sample = Sample::scan("chapter-volume-counts", SERIES_04_BOOKS).await;
+    let library = &sample.scanned.library;
+    let first_chapter = sample
+        .listed(None)
+        .await
+        .into_iter()
+        .find(|book| book.title == "Sample Series 04 c001")
+        .unwrap()
+        .id;
+    library
+        .mark_books(vec![first_chapter], ReadMark::Read)
+        .await
+        .unwrap();
+
+    let counted = library.series_chapter_volumes(sample.series).await.unwrap();
+
+    assert_eq!(
+        serde_json::to_value(counted).unwrap(),
+        json!([{"volume": 1.0, "bookCount": 2, "readCount": 1, "startedCount": 1}])
+    );
+}
+
 #[test]
 fn reads_a_book_number_from_its_decimal_value_and_refuses_one_that_cannot_be_held() {
     let numbers: Vec<Option<BookNumber>> = [12.5, 0.0, -1.0, f64::NAN, 5_000_000.0]
