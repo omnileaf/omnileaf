@@ -71,6 +71,7 @@ macro_rules! app_commands {
             link_library_folder,
             add_opened_book_folder,
             match_system_bars,
+            remembered_theme,
             follow_back_history,
             watch_back_swipes,
             allow_back_swipe,
@@ -444,6 +445,12 @@ async fn match_system_bars(
     preference: ThemePreference,
 ) -> Result<(), IpcError> {
     system_bars::match_theme(&app, theme, preference).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn remembered_theme(app: AppHandle) -> Result<Option<ThemePreference>, IpcError> {
+    system_bars::remembered_preference(&app).await
 }
 
 #[tauri::command]
