@@ -24,12 +24,20 @@ private class QueuedExecutor : Executor {
 }
 
 class UpdateCheckRunnerTest {
-    private val state = UpdateState(InMemoryUpdateStore())
+    private val state = UpdateState(MemoryUpdateStore())
     private val feed = FakeReleaseFeed()
     private val executor = QueuedExecutor()
 
     private fun runnerOver(releases: ReleaseFeed) =
-        UpdateCheckRunner(UpdateChecking(state, UpdateCheck(releases), Clock.fixed(NOON, ZoneOffset.UTC), INSTALLED), executor)
+        UpdateCheckRunner(
+            UpdateChecking(
+                state,
+                ReleaseChecks(UpdateCheck(releases), DailyUpdateCheck(state, { INSTALLED }, { releases })),
+                Clock.fixed(NOON, ZoneOffset.UTC),
+                INSTALLED,
+            ),
+            executor,
+        )
 
     @Test
     fun `asks github once for checks asked while one is still waiting`() {
@@ -89,7 +97,7 @@ class UpdateCheckRunnerTest {
     @Test
     fun `checks when due on its own, without joining a manual check`() {
         val runner = runnerOver(feed)
-        runner.checking.isAutomatic = true
+        state.isAutomatic = true
         val answers = mutableListOf<CheckRun>()
 
         runner.check(answers::add)
@@ -103,7 +111,7 @@ class UpdateCheckRunnerTest {
     fun `answers a due check that broke`() {
         val bug = IllegalStateException("the network stack broke")
         val runner = runnerOver { throw bug }
-        runner.checking.isAutomatic = true
+        state.isAutomatic = true
         val answers = mutableListOf<CheckRun>()
 
         runner.checkIfDue(answers::add)
