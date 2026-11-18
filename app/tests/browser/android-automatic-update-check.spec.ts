@@ -42,7 +42,11 @@ const BUILD_WITH_THE_CHECK: FakeBackend = {
   ...readerBackend(DEFAULT_BACKEND),
   appInfo: () => ({ ...fakeAppInfo("android"), checksForUpdates: true }),
   updateStatus: () => status,
-  updateNotices: () => ({ isOn: false, canShow: true }),
+  updateNotices: () => ({
+    isOn: false,
+    canShow: true,
+    access: "allowed" as const,
+  }),
   rememberUpdateNoticeWords: () => null,
   checkForUpdatesIfDue: () => {
     asked.push("checkIfDue");

@@ -817,6 +817,8 @@ export type NewerRelease = {
 	notice: UpdateNotice,
 };
 
+export type NotificationAccess = "allowed" | "notAsked" | "notAllowed";
+
 export type NumberRange = {
 	first: number,
 	last: number,
@@ -1220,6 +1222,7 @@ export type UpdateNoticeWords = {
 export type UpdateNotices = {
 	isOn: boolean,
 	canShow: boolean,
+	access: NotificationAccess,
 };
 
 export type UpdateStatus = {

@@ -31,7 +31,10 @@ function answering(turning: UpdateNoticeTurning): Partial<UpdateNoticeAsks> {
 function asks(overrides: Partial<UpdateNoticeAsks> = {}): UpdateNoticeAsks {
   return {
     read: () =>
-      Promise.resolve({ status: "ok", data: { isOn: false, canShow: true } }),
+      Promise.resolve({
+        status: "ok",
+        data: { isOn: false, canShow: true, access: "allowed" },
+      }),
     turnOn: () => Promise.resolve({ status: "ok", data: "turnedOn" }),
     turnOff: done,
     rememberWords: done,
@@ -44,7 +47,10 @@ test("reads whether notices are on", async () => {
     failures,
     asks({
       read: () =>
-        Promise.resolve({ status: "ok", data: { isOn: true, canShow: true } }),
+        Promise.resolve({
+          status: "ok",
+          data: { isOn: true, canShow: true, access: "allowed" },
+        }),
     }),
   );
 
@@ -58,7 +64,10 @@ test("reads notices that are on but that Android won't show as blocked", async (
     failures,
     asks({
       read: () =>
-        Promise.resolve({ status: "ok", data: { isOn: true, canShow: false } }),
+        Promise.resolve({
+          status: "ok",
+          data: { isOn: true, canShow: false, access: "notAllowed" },
+        }),
     }),
   );
 
@@ -189,4 +198,22 @@ test("keeps Android's words for a notice in the app's language", async () => {
   await setting.keepWords(WORDS);
 
   expect([handed, onFailure.mock.calls]).toEqual([[WORDS], []]);
+});
+
+test("reads how Android stands on notifications", async () => {
+  const setting = new UpdateNoticeSetting(
+    failures,
+    asks({
+      read: () =>
+        Promise.resolve({
+          status: "ok",
+          data: { isOn: false, canShow: false, access: "notAsked" },
+        }),
+    }),
+  );
+  const before = setting.access;
+
+  await setting.load();
+
+  expect([before, setting.access]).toEqual([undefined, "notAsked"]);
 });

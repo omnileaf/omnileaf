@@ -14,6 +14,15 @@ const VERSION_PLACEHOLDER: &str = "{version}";
 pub(crate) struct UpdateNotices {
     is_on: bool,
     can_show: bool,
+    access: NotificationAccess,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum NotificationAccess {
+    Allowed,
+    NotAsked,
+    NotAllowed,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -193,16 +202,23 @@ mod tests {
 
     #[test]
     fn reads_whether_notices_are_on_and_can_show() {
-        let sent = serde_json::json!({ "isOn": true, "canShow": false });
+        let sent = ["allowed", "notAsked", "notAllowed"]
+            .map(|access| serde_json::json!({ "isOn": true, "canShow": false, "access": access }));
 
-        let read: UpdateNotices = serde_json::from_value(sent).unwrap();
+        let read = sent.map(|notices| serde_json::from_value::<UpdateNotices>(notices).unwrap());
 
         assert_eq!(
             read,
-            UpdateNotices {
+            [
+                NotificationAccess::Allowed,
+                NotificationAccess::NotAsked,
+                NotificationAccess::NotAllowed
+            ]
+            .map(|access| UpdateNotices {
                 is_on: true,
                 can_show: false,
-            }
+                access,
+            })
         );
     }
 
