@@ -45,6 +45,7 @@ use crate::{
     open_with,
     problem_reporting::{self, ShownProblemReport},
     report_sending::{self, ProblemReportStatus, SentProblemReport, SentReportKey},
+    restored_route,
     screen_orientation::{self, ScreenOrientation},
     screen_reader,
     share_sign_in::{self, SignInOutcome},
@@ -77,6 +78,8 @@ macro_rules! app_commands {
             allow_back_swipe,
             watch_system_contrast,
             system_app_language,
+            saved_route,
+            opening_page_shown,
             system_clock,
             app_lock,
             turn_app_lock_on,
@@ -488,6 +491,18 @@ async fn system_app_language(app: AppHandle) -> Result<SystemAppLanguage, IpcErr
 
 #[tauri::command]
 #[specta::specta]
+async fn saved_route(app: AppHandle) -> Result<Option<String>, IpcError> {
+    restored_route::saved_route(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn opening_page_shown(app: AppHandle) -> Result<(), IpcError> {
+    restored_route::opening_page_shown(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn system_clock(app: AppHandle) -> Result<SystemClock, IpcError> {
     system_clock::read(&app).await
 }
@@ -712,7 +727,6 @@ async fn folder_series_count(
     Ok(library.folder_series_count(folder, filter).await?)
 }
 
-/// Counts the series of many folders at once, in the order given.
 #[tauri::command]
 #[specta::specta]
 async fn folder_series_counts(
@@ -773,7 +787,6 @@ async fn writer_series(
     Ok(library.writer_series(writer, listing, after).await?)
 }
 
-/// Counts the series of many writers at once, in the order given.
 #[tauri::command]
 #[specta::specta]
 async fn writer_series_counts(
@@ -970,7 +983,6 @@ async fn open_book(
     Ok(router.open_book(&library, id, undecodable).await?)
 }
 
-/// Opens the next file handed to the app, by the file manager or a second launch.
 #[tauri::command]
 #[specta::specta]
 async fn file_to_open(
@@ -989,14 +1001,12 @@ async fn watch_open_with(app: AppHandle, on_handed: Channel<String>) -> Result<(
     open_with::watch(&app, on_handed).await
 }
 
-/// Takes the one `content://` document an Android request handed to the app, to open with the next `file_to_open`.
 #[tauri::command]
 #[specta::specta]
 async fn queue_document_to_open(app: AppHandle, uri: String) -> Result<(), IpcError> {
     document_handover::queue(&app, uri).await
 }
 
-/// Says what dragging these paths over the window would hold, from the paths alone.
 #[tauri::command]
 #[specta::specta]
 async fn inspect_drop(

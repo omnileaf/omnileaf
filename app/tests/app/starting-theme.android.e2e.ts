@@ -3,13 +3,13 @@ import { promisify } from "node:util";
 
 import { afterAll, beforeAll, expect, test } from "vitest";
 
-import { mainNavigationLink, useAppSession } from "./app-session.ts";
+import { openSettingsPage, useAppSession } from "./app-session.ts";
 import { capability } from "./app-under-test.ts";
 import { openFromTheLauncher } from "./icon-action-intent.ts";
 import { followRestartedApp } from "./restarted-app.ts";
 import { lastSavedValue } from "./saved-local-storage.ts";
 import { segmentedOption } from "./segmented-control.ts";
-import { pollUntil, xpath } from "./webdriver.ts";
+import { pollUntil } from "./webdriver.ts";
 
 const APP_ID = "app.omnileaf";
 const ADB_TIMEOUT_MS = 30_000;
@@ -25,10 +25,6 @@ const CONFIGURATION_LINE = "Configuration={";
 const THEME_KEY = "omnileaf.theme";
 const SAVED_LOCAL_STORAGE = "app_webview/Default/Local Storage/leveldb";
 
-const SETTINGS_LINK = mainNavigationLink("Settings");
-const APPEARANCE_LINK = xpath(
-  "//main//a[not(ancestor::nav)][starts-with(normalize-space(), 'Appearance')]",
-);
 const PREFERS_LIGHT =
   "return matchMedia('(prefers-color-scheme: light)').matches;";
 
@@ -74,8 +70,7 @@ async function restorePhoneNightMode(): Promise<void> {
 }
 
 async function chooseTheme(label: string): Promise<void> {
-  await (await appSession().waitFor(SETTINGS_LINK)).click();
-  await (await appSession().waitFor(APPEARANCE_LINK)).click();
+  await openSettingsPage(appSession(), "Appearance");
   await (await appSession().waitFor(segmentedOption("//main", label))).click();
 }
 

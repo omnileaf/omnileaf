@@ -3,7 +3,12 @@ import { promisify } from "node:util";
 
 import { expect, test } from "vitest";
 
-import { useAppSession } from "./app-session.ts";
+import {
+  openSettingsPage,
+  SHOWN_PATH,
+  shownPage,
+  useAppSession,
+} from "./app-session.ts";
 import {
   chooseOnTheIcon,
   NEW_TASK,
@@ -24,7 +29,6 @@ const SHORTCUT_LABELS = [
   "Search the library",
 ];
 const ON_LIBRARY_SEARCH = "return location.pathname === '/search';";
-const SHOWN_PATH = "return location.pathname;";
 const TOLD_SCREENSHOT_MODE_CHANGED =
   "return [...document.querySelectorAll('[aria-live], [data-sonner-toast]')].some((element) => /Screenshot mode is (on|off)/.test(element.textContent));";
 const MAIN_NAVIGATION = xpath("//nav[@aria-label='Main']");
@@ -126,4 +130,27 @@ test("coming back after Android reclaimed the app does not choose again the shor
   await searchAfterAnyEarlierChoice();
 
   expect(await appSession().run(TOLD_SCREENSHOT_MODE_CHANGED)).toBe(false);
+});
+
+test("a shortcut chosen after Android reclaimed the app drops the page left", async () => {
+  await openSettingsPage(appSession(), "Appearance");
+  await reclaimTheAppInTheBackground();
+
+  await chooseOnTheIcon("screenshotMode");
+  await followRestartedApp(appSession());
+  await appSession().waitFor(TURNED_ON_NOTICE);
+  await (await appSession().waitFor(TURN_OFF)).click();
+
+  expect(await shownPage(appSession(), "Library")).toBe("Library");
+  expect(await appSession().run(SHOWN_PATH)).toBe("/");
+});
+
+test("coming back from the launcher after Android reclaimed the app keeps the page left", async () => {
+  await openSettingsPage(appSession(), "Appearance");
+  await reclaimTheAppInTheBackground();
+
+  await openFromTheLauncher();
+  await followRestartedApp(appSession());
+
+  expect(await shownPage(appSession(), "Appearance")).toBe("Appearance");
 });
