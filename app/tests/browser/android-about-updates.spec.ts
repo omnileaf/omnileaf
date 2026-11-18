@@ -11,6 +11,7 @@ import {
   expect,
   fakeAppInfo,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 
 const UNCHECKED: UpdateStatus = {
@@ -51,8 +52,9 @@ const BUILD_WITH_THE_CHECK = {
 
 test.use({ backend: BUILD_WITH_THE_CHECK });
 
-test.beforeEach(({ browserName }) => {
-  test.skip(browserName !== "chromium", "Android's web view is Chromium");
+testOnlyInItsWebview("android");
+
+test.beforeEach(() => {
   status = UNCHECKED;
   checksAsked = 0;
 });
@@ -90,6 +92,19 @@ test.describe("Check for updates on About in an Android build with the check", (
     await expect(checkRow(page)).toHaveAccessibleName(
       "Check for updates Up to date",
     );
+  });
+
+  test("announces nothing on opening About, leaving the line to the row", async ({
+    page,
+  }) => {
+    status = UP_TO_DATE;
+
+    await page.goto("/settings/about");
+
+    await expect(checkRow(page)).toHaveAccessibleName(
+      "Check for updates Up to date",
+    );
+    await expect(firstAboutRow(page).getByRole("status")).toHaveText("");
   });
 
   test("names the newer version the last check found", async ({ page }) => {
