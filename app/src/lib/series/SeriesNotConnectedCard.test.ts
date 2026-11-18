@@ -26,14 +26,22 @@ async function cardHearing(heard: string[]) {
 test("says what isn't connected and why", async () => {
   const screen = await cardHearing([]);
 
-  const card = screen.getByRole("status");
+  const card = screen
+    .getByText("Sample Series 04 isn’t connected")
+    .element()
+    .closest('[data-slot="alert"]');
 
-  await expect
-    .element(card.getByText("Sample Series 04 isn’t connected"))
-    .toBeVisible();
-  expect(card.element().textContent).toContain(
+  expect(card?.textContent).toContain(
     "Its folder or drive may be disconnected. You can still change its reading state and tags. Your reading progress is safe.",
   );
+});
+
+test("stays out of a live region, so a body that changes as books load is not read out", async () => {
+  const screen = await cardHearing([]);
+
+  expect(
+    screen.container.querySelectorAll('[role="status"], [aria-live]'),
+  ).toHaveLength(0);
 });
 
 test("finds the folder and checks again from its two actions", async () => {

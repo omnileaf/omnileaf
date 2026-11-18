@@ -68,7 +68,7 @@ test.use({ backend: awayShelf() });
 
 function card(page: Page): Locator {
   return page
-    .getByRole("status")
+    .locator('[data-slot="alert"]')
     .filter({ hasText: `${SERIES_TITLE} isn’t connected` });
 }
 
@@ -225,7 +225,7 @@ test.describe(
 
     function partlyCard(page: Page): Locator {
       return page
-        .getByRole("status")
+        .locator('[data-slot="alert"]')
         .filter({ hasText: "2 of 4 books aren’t connected" });
     }
 

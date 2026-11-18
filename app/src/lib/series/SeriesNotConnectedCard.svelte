@@ -24,26 +24,24 @@
   } = $props();
 </script>
 
-<div role="status">
-  <Alert
-    tone="warning"
-    icon={TriangleAlert}
-    iconName="triangle-alert"
-    class="rounded-card"
-  >
-    <AlertTitle>{title}</AlertTitle>
-    <AlertDescription>{body}</AlertDescription>
-    <AlertActions class="col-span-2 -ms-md">
-      <AlertButton emphasis="quiet" class={ALERT_TEXT_BUTTON} onclick={onFind}
-        >{m.missing_find_folder()}</AlertButton
+<Alert
+  tone="warning"
+  icon={TriangleAlert}
+  iconName="triangle-alert"
+  class="rounded-card"
+>
+  <AlertTitle>{title}</AlertTitle>
+  <AlertDescription>{body}</AlertDescription>
+  <AlertActions class="col-span-2 -ms-md">
+    <AlertButton emphasis="quiet" class={ALERT_TEXT_BUTTON} onclick={onFind}
+      >{m.missing_find_folder()}</AlertButton
+    >
+    {#if onCheckAgain !== undefined}
+      <AlertButton
+        emphasis="quiet"
+        class={ALERT_TEXT_BUTTON}
+        onclick={onCheckAgain}>{m.series_check_again()}</AlertButton
       >
-      {#if onCheckAgain !== undefined}
-        <AlertButton
-          emphasis="quiet"
-          class={ALERT_TEXT_BUTTON}
-          onclick={onCheckAgain}>{m.series_check_again()}</AlertButton
-        >
-      {/if}
-    </AlertActions>
-  </Alert>
-</div>
+    {/if}
+  </AlertActions>
+</Alert>
