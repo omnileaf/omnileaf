@@ -15,6 +15,7 @@ import {
   openFromTheLauncher,
 } from "./icon-action-intent.ts";
 import { followRestartedApp } from "./restarted-app.ts";
+import { savedOnThePhone } from "./saved-local-storage.ts";
 import { pollUntil, xpath } from "./webdriver.ts";
 
 const APP_ID = "app.omnileaf";
@@ -31,6 +32,7 @@ const SHORTCUT_LABELS = [
 const ON_LIBRARY_SEARCH = "return location.pathname === '/search';";
 const TOLD_SCREENSHOT_MODE_CHANGED =
   "return [...document.querySelectorAll('[aria-live], [data-sonner-toast]')].some((element) => /Screenshot mode is (on|off)/.test(element.textContent));";
+const SCREENSHOT_MODE_KEY = "omnileaf.screenshotMode";
 const MAIN_NAVIGATION = xpath("//nav[@aria-label='Main']");
 const TURNED_ON_NOTICE = xpath(
   "//li[@data-sonner-toast][.//*[normalize-space()='Screenshot mode is on']]",
@@ -50,6 +52,34 @@ async function adb(args: readonly string[]): Promise<string> {
 
 async function publishedShortcuts(): Promise<string> {
   return adb(["shell", "dumpsys", "shortcut"]);
+}
+
+function isSavedOff(saved: string | undefined): boolean {
+  if (saved === undefined) {
+    return false;
+  }
+  const settings: unknown = JSON.parse(saved);
+  return (
+    typeof settings === "object" &&
+    settings !== null &&
+    "activity" in settings &&
+    typeof settings.activity === "object" &&
+    settings.activity !== null &&
+    "kind" in settings.activity &&
+    settings.activity.kind === "off"
+  );
+}
+
+/** Android's WebView writes localStorage to disk about a second after the page sets it, so stopping the app sooner loses the change. */
+async function turnScreenshotModeBackOff(): Promise<void> {
+  await appSession().waitFor(TURNED_ON_NOTICE);
+  await (await appSession().waitFor(TURN_OFF)).click();
+  await pollUntil(
+    async () =>
+      isSavedOff(await savedOnThePhone(SCREENSHOT_MODE_KEY)) ? true : undefined,
+    ADB_TIMEOUT_MS,
+    "Screenshot mode to be saved off on the phone",
+  );
 }
 
 async function searchAfterAnyEarlierChoice(): Promise<void> {
@@ -100,7 +130,7 @@ test("Screenshot mode on the icon turns it on and says so", async () => {
   await chooseOnTheIcon("screenshotMode");
 
   const notice = await (await appSession().waitFor(TURNED_ON_NOTICE)).text();
-  await (await appSession().waitFor(TURN_OFF)).click();
+  await turnScreenshotModeBackOff();
 
   expect(notice).toContain("Turns off at");
 });
@@ -119,10 +149,7 @@ test("coming back after Android reclaimed the app does not choose again the shor
   await stopTheApp();
   await chooseOnTheIcon("screenshotMode");
   await followRestartedApp(appSession());
-  await appSession().waitUntil(
-    TOLD_SCREENSHOT_MODE_CHANGED,
-    "Screenshot mode to change",
-  );
+  await turnScreenshotModeBackOff();
 
   await reclaimTheAppInTheBackground();
   await openFromTheLauncher();
@@ -138,8 +165,7 @@ test("a shortcut chosen after Android reclaimed the app drops the page left", as
 
   await chooseOnTheIcon("screenshotMode");
   await followRestartedApp(appSession());
-  await appSession().waitFor(TURNED_ON_NOTICE);
-  await (await appSession().waitFor(TURN_OFF)).click();
+  await turnScreenshotModeBackOff();
 
   expect(await shownPage(appSession(), "Library")).toBe("Library");
   expect(await appSession().run(SHOWN_PATH)).toBe("/");
