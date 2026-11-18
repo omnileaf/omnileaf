@@ -1,6 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
+import {
+  sampleBookId,
+  sampleSeriesId,
+} from "../../src/lib/sample-library/sample-library.ts";
 import {
   accessibilityViolations,
   expect,
@@ -99,6 +102,14 @@ async function openInApp(page: Page, path: string): Promise<void> {
   }, path);
 }
 
+async function topOf(region: Locator): Promise<number> {
+  const box = await region.boundingBox();
+  if (box === null) {
+    throw new Error("the region isn't drawn");
+  }
+  return box.y;
+}
+
 function chapterRows(page: Page): Locator {
   return page.getByRole("list", { name: "Books" }).getByRole("listitem");
 }
@@ -141,6 +152,61 @@ test.describe("A volume's page on an Android phone", { tag: "@native" }, () => {
     await expect(
       chapters.getByRole("list", { name: "Books" }).getByRole("link"),
     ).toHaveText([/Chapter 5/, /Chapter 6/, /Chapter 7/, /Chapter 8/]);
+  });
+
+  test("continues the chapter started in the volume and counts its chapters read", async ({
+    page,
+  }) => {
+    await page.goto(VOLUME_PAGE);
+    const card = page.getByRole("region", { name: "Continue", exact: true });
+
+    await expect(
+      card.getByText("Volume 2 · Chapter 6, page 11 of 28", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      card.getByText("1 of 4 chapters read", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      card.getByRole("link", {
+        name: "Continue Volume 2 · Chapter 6 at page 11",
+      }),
+    ).toHaveAttribute("href", `/read/${sampleBookId(21, 6)}`);
+  });
+
+  test("puts Continue between the volume's hero and its chapters", async ({
+    page,
+  }) => {
+    await page.goto(VOLUME_PAGE);
+
+    const tops = await Promise.all(
+      [
+        page.getByRole("region", { name: "About this volume" }),
+        page.getByRole("region", { name: "Continue", exact: true }),
+        page.getByRole("region", { name: "4 chapters" }),
+      ].map(topOf),
+    );
+
+    expect(tops).toEqual(tops.toSorted((above, below) => above - below));
+    expect(new Set(tops).size).toBe(tops.length);
+  });
+
+  test("says every chapter in a read volume is read, with nothing to continue", async ({
+    page,
+  }) => {
+    await page.goto(`/series/${SERIES}/volume/1`);
+    const card = page.getByRole("region", {
+      name: "You’ve read every chapter in this volume",
+    });
+
+    await expect(
+      card.getByText("New chapters in its folder show up here.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      card.getByText("4 of 4 chapters read", { exact: true }),
+    ).toBeVisible();
+    await expect(card.getByRole("link")).toHaveCount(0);
   });
 
   test("goes back to its series", async ({ page }) => {
