@@ -1,5 +1,9 @@
 import type { FilterCondition } from "#lib/library/library-listing.ts";
-import type { HistoryEntry, LibrarySeries } from "#lib/ipc/bindings.ts";
+import type {
+  HistoryEntry,
+  LibrarySeries,
+  MissingFolder,
+} from "#lib/ipc/bindings.ts";
 
 import type { Place } from "./places";
 
@@ -12,7 +16,8 @@ export type Choice =
       readonly text: string;
       readonly isRecent: boolean;
     }
-  | { readonly kind: "showLibrary"; readonly state: FilterCondition };
+  | { readonly kind: "showLibrary"; readonly state: FilterCondition }
+  | { readonly kind: "findFolder"; readonly missing: MissingFolder };
 
 export function choiceKey(choice: Choice): string {
   switch (choice.kind) {
@@ -26,6 +31,8 @@ export function choiceKey(choice: Choice): string {
       return `${choice.isRecent ? "recent" : "search"}:${choice.text}`;
     case "showLibrary":
       return `show-${choice.state}`;
+    case "findFolder":
+      return `find-${choice.missing.folder.id}`;
   }
 }
 
