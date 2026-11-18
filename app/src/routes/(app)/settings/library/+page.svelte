@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EyeOff, LayoutGrid, Tags } from "@lucide/svelte";
+  import { EyeOff, FolderOpen, LayoutGrid, Tags } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import { goto } from "$app/navigation";
@@ -126,6 +126,12 @@
                   TREATMENT_LABELS[adultContent.reading.value.treatment](),
               }
             : {}),
+        },
+        {
+          route: "/(app)/settings/library/folders",
+          icon: FolderOpen,
+          iconName: "folder-open",
+          label: m.folder_guide_title(),
         },
       ]}
     />
