@@ -30,6 +30,11 @@ const EARLIER: VersionNotes = {
   entries: [{ kind: "fix", summary: "Covers no longer flicker" }],
 };
 
+const FIRST: VersionNotes = {
+  version: "1.2.0",
+  entries: [{ kind: "feat", summary: "Read comics from your folders" }],
+};
+
 function backendWith(whatsNew: WhatsNew) {
   return { backend: { ...DEFAULT_BACKEND, whatsNew: () => whatsNew } };
 }
@@ -153,7 +158,68 @@ test.describe("What’s new on an Android phone", { tag: "@native" }, () => {
   });
 
   test.describe("with notes for earlier versions too", () => {
-    test.use(backendWith({ installed: INSTALLED, earlier: [EARLIER] }));
+    test.use(backendWith({ installed: INSTALLED, earlier: [EARLIER, FIRST] }));
+
+    test("lists the earlier versions under this version's notes, newest first, each summed up", async ({
+      page,
+    }) => {
+      await page.goto(WHATS_NEW_PAGE);
+      const earlier = page.getByRole("region", { name: "Earlier versions" });
+
+      await expect(
+        page.getByRole("main").getByRole("heading", { level: 2 }).last(),
+      ).toHaveText("Earlier versions");
+      await expect(earlier.getByRole("link")).toHaveText([
+        /^\s*1\.2\.2\s*Fixes only\s*$/,
+        /^\s*1\.2\.0\s*First release\s*$/,
+      ]);
+      await expect(earlier.locator("[data-icon=sparkles]")).toHaveCount(2);
+    });
+
+    test("opens an earlier version's notes and goes back to What’s new", async ({
+      page,
+    }) => {
+      await page.goto(WHATS_NEW_PAGE);
+
+      await page
+        .getByRole("region", { name: "Earlier versions" })
+        .getByRole("link", { name: /^1\.2\.2/ })
+        .click();
+
+      await expect(page).toHaveURL(`${WHATS_NEW_PAGE}/1.2.2`);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "What’s new in 1.2.2" }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByRole("region", { name: "Fixed in 1.2.2" })
+          .getByRole("listitem"),
+      ).toHaveText(["Covers no longer flicker"]);
+      await page.getByRole("link", { name: "Back to What’s new" }).click();
+      await expect(page).toHaveURL(WHATS_NEW_PAGE);
+    });
+
+    test("says a version this build has no notes for isn't there", async ({
+      page,
+    }) => {
+      await page.goto(`${WHATS_NEW_PAGE}/0.9.0`);
+
+      await expect(
+        page.getByRole("heading", { name: "This page doesn't exist" }),
+      ).toBeVisible();
+    });
+
+    for (const colorScheme of ["light", "dark"] as const) {
+      test(`has no accessibility violations on an earlier version in the ${colorScheme} theme`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme });
+        await page.goto(`${WHATS_NEW_PAGE}/1.2.2`);
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+        expect(await accessibilityViolations(page)).toEqual([]);
+      });
+    }
 
     test("names this version's notes and the earlier ones", async ({
       page,

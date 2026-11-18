@@ -950,6 +950,7 @@
   "whats_new_perf_in": "Faster in {version}",
   "whats_new_fix_in": "Fixed in {version}",
   "whats_new_earlier": "Earlier versions",
+  "whats_new_in": "What’s new in {version}",
   "whats_new_first_release": "First release",
   "whats_new_fixes_only": "Fixes only",
   "whats_new_count_breaking": [
