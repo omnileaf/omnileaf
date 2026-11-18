@@ -12,8 +12,12 @@
   let {
     phone,
     books,
-  }: { phone: PhonePlatform | undefined; books: readonly SeriesBook[] } =
-    $props();
+    onNotConnected = () => undefined,
+  }: {
+    phone: PhonePlatform | undefined;
+    books: readonly SeriesBook[];
+    onNotConnected?: (book: SeriesBook) => void;
+  } = $props();
 
   setSwipeActionsSetting(new SwipeActionsSetting(undefined));
   const selection = new Selection<SeriesBook["id"]>();
@@ -33,5 +37,6 @@
     onPickedNone={() => undefined}
     onMark={() => undefined}
     onSwiped={() => undefined}
+    {onNotConnected}
   />
 </main>

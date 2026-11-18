@@ -135,6 +135,7 @@
     onRemoveBookmarks,
     onRemove,
     onShowInFolder,
+    onNotConnected,
     platform,
     onPickedCount,
     controls = OWN_CONTROLS,
@@ -154,6 +155,7 @@
     onRemoveBookmarks: SeriesBookCommands["removeBookmarks"];
     onRemove: SeriesBookCommands["remove"];
     onShowInFolder: SeriesBookCommands["showFile"];
+    onNotConnected?: ((book: SeriesBook) => void) | undefined;
     platform: Platform;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
     controls?: BooksControls;
@@ -736,6 +738,7 @@
       ) => {
         void markSwiped(book, read, how);
       }}
+      {onNotConnected}
     />
     {#if isPhonePicking && phone !== undefined}
       <Portal>

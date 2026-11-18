@@ -4,6 +4,7 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import type { SeriesBook } from "#lib/ipc/bindings.ts";
 import { followCorePlatform, type PhonePlatform } from "#lib/page/platform.ts";
 
 import { book } from "./book-fixture.ts";
@@ -73,4 +74,44 @@ test("keeps an iPhone's book row titles as they were", async () => {
     subtitle: ["15px", "20px", "400", "-0.23px", "oklch(0.5 0.01 286)"],
     rowHeight: 72,
   });
+});
+
+const AWAY_BOOKS = [
+  { ...book(1, { state: "read" }), file: { kind: "notConnected" } },
+  book(2),
+] satisfies SeriesBook[];
+
+async function awayRowsOn(platform: PhonePlatform, touched: string[] = []) {
+  await page.viewport(PHONE.width, PHONE.height);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  return render(BookListHarness, {
+    phone: platform,
+    books: AWAY_BOOKS,
+    onNotConnected: ({ title }: SeriesBook) => touched.push(title),
+  });
+}
+
+test("keeps a book that isn't connected from opening and tags its summary on an Android phone", async () => {
+  const touched: string[] = [];
+  const screen = await awayRowsOn("android", touched);
+
+  const away = screen.getByRole("button", { name: /^Volume 1/ });
+  await away.click();
+
+  await expect.element(away.getByText("Not connected")).toBeVisible();
+  expect({
+    links: screen.getByRole("link").elements().length,
+    touched,
+  }).toEqual({ links: 1, touched: ["Volume 1"] });
+});
+
+test("keeps opening a book that isn't connected on an iPhone", async () => {
+  const screen = await awayRowsOn("ios");
+
+  await expect.element(screen.getByText("Volume 2")).toBeVisible();
+  expect({
+    links: screen.getByRole("link").elements().length,
+    tags: screen.getByText("Not connected").elements().length,
+  }).toEqual({ links: 2, tags: 0 });
 });
