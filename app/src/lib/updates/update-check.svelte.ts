@@ -110,6 +110,8 @@ function isFailure(outcome: CheckOutcome | null): boolean {
 let appUpdateCheck: UpdateCheck | undefined;
 
 export function updateCheckForApp(): UpdateCheck {
-  appUpdateCheck ??= new UpdateCheck(reportError, UPDATE_ASKS);
+  appUpdateCheck ??= new UpdateCheck((error) => {
+    reportError(error);
+  }, UPDATE_ASKS);
   return appUpdateCheck;
 }
