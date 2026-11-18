@@ -16,8 +16,8 @@ use std::{
 
 use omnileaf_engine::{
     AndroidTree, BooksRemoval, FileChanges, FolderKind, Library, LibraryError, LibraryFolder,
-    LibraryListing, PowerMode, RESCAN_EVERY, RescanConditions, RescanOutcome, Resource,
-    ResourceRouter, RootLocator, SeriesBookListing, SeriesShown, ShownInTree, TreeUri,
+    LibraryListing, OpenBookError, PowerMode, RESCAN_EVERY, RescanConditions, RescanOutcome,
+    Resource, ResourceRouter, RootLocator, SeriesBookListing, SeriesShown, ShownInTree, TreeUri,
 };
 use omnileaf_testkit::SAMPLE_LIBRARY_NAME;
 use stepped_clock::SteppedClock;
@@ -207,6 +207,37 @@ async fn keeps_the_books_of_an_android_folder_nothing_can_open_when_asked_to_rem
     assert_eq!(
         reopened.folder_book_count(folder.id).await.unwrap(),
         SAMPLE_BOOKS
+    );
+}
+
+#[tokio::test]
+async fn refuses_to_open_a_book_of_an_android_folder_lost_since_the_last_check_as_not_connected() {
+    let home = ScratchFolder::new("tree-lost-open-home");
+    let cache = ScratchFolder::new("tree-lost-open-cache");
+    let tree = TreeOfFolder::new("tree-lost-open-comics");
+    let library = open_reading(home.path(), &tree).await;
+    library.add_folder(sample_tree(), |_| {}).await.unwrap();
+    let router = ResourceRouter::open(cache.path()).unwrap();
+    let series = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap();
+    let books = library
+        .series_books(
+            series.series.first().unwrap().id,
+            SeriesBookListing::default(),
+            None,
+        )
+        .await
+        .unwrap();
+    let book = books.books.first().unwrap().id;
+    tree.lose_access();
+
+    let opened = router.open_book(&library, book, Vec::new()).await;
+
+    assert!(
+        matches!(opened, Err(OpenBookError::NotConnected { id }) if id == book),
+        "{opened:?}"
     );
 }
 

@@ -3,13 +3,13 @@ use std::{
     io,
     num::NonZeroUsize,
     ops::Range,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock, PoisonError, RwLock},
 };
 
 use omnileaf_cache::{CacheError, DiskCache, MemoryCache};
-use omnileaf_db::catalog::{BookFileId, BookReading as StoredReading, RootLocator};
-use omnileaf_formats::{Book, FormatError};
+use omnileaf_db::catalog::{BookFileId, BookReading as StoredReading};
+use omnileaf_formats::{Book, Details, FormatError, Storage};
 use omnileaf_imaging::{
     BookSideBorders, ImagingError, PageFormat, Transcoded, crop_side_borders, crop_white_borders,
     page_size, shrink_page, transcode,
@@ -116,19 +116,6 @@ pub(crate) enum PageError {
 }
 
 impl OpenBookError {
-    fn refused(
-        id: BookId,
-        file_type: Option<FileType>,
-        root: &RootLocator,
-        source: FormatError,
-    ) -> Self {
-        if is_folder_gone(root) {
-            Self::NotConnected { id }
-        } else {
-            Self::unreadable(id, file_type, source)
-        }
-    }
-
     fn unreadable(id: BookId, file_type: Option<FileType>, source: FormatError) -> Self {
         match file_type {
             Some(file_type) if file_type.is_unsupported_given(&source) => Self::UnsupportedType {
@@ -155,9 +142,8 @@ async fn connected_book_to_open(
     Ok(to_open)
 }
 
-fn is_folder_gone(root: &RootLocator) -> bool {
-    !matches!(root, RootLocator::AndroidTree(_))
-        && matches!(root_folder(root).try_exists(), Ok(false))
+fn is_folder_gone(storage: &dyn Storage, folder: &Path) -> bool {
+    !matches!(storage.details(folder), Ok(Details::Folder { .. }))
 }
 
 impl PageError {
@@ -244,15 +230,18 @@ impl Pages {
             .book_file(found)
             .ok_or(OpenBookError::FolderClosed { id })?;
         let file_type = FileType::of(&located.path);
-        let root = found.root.clone();
+        let folder = root_folder(&found.root);
         let reading = found.reading;
         let (opened, sizes, probed, direction) = self
             .lane
             .run(move || {
-                let opened = shared
-                    .books
-                    .open(file, &located)
-                    .map_err(|source| OpenBookError::refused(id, file_type, &root, source))?;
+                let opened = shared.books.open(file, &located).map_err(|source| {
+                    if is_folder_gone(&*located.storage, &folder) {
+                        OpenBookError::NotConnected { id }
+                    } else {
+                        OpenBookError::unreadable(id, file_type, source)
+                    }
+                })?;
                 let direction = written_direction(&mut opened.lock());
                 Ok::<_, OpenBookError>(match known {
                     Some(sizes) if sizes.len() == opened.page_count => {
