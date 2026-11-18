@@ -81,12 +81,13 @@ fn write_line(mut writer: impl Write, line: &str) {
 mod tests {
     use std::{
         io, panic,
-        sync::{Arc, Mutex},
+        sync::{Arc, Mutex, PoisonError},
     };
 
     use tracing_subscriber::{fmt::MakeWriter, layer::SubscriberExt};
 
     use super::{ReleaseLog, panic_report};
+    use crate::crash_reporting::tests::PANIC_HOOK;
 
     const PRIVATE_PATH: &str = "/storage/emulated/0/Comics/Diary of a Secret";
     const PRIVATE_URI: &str =
@@ -178,6 +179,7 @@ mod tests {
 
     #[test]
     fn reports_a_panic_by_where_it_happened_only() {
+        let _hook = PANIC_HOOK.lock().unwrap_or_else(PoisonError::into_inner);
         let written = Written::default();
         let previous = panic::take_hook();
         panic::set_hook(Box::new(panic_report(written.clone())));

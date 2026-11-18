@@ -198,7 +198,7 @@ fn keep_for_next_run(file: &CrashReportFile, reporter: &Reporter, info: &PanicHo
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use std::{
         env, fs, panic, process,
         sync::{Arc, Mutex, PoisonError},
@@ -211,7 +211,7 @@ mod tests {
 
     use super::{CrashReporting, Reporter, set_panic_hook};
 
-    pub(super) static PANIC_HOOK: Mutex<()> = Mutex::new(());
+    pub(crate) static PANIC_HOOK: Mutex<()> = Mutex::new(());
 
     pub(super) fn sample_app() -> AppInfo {
         AppInfo {
