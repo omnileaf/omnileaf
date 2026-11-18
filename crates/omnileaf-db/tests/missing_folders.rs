@@ -183,6 +183,7 @@ impl Shelf {
             .read(move |connection| missing_root_of_series(connection, series))
             .await
             .unwrap()
+            .map(|root| root.id)
     }
 
     async fn missing_root_of_first_book(&self, series: &str) -> Option<RootId> {
@@ -195,6 +196,7 @@ impl Shelf {
             })
             .await
             .unwrap()
+            .map(|root| root.id)
     }
 
     async fn hidden(&self, root: Option<RootId>) -> u32 {

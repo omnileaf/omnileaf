@@ -3,7 +3,10 @@ use rusqlite::{Connection, OptionalExtension};
 
 use crate::{
     Error,
-    catalog::{RootId, series_page::SeriesSummary},
+    catalog::{
+        root::{LibraryRoot, stored_root, stored_root_columns},
+        series_page::SeriesSummary,
+    },
 };
 
 const SOME_FOLDER_IS_MISSING: &str =
@@ -47,23 +50,29 @@ const IS_NOT_CONNECTED: &str = concat!(
 const IS_BOOK_NOT_CONNECTED: &str = is_book_not_connected!("?1");
 
 const MISSING_ROOT_OF_SERIES: &str = concat!(
-    "SELECT book_file.root_id FROM book
-    JOIN book_file ON book_file.book_id = book.id
-    WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = ?1)
-        AND (",
+    "SELECT ",
+    stored_root_columns!(),
+    " FROM library_root WHERE id = (
+        SELECT book_file.root_id FROM book
+        JOIN book_file ON book_file.book_id = book.id
+        WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = ?1)
+            AND (",
     is_book_not_connected!("book.id"),
     ")
-    GROUP BY book_file.root_id
-    ORDER BY count(*) DESC, book_file.root_id
-    LIMIT 1"
+        GROUP BY book_file.root_id
+        ORDER BY count(*) DESC, book_file.root_id
+        LIMIT 1
+    )"
 );
 
 const MISSING_ROOT_OF_BOOK: &str = concat!(
-    "SELECT CASE WHEN ",
+    "SELECT ",
+    stored_root_columns!(),
+    " FROM library_root WHERE id = (SELECT CASE WHEN ",
     is_every_file_in_a_missing_folder!(),
     " THEN min(book_file.root_id) END FROM book_file",
     join_file_folder!(),
-    " WHERE book_file.book_id = ?1"
+    " WHERE book_file.book_id = ?1)"
 );
 
 const BOOKS_NOT_CONNECTED: &str = concat!(
@@ -124,28 +133,27 @@ pub(crate) fn books_not_connected(connection: &Connection, series: SeriesId) -> 
 pub fn missing_root_of_series(
     connection: &Connection,
     series: SeriesId,
-) -> Result<Option<RootId>, Error> {
+) -> Result<Option<LibraryRoot>, Error> {
     if !is_some_folder_missing(connection)? {
         return Ok(None);
     }
     Ok(connection
         .prepare_cached(MISSING_ROOT_OF_SERIES)?
-        .query_row([series.as_bytes()], |row| row.get(0))
-        .optional()?
-        .map(RootId))
+        .query_row([series.as_bytes()], stored_root)
+        .optional()?)
 }
 
 pub fn missing_root_of_book(
     connection: &Connection,
     book: BookId,
-) -> Result<Option<RootId>, Error> {
+) -> Result<Option<LibraryRoot>, Error> {
     if !is_some_folder_missing(connection)? {
         return Ok(None);
     }
-    let root: Option<i64> = connection
+    Ok(connection
         .prepare_cached(MISSING_ROOT_OF_BOOK)?
-        .query_row([book.as_bytes()], |row| row.get(0))?;
-    Ok(root.map(RootId))
+        .query_row([book.as_bytes()], stored_root)
+        .optional()?)
 }
 
 #[cfg(test)]
@@ -229,6 +237,8 @@ mod tests {
         assert_eq!(
             plan,
             [
+                "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?)",
+                "SCALAR SUBQUERY 3",
                 "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
                 "SCALAR SUBQUERY 1",
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
@@ -251,6 +261,8 @@ mod tests {
         assert_eq!(
             plan,
             [
+                "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?)",
+                "SCALAR SUBQUERY 1",
                 "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
                 "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?)",
             ]
