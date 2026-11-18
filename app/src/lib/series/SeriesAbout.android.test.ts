@@ -4,7 +4,11 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
-import type { Platform, SeriesOverview } from "#lib/ipc/bindings.ts";
+import type {
+  Platform,
+  SeriesDetails,
+  SeriesOverview,
+} from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import SeriesAbout from "./SeriesAbout.svelte";
@@ -44,13 +48,17 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function heroOn(platform: Platform) {
+async function heroOn(
+  platform: Platform,
+  details?: SeriesDetails,
+  overview = OVERVIEW,
+) {
   await page.viewport(PHONE.width, PHONE.height);
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   await render(SeriesAbout, {
-    overview: OVERVIEW,
-    details: undefined,
+    overview,
+    details,
     cover: { kind: "none" },
     coverUrl: () => "",
     isWide: false,
@@ -186,4 +194,115 @@ test("keeps an iPhone's details as a side by side list in a card", async () => {
 
   expect(drawn.isStacked).toBe(false);
   expect(drawn.card).toBe("1px");
+});
+
+const SOURCED: SeriesDetails = {
+  title: { fromFile: OVERVIEW.title, source: "folderName", edited: null },
+  people: { fromFile: [], edited: null },
+  tags: { fromFile: [], edited: null },
+  summary: { fromFile: null, edited: null },
+  year: null,
+  language: null,
+  isMarkedAdult: false,
+  isRatedAdult: false,
+};
+const ORDER_LINE =
+  "Your edits come first, then the files, then the folder and file names.";
+
+function middle(box: DOMRect): number {
+  return box.top + box.height / 2;
+}
+
+async function sourcedDetailsOn(platform: Platform) {
+  await heroOn(platform, SOURCED);
+  await page.getByRole("button", { name: "Details" }).click();
+  await expect
+    .element(page.getByText("From the folder name", { exact: true }))
+    .toBeVisible();
+  return {
+    order: page.getByText(ORDER_LINE, { exact: true }).query(),
+    source: page.getByText("From the folder name", { exact: true }).element(),
+    firstRow: document.querySelector("dt")?.parentElement ?? null,
+  };
+}
+
+test("says the order details win in at the top of an Android phone's details", async () => {
+  const { order, firstRow } = await sourcedDetailsOn("android");
+  if (!(order instanceof HTMLElement) || firstRow === null) {
+    throw new Error("the details drew no order line above their rows");
+  }
+  const style = getComputedStyle(order);
+
+  expect(order.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+    firstRow.getBoundingClientRect().top,
+  );
+  expect([
+    style.fontSize,
+    style.lineHeight,
+    style.letterSpacing,
+    style.color,
+    style.paddingInlineStart,
+    style.paddingInlineEnd,
+    style.paddingBlockEnd,
+  ]).toEqual([
+    "14px",
+    "20px",
+    "0.25px",
+    "rgb(88, 97, 90)",
+    "16px",
+    "16px",
+    "8px",
+  ]);
+});
+
+test("draws where an Android phone's detail came from as a footnote line with its icon", async () => {
+  const { source } = await sourcedDetailsOn("android");
+  const icon = source.querySelector("[data-icon]");
+  if (icon === null) {
+    throw new Error("the source line drew no icon");
+  }
+  const style = getComputedStyle(source);
+  const iconBox = icon.getBoundingClientRect();
+
+  expect(icon.getAttribute("data-icon")).toBe("folder");
+  expect([iconBox.width, iconBox.height]).toEqual([14, 14]);
+  expect(
+    Math.abs(middle(iconBox) - middle(source.getBoundingClientRect())),
+  ).toBeLessThanOrEqual(1);
+  expect([
+    style.fontSize,
+    style.lineHeight,
+    style.letterSpacing,
+    style.color,
+    style.columnGap,
+    style.marginBlockStart,
+  ]).toEqual(["12px", "16px", "0.4px", "rgb(88, 97, 90)", "4px", "2px"]);
+});
+
+test("starts an Android phone's show all creators at the order line", async () => {
+  await heroOn("android", SOURCED, {
+    ...OVERVIEW,
+    creators: [
+      { name: "Author A", role: "story", seriesCount: 1 },
+      { name: "Author B", role: "story", seriesCount: 1 },
+      { name: "Author C", role: "art", seriesCount: 1 },
+    ],
+  });
+
+  await page
+    .getByRole("button", { name: "+1 more, show all 3 creators in Details" })
+    .click();
+
+  const order = page.getByText(ORDER_LINE, { exact: true });
+  await expect.element(order).toBeVisible();
+  await expect
+    .poll(() => document.activeElement?.contains(order.element()))
+    .toBe(true);
+});
+
+test("keeps an iPhone's details without the order line or source icons", async () => {
+  const { order, source } = await sourcedDetailsOn("ios");
+
+  expect(order).toBeNull();
+  expect(source.querySelector("[data-icon]")).toBeNull();
 });

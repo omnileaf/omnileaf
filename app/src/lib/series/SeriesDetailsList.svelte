@@ -1,21 +1,32 @@
 <script lang="ts">
   import type { SeriesDetails, SeriesOverview } from "#lib/ipc/bindings.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { roleName } from "./creator-role.ts";
   import CreatorNames from "./CreatorNames.svelte";
   import { creatorsByRole } from "./credits.ts";
-  import { sourceLine } from "./detail-source.ts";
+  import { type SourceLine, sourceLine } from "./detail-source.ts";
 
   let {
     overview,
     sourced,
+    hasOrderLineAbove,
     ref = $bindable(),
   }: {
     overview: SeriesOverview;
     sourced?: SeriesDetails | undefined;
+    hasOrderLineAbove: boolean;
     ref?: HTMLElement | undefined;
   } = $props();
+
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const hasSourceIcons = $derived(
+    phoneOf(platform, width.current) === "android",
+  );
 
   const credits = $derived(creatorsByRole(overview.creators));
   const titleSource = $derived(
@@ -32,7 +43,11 @@
         ),
   );
   const year = $derived(sourced?.year ?? null);
+  const yearSource = $derived(
+    year === null ? undefined : sourceLine(year.source, false),
+  );
 
+  const SOURCE_ICON_SIZE = 14;
   const ROW =
     "contents android:max-medium:flex android:max-medium:flex-col android:max-medium:justify-center android:max-medium:py-native-row-block android:max-medium:ps-native-row-start android:max-medium:pe-native-row-end android:max-medium:min-block-native-row-two";
   const TERM =
@@ -41,46 +56,68 @@
     "android:max-medium:text-native-row-subtitle/native-row-subtitle android:max-medium:tracking-native-row-subtitle android:max-medium:text-muted";
 </script>
 
-<dl
-  bind:this={ref}
-  tabindex="-1"
-  class="grid grid-cols-details items-baseline gap-x-md gap-y-sm text-small outline-none android:max-medium:flex android:max-medium:flex-col android:max-medium:gap-none"
->
-  <div class={ROW}>
-    <dt class={TERM}>{m.series_detail_title()}</dt>
-    <dd class={["wrap-anywhere", VALUE]}>
-      {overview.title}
-      {#if titleSource !== undefined}
-        <span class="block text-caption text-muted">{titleSource}</span>
-      {/if}
-    </dd>
-  </div>
-  {#each credits as { role, names } (role)}
+{#snippet source(line: SourceLine)}
+  <span
+    class="block text-caption text-muted android:max-medium:mbs-2xs android:max-medium:flex android:max-medium:items-center android:max-medium:gap-xs android:max-medium:text-native-group-footer/native-group-footer android:max-medium:tracking-native-group-footer"
+  >
+    {#if hasSourceIcons}
+      <Icon name={line.icon} size={SOURCE_ICON_SIZE} />
+    {/if}
+    {line.words}
+  </span>
+{/snippet}
+
+<div bind:this={ref} tabindex="-1" class="outline-none">
+  {#if hasOrderLineAbove}
+    <p
+      class="ps-native-row-start pe-native-row-start pbe-sm text-native-row-subtitle/native-row-subtitle tracking-native-row-subtitle text-muted"
+    >
+      {m.series_detail_order()}
+    </p>
+  {/if}
+  <dl
+    class="grid grid-cols-details items-baseline gap-x-md gap-y-sm text-small android:max-medium:flex android:max-medium:flex-col android:max-medium:gap-none"
+  >
     <div class={ROW}>
-      <dt class={TERM}>{roleName(role)}</dt>
+      <dt class={TERM}>{m.series_detail_title()}</dt>
       <dd class={["wrap-anywhere", VALUE]}>
-        <CreatorNames {names} creators={overview.creators} from={overview.id} />
-        {#if peopleSource !== undefined}
-          <span class="block text-caption text-muted">{peopleSource}</span>
+        {overview.title}
+        {#if titleSource !== undefined}
+          {@render source(titleSource)}
         {/if}
       </dd>
     </div>
-  {/each}
-  {#if year !== null}
-    <div class={ROW}>
-      <dt class={TERM}>{m.series_detail_year()}</dt>
-      <dd class={VALUE}>
-        {year.fromFile}
-        <span class="block text-caption text-muted"
-          >{sourceLine(year.source, false)}</span
-        >
-      </dd>
-    </div>
-  {/if}
-  {#if overview.format !== null}
-    <div class={ROW}>
-      <dt class={TERM}>{m.series_detail_format()}</dt>
-      <dd class={["wrap-anywhere", VALUE]}>{overview.format}</dd>
-    </div>
-  {/if}
-</dl>
+    {#each credits as { role, names } (role)}
+      <div class={ROW}>
+        <dt class={TERM}>{roleName(role)}</dt>
+        <dd class={["wrap-anywhere", VALUE]}>
+          <CreatorNames
+            {names}
+            creators={overview.creators}
+            from={overview.id}
+          />
+          {#if peopleSource !== undefined}
+            {@render source(peopleSource)}
+          {/if}
+        </dd>
+      </div>
+    {/each}
+    {#if year !== null}
+      <div class={ROW}>
+        <dt class={TERM}>{m.series_detail_year()}</dt>
+        <dd class={VALUE}>
+          {year.fromFile}
+          {#if yearSource !== undefined}
+            {@render source(yearSource)}
+          {/if}
+        </dd>
+      </div>
+    {/if}
+    {#if overview.format !== null}
+      <div class={ROW}>
+        <dt class={TERM}>{m.series_detail_format()}</dt>
+        <dd class={["wrap-anywhere", VALUE]}>{overview.format}</dd>
+      </div>
+    {/if}
+  </dl>
+</div>

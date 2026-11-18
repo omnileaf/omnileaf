@@ -2094,6 +2094,7 @@
   "series_detail_from_file_names": "From the file names",
   "series_detail_from_files": "From the files (ComicInfo.xml)",
   "series_detail_edited_by_you": "Edited by you",
+  "series_detail_order": "Your edits come first, then the files, then the folder and file names.",
   "series_edit_details": "Edit details",
   "edit_details_menu": "Edit details…",
   "edit_details_intro": "Your changes show only in Omnileaf; the files stay as they are.",
