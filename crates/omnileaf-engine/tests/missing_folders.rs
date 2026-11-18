@@ -19,8 +19,9 @@ use std::{
 
 use books::write_book;
 use omnileaf_engine::{
-    BookFileState, FolderProblem, LibraryListing, NetworkShare, RescanOutcome, SeriesBookListing,
-    SeriesConnection, SeriesId, ShareAddress, ShareLookup, ShareSignIn, UnreachableShare,
+    BookFileState, FolderId, FolderProblem, LibraryListing, NetworkShare, RescanOutcome,
+    SeriesBookListing, SeriesConnection, SeriesId, ShareAddress, ShareLookup, ShareSignIn,
+    UnreachableShare,
 };
 use scanned::Scanned;
 use support::ScratchFolder;
@@ -102,18 +103,44 @@ impl Shelf {
 }
 
 impl Shelf {
-    async fn series_connection(&self, title: &str) -> (SeriesConnection, Vec<BookFileState>) {
-        let library = &self.scanned.library;
-        let page = library
+    async fn series_id(&self, title: &str) -> SeriesId {
+        let page = self
+            .scanned
+            .library
             .series(LibraryListing::default(), None)
             .await
             .unwrap();
-        let series: SeriesId = page
-            .series
+        page.series
             .into_iter()
             .find(|series| series.title == title)
             .unwrap()
-            .id;
+            .id
+    }
+
+    async fn missing_folders_of_series_and_book(
+        &self,
+        series: SeriesId,
+        shares: &impl ShareLookup,
+    ) -> [Option<(FolderId, FolderProblem)>; 2] {
+        let library = &self.scanned.library;
+        let books = library
+            .series_books(series, SeriesBookListing::default(), None)
+            .await
+            .unwrap();
+        let of_series = library
+            .missing_folder_of_series(series, shares)
+            .await
+            .unwrap();
+        let of_book = library
+            .missing_folder_of_book(books.books.first().unwrap().id, shares)
+            .await
+            .unwrap();
+        [of_series, of_book].map(|missing| missing.map(|found| (found.folder.id, found.problem)))
+    }
+
+    async fn series_connection(&self, title: &str) -> (SeriesConnection, Vec<BookFileState>) {
+        let library = &self.scanned.library;
+        let series = self.series_id(title).await;
         let overview = library.series_overview(series).await.unwrap();
         let books = library
             .series_books(series, SeriesBookListing::default(), None)
@@ -449,4 +476,33 @@ async fn shows_a_series_of_a_missing_folder_and_its_books_as_not_connected() {
             vec![BookFileState::NotConnected]
         )
     );
+}
+
+#[tokio::test]
+async fn finds_no_missing_folder_for_a_series_or_its_book_while_their_folder_is_there() {
+    let shelf = Shelf::new("missing-folder-of-connected").await;
+    let series = shelf.series_id(SERIES_01).await;
+
+    let missing = shelf
+        .missing_folders_of_series_and_book(series, &MountedShares)
+        .await;
+
+    assert_eq!(missing, [None, None]);
+}
+
+#[tokio::test]
+async fn finds_the_missing_folder_of_a_series_and_its_book_with_the_share_it_is_on() {
+    let shelf = Shelf::new("missing-folder-of-not-connected").await;
+    let series = shelf.series_id(SERIES_01).await;
+    shelf.move_away().await;
+
+    let missing = shelf
+        .missing_folders_of_series_and_book(series, &MountedShares)
+        .await;
+
+    let found = Some((
+        shelf.scanned.id,
+        FolderProblem::NeedsMounting { share: nas_manga() },
+    ));
+    assert_eq!(missing, [found.clone(), found]);
 }
