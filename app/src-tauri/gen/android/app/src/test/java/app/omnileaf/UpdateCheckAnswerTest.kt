@@ -2,6 +2,7 @@ package app.omnileaf
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import javax.net.ssl.SSLHandshakeException
 
 class UpdateCheckAnswerTest {
     @Test
@@ -12,6 +13,15 @@ class UpdateCheckAnswerTest {
 
         val reply = (answer as UpdateCheckAnswer.Replied).reply
         assertJson("""{"outcome":"upToDate","status":{"isAutomatic":true,"release":{"kind":"upToDate"}}}""", reply)
+    }
+
+    @Test
+    fun `keeps why a check failed so it can be logged`() {
+        val cause = SSLHandshakeException("an intercepting proxy answered")
+
+        val answer = checkAnswer(CheckRun.Ended(CheckResult.Failed(cause))) { statusReply(UpdateStatus.Unchecked, isAutomatic = false) }
+
+        assertEquals(cause, (answer as UpdateCheckAnswer.Replied).failure)
     }
 
     @Test

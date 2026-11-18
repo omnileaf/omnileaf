@@ -1,6 +1,7 @@
 package app.omnileaf
 
 import android.app.Activity
+import app.tauri.Logger
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -99,6 +100,12 @@ private fun Invoke.answer(
     run: CheckRun,
     checking: UpdateChecking,
 ) = when (val answer = checkAnswer(run, checking::statusNow)) {
-    is UpdateCheckAnswer.Replied -> resolve(answer.reply)
-    is UpdateCheckAnswer.Refused -> reject(answer.message, answer.cause)
+    is UpdateCheckAnswer.Replied -> {
+        answer.failure?.let { Logger.error("the update check failed", it) }
+        resolve(answer.reply)
+    }
+
+    is UpdateCheckAnswer.Refused -> {
+        reject(answer.message, answer.cause)
+    }
 }
