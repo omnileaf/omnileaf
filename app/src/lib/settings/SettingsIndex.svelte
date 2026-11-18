@@ -60,7 +60,10 @@
 <div class={["flex flex-col", !android.isOn && "gap-xl"]}>
   {#each SETTINGS_GROUPS as group, index (index)}
     {@const heading = headingOf(group)}
-    <section class={["flex flex-col", !android.isOn && "gap-sm"]}>
+    <section
+      data-settings-group
+      class={["flex flex-col", !android.isOn && "gap-sm"]}
+    >
       {#if heading !== undefined}
         <h2
           id="{headingId}-{index}"

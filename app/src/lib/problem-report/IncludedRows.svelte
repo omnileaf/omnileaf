@@ -29,6 +29,7 @@
 </script>
 
 <section
+  data-settings-group
   aria-label={m.report_included()}
   class={[
     "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card",

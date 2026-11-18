@@ -71,3 +71,12 @@ test("keeps the entries in a bordered list with a Lucide tile off Android", asyn
   expect(list.querySelectorAll("svg").length).toBeGreaterThan(0);
   expect(list.querySelector("[data-icon]")).toBeNull();
 });
+
+test("marks the Android entries as a settings group", async () => {
+  followCorePlatform("android");
+  const screen = await render(SettingsEntries, PROPS);
+
+  const list = screen.getByRole("list").element();
+
+  expect(list).toHaveAttribute("data-settings-group");
+});

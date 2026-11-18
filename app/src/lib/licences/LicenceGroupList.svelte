@@ -46,6 +46,7 @@
 </script>
 
 <section
+  data-settings-group
   aria-labelledby={headingId}
   class={android.isOn
     ? FLUSH_LIST

@@ -62,6 +62,23 @@ export const NOTHING_READ_THIS_WEEK = {
   daysInARow: 0,
 } as const;
 
+type WireMissingFolder = Awaited<
+  ReturnType<FakeBackend["missingLibraryFolders"]>
+>[number];
+
+export const MISSING_COMICS: WireMissingFolder = {
+  folder: {
+    id: "5a4d1e00-0000-4000-8002-000000000002",
+    kind: "linked",
+    name: "Comics",
+    location: "/media/Comics",
+    isAvailable: false,
+  },
+  problem: { kind: "missing" },
+  hiddenSeries: 41,
+  isShownAnyway: false,
+};
+
 export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
   libraryProblem: () => null,
@@ -381,6 +398,57 @@ async function probedColour(
     },
     [css, inTheme] as const,
   );
+}
+
+export async function pixelOf(page: Page, colour: string): Promise<number[]> {
+  return page.evaluate((value) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (context === null) {
+      throw new Error("no 2d canvas");
+    }
+    context.fillStyle = value;
+    context.fillRect(0, 0, 1, 1);
+    return [...context.getImageData(0, 0, 1, 1).data];
+  }, colour);
+}
+
+const RGBA_CHANNELS = 4;
+
+export interface Pixels {
+  readonly width: number;
+  readonly height: number;
+  readonly rgba: readonly number[];
+}
+
+export async function screenshotPixels(page: Page, clip: Box): Promise<Pixels> {
+  const png = await page.screenshot({
+    clip,
+    animations: "disabled",
+    caret: "hide",
+  });
+  return page.evaluate(async (base64) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (context === null) {
+      throw new Error("no 2d canvas");
+    }
+    context.drawImage(image, 0, 0);
+    const { data } = context.getImageData(0, 0, image.width, image.height);
+    return { width: image.width, height: image.height, rgba: [...data] };
+  }, png.toString("base64"));
+}
+
+export function pixelAt(pixels: Pixels, x: number, y: number): number[] {
+  const start = (y * pixels.width + x) * RGBA_CHANNELS;
+  return pixels.rgba.slice(start, start + RGBA_CHANNELS);
 }
 
 export async function leaveAndComeBack(page: Page): Promise<void> {

@@ -391,6 +391,7 @@
   --native-color-tab-indicator: var(--foreground);
   --native-color-tab-rule: var(--border);
   --native-color-sheet-rule: var(--border);
+  --native-color-settings-rule: var(--border);
   --native-color-row-current: transparent;
   --native-color-on-row-current: var(--foreground);
   --native-radius-outlined-field: 4px;

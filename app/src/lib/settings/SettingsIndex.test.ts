@@ -209,3 +209,16 @@ test("leaves Trackers out of the list everywhere but Android", async () => {
     [],
   );
 });
+
+test("marks each group of pages as a settings group on Android", async () => {
+  followCorePlatform("android");
+  const screen = await render(SettingsIndex, PROPS);
+
+  const groups = [
+    ...screen.container.querySelectorAll("section:has(> ul)"),
+  ].filter((group) => group.hasAttribute("data-settings-group"));
+
+  expect(
+    groups.map((group) => group.querySelector("h2")?.textContent.trim()),
+  ).toEqual(["App", "Reading", "Data and privacy", "About"]);
+});

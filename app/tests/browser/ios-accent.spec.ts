@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { expect, test, testOnlyInItsWebview } from "./fixtures.ts";
+import { expect, pixelOf, test, testOnlyInItsWebview } from "./fixtures.ts";
 
 testOnlyInItsWebview("ios");
 
@@ -29,21 +29,11 @@ async function drawnAccent(page: Page): Promise<Drawn> {
 }
 
 async function asPixels(page: Page, drawn: Drawn): Promise<number[][]> {
-  return page.evaluate((colours) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1;
-    canvas.height = 1;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    const pixel = (css: string): number[] => {
-      context?.clearRect(0, 0, 1, 1);
-      if (context !== null) {
-        context.fillStyle = css;
-        context.fillRect(0, 0, 1, 1);
-      }
-      return [...(context?.getImageData(0, 0, 1, 1).data ?? [])];
-    };
-    return [colours.fill, colours.onFill, colours.ink].map(pixel);
-  }, drawn);
+  return Promise.all(
+    [drawn.fill, drawn.onFill, drawn.ink].map((colour) =>
+      pixelOf(page, colour),
+    ),
+  );
 }
 
 for (const [scheme, fill, onFill, ink] of [
