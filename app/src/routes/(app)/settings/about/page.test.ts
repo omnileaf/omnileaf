@@ -17,6 +17,7 @@ const PROPS = {
     libraryProblem: null,
     homeArrival: null,
     pageToRestore: undefined,
+    whatsNew: { installed: null, earlier: [] },
   },
   params: {},
 };

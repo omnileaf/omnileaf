@@ -941,6 +941,14 @@
   "your_reports_none": "No reports yet.",
   "about_licences": "Open-source licences",
   "about_licences_hint": "The packages Omnileaf is built with",
+  "whats_new_title": "What’s new",
+  "whats_new_hint": "Notes for {version}",
+  "whats_new_hint_with_earlier": "Notes for {version} and earlier versions",
+  "whats_new_breaking_in": "Breaking changes in {version}",
+  "whats_new_sec_in": "Security fixes in {version}",
+  "whats_new_feat_in": "New in {version}",
+  "whats_new_perf_in": "Faster in {version}",
+  "whats_new_fix_in": "Fixed in {version}",
   "licences_intro": "Made from the packages this build of Omnileaf uses. Each opens its licence text.",
   "licences_show_all": [
     {

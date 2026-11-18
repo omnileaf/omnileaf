@@ -30,6 +30,7 @@ export type SettingsSubPage =
   | "/(app)/settings/about/licences"
   | "/(app)/settings/about/report"
   | "/(app)/settings/about/reports"
+  | "/(app)/settings/about/whats-new"
   | "/(app)/settings/advanced/animations"
   | "/(app)/settings/general/language"
   | "/(app)/settings/general/opens-on"
