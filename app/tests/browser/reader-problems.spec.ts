@@ -8,6 +8,8 @@ import {
   test,
   viewportOf,
 } from "./fixtures.ts";
+import type { MissingFolder } from "../../src/lib/ipc/bindings.ts";
+
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   BOOK_ID,
@@ -31,7 +33,7 @@ test.beforeEach(() => {
 });
 
 function failingWith(
-  code: "bookNotFound" | "bookUnreadable" | "internal",
+  code: "bookNotFound" | "bookUnreadable" | "bookNotConnected" | "internal",
   place: typeof PLACE | null,
 ): FakeBackend {
   return {
@@ -127,6 +129,95 @@ test.describe("a book whose file couldn't be opened", () => {
       const violations = await accessibilityViolations(page);
 
       expect(violations).toEqual([]);
+    });
+  }
+});
+
+const AWAY_FOLDER: MissingFolder = {
+  folder: {
+    id: "0190a3e4-0000-7000-8000-0000000000f1" as MissingFolder["folder"]["id"],
+    kind: "linked",
+    name: "Comics",
+    location: "/storage/1A2B-3C4D/Comics",
+    isAvailable: false,
+  },
+  problem: { kind: "driveDisconnected" },
+  hiddenSeries: 0,
+  isShownAnyway: true,
+};
+
+let askedAway: string[] = [];
+
+test.describe("a book whose folder or drive is away", () => {
+  test.use({
+    backend: {
+      ...failingWith("bookNotConnected", PLACE),
+      openBook: (id) => {
+        askedAway = [...askedAway, `open ${id}`];
+        throw new CommandFailure({
+          code: "bookNotConnected",
+          message: "the book's folder isn't there",
+        });
+      },
+      bookMissingFolder: (id) => {
+        askedAway = [...askedAway, `missing ${id}`];
+        return AWAY_FOLDER;
+      },
+      relocateLibraryFolder: (id) => {
+        askedAway = [...askedAway, `relocate ${id}`];
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    askedAway = [];
+  });
+
+  test("says it isn't connected and leads back to its series", async ({
+    page,
+  }) => {
+    await page.goto(`/read/${BOOK_ID}`);
+
+    await expect(
+      page.getByRole("heading", { name: "This book isn’t connected" }),
+    ).toBeFocused();
+    await expect(problem(page)).toContainText(
+      "Its folder or drive may be disconnected. Your reading progress is safe.",
+    );
+    await expect(
+      problem(page).getByRole("link", { name: "Back to the series" }),
+    ).toHaveAttribute("href", `/series/${BOOK_SERIES_ID}`);
+  });
+
+  test("finds the folder, then tries the book again", async ({ page }) => {
+    await page.goto(`/read/${BOOK_ID}`);
+
+    await problem(page)
+      .getByRole("button", { name: "Find the folder" })
+      .click();
+
+    await expect
+      .poll(() => askedAway)
+      .toEqual([
+        `open ${BOOK_ID}`,
+        `missing ${BOOK_ID}`,
+        `relocate ${AWAY_FOLDER.folder.id}`,
+        `open ${BOOK_ID}`,
+      ]);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto(`/read/${BOOK_ID}`);
+      await expect(
+        page.getByRole("heading", { name: "This book isn’t connected" }),
+      ).toBeVisible();
+
+      expect(await accessibilityViolations(page)).toEqual([]);
     });
   }
 });
