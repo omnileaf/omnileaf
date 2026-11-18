@@ -7,6 +7,7 @@
   import ProjectLinkRows from "#lib/about/ProjectLinkRows.svelte";
   import RowText from "#lib/about/RowText.svelte";
   import UpdateCheckRow from "#lib/about/UpdateCheckRow.svelte";
+  import UpdateBanner from "#lib/updates/UpdateBanner.svelte";
   import { Bug, FileText, Info, Send } from "@lucide/svelte";
 
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
@@ -83,6 +84,9 @@
 <div
   class="mbs-pane-gap flex flex-col gap-xl android:max-medium:mbs-none two-pane:max-inline-section"
 >
+  {#if offersUpdateCheck(data.appInfo) && updateCheck.shownRelease !== undefined}
+    <UpdateBanner checking={updateCheck} release={updateCheck.shownRelease} />
+  {/if}
   <div class="flex flex-col items-center gap-xs text-center min-inline-none">
     <img
       src={appIcon}

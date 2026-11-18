@@ -131,6 +131,12 @@
   import { shownListing } from "#lib/screenshot-mode/shown-listing.ts";
   import LibrarySearchEntry from "#lib/search/LibrarySearchEntry.svelte";
 
+  import UpdateBanner from "#lib/updates/UpdateBanner.svelte";
+  import {
+    offersUpdateCheck,
+    updateCheckForApp,
+  } from "#lib/updates/update-check.svelte.ts";
+
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -366,6 +372,7 @@
     await loadMissingFolders();
   }
   const selection = new Selection<SeriesId>();
+  const updateCheck = updateCheckForApp();
   setSeriesSelection(selection);
   let keepsLabels = $state(false);
   let keepsDetailEdits = $state(false);
@@ -1159,6 +1166,13 @@
       {/if}
     {/snippet}
   </CollectionHeading>
+{/if}
+{#if offersUpdateCheck(data.appInfo) && updateCheck.shownRelease !== undefined && hasBooks && !selection.isSelecting}
+  <UpdateBanner
+    checking={updateCheck}
+    release={updateCheck.shownRelease}
+    class="mbe-sm"
+  />
 {/if}
 <div
   bind:offsetHeight={headHeight}
