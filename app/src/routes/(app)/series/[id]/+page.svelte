@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CircleAlert, RefreshCw } from "@lucide/svelte";
+  import { CircleAlert, RefreshCw, Unplug } from "@lucide/svelte";
   import { onMount, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -33,7 +33,13 @@
   import { phoneOf } from "#lib/page/platform.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
-  import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
+  import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
+  import { checkFolderAgain } from "#lib/library/folder-check.ts";
+  import { noticingFolderFinder } from "#lib/library/noticing-folder-finder.ts";
+  import {
+    rescanEveryFolder,
+    rescanFolderWithProgress,
+  } from "#lib/library/rescan-folder.ts";
   import RelatedSeries from "#lib/series/RelatedSeries.svelte";
   import SeriesSkeleton from "#lib/series/SeriesSkeleton.svelte";
   import SeriesWithoutBooks from "#lib/series/SeriesWithoutBooks.svelte";
@@ -55,6 +61,7 @@
   import { seriesBooksHeading } from "#lib/series/books-heading.ts";
   import { seriesBookCommands } from "#lib/series/series-book-commands.ts";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
+  import SeriesNotConnectedCard from "#lib/series/SeriesNotConnectedCard.svelte";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
   import { showFolderLabel, showSeriesFolder } from "#lib/page/show-file.ts";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
@@ -110,6 +117,13 @@
     DESKTOPS.includes(data.appInfo.platform) && isWide.current,
   );
   const notices = getNotices();
+  const isNotConnected = $derived(
+    isAndroidPhone && found?.overview.connection.kind === "notConnected",
+  );
+  const folderFinder = noticingFolderFinder(notices, () => {
+    readAgain();
+    return Promise.resolve();
+  });
   let chosen: { id: string; change: ListingChange } | undefined = $state();
   const listingChoices = new ListingChoices(browserPreferenceStore());
   const chosenHere = $derived(
@@ -191,6 +205,34 @@
     notices,
     readAgain,
   });
+
+  function findFolder(): void {
+    if (foundId !== undefined) {
+      void folderFinder.findFrom(commands.seriesMissingFolder(foundId));
+    }
+  }
+
+  async function checkAgain(): Promise<void> {
+    const id = foundId;
+    if (id === undefined) {
+      return;
+    }
+    const checked = await checkFolderAgain(
+      () => commands.seriesMissingFolder(id),
+      (folder) => rescanFolderWithProgress(folder, () => undefined),
+    );
+    if (checked.status === "error") {
+      reportError(checked.error);
+    } else if (checked.data === "stillAway") {
+      notices.show({
+        tone: "plain",
+        icon: Unplug,
+        title: m.series_still_not_connected(),
+      });
+    } else {
+      readAgain();
+    }
+  }
 
   function opposite(read: ReadMark): ReadMark {
     return read === "read" ? "unread" : "read";
@@ -427,6 +469,15 @@
             onShowFolder={showInFolder}
           />
         {:else}
+          {#if isNotConnected}
+            <SeriesNotConnectedCard
+              title={overview.title}
+              onFind={findFolder}
+              onCheckAgain={() => {
+                void checkAgain();
+              }}
+            />
+          {/if}
           <ContinueCard
             progress={overview}
             words={SERIES_CONTINUE_WORDS}
@@ -552,6 +603,8 @@
   }}
   onError={reportError}
 />
+
+<FindFolderSheet finder={folderFinder} platform={data.appInfo.platform} />
 
 {#if foundId !== undefined}
   <LabelSeriesDialog
