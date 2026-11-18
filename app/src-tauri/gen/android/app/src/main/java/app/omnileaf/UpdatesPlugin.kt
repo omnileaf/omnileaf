@@ -32,7 +32,7 @@ class UpdatesPlugin(
     private val state = UpdateState(PreferencesUpdateStore(context))
     private val clock = Clock.systemUTC()
     private val installedRelease = PackageInstalledRelease(context)
-    private val automatic = AutomaticCheckSwitch(state, BackgroundUpdateCheck(SystemUpdateCheckJobs(context)))
+    private val automatic = AutomaticCheckSwitch(state, BackgroundUpdateCheck(SystemUpdateCheckJobs(context), UpdateCheckBuild.CURRENT))
     private val choices = UpdateNoticeChoices(state, UpdateNotifications(context))
     private val runner: UpdateCheckRunner? =
         installedRelease.version()?.let { installed ->

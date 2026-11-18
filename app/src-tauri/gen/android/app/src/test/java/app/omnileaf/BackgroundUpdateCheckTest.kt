@@ -6,7 +6,7 @@ import java.time.Duration
 
 class BackgroundUpdateCheckTest {
     private val jobs = FakeUpdateCheckJobs()
-    private val background = BackgroundUpdateCheck(jobs)
+    private val background = BackgroundUpdateCheck(jobs, UpdateCheckBuild.WITH_CHECK)
 
     private fun stateWith(
         isAutomatic: Boolean,
@@ -35,6 +35,17 @@ class BackgroundUpdateCheckTest {
             }
 
         assertEquals(listOf(null, null, null), periods)
+    }
+
+    @Test
+    fun `never checks in the background in a build without the update check`() {
+        jobs.schedule(Duration.ofHours(11))
+        val withoutCheck = BackgroundUpdateCheck(jobs, UpdateCheckBuild.WITHOUT_CHECK)
+        val state = stateWith(isAutomatic = true, notifies = true)
+
+        withoutCheck.sync(state)
+
+        assertEquals(null to false, jobs.period to withoutCheck.isWanted(state))
     }
 
     @Test

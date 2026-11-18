@@ -13,7 +13,7 @@ class UpdateNoticeSwitchTest {
     private val jobs = FakeUpdateCheckJobs()
     private val notices = MemoryUpdateNotices()
     private var installed = INSTALLED
-    private val switch = UpdateNoticeSwitch(state, BackgroundUpdateCheck(jobs), notices) { installed }
+    private val switch = UpdateNoticeSwitch(state, BackgroundUpdateCheck(jobs, UpdateCheckBuild.WITH_CHECK), notices) { installed }
 
     private fun posts(release: PublishedRelease) {
         state.record(CheckResult.Available(release), NOW)

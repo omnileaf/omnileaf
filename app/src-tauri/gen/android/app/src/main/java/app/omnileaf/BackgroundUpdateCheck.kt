@@ -21,12 +21,25 @@ internal interface UpdateCheckJobs {
 
 internal val UpdateState.checksInBackground: Boolean get() = isAutomatic && notifies
 
+internal enum class UpdateCheckBuild {
+    WITH_CHECK,
+    WITHOUT_CHECK,
+    ;
+
+    companion object {
+        val CURRENT: UpdateCheckBuild = if (BuildConfig.UPDATE_CHECK) WITH_CHECK else WITHOUT_CHECK
+    }
+}
+
 internal class BackgroundUpdateCheck(
     private val jobs: UpdateCheckJobs,
+    private val build: UpdateCheckBuild,
 ) {
+    fun isWanted(state: UpdateState): Boolean = build == UpdateCheckBuild.WITH_CHECK && state.checksInBackground
+
     fun sync(state: UpdateState) {
         when {
-            !state.checksInBackground -> jobs.cancel()
+            !isWanted(state) -> jobs.cancel()
             !jobs.isScheduled() -> jobs.schedule(BACKGROUND_WAKE_PERIOD)
         }
     }
