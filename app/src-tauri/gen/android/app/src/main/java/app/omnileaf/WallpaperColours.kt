@@ -85,7 +85,6 @@ internal fun inverseRoleColours(): SchemeResources =
  * Android 12 and 13 publish only the tonal palettes, whose steps 0 to 1000 hold tones 100 down to 0,
  * so each role takes the tone Material's baseline scheme gives it.
  */
-@RequiresApi(Build.VERSION_CODES.S)
 internal fun paletteTones(): SchemeResources =
     mapOf(
         SchemeRole.PRIMARY to ThemedColour(system.system_accent1_600, system.system_accent1_200),

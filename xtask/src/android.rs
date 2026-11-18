@@ -17,7 +17,7 @@ const MODEL_FIELD: &str = "model:";
 const TRANSPORT_FIELD: &str = "transport_id:";
 const BLUETOOTH_NAME_FIELD: &str = "name:";
 
-const MIN_SDK: u32 = 26;
+const MIN_SDK: u32 = 31;
 pub(crate) const LINT_CC: &str = "CC_aarch64_linux_android";
 pub(crate) const LINT_AR: &str = "AR_aarch64_linux_android";
 
@@ -312,7 +312,7 @@ mod tests {
         assert_eq!(
             compilers,
             Some(LintCompilers {
-                cc: bin.join("aarch64-linux-android26-clang"),
+                cc: bin.join("aarch64-linux-android31-clang"),
                 ar: bin.join("llvm-ar"),
             })
         );
@@ -348,7 +348,7 @@ mod tests {
         assert_eq!(
             compilers,
             Some(LintCompilers {
-                cc: bin.join("aarch64-linux-android26-clang.cmd"),
+                cc: bin.join("aarch64-linux-android31-clang.cmd"),
                 ar: bin.join("llvm-ar.exe"),
             })
         );
