@@ -11,6 +11,7 @@
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import { ANDROID_SUBHEADING } from "#lib/library/filter-sheet-look.ts";
+  import { marksBooksNotConnected } from "#lib/library/not-connected.ts";
   import { currentPlatform, type PhonePlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { chapterRunWords } from "#lib/series-sections/book-number-words.ts";
@@ -110,7 +111,7 @@
     onFindFolder?: ((book: SeriesBook) => void) | undefined;
   } = $props();
 
-  const marksNotConnected = currentPlatform() === "android";
+  const marksNotConnected = marksBooksNotConnected(currentPlatform());
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_LISTS[phonePlatform],
   );

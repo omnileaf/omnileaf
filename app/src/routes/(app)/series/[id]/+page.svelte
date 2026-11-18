@@ -37,6 +37,7 @@
   import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
   import { checkFolderAgain } from "#lib/library/folder-check.ts";
   import { noticeNotConnected } from "#lib/library/missing-folder-notices.ts";
+  import { marksBooksNotConnected } from "#lib/library/not-connected.ts";
   import { noticingFolderFinder } from "#lib/library/noticing-folder-finder.ts";
   import {
     rescanEveryFolder,
@@ -115,7 +116,9 @@
   const width = new WindowWidth();
   const phone = $derived(phoneOf(data.appInfo.platform, width.current));
   const isAndroidPhone = $derived(phone === "android");
-  const marksNotConnected = $derived(data.appInfo.platform === "android");
+  const marksNotConnected = $derived(
+    marksBooksNotConnected(data.appInfo.platform),
+  );
   const editsInSheet = $derived(isWide.current || phone === "ios");
   const hasToolbar = $derived(
     DESKTOPS.includes(data.appInfo.platform) && isWide.current,

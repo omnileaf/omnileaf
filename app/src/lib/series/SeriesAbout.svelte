@@ -34,6 +34,7 @@
     SeriesOverview,
   } from "#lib/ipc/bindings.ts";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
+  import { marksBooksNotConnected } from "#lib/library/not-connected.ts";
   import NotConnectedTag from "#lib/library/NotConnectedTag.svelte";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -118,7 +119,8 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNotConnected = $derived(
-    platform === "android" && overview.connection.kind === "notConnected",
+    marksBooksNotConnected(platform) &&
+      overview.connection.kind === "notConnected",
   );
   const detailsRow = $derived(
     isPhone(platform, width.current) ? DETAILS_ROWS[platform] : undefined,

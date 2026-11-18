@@ -12,6 +12,7 @@
     TableRow,
   } from "#lib/components/ui/table/index.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
+  import { marksBooksNotConnected } from "#lib/library/not-connected.ts";
   import NotConnectedTag from "#lib/library/NotConnectedTag.svelte";
   import { openMenuFromKeys } from "#lib/page/menu-keys.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -63,7 +64,7 @@
     selectAllBox?: HTMLElement | null;
   } = $props();
 
-  const marksNotConnected = currentPlatform() === "android";
+  const marksNotConnected = marksBooksNotConnected(currentPlatform());
 
   let menuBook: SeriesBook | undefined = $state();
 

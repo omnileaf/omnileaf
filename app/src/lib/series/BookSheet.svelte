@@ -22,6 +22,7 @@
   import { ITEM_LOOKS, ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
+  import { marksBooksNotConnected } from "#lib/library/not-connected.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -73,7 +74,10 @@
   const marks = $derived(isAndroid ? actions.marks : [actions.mark]);
   const isFileThere = $derived(book.file.kind === "present");
   const find = $derived(
-    isAndroid && book.file.kind === "notConnected" ? onFind : undefined,
+    marksBooksNotConnected(currentPlatform()) &&
+      book.file.kind === "notConnected"
+      ? onFind
+      : undefined,
   );
   let isOpen = $state(false);
 

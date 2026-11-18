@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
 
-import { isNotConnected } from "./not-connected";
+import { isNotConnected, marksBooksNotConnected } from "./not-connected";
 
 const NOT_CONNECTED = { isConnected: false };
 const CONNECTED = { isConnected: true };
@@ -36,5 +36,16 @@ test.each(["ios", "macos"] satisfies Platform[])(
   (platform) => {
     expect(isNotConnected(NOT_CONNECTED, platform)).toBe(true);
     expect(isNotConnected(CONNECTED, platform)).toBe(false);
+  },
+);
+
+test("marks books and series pages that aren't connected on Android", () => {
+  expect(marksBooksNotConnected("android")).toBe(true);
+});
+
+test.each(["ios", "linux", "macos", "windows"] as const)(
+  "leaves books and series pages unmarked on %s",
+  (platform: Platform) => {
+    expect(marksBooksNotConnected(platform)).toBe(false);
   },
 );
