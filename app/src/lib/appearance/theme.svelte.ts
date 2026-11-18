@@ -46,12 +46,6 @@ export class ThemeSetting {
     rememberPreference(this.store, PREFERENCE_KEY, preference);
   }
 
-  adopt(kept: ThemePreference | null): void {
-    if (kept !== null && kept !== this.preference) {
-      this.choose(kept);
-    }
-  }
-
   preview(preference: ThemePreference): void {
     this.previewed = preference;
     this.apply();
