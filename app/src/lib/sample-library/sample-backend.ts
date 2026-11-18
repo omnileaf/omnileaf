@@ -2,6 +2,7 @@ import {
   type AdultContent,
   type AppLock,
   type BookFileState,
+  type ChapterVolume,
   DEFAULT_LIBRARY_VIEW,
   type DetailEdits,
   type FileOutcome,
@@ -543,6 +544,33 @@ const SAMPLE_CATEGORIES: readonly SampleCategory[] = [
     holds: (series) => series.tags.includes("Sea"),
   },
 ];
+
+function chapterVolumesOf(
+  books: readonly Pick<SeriesBook, "kind" | "volume" | "reading">[],
+): ChapterVolume[] {
+  const counted = new Map<number, ChapterVolume>();
+  for (const { kind, volume, reading } of books) {
+    if (kind !== "chapter" || volume === null) {
+      continue;
+    }
+    const before = counted.get(volume) ?? {
+      volume,
+      bookCount: 0,
+      readCount: 0,
+      startedCount: 0,
+    };
+    counted.set(volume, {
+      volume,
+      bookCount: before.bookCount + 1,
+      readCount: before.readCount + Number(reading.state === "read"),
+      startedCount:
+        before.startedCount + Number(reading.state !== "notStarted"),
+    });
+  }
+  return [...counted.values()].toSorted(
+    (earlier, later) => earlier.volume - later.volume,
+  );
+}
 
 function pageCountOf(
   books: readonly Pick<SeriesBook, "pageCount">[],
@@ -1856,6 +1884,13 @@ export function sampleBackend(
           chapters.find((book) => book.reading.state !== "read") ??
           null,
       };
+    },
+    seriesChapterVolumes: async (id) => {
+      await seriesReady();
+      const series = seriesWith(id);
+      return chapterVolumesOf(
+        booksOf(series).map((_, index) => wireBook(series, index)),
+      );
     },
     creatorSeries: (creator) =>
       seriesBy(creator).map((series) => ({

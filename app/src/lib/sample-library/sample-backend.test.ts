@@ -1861,6 +1861,23 @@ test("lists the chapters filed in one volume of the sample series that files cha
   ]);
 });
 
+test("counts the chapters read and started in each volume of the sample series that files chapters in volumes", async () => {
+  const { backend } = backendFor();
+
+  const [filed, unfiled] = await Promise.all([
+    backend.seriesChapterVolumes(sampleSeriesId(21)),
+    backend.seriesChapterVolumes(sampleSeriesId(4)),
+  ]);
+
+  expect([filed, unfiled]).toEqual([
+    [
+      { volume: 1, bookCount: 4, readCount: 4, startedCount: 4 },
+      { volume: 2, bookCount: 4, readCount: 1, startedCount: 2 },
+    ],
+    [],
+  ]);
+});
+
 test("goes on inside each volume of the sample series that files chapters in volumes from its chapter up next, and counts its pages", async () => {
   const { backend } = backendFor();
   const series = sampleSeriesId(21);

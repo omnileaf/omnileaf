@@ -123,6 +123,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   },
   seriesBooks: () => ({ books: [], next: null }),
   seriesVolume: () => null,
+  seriesChapterVolumes: () => [],
   fileToOpen: () => null,
   queueDocumentToOpen: () => null,
   inspectDrop: () => ({ first: null, more: 0, totalKilobytes: 0, refused: [] }),
