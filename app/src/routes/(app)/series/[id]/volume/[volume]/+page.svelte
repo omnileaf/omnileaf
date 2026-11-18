@@ -104,7 +104,11 @@
     });
   });
 
-  onMount(() => listenForLibraryChanges(readAgain, reportError));
+  onMount(() =>
+    listenForLibraryChanges(readAgain, (error: unknown) => {
+      reportError(error);
+    }),
+  );
 </script>
 
 <div
