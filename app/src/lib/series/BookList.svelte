@@ -87,6 +87,7 @@
     onShowFile,
     onSwiped,
     onNotConnected,
+    onFindFolder,
   }: {
     phone: PhonePlatform | undefined;
     books: readonly SeriesBook[];
@@ -109,6 +110,7 @@
       how: "swiped" | "tapped",
     ) => void;
     onNotConnected?: ((book: SeriesBook) => void) | undefined;
+    onFindFolder?: ((book: SeriesBook) => void) | undefined;
   } = $props();
 
   const phone = $derived(
@@ -462,6 +464,11 @@
               ? undefined
               : () => {
                   onDelete(book.id);
+                }}
+            onFind={onFindFolder === undefined || phone === undefined
+              ? undefined
+              : () => {
+                  onFindFolder(book);
                 }}
           />
         {/if}
