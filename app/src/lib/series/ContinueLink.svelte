@@ -15,13 +15,23 @@
   const TODAYS_LOOK =
     "flex items-center justify-center gap-sm rounded-shadcn-button bg-accent px-lg text-center text-body font-medium text-on-accent transition-control max-inline-full min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control";
 
-  let { book, class: className }: { book: SeriesBook; class?: string } =
-    $props();
+  let {
+    book,
+    class: className,
+    onFind,
+  }: {
+    book: SeriesBook;
+    class?: string;
+    onFind?: ((book: SeriesBook) => void) | undefined;
+  } = $props();
 
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isAndroidPhone = $derived(
     phoneOf(platform, width.current) === "android",
+  );
+  const find = $derived(
+    isAndroidPhone && book.file.kind === "notConnected" ? onFind : undefined,
   );
   const look = $derived.by(() => {
     if (platform === "macos" || platform === "windows") {
@@ -56,15 +66,29 @@
   }
 </script>
 
-<a
-  href={resolve("/read/[book]", { book: book.id })}
-  aria-label={goOn(book)}
-  class={cn(look, className)}
->
-  {#if isAndroidPhone}
-    <Icon name="play" class="shrink-0" />
-  {:else}
-    <Play size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
-  {/if}
-  <span class="truncate">{shortLabel(book)}</span>
-</a>
+{#if find !== undefined}
+  <button
+    type="button"
+    aria-label={m.missing_find_folder_for({ title: book.title })}
+    class={cn(look, className)}
+    onclick={() => {
+      find(book);
+    }}
+  >
+    <Icon name="folder-search" class="shrink-0" />
+    <span class="truncate">{m.missing_find_folder()}</span>
+  </button>
+{:else}
+  <a
+    href={resolve("/read/[book]", { book: book.id })}
+    aria-label={goOn(book)}
+    class={cn(look, className)}
+  >
+    {#if isAndroidPhone}
+      <Icon name="play" class="shrink-0" />
+    {:else}
+      <Play size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+    {/if}
+    <span class="truncate">{shortLabel(book)}</span>
+  </a>
+{/if}

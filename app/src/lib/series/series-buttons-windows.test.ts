@@ -45,7 +45,7 @@ async function continueLink(
   await page.viewport(1280, 800);
   document.documentElement.dataset.theme = theme;
   followCorePlatform(platform);
-  await render(ContinueLink, { book: BOOK });
+  await render(ContinueLink, { book: BOOK, onFind: () => undefined });
   const link = page.getByRole("link").element();
   if (!(link instanceof HTMLElement)) {
     throw new Error("Continue drew no element");

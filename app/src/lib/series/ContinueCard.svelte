@@ -30,12 +30,14 @@
     cover,
     coverUrl,
     isWide,
+    onFind,
   }: {
     progress: ContinueProgress;
     words: ContinueWords;
     cover: ShownCover;
     coverUrl: CoverUrl;
     isWide: boolean;
+    onFind?: ((book: SeriesBook) => void) | undefined;
   } = $props();
 
   const NO_COVER_ICON_SIZE = 24;
@@ -130,7 +132,7 @@
       })}
     </p>
     {#if next !== null}
-      <ContinueLink book={next} class="col-span-full mbs-sm" />
+      <ContinueLink book={next} class="col-span-full mbs-sm" {onFind} />
     {/if}
   </Card>
 {:else}
@@ -166,12 +168,12 @@
         })}
       </p>
       {#if next !== null && isWide}
-        <ContinueLink book={next} />
+        <ContinueLink book={next} {onFind} />
       {/if}
     </CardContent>
     {#if next !== null && !isWide}
       <CardFooter class="px-series-card">
-        <ContinueLink book={next} class="flex-1" />
+        <ContinueLink book={next} class="flex-1" {onFind} />
       </CardFooter>
     {/if}
   </Card>

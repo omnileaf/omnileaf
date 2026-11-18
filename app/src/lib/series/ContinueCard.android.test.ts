@@ -109,3 +109,38 @@ test("keeps an iPhone's continue card as it was", async () => {
     glyph: "svg",
   });
 });
+
+async function awayCardOn(platform: Platform, found: string[] = []) {
+  await page.viewport(PHONE.width, PHONE.height);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  return render(ContinueCardHarness, {
+    overview: {
+      ...OVERVIEW,
+      upNext: { ...BOOK, file: { kind: "notConnected" } },
+    },
+    onFind: ({ title }: SeriesBook) => found.push(title),
+  });
+}
+
+test("turns Continue into Find the folder while the next book isn't connected on an Android phone", async () => {
+  const found: string[] = [];
+  const screen = await awayCardOn("android", found);
+
+  await screen
+    .getByRole("button", { name: "Find the folder for Volume 3" })
+    .click();
+
+  expect({
+    links: screen.getByRole("link").elements().length,
+    found,
+  }).toEqual({ links: 0, found: ["Volume 3"] });
+});
+
+test("keeps Continue while the next book isn't connected on an iPhone", async () => {
+  const screen = await awayCardOn("ios");
+
+  await expect
+    .element(screen.getByRole("link", { name: "Continue Volume 3 at page 14" }))
+    .toBeVisible();
+});
