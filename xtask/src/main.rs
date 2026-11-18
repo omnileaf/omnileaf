@@ -392,14 +392,15 @@ fn ready_for_ios_tests(chosen: Option<&str>) -> anyhow::Result<Process> {
 
 fn ready_for_android_tests(chosen: Option<&str>) -> anyhow::Result<Process> {
     let process = Process::in_workspace();
-    let toolchain = android::Toolchain::locate(|key| std::env::var_os(key), std::env::consts::OS)
+    let (os, arch) = (std::env::consts::OS, std::env::consts::ARCH);
+    let toolchain = android::Toolchain::locate(|key| std::env::var_os(key), os)
         .context("find the Android SDK; cargo xtask doctor shows how to install it")?;
     let android::NdkSearch::Found(ndk) = &toolchain.ndk else {
         anyhow::bail!("find the Android NDK; cargo xtask doctor shows how to install it");
     };
-    let compilers = ndk
-        .lint_compilers(std::env::consts::OS)
-        .context("find the NDK's clang, which ships only for Linux, macOS and Windows hosts")?;
+    let compilers = ndk.lint_compilers(os, arch).with_context(|| {
+        format!("find the NDK's clang for this {arch} {os} host; the NDK ships it only for x86_64 Linux, macOS and Windows")
+    })?;
     let device = test_device::ready_android(&process, &toolchain, chosen)?;
     test_device::build_android_app(&workspace::root(), device.target)?;
     Ok(process

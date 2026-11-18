@@ -210,12 +210,12 @@ fn search_ndk(ndk_home: Option<PathBuf>, sdk: &Path) -> NdkSearch {
 }
 
 impl Ndk {
-    /// The NDK ships one prebuilt toolchain per host, under a folder named for the host, with `.cmd` wrappers on Windows.
-    pub(crate) fn lint_compilers(&self, os: &str) -> Option<LintCompilers> {
-        let (host, clang_suffix, exe_suffix) = match os {
-            "linux" => ("linux-x86_64", "", ""),
-            "macos" => ("darwin-x86_64", "", ""),
-            "windows" => ("windows-x86_64", ".cmd", ".exe"),
+    /// The NDK ships its prebuilt toolchain only for `x86_64` Linux, Windows (with `.cmd` wrappers) and macOS (as universal binaries), each under a folder named `<os>-x86_64`.
+    pub(crate) fn lint_compilers(&self, os: &str, arch: &str) -> Option<LintCompilers> {
+        let (host, clang_suffix, exe_suffix) = match (os, arch) {
+            ("linux", "x86_64") => ("linux-x86_64", "", ""),
+            ("macos", _) => ("darwin-x86_64", "", ""),
+            ("windows", _) => ("windows-x86_64", ".cmd", ".exe"),
             _ => return None,
         };
         let bin = self
@@ -306,7 +306,7 @@ mod tests {
             revision: None,
         };
 
-        let compilers = ndk.lint_compilers("linux");
+        let compilers = ndk.lint_compilers("linux", "x86_64");
 
         let bin = PathBuf::from("/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/linux-x86_64/bin");
         assert_eq!(
@@ -325,7 +325,7 @@ mod tests {
             revision: None,
         };
 
-        let compilers = ndk.lint_compilers("macos");
+        let compilers = ndk.lint_compilers("macos", "aarch64");
 
         assert!(compilers.is_some_and(|found| {
             found
@@ -341,7 +341,7 @@ mod tests {
             revision: None,
         };
 
-        let compilers = ndk.lint_compilers("windows");
+        let compilers = ndk.lint_compilers("windows", "aarch64");
 
         let bin =
             PathBuf::from("/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/windows-x86_64/bin");
@@ -374,7 +374,17 @@ mod tests {
             revision: None,
         };
 
-        assert_eq!(ndk.lint_compilers("freebsd"), None);
+        assert_eq!(ndk.lint_compilers("freebsd", "x86_64"), None);
+    }
+
+    #[test]
+    fn has_no_ndk_clang_to_lint_with_on_an_arm64_linux_host() {
+        let ndk = Ndk {
+            path: PathBuf::from("/sdk/ndk/30.0.16248370"),
+            revision: None,
+        };
+
+        assert_eq!(ndk.lint_compilers("linux", "aarch64"), None);
     }
 
     #[test]
