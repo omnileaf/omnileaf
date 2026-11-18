@@ -19,6 +19,7 @@ import SearchResults from "./SearchResults.svelte";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 
 const REAL_TITLE = "Hidden Story";
+const REAL_ID = "0190a3e4-0000-8000-8000-0000000000a1" as LibrarySeries["id"];
 const STAND_IN = /^Series \d{2,3}$/;
 
 afterEach(() => {
@@ -64,6 +65,7 @@ test("shows a stand-in for each title and no cover while Screenshot mode is on",
     activeKey: undefined,
     onOpen: () => undefined,
     onSelect: () => undefined,
+    onFind: () => undefined,
     words: "",
     view: undefined,
   });
@@ -86,6 +88,7 @@ test("shows each real title and cover while Screenshot mode is off", async () =>
     activeKey: undefined,
     onOpen: () => undefined,
     onSelect: () => undefined,
+    onFind: () => undefined,
     words: "",
     view: undefined,
   });
@@ -110,6 +113,7 @@ test("marks the matched word on the accent-soft fill on an iPhone", async () => 
     activeKey: undefined,
     onOpen: () => undefined,
     onSelect: () => undefined,
+    onFind: () => undefined,
     words: "hidden",
     view: undefined,
   });
@@ -136,6 +140,7 @@ test("sets a result in 17 point regular type over two 15 point muted lines, unde
     activeKey: undefined,
     onOpen: () => undefined,
     onSelect: () => undefined,
+    onFind: () => undefined,
     words: "hidden",
     view: undefined,
   });
@@ -201,6 +206,7 @@ async function renderOn(
     activeKey: options.activeKey,
     onOpen: options.onOpen ?? (() => undefined),
     onSelect: options.onSelect ?? (() => undefined),
+    onFind: () => undefined,
     words: "hidden",
     view: undefined,
   });
@@ -339,3 +345,90 @@ test.each([{ width: WIDE_WINDOW }, { width: NARROW_WINDOW }])(
     });
   },
 );
+
+const AWAY: LibrarySeries = {
+  id: "0190a3e4-0000-8000-8000-0000000000a2" as LibrarySeries["id"],
+  title: "The Harbour Letters",
+  bookCount: 3,
+  unreadCount: 3,
+  cover: null,
+  language: null,
+  hasDownloads: false,
+  continuesFrom: null,
+  isAdult: false,
+  isConnected: false,
+};
+
+async function renderAway(
+  platform: Platform,
+  handlers: {
+    onOpen?: (series: LibrarySeries) => void;
+    onFind?: (series: LibrarySeries) => void;
+  } = {},
+) {
+  await page.viewport(390, 800);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  return render(SearchResults, {
+    series: [
+      AWAY,
+      { ...AWAY, id: REAL_ID, title: REAL_TITLE, isConnected: true },
+    ],
+    count: 2,
+    isComplete: true,
+    onNearEnd: () => undefined,
+    coverUrl: fakeCoverUrl,
+    usesStandIns: false,
+    listId: "results",
+    activeKey: undefined,
+    onOpen: handlers.onOpen ?? (() => undefined),
+    onSelect: () => undefined,
+    onFind: handlers.onFind ?? (() => undefined),
+    words: "",
+    view: undefined,
+  });
+}
+
+test("dims, mutes and tags a series that isn't connected on an Android phone", async () => {
+  const screen = await renderAway("android");
+
+  const away = screen.getByRole("option", { name: /The Harbour Letters/ });
+  const cover = away.element().querySelector('[data-slot="list-cover"]');
+
+  await expect.element(away.getByText("Not connected")).toBeVisible();
+  expect(cover === null ? undefined : getComputedStyle(cover).opacity).toBe(
+    "0.45",
+  );
+});
+
+test("leaves a connected series untagged on an Android phone", async () => {
+  const screen = await renderAway("android");
+
+  const connected = screen.getByRole("option", {
+    name: new RegExp(REAL_TITLE),
+  });
+
+  expect(connected.getByText("Not connected").elements()).toHaveLength(0);
+});
+
+test("finds the folder from the icon that ends a series that isn't connected, without opening it", async () => {
+  const found: string[] = [];
+  const opened: string[] = [];
+  const screen = await renderAway("android", {
+    onFind: ({ title }) => found.push(title),
+    onOpen: ({ title }) => opened.push(title),
+  });
+
+  await screen.getByTitle("Find the folder").first().click();
+
+  expect({ found, opened }).toEqual({
+    found: ["The Harbour Letters"],
+    opened: [],
+  });
+});
+
+test("tags no series off an Android phone", async () => {
+  const screen = await renderAway("windows");
+
+  expect(screen.getByText("Not connected").elements()).toHaveLength(0);
+});

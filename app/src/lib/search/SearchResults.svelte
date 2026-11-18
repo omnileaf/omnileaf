@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { LibrarySeries, LibraryView } from "#lib/ipc/bindings.ts";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import ListCover from "#lib/library/ListCover.svelte";
+  import NotConnectedTag from "#lib/library/NotConnectedTag.svelte";
   import { SCREEN_SIZES } from "#lib/library/library-view.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -26,6 +28,7 @@
     onRevealReady,
     onOpen,
     onSelect,
+    onFind,
     words,
     view,
   }: {
@@ -40,6 +43,7 @@
     onRevealReady?: ((reveal: Reveal) => void) | undefined;
     onOpen: (series: LibrarySeries) => void;
     onSelect: (series: LibrarySeries) => void;
+    onFind: (series: LibrarySeries) => void;
     words: string;
     view: LibraryView | undefined;
   } = $props();
@@ -77,13 +81,14 @@
 {#snippet found(one: LibrarySeries)}
   {@const shown = lookOf(one)}
   {@const isChosen = one.id === activeKey}
+  {@const away = one.isConnected ? undefined : look.notConnected}
   <ListCover
     cover={shown.cover}
     {coverUrl}
-    class={[look.cover, isChosen && look.selectedCover]}
+    class={[look.cover, isChosen && look.selectedCover, away?.cover]}
   />
-  <div class="flex flex-col gap-2xs min-inline-none">
-    <p class={[look.title, isChosen && look.selectedTitle]}>
+  <div class="flex flex-1 flex-col gap-2xs min-inline-none">
+    <p class={[look.title, isChosen && look.selectedTitle, away?.title]}>
       {#each matchedWords(shown.title, words, locale) as part, index (index)}
         {#if part.isMatch}
           <mark class={look.mark}>{part.text}</mark>
@@ -97,10 +102,26 @@
         {m.search_matched_title()}
       </p>
     {/if}
-    <p class={look.line}>
+    <p class={[look.line, away?.line]}>
       {m.library_series_books({ count: one.bookCount })}
+      {#if away !== undefined}
+        <NotConnectedTag class={away.tag} />
+      {/if}
     </p>
   </div>
+  {#if away !== undefined}
+    <span
+      aria-hidden="true"
+      title={m.missing_find_folder()}
+      class={away.find}
+      onclick={(event) => {
+        event.stopPropagation();
+        onFind(one);
+      }}
+    >
+      <Icon name="folder-search" />
+    </span>
+  {/if}
 {/snippet}
 
 <section aria-labelledby={headingId} class={look.section}>
