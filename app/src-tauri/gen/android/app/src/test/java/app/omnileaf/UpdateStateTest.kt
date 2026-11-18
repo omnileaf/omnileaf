@@ -4,21 +4,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.Instant
 
-private class MemoryStore : UpdateStore {
-    val values = mutableMapOf<String, String>()
-
-    override fun snapshot(): Map<String, String> = values.toMap()
-
-    override fun write(values: Map<String, String?>) {
-        values.forEach { (key, value) -> if (value == null) this.values.remove(key) else this.values[key] = value }
-    }
-}
-
 private val CHECKED: Instant = Instant.parse("2026-11-16T09:00:00Z")
 private val FOUND = PublishedRelease(ReleaseVersion(0, 3, 0), "Smoother pages")
 
 class UpdateStateTest {
-    private val store = MemoryStore()
+    private val store = MemoryUpdateStore()
     private val state = UpdateState(store)
 
     @Test
@@ -74,6 +64,18 @@ class UpdateStateTest {
     }
 
     @Test
+    fun `notes an attempt before its outcome is known`() {
+        state.record(CheckResult.UpToDate, CHECKED)
+
+        state.markAttempted(CHECKED.plusSeconds(60))
+
+        assertEquals(
+            Triple(CHECKED.plusSeconds(60), CHECKED, UpdateOutcome.UP_TO_DATE),
+            Triple(state.attemptedAt, state.checkedAt, state.lastOutcome),
+        )
+    }
+
+    @Test
     fun `keeps the last reached check time while rate limited or failing`() {
         state.record(CheckResult.UpToDate, CHECKED)
 
@@ -85,7 +87,7 @@ class UpdateStateTest {
 
     @Test
     fun `reads nothing from values it cannot understand`() {
-        store.values.putAll(mapOf("checkedAt" to "soon", "lastOutcome" to "GONE", "latestVersion" to "v0.3", "snoozedVersion" to "0.3.0"))
+        store.write(mapOf("checkedAt" to "soon", "lastOutcome" to "GONE", "latestVersion" to "v0.3", "snoozedVersion" to "0.3.0"))
 
         val read = listOf(state.checkedAt, state.lastOutcome, state.latest, state.choices.snooze)
 

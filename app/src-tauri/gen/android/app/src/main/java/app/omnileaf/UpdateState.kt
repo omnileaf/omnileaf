@@ -59,6 +59,8 @@ internal class UpdateState(
 
     fun markNotified(version: ReleaseVersion) = store.write(mapOf(NOTIFIED_VERSION to version.toString()))
 
+    fun markAttempted(now: Instant) = store.write(mapOf(ATTEMPTED_AT to now.toEpochMilli().toString()))
+
     fun record(
         result: CheckResult,
         now: Instant,

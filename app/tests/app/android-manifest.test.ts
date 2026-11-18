@@ -27,19 +27,23 @@ interface IntentFilter {
   pathPatterns: string[];
 }
 
+async function readManifest(): Promise<string> {
+  return readFile(MANIFEST, "utf8");
+}
+
 function attributeValues(filter: string, pattern: RegExp): string[] {
   return [...filter.matchAll(pattern)].map((found) => found[1] ?? "");
 }
 
 async function handledConfigChanges(): Promise<string[]> {
-  const manifest = await readFile(MANIFEST, "utf8");
+  const manifest = await readManifest();
   return (
     /android:configChanges="([^"]*)"/.exec(manifest)?.[1]?.split("|") ?? []
   );
 }
 
 async function intentFilters(): Promise<IntentFilter[]> {
-  const manifest = await readFile(MANIFEST, "utf8");
+  const manifest = await readManifest();
   return [...manifest.matchAll(/<intent-filter>([\s\S]*?)<\/intent-filter>/g)]
     .map((found) => found[1] ?? "")
     .map((filter) => ({
@@ -48,6 +52,23 @@ async function intentFilters(): Promise<IntentFilter[]> {
       mimeTypes: attributeValues(filter, /android:mimeType="([^"]*)"/g),
       pathPatterns: attributeValues(filter, /android:pathPattern="([^"]*)"/g),
     }));
+}
+
+async function elementAttributes(
+  element: string,
+  name: string,
+): Promise<Record<string, string> | undefined> {
+  const manifest = await readManifest();
+  const tags = manifest.matchAll(new RegExp(`<${element}\\b([^>]*)>`, "g"));
+  return [...tags]
+    .map((tag) =>
+      Object.fromEntries(
+        [...(tag[1] ?? "").matchAll(/android:(\w+)="([^"]*)"/g)].map(
+          (attribute) => [attribute[1] ?? "", attribute[2] ?? ""],
+        ),
+      ),
+    )
+    .find((attributes) => attributes["name"] === name);
 }
 
 test("offers every comic archive type when a file is opened or shared", async () => {
@@ -87,6 +108,23 @@ test("offers generic rar types where a provider or a share may report a comic ar
       expect.arrayContaining(GENERIC_RAR_MIME_TYPES),
     );
   }
+});
+
+test("keeps the daily update check scheduled after the phone restarts", async () => {
+  expect(
+    await elementAttributes(
+      "uses-permission",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+    ),
+  ).toBeDefined();
+});
+
+test("runs the daily update check as a job only the system can start", async () => {
+  expect(await elementAttributes("service", ".UpdateCheckJob")).toEqual({
+    name: ".UpdateCheckJob",
+    permission: "android.permission.BIND_JOB_SERVICE",
+    exported: "false",
+  });
 });
 
 test("keeps the page open when Android's Bold text changes", async () => {
