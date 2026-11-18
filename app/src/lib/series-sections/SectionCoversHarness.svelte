@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { resolve } from "$app/paths";
+
   import SectionCovers from "./SectionCovers.svelte";
   import type { SectionTile } from "./section-tiles";
 
@@ -20,6 +22,11 @@
     isComplete
     onNearEnd={() => undefined}
     {usesStandIns}
+    volumePage={(volume) =>
+      resolve("/(app)/series/[id]/volume/[volume]", {
+        id: "harness",
+        volume: String(volume),
+      })}
     selection={undefined}
   />
 </div>

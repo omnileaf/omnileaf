@@ -16,19 +16,25 @@
   import { standInBook } from "#lib/series/series-stand-ins.ts";
 
   import { bookWords } from "./book-number-words";
+  import { type ChapterVolumes, foldsChapterVolumes } from "./chapter-volumes";
   import type { ListedBooks } from "./listed-books";
   import PickedCovers from "./PickedCovers.svelte";
   import type { SectionView } from "./section-listing";
   import { SECTION_NAMES } from "./section-names";
   import type { NotedSeries } from "./section-note";
   import SectionNote from "./SectionNote.svelte";
-  import { booksOnly, withGaps } from "./section-tiles";
+  import {
+    booksOnly,
+    withChapterVolumesFolded,
+    withGaps,
+  } from "./section-tiles";
 
   let {
     section,
     noted,
     view,
     series,
+    chapterVolumes,
     direction,
     shown,
     search,
@@ -45,6 +51,7 @@
     noted: BookSection | undefined;
     view: SectionView;
     series: NotedSeries;
+    chapterVolumes: ChapterVolumes;
     direction: SortDirection;
     shown: BooksShown;
     search: string;
@@ -70,13 +77,17 @@
     if (isSearching) {
       return booksOnly(found(drawn));
     }
-    return section === "volumes" && shown === "all"
-      ? withGaps(drawn, {
-          missing: series.missingVolumes,
-          direction,
-          isComplete,
-        })
-      : booksOnly(drawn);
+    if (section !== "volumes" || shown !== "all") {
+      return booksOnly(drawn);
+    }
+    const tiles = withGaps(drawn, {
+      missing: series.missingVolumes,
+      direction,
+      isComplete,
+    });
+    return foldsChapterVolumes(phone)
+      ? withChapterVolumesFolded(tiles, chapterVolumes.counts)
+      : tiles;
   }
 </script>
 
@@ -103,6 +114,7 @@
         void books.loadMore();
       }}
       {usesStandIns}
+      volumePage={chapterVolumes.pageOf}
       {onMark}
       {onPickedCount}
       onLoadAll={() => books.loadAll()}

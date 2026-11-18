@@ -2,6 +2,7 @@
   import { tick } from "svelte";
 
   import { beforeNavigate } from "$app/navigation";
+  import type { ResolvedPathname } from "$app/types";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import DragBox from "#lib/library/DragBox.svelte";
   import { DragSelect } from "#lib/library/drag-select.svelte.ts";
@@ -16,6 +17,7 @@
     booksPicked,
     type PickKey,
     pickKeysOf,
+    picksAVolumeStillComing,
     type SectionTile,
   } from "./section-tiles";
 
@@ -43,6 +45,7 @@
     isComplete: boolean;
     onNearEnd: () => void;
     usesStandIns: boolean;
+    volumePage: (volume: number) => ResolvedPathname;
     onMark: (books: BookId[], mark: ReadMark) => Promise<boolean>;
     onLoadAll: () => Promise<void>;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
@@ -126,6 +129,16 @@
   });
 
   async function mark(read: ReadMark): Promise<void> {
+    if (
+      picksAVolumeStillComing(
+        tiles,
+        (key) => selection.has(key),
+        covers.isComplete,
+      )
+    ) {
+      await onLoadAll();
+      await tick();
+    }
     const picked = pickedBooks;
     const isMarked = await onMark(picked, read);
     outcome = isMarked

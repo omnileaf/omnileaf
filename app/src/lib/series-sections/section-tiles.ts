@@ -158,6 +158,17 @@ export function booksPicked(
   });
 }
 
+export function picksAVolumeStillComing(
+  tiles: readonly SectionTile[],
+  isPicked: (key: PickKey) => boolean,
+  isComplete: boolean,
+): boolean {
+  const last = tiles.at(-1);
+  return (
+    !isComplete && last?.kind === "volume" && isPicked(volumeKey(last.volume))
+  );
+}
+
 export function tileKey(tile: SectionTile): string {
   switch (tile.kind) {
     case "book":
