@@ -8,13 +8,9 @@ export const BACK_TO_THE_LIBRARY = xpath(
 export const BACK_TO_THE_SERIES = xpath(
   "//main//a[starts-with(@aria-label, 'Back to ')]",
 );
-export const ON_THE_BOOK = "return location.pathname.startsWith('/read/');";
 export const FIRST_SERIES_COVER = xpath(
   "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
 );
-
-const GUIDE_TIMEOUT_MS = 3_000;
-const GOT_IT = xpath("//*[@role='note']//button[normalize-space()='Got it']");
 
 export const SHOWS_VOLUMES_AS_COVERS =
   process.platform === "linux" || process.platform === "darwin";
@@ -53,14 +49,10 @@ export async function showTheBooks(session: Session): Promise<void> {
   await session.waitUntil(SCROLL_TO_THE_BOOKS, "the series' books in view");
 }
 
-export async function showSampleSeries(session: Session): Promise<void> {
-  await (await session.waitFor(FIRST_SERIES_COVER)).click();
-  await showTheBooks(session);
-}
-
 export async function openSampleSeries(session: Session): Promise<void> {
   await addSampleLibrary(session);
-  await showSampleSeries(session);
+  await (await session.waitFor(FIRST_SERIES_COVER)).click();
+  await showTheBooks(session);
 }
 
 export async function openSampleBook(
@@ -83,26 +75,6 @@ export async function goBackToTheLibrary(session: Session): Promise<void> {
 
 export function shownPageCount(page: number, count: number): Locator {
   return xpath(
-    `//main//span[@data-reader-count][normalize-space()='${String(page)} / ${String(count)}']`,
+    `//main//span[normalize-space()='${String(page)} / ${String(count)}']`,
   );
-}
-
-export function pageCounterAt(page: number): Locator {
-  return xpath(
-    `//main//span[@data-reader-count][starts-with(normalize-space(), '${String(page)} / ')]`,
-  );
-}
-
-export async function readSampleBookToPage(
-  session: Session,
-  page: number,
-): Promise<void> {
-  await showSampleSeries(session);
-  await (await session.waitFor(sampleBookLink(1))).click();
-  const guide = await session.findWithin(GOT_IT, GUIDE_TIMEOUT_MS);
-  await guide?.click();
-  for (let turned = 1; turned < page; turned += 1) {
-    await (await session.waitFor(NEXT_PAGE)).click();
-  }
-  await session.waitFor(pageCounterAt(page));
 }

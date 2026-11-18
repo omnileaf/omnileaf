@@ -264,6 +264,7 @@ function oneOf<Choice extends string>(
   return choices.find((choice) => choice === asked) ?? fallback;
 }
 
+/** Reads the sample library's scenario from a page address, such as `?platform=ios&library=empty`. */
 export function scenarioFrom(search: URLSearchParams): SampleScenario {
   const platform = oneOf(PLATFORMS, search.get("platform"), "linux");
   return {
@@ -617,6 +618,7 @@ function foundCoverOf(
     : bookCoverOf(series, slotOf(series, index));
 }
 
+/** Answers every command from the sample library, keeping what the reader marks or reads until the page reloads. */
 export function sampleBackend(
   scenario: SampleScenario,
   events: SampleEvents,
@@ -1264,8 +1266,6 @@ export function sampleBackend(
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
     systemAppLanguage: () => ({ offered: false, tag: null }),
-    savedRoute: () => null,
-    openingPageShown: () => null,
     watchSystemBoldText: () => null,
     systemClock: () => "followsLanguage",
     appLock: () => {

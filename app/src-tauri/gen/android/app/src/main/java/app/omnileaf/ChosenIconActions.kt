@@ -2,17 +2,17 @@ package app.omnileaf
 
 import app.tauri.plugin.Channel
 
-internal object ChosenIconActions : IconActionChoices {
+internal object ChosenIconActions {
     private var page: Channel? = null
     private var unseen: IconAction? = null
 
     @Synchronized
-    override fun startNewPage() {
+    fun startNewPage() {
         page = null
     }
 
     @Synchronized
-    override fun choose(chosen: IconAction) {
+    fun choose(chosen: IconAction) {
         val watching = page
         if (watching == null) {
             unseen = chosen

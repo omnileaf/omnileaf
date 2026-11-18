@@ -26,8 +26,6 @@ export const commands = {
 	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),
 	watchSystemContrast: (onChange: Channel<SystemContrast>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_contrast", { onChange })),
 	systemAppLanguage: () => typedError<SystemAppLanguage, IpcError>(__TAURI_INVOKE("system_app_language")),
-	savedRoute: () => typedError<string | null, IpcError>(__TAURI_INVOKE("saved_route")),
-	openingPageShown: () => typedError<null, IpcError>(__TAURI_INVOKE("opening_page_shown")),
 	systemClock: () => typedError<SystemClock, IpcError>(__TAURI_INVOKE("system_clock")),
 	appLock: () => typedError<AppLock, IpcError>(__TAURI_INVOKE("app_lock")),
 	turnAppLockOn: (promptTitle: string) => typedError<AppLockTurning, IpcError>(__TAURI_INVOKE("turn_app_lock_on", { promptTitle })),
@@ -70,7 +68,9 @@ export const commands = {
 	libraryWriters: (after: string & { readonly __brand: "WriterCursor" } | null) => typedError<WriterPage, IpcError>(__TAURI_INVOKE("library_writers", { after })),
 	writerSeries: (writer: string, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("writer_series", { writer, after, listing })),
 	writerSeriesCount: (writer: string, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("writer_series_count", { writer, filter })),
+	/**  Counts the series of many writers at once, in the order given. */
 	writerSeriesCounts: (writers: string[], filter: LibraryFilter) => typedError<number[], IpcError>(__TAURI_INVOKE("writer_series_counts", { writers, filter })),
+	/**  Counts the series of many folders at once, in the order given. */
 	folderSeriesCounts: (folders: (string & { readonly __brand: "FolderId" })[], filter: LibraryFilter) => typedError<number[], IpcError>(__TAURI_INVOKE("folder_series_counts", { folders, filter })),
 	writerlessSeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("writerless_series", { after, listing })),
 	writerlessSeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("writerless_series_count", { filter })),
@@ -108,12 +108,15 @@ export const commands = {
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	markSeriesRead: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<(string & { readonly __brand: "BookId" })[], IpcError>(__TAURI_INVOKE("mark_series_read", { series })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
+	/**  Opens the next file handed to the app, by the file manager or a second launch. */
 	fileToOpen: () => typedError<{
 	book: string & { readonly __brand: "BookId" },
 	isInLibrary: boolean,
 } | null, IpcError>(__TAURI_INVOKE("file_to_open")),
+	/**  Takes the one `content://` document an Android request handed to the app, to open with the next `file_to_open`. */
 	queueDocumentToOpen: (uri: string) => typedError<null, IpcError>(__TAURI_INVOKE("queue_document_to_open", { uri })),
 	watchOpenWith: (onHanded: Channel<string>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_open_with", { onHanded })),
+	/**  Says what dragging these paths over the window would hold, from the paths alone. */
 	inspectDrop: (paths: string[]) => typedError<DropSummary, IpcError>(__TAURI_INVOKE("inspect_drop", { paths })),
 	dropFiles: (paths: string[], mode: DropMode) => typedError<DropOutcome, IpcError>(__TAURI_INVOKE("drop_files", { paths, mode })),
 	croppedPagePaths: (paths: (string & { readonly __brand: "PagePath" })[], crop: PageCrop) => __TAURI_INVOKE<(string & { readonly __brand: "PagePath" })[]>("cropped_page_paths", { paths, crop }),

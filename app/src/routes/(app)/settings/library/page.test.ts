@@ -47,7 +47,6 @@ test("offers to add a folder", async () => {
         libraryProblem: null,
         homeArrival: null,
         isFirstLaunch: false,
-        pageToRestore: undefined,
       },
     },
   });
@@ -77,7 +76,6 @@ test("leaves Rescan folders to the Android phone", async () => {
         libraryProblem: null,
         homeArrival: null,
         isFirstLaunch: false,
-        pageToRestore: undefined,
       },
     },
   });

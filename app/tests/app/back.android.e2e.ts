@@ -4,13 +4,14 @@ import { ANDROID_APP_ID, adbShell } from "./android-settings.ts";
 import {
   clickWhenShown,
   mainNavigationLink,
-  openSettingsPage,
+  settingsRow,
   shownPage,
   useAppSession,
 } from "./app-session.ts";
-import { followRecreatedScreen } from "./recreated-screen.ts";
+import { pollUntil } from "./webdriver.ts";
 
 const BACK_KEY = 4;
+const NEW_SCREEN_TIMEOUT_MS = 30_000;
 const RIGHT_TO_LEFT_LANGUAGE = "ar";
 
 const appSession = useAppSession();
@@ -29,6 +30,13 @@ afterAll(async () => {
 
 async function pressBack(): Promise<void> {
   await appSession().runMobileCommand("pressKey", { keycode: BACK_KEY });
+}
+
+async function newWindow(
+  known: readonly string[],
+): Promise<string | undefined> {
+  const windows = await appSession().windows();
+  return windows.find((handle) => !known.includes(handle));
 }
 
 async function localeCommand(...args: readonly string[]): Promise<string> {
@@ -52,11 +60,20 @@ async function setAppLanguages(languages: string): Promise<void> {
 async function recreateTheScreenWithAppLanguages(
   languages: string,
 ): Promise<void> {
-  await followRecreatedScreen(appSession(), () => setAppLanguages(languages));
+  const known = await appSession().windows();
+  await setAppLanguages(languages);
+  const created = await pollUntil(
+    () => newWindow(known),
+    NEW_SCREEN_TIMEOUT_MS,
+    "the recreated activity's web view",
+  );
+  await appSession().switchToWindow(created);
 }
 
 test("goes up from a Settings page to Settings and then to Library", async () => {
-  await openSettingsPage(appSession(), "Appearance");
+  await clickWhenShown(appSession(), mainNavigationLink("Settings"));
+  await clickWhenShown(appSession(), settingsRow("Appearance"));
+  await shownPage(appSession(), "Appearance");
 
   await pressBack();
   const upOneLevel = await shownPage(appSession(), "Settings");
@@ -79,7 +96,9 @@ test("goes back to Library from a section opened after another", async () => {
 test("keeps back inside the app after Android recreates the activity", async () => {
   await recreateTheScreenWithAppLanguages(RIGHT_TO_LEFT_LANGUAGE);
   await recreateTheScreenWithAppLanguages(appLanguagesBefore ?? "");
-  await openSettingsPage(appSession(), "About");
+  await clickWhenShown(appSession(), mainNavigationLink("Settings"));
+  await clickWhenShown(appSession(), settingsRow("About"));
+  await shownPage(appSession(), "About");
 
   await pressBack();
 

@@ -24,7 +24,7 @@ class OpenWithPlugin(
         val shownActivity =
             PluginManager.activity as? MainActivity
                 ?: return invoke.reject("no activity is showing the app")
-        shownActivity.launchRequests.watchHandedDocuments { uri -> channel.sendObject(uri) }
+        shownActivity.handedDocuments.watch { uri -> channel.sendObject(uri) }
         invoke.resolve()
     }
 }
