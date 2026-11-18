@@ -20,7 +20,6 @@ export interface StackWindow {
 
 export class RowHeights {
   readonly #layout: RowLayout;
-  readonly #measured: ReadonlyMap<number, number>;
   readonly #offsets: readonly number[];
 
   constructor(
@@ -28,10 +27,10 @@ export class RowHeights {
     measurements: ReadonlyMap<number, number> = new Map(),
   ) {
     this.#layout = layout;
-    this.#measured = new Map(
-      [...measurements].filter(([index]) => isRowOf(layout, index)),
+    this.#offsets = offsetsOf(
+      layout,
+      new Map([...measurements].filter(([index]) => isRowOf(layout, index))),
     );
-    this.#offsets = offsetsOf(layout, this.#measured);
   }
 
   get count(): number {
@@ -48,14 +47,11 @@ export class RowHeights {
     return offset;
   }
 
-  remeasured(measurements: ReadonlyMap<number, number>): RowHeights {
-    const changes = [...measurements].filter(
-      ([index, height]) =>
-        isRowOf(this.#layout, index) && this.#measured.get(index) !== height,
+  rowAt(offset: number): number {
+    return firstIndexWhere(
+      this.count,
+      (index) => this.offsetOf(index + 1) > offset,
     );
-    return changes.length === 0
-      ? this
-      : new RowHeights(this.#layout, new Map([...this.#measured, ...changes]));
   }
 }
 
@@ -115,10 +111,7 @@ export function stackWindow(
   extraRows: number,
 ): StackWindow {
   const { count } = heights;
-  const firstSeen = firstIndexWhere(
-    count,
-    (index) => heights.offsetOf(index + 1) > seen.top,
-  );
+  const firstSeen = heights.rowAt(seen.top);
   const firstUnseen = firstIndexWhere(
     count,
     (index) => heights.offsetOf(index) >= seen.bottom,

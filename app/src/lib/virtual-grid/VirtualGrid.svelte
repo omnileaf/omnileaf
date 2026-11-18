@@ -53,11 +53,18 @@
   const EXTRA_ROWS = 2;
   const NEAR_END_ROWS = 2;
   const UNKNOWN_SIZE = -1;
+  const MOST_LOOKS_IN_A_FRAME = 4;
 
   interface Measure {
     readonly columns: number;
     readonly rowStride: number;
     readonly headingStride: number;
+  }
+
+  interface Sizing {
+    readonly inlineSize: number;
+    readonly fontSize: string;
+    readonly textScale: string;
   }
 
   interface Shown {
@@ -67,26 +74,42 @@
     readonly size: number;
   }
 
-  let frame: HTMLDivElement | undefined = $state();
-  let list: HTMLUListElement | undefined = $state();
+  let frame = $state<HTMLDivElement | null>(null);
+  let list = $state<HTMLUListElement | null>(null);
   let measure: Measure | undefined = $state();
   let seen: Seen = $state({ top: 0, bottom: 0 });
+  let rowSizes: ReadonlyMap<string, number> = $state(new Map());
+  let sizedFor: Sizing | undefined;
 
   const knownTotal = $derived(
     total !== undefined && total >= items.length ? total : undefined,
   );
   const count = $derived(knownTotal ?? items.length);
   const headings = $derived(
-    isHeading === undefined ? undefined : items.map(isHeading),
+    isHeading === undefined ? [] : items.map(isHeading),
+  );
+  const indexByKey = $derived(
+    new Map(items.map((item, index) => [key(item), index])),
+  );
+  const sizesByIndex = $derived(
+    new Map(
+      [...rowSizes].flatMap(([itemKey, size]) => {
+        const index = indexByKey.get(itemKey);
+        return index === undefined ? [] : [[index, size] as const];
+      }),
+    ),
   );
   const heights: RowHeights | undefined = $derived(
-    headings === undefined || measure === undefined || measure.columns !== 1
+    measure === undefined || measure.columns !== 1
       ? undefined
-      : new RowHeights({
-          count,
-          isHeading: headings,
-          strides: { row: measure.rowStride, heading: measure.headingStride },
-        }),
+      : new RowHeights(
+          {
+            count,
+            isHeading: headings,
+            strides: { row: measure.rowStride, heading: measure.headingStride },
+          },
+          sizesByIndex,
+        ),
   );
   const shown: Shown | undefined = $derived.by(() => {
     if (measure === undefined) {
@@ -106,6 +129,7 @@
   const drawn = $derived(
     shown ?? { start: 0, end: Math.min(items.length, ITEMS_BEFORE_MEASURING) },
   );
+  const drawnItems = $derived(items.slice(drawn.start, drawn.end));
 
   const positions = $derived(listedPositions(items));
   const setSize = $derived(
@@ -195,25 +219,112 @@
     return { columns, rowStride: strideFrom(first, null) };
   }
 
-  function look(): void {
-    if (frame === undefined || list === undefined) {
-      return;
+  async function look(): Promise<void> {
+    for (let pass = 0; pass < MOST_LOOKS_IN_A_FRAME; pass += 1) {
+      if (!(await lookOnce())) {
+        return;
+      }
     }
-    const top = -frame.getBoundingClientRect().top;
+  }
+
+  async function lookOnce(): Promise<boolean> {
+    if (frame === null || list === null) {
+      return false;
+    }
+    const shownFrame = frame;
+    const grid = list;
+    const top = -shownFrame.getBoundingClientRect().top;
     seen = { top, bottom: top + window.innerHeight };
-    const latest = measured(list);
+    const latest = measured(grid);
     if (latest !== undefined && !isSameMeasure(latest, measure)) {
       measure = latest;
       onColumns?.(latest.columns);
     }
+    await tick();
+    return shownFrame.isConnected && (await remeasureRows(shownFrame, grid));
+  }
+
+  function drawnSizeOf(row: Element, index: number): number | undefined {
+    const next = row.nextElementSibling;
+    if (next !== null) {
+      return strideFrom(row, next);
+    }
+    return index === count - 1 ? row.getBoundingClientRect().height : undefined;
+  }
+
+  function drawnRowSizes(grid: HTMLUListElement): ReadonlyMap<string, number> {
+    return new Map(
+      [...grid.children].flatMap((row, offset) => {
+        const item = drawnItems[offset];
+        const size = drawnSizeOf(row, drawn.start + offset);
+        return item === undefined || size === undefined
+          ? []
+          : [[key(item), size] as const];
+      }),
+    );
+  }
+
+  function sizingOf(grid: HTMLUListElement): Sizing {
+    const style = getComputedStyle(grid);
+    return {
+      inlineSize: grid.getBoundingClientRect().width,
+      fontSize: style.fontSize,
+      textScale: style.getPropertyValue("--text-scale"),
+    };
+  }
+
+  function isSameSizing(one: Sizing, other: Sizing | undefined): boolean {
+    return (
+      other !== undefined &&
+      one.inlineSize === other.inlineSize &&
+      one.fontSize === other.fontSize &&
+      one.textScale === other.textScale
+    );
+  }
+
+  async function remeasureRows(
+    shownFrame: HTMLDivElement,
+    grid: HTMLUListElement,
+  ): Promise<boolean> {
+    if (heights === undefined) {
+      return false;
+    }
+    const sizing = sizingOf(grid);
+    const isResized = !isSameSizing(sizing, sizedFor);
+    const kept = isResized ? new Map<string, number>() : rowSizes;
+    const changes = [...drawnRowSizes(grid)].filter(
+      ([itemKey, size]) => kept.get(itemKey) !== size,
+    );
+    if (!isResized && changes.length === 0) {
+      return false;
+    }
+    sizedFor = sizing;
+    const atTop = heights.rowAt(seen.top);
+    const before = heights.offsetOf(atTop);
+    rowSizes = new Map([
+      ...[...kept].filter(([itemKey]) => indexByKey.has(itemKey)),
+      ...changes,
+    ]);
+    const moved = heights.offsetOf(atTop) - before;
+    if (moved !== 0) {
+      await tick();
+      if (shownFrame.isConnected) {
+        scrollerOf(shownFrame).scrollBy({ top: moved });
+      }
+    }
+    return shownFrame.isConnected;
+  }
+
+  function isPlacedByRowSizes(at: Measure): boolean {
+    return at.columns === 1 && rowSizes.size > 0;
   }
 
   function isSameMeasure(one: Measure, other: Measure | undefined): boolean {
     return (
       other !== undefined &&
       one.columns === other.columns &&
-      one.rowStride === other.rowStride &&
-      one.headingStride === other.headingStride
+      one.headingStride === other.headingStride &&
+      (one.rowStride === other.rowStride || isPlacedByRowSizes(one))
     );
   }
 
@@ -229,9 +340,10 @@
   }
 
   async function revealItem(index: number): Promise<HTMLElement | undefined> {
-    if (frame === undefined || list === undefined) {
+    if (frame === null || list === null) {
       return undefined;
     }
+    const grid = list;
     const isDrawn = index >= drawn.start && index < drawn.end;
     if (measure !== undefined && !isDrawn) {
       const scroller = scrollerOf(frame);
@@ -242,10 +354,12 @@
       scroller.scrollBy({
         top: rowTop < view.top ? rowTop - view.top : Math.max(0, below),
       });
-      look();
-      await tick();
+      await look();
     }
-    const item = list.children.item(index - drawn.start);
+    if (!grid.isConnected) {
+      return undefined;
+    }
+    const item = grid.children.item(index - drawn.start);
     if (!(item instanceof HTMLElement)) {
       return undefined;
     }
@@ -258,20 +372,22 @@
   function lookNextFrame(): void {
     pendingLook ??= requestAnimationFrame(() => {
       pendingLook = undefined;
-      look();
+      void look();
     });
   }
 
   onMount(() => {
     onRevealReady?.(revealItem);
-    look();
+    void look();
     const resized = new ResizeObserver(lookNextFrame);
-    const restyled = new MutationObserver(look);
-    if (list !== undefined) {
+    const restyled = new MutationObserver(() => {
+      void look();
+    });
+    if (list !== null) {
       restyled.observe(list, { attributeFilter: ["class", "style"] });
     }
     for (const laidOut of [frame, list]) {
-      if (laidOut !== undefined) {
+      if (laidOut !== null) {
         resized.observe(laidOut);
       }
     }
@@ -319,7 +435,7 @@
     class={["grid", className]}
     {style}
   >
-    {#each items.slice(drawn.start, drawn.end) as item, offset (key(item))}
+    {#each drawnItems as item, offset (key(item))}
       <li
         id={listbox === undefined ? undefined : optionId(listbox.id, key(item))}
         role={listbox === undefined
