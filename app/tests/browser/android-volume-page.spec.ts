@@ -38,12 +38,23 @@ interface HeldReads {
   readonly waiting: PromiseWithResolvers<undefined>[];
 }
 
-const volumeReads: HeldReads & { isGone: boolean } = {
-  isHolding: false,
-  isGone: false,
-  waiting: [],
-};
-const overviewReads: HeldReads = { isHolding: false, waiting: [] };
+interface VolumeReads extends HeldReads {
+  isGone: boolean;
+}
+
+interface SeriesReads {
+  readonly volume: VolumeReads;
+  readonly overview: HeldReads;
+}
+
+function answeredReads(): SeriesReads {
+  return {
+    volume: { isHolding: false, isGone: false, waiting: [] },
+    overview: { isHolding: false, waiting: [] },
+  };
+}
+
+let seriesReads = answeredReads();
 
 async function answerOnceReleased(reads: HeldReads): Promise<void> {
   if (!reads.isHolding) {
@@ -66,11 +77,13 @@ function backendWithHeldReads(): FakeBackend {
   return {
     ...sample,
     seriesVolume: async (series, volume) => {
-      await answerOnceReleased(volumeReads);
-      return volumeReads.isGone ? null : sample.seriesVolume(series, volume);
+      await answerOnceReleased(seriesReads.volume);
+      return seriesReads.volume.isGone
+        ? null
+        : sample.seriesVolume(series, volume);
     },
     seriesOverview: async (series) => {
-      await answerOnceReleased(overviewReads);
+      await answerOnceReleased(seriesReads.overview);
       return sample.seriesOverview(series);
     },
   };
@@ -218,6 +231,10 @@ test.describe("A volume's page on an Android phone", { tag: "@native" }, () => {
   test.describe("with the volume gone while the series opens", () => {
     test.use({ backend: backendWithHeldReads() });
 
+    test.beforeEach(() => {
+      seriesReads = answeredReads();
+    });
+
     test("goes back to its series once, however often it hears the library changed on the way", async ({
       page,
     }) => {
@@ -230,18 +247,18 @@ test.describe("A volume's page on an Android phone", { tag: "@native" }, () => {
       await expect(
         page.getByRole("heading", { level: 1, name: "Volume 2" }),
       ).toBeVisible();
-      volumeReads.isGone = true;
-      volumeReads.isHolding = true;
-      overviewReads.isHolding = true;
+      seriesReads.volume.isGone = true;
+      seriesReads.volume.isHolding = true;
+      seriesReads.overview.isHolding = true;
       await emitFakeEvent(page, LIBRARY_CHANGED);
       await emitFakeEvent(page, LIBRARY_CHANGED);
-      await expect.poll(() => volumeReads.waiting.length).toBe(2);
+      await expect.poll(() => seriesReads.volume.waiting.length).toBe(2);
 
-      volumeReads.waiting.shift()?.resolve(undefined);
+      seriesReads.volume.waiting.shift()?.resolve(undefined);
       await page.waitForURL(`**/series/${SERIES}`);
-      releaseEvery(volumeReads);
+      releaseEvery(seriesReads.volume);
       await framesPassed(page);
-      releaseEvery(overviewReads);
+      releaseEvery(seriesReads.overview);
 
       await expect(
         page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
