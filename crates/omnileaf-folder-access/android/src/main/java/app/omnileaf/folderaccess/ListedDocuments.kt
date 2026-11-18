@@ -2,7 +2,6 @@ package app.omnileaf.folderaccess
 
 import android.database.Cursor
 import android.provider.DocumentsContract.Document
-import app.tauri.Logger
 import app.tauri.plugin.JSArray
 import app.tauri.plugin.JSObject
 
@@ -23,8 +22,8 @@ internal fun listedDocuments(cursor: Cursor): JSArray {
     val documents = JSArray()
     while (cursor.moveToNext()) {
         val document = columns.read(cursor)
-        if (!document.has("id") || !document.has("name")) {
-            Logger.warn(Logger.tags("FolderAccess"), "a documents provider listed a document without its id or name")
+        incompleteListing(document.has("id"), document.has("name"))?.let {
+            FOLDER_ACCESS_LOG.warn(FolderAccessEvent.DOCUMENT_LISTED_INCOMPLETE, it)
         }
         documents.put(document)
     }
