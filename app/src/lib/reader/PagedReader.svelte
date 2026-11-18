@@ -256,6 +256,7 @@
         scrollByScreen: (step: number) => boolean;
         scrollByPixels: (pixels: number) => boolean;
         shownPageHeight: () => number;
+        shownScreenHeight: () => number;
         place: () => StripPlace | undefined;
         scrubTo: (along: number) => void;
       }
@@ -271,7 +272,7 @@
   const scrollSpeed = $derived(
     autoScrollSpeed({
       choice: canUseMyPace ? look.autoScrollSpeed : "set",
-      pagesPerMinute: look.pagesPerMinute,
+      screensPerMinute: look.screensPerMinute,
       secondsPerPage: book.secondsPerPage,
     }),
   );
@@ -470,11 +471,10 @@
     let frame = requestAnimationFrame(function step(now: number) {
       const elapsed = now - last;
       last = now;
-      const pixels = pixelsScrolled(
-        elapsed,
-        scrollSpeed.pagesPerMinute,
-        strip?.shownPageHeight() ?? 0,
-      );
+      const pixels = pixelsScrolled(elapsed, scrollSpeed, {
+        page: strip?.shownPageHeight() ?? 0,
+        screen: strip?.shownScreenHeight() ?? 0,
+      });
       if (strip?.scrollByPixels(pixels) === false) {
         reachStripEnd();
         return;
@@ -1287,10 +1287,16 @@
           isTouch={!isPointer(platform)}
           onToggle={toggleAutoScroll}
           onSlower={() => {
-            settings.change("pagesPerMinute", slowerSpeed(look.pagesPerMinute));
+            settings.change(
+              "screensPerMinute",
+              slowerSpeed(look.screensPerMinute),
+            );
           }}
           onFaster={() => {
-            settings.change("pagesPerMinute", fasterSpeed(look.pagesPerMinute));
+            settings.change(
+              "screensPerMinute",
+              fasterSpeed(look.screensPerMinute),
+            );
           }}
           onStop={stopAutoScroll}
           onReturnFocus={() => {

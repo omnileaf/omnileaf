@@ -92,16 +92,19 @@
       : {},
   );
 
-  const roundedSpeed = $derived(Math.round(speed.pagesPerMinute * 2) / 2);
+  function nearestHalf(count: number): number {
+    return Math.round(count * 2) / 2;
+  }
+
   const readsChapterProgress = $derived(chrome.platform === "android");
   const percent = new Intl.NumberFormat(getLocale(), {
     style: "percent",
     roundingMode: "floor",
   });
   const speedLine = $derived(
-    speed.isMyPace
+    speed.kind === "myPace"
       ? m.reader_auto_scroll_your_pace()
-      : m.reader_pages_a_minute({ count: roundedSpeed }),
+      : m.reader_screens_a_minute({ count: speed.screensPerMinute }),
   );
   const announcement = $derived(
     isPaused ? m.reader_auto_scroll_paused() : speedLine,
@@ -125,8 +128,10 @@
     if (readsChapterProgress) {
       return speedLine;
     }
-    return speed.isMyPace
-      ? m.reader_about_pages_a_minute({ count: roundedSpeed })
+    return speed.kind === "myPace"
+      ? m.reader_about_pages_a_minute({
+          count: nearestHalf(speed.pagesPerMinute),
+        })
       : undefined;
   });
 </script>
@@ -181,7 +186,7 @@
       {@render toggle()}
     {/if}
     <div class={look.actions}>
-      {#if !speed.isMyPace}
+      {#if speed.kind === "set"}
         <button
           type="button"
           aria-label={m.reader_auto_scroll_slower()}

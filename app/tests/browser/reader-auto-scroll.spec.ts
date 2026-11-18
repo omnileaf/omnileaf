@@ -20,6 +20,7 @@ import {
 
 const LOOK_KEY = "omnileaf.readerSettings.all";
 const HALF_A_MINUTE_MS = 30_000;
+const FOUR_SECONDS_MS = 4000;
 const SIX_SECONDS_MS = 6000;
 const FEW_SECONDS_MS = 2000;
 const CLOSE_PX = 8;
@@ -114,6 +115,12 @@ async function pageHeightOf(page: Page): Promise<number> {
     .evaluate((element) => element.getBoundingClientRect().height);
 }
 
+async function screenHeightOf(page: Page): Promise<number> {
+  return page
+    .locator("[data-strip]")
+    .evaluate((element) => element.clientHeight);
+}
+
 async function leftEdgesOf(parts: readonly Locator[]): Promise<number[]> {
   return Promise.all(parts.map(async (part) => (await boxOf(part)).x));
 }
@@ -164,17 +171,17 @@ async function sizesOf(parts: readonly Locator[]): Promise<number[][]> {
 test.describe("at a set speed", () => {
   test.use({ backend: tallPages(null) });
 
-  test("scrolls a fifth of a page in six seconds at 2 pages a minute", async ({
+  test("scrolls a fifth of a screen in four seconds at 3 screens a minute", async ({
     page,
   }) => {
     await openStrip(page);
-    const height = await pageHeightOf(page);
+    const height = await screenHeightOf(page);
     await startAutoScroll(page);
-    await expect(bar(page)).toContainText("2 pages a minute");
+    await expect(bar(page)).toContainText("3 screens a minute");
     await holdTime(page);
     const start = await scrollTopOf(page);
 
-    await page.clock.runFor(SIX_SECONDS_MS);
+    await page.clock.runFor(FOUR_SECONDS_MS);
 
     expect(
       Math.abs((await scrollTopOf(page)) - start - height / 5),
@@ -208,23 +215,23 @@ test.describe("at a set speed", () => {
     await expect(bar(page)).toContainText("Space pauses");
   });
 
-  test("goes faster and slower half a page a minute at a time", async ({
+  test("goes faster and slower one screen a minute at a time", async ({
     page,
   }) => {
     await openStrip(page);
     await startAutoScroll(page);
 
     await bar(page).getByRole("button", { name: "Faster" }).click();
-    await expect(bar(page)).toContainText("2.5 pages a minute");
+    await expect(bar(page)).toContainText("4 screens a minute");
     await bar(page).getByRole("button", { name: "Slower" }).click();
     await bar(page).getByRole("button", { name: "Slower" }).click();
 
-    await expect(bar(page)).toContainText("1.5 pages a minute");
+    await expect(bar(page)).toContainText("2 screens a minute");
     const stored = await page.evaluate(
       (key) => localStorage.getItem(key),
       LOOK_KEY,
     );
-    expect(JSON.parse(stored ?? "{}")).toMatchObject({ pagesPerMinute: 1.5 });
+    expect(JSON.parse(stored ?? "{}")).toMatchObject({ screensPerMinute: 2 });
   });
 
   test("keeps scrolling with reduced motion, since you started it", async ({
@@ -278,7 +285,7 @@ test.describe("at a set speed", () => {
 
       const spans = [
         await textSpanOf(
-          bar(page).getByText("2 pages a minute", { exact: true }),
+          bar(page).getByText("3 screens a minute", { exact: true }),
         ),
         ...(await spansOf([
           bar(page).getByRole("button", { name: "Pause" }),
@@ -305,7 +312,7 @@ test.describe("at a set speed", () => {
 
     const spans = [
       await textSpanOf(
-        bar(page).getByText("2 pages a minute", { exact: true }),
+        bar(page).getByText("3 screens a minute", { exact: true }),
       ),
       ...(await spansOf([bar(page).getByRole("button", { name: "Pause" })])),
     ];
@@ -376,7 +383,7 @@ test.describe(
 
       const lefts = await leftEdgesOf([
         bar(page).getByRole("button", { name: "Pause" }),
-        bar(page).getByText("2 pages a minute", { exact: true }),
+        bar(page).getByText("3 screens a minute", { exact: true }),
         bar(page).getByRole("button", { name: "Slower" }),
         bar(page).getByRole("button", { name: "Faster" }),
       ]);
@@ -673,7 +680,7 @@ test.describe(
         bar(page).getByText("0% of the chapter", { exact: true }),
       ).toBeVisible();
       await expect(
-        bar(page).getByText("2 pages a minute", { exact: true }),
+        bar(page).getByText("3 screens a minute", { exact: true }),
       ).toBeVisible();
     });
 
@@ -715,10 +722,10 @@ test.describe(
       await bar(page).getByRole("button", { name: "Faster" }).click();
 
       await expect(
-        bar(page).getByText("2.5 pages a minute", { exact: true }),
+        bar(page).getByText("4 screens a minute", { exact: true }),
       ).toBeVisible();
       const live = page.locator("[aria-live]").filter({ hasText: "minute" });
-      await expect(live).toHaveText("2.5 pages a minute");
+      await expect(live).toHaveText("4 screens a minute");
       await expect(
         page.locator("[aria-live]").filter({ hasText: "%" }),
       ).toHaveCount(0);
@@ -751,7 +758,24 @@ test.describe("once the library knows the reading speed", () => {
     await startAutoScroll(page);
 
     await expect(bar(page)).toContainText("Your pace");
-    await expect(bar(page)).not.toContainText("pages a minute");
+    await expect(bar(page)).not.toContainText("screens a minute");
+  });
+
+  test("scrolls a tenth of a page in six seconds at a page a minute", async ({
+    page,
+  }) => {
+    await openStrip(page, { autoScrollSpeed: "myPace" });
+    const height = await pageHeightOf(page);
+    await startAutoScroll(page);
+    await expect(bar(page)).toContainText("Your pace");
+    await holdTime(page);
+    const start = await scrollTopOf(page);
+
+    await page.clock.runFor(SIX_SECONDS_MS);
+
+    expect(
+      Math.abs((await scrollTopOf(page)) - start - height / 10),
+    ).toBeLessThanOrEqual(CLOSE_PX);
   });
 });
 
@@ -815,7 +839,7 @@ test.describe("its settings", () => {
       ),
     ).toBeVisible();
     await expect(
-      autoScroll.getByRole("slider", { name: "Pages a minute" }),
+      autoScroll.getByRole("slider", { name: "Screens a minute" }),
     ).toBeVisible();
     await autoScroll
       .getByRole("switch", { name: "Pause auto scroll at the end of a book" })

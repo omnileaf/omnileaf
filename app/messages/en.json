@@ -2343,12 +2343,12 @@
   "reader_auto_scroll_my_pace": "My pace",
   "reader_auto_scroll_set_speed": "Set speed",
   "reader_auto_scroll_help": "Keeps scrolling with reduced motion on, since you started it.",
-  "reader_auto_scroll_rate": "Pages a minute",
-  "reader_auto_scroll_rate_value": "Pages a minute: {count}",
+  "reader_auto_scroll_rate": "Screens a minute",
+  "reader_auto_scroll_rate_value": "Screens a minute: {count}",
   "reader_pause_at_end": "Pause auto scroll at the end of a book",
   "reader_auto_scroll_pace": "Auto scroll at my pace",
   "reader_auto_scroll_pace_help": "Starts auto scroll at your own speed.",
-  "reader_pages_a_minute": [
+  "reader_screens_a_minute": [
     {
       "declarations": [
         "input count",
@@ -2357,8 +2357,8 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "{formattedCount} page a minute",
-        "countPlural=other": "{formattedCount} pages a minute"
+        "countPlural=one": "{formattedCount} screen a minute",
+        "countPlural=other": "{formattedCount} screens a minute"
       }
     }
   ],

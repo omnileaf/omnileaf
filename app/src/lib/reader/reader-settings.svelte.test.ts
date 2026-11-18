@@ -131,3 +131,28 @@ test("changes the volume keys for every series from Settings › Reader", () => 
 
   expect(settings.look.turnsPagesWithVolumeKeys).toBe(true);
 });
+
+test("starts the long strip at 3 screens a minute, leaving a stored pages a minute behind", () => {
+  const store = memoryStore();
+  store.values.set(
+    "omnileaf.readerSettings.all",
+    JSON.stringify({ pagesPerMinute: 5 }),
+  );
+
+  const settings = new ReaderSettings(store, SERIES);
+
+  expect(settings.look.screensPerMinute).toBe(3);
+});
+
+test("keeps a whole number of screens a minute from 1 to 12", () => {
+  const read = [1, 12, 13, 0, 2.5].map((screensPerMinute) => {
+    const store = memoryStore();
+    store.values.set(
+      "omnileaf.readerSettings.all",
+      JSON.stringify({ screensPerMinute }),
+    );
+    return new ReaderSettings(store, SERIES).look.screensPerMinute;
+  });
+
+  expect(read).toEqual([1, 12, 3, 3, 3]);
+});
