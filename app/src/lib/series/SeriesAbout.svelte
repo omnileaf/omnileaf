@@ -34,9 +34,15 @@
     SeriesOverview,
   } from "#lib/ipc/bindings.ts";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
+  import NotConnectedTag from "#lib/library/NotConnectedTag.svelte";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone, isPointer } from "#lib/page/platform.ts";
+  import {
+    currentPlatform,
+    isPhone,
+    isPointer,
+    phoneOf,
+  } from "#lib/page/platform.ts";
   import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -116,6 +122,12 @@
 
   const platform = currentPlatform();
   const width = new WindowWidth();
+  const isAndroidPhone = $derived(
+    phoneOf(platform, width.current) === "android",
+  );
+  const isNotConnected = $derived(
+    isAndroidPhone && overview.connection.kind === "notConnected",
+  );
   const detailsRow = $derived(
     isPhone(platform, width.current) ? DETAILS_ROWS[platform] : undefined,
   );
@@ -140,7 +152,12 @@
 
 <section aria-label={m.series_about()} class={ABOUT_COLUMN}>
   <div class={ABOUT_HEAD}>
-    <AboutCover title={overview.title} {cover} {coverUrl} />
+    <AboutCover
+      title={overview.title}
+      {cover}
+      {coverUrl}
+      isDimmed={isNotConnected}
+    />
     <div class={ABOUT_LINES}>
       <h1 tabindex="-1" class={ABOUT_TITLE}>
         {overview.title}
@@ -159,6 +176,9 @@
           {books}
         {:else}
           {m.series_format_books({ format: overview.format, books })}
+        {/if}
+        {#if isNotConnected}
+          <NotConnectedTag class="ms-xs align-middle" />
         {/if}
       </p>
       {#if overview.folder !== null}
