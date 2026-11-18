@@ -1057,6 +1057,7 @@ export function sampleBackend(
       position: index + 1,
       title: book.title,
       matchedIn: "fileName" as const,
+      file: wireFileState(series, book),
     };
   }
 
