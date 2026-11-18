@@ -13,12 +13,12 @@
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { missingFolderCardOf } from "./missing-folder-card.ts";
+  import {
+    ALERT_TEXT_BUTTON,
+    missingFolderCardOf,
+  } from "./missing-folder-card.ts";
   import type { MissingFolderActions } from "./missing-folder-notices.ts";
   import NativeMissingFolderCard from "./NativeMissingFolderCard.svelte";
-
-  const TEXT_BUTTON =
-    "border-0 bg-transparent px-md text-current text-native-notice-label/native-notice-label font-native-notice-label tracking-native-notice-label hover:bg-hover active:bg-pressed min-block-native-notice-action";
 
   let {
     missing,
@@ -67,8 +67,10 @@
       <AlertDescription>{content.body}</AlertDescription>
       <AlertActions class="col-span-2 -ms-md">
         {#each content.actions as action, index (index)}
-          <AlertButton emphasis="quiet" class={TEXT_BUTTON} onclick={action.run}
-            >{action.label}</AlertButton
+          <AlertButton
+            emphasis="quiet"
+            class={ALERT_TEXT_BUTTON}
+            onclick={action.run}>{action.label}</AlertButton
           >
         {/each}
       </AlertActions>
