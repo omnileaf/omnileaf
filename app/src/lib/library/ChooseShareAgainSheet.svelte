@@ -6,18 +6,14 @@
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
-  import type { NetworkShare, Platform } from "#lib/ipc/bindings.ts";
+  import type { Platform } from "#lib/ipc/bindings.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { lastShown } from "#lib/page/last-shown.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { AndroidPhone } from "./android-phone.svelte";
   import { ANDROID_FILTER_SHEET } from "./filter-sheet-look";
-
-  interface ShareToChoose {
-    readonly name: string;
-    readonly share: NetworkShare;
-  }
+  import type { ShareToChoose } from "./folder-finder.svelte";
 
   interface PickerWording {
     readonly lead: string;
