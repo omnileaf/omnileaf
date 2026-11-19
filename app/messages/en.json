@@ -2075,6 +2075,24 @@
   ],
   "series_volume_folder": "{series} › {volume}",
   "series_volume_folder_note": "In this volume’s folder",
+  "series_volume_all_read": "You’ve read every chapter in this volume",
+  "series_volume_all_read_body": "New chapters in its folder show up here.",
+  "series_volume_read_count": [
+    {
+      "declarations": [
+        "input read",
+        "input total",
+        "local totalPlural = total: plural",
+        "local formattedRead = read: number",
+        "local formattedTotal = total: number"
+      ],
+      "selectors": ["totalPlural"],
+      "match": {
+        "totalPlural=one": "{formattedRead} of {formattedTotal} chapter read",
+        "totalPlural=other": "{formattedRead} of {formattedTotal} chapters read"
+      }
+    }
+  ],
   "series_by": "By {names}",
   "series_credit": "{role}: {name}",
   "series_role_story": "Story",

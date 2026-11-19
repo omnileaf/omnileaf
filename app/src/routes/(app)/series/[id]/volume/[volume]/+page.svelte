@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
 
   import { invalidate } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -9,11 +10,17 @@
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { getBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { getNotices } from "#lib/notices/notices.ts";
+  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { showFolderLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import { EVERY_BOOK_IN_ORDER } from "#lib/series/book-listing.ts";
   import { volumeBooksHeading } from "#lib/series/books-heading.ts";
+  import {
+    type ContinueProgress,
+    VOLUME_CONTINUE_WORDS,
+  } from "#lib/series/continue-card.ts";
+  import ContinueCard from "#lib/series/ContinueCard.svelte";
   import { listedSeriesBooks } from "#lib/series/listed-series-books.svelte.ts";
   import { seriesBookCommands } from "#lib/series/series-book-commands.ts";
   import { SERIES_OVERVIEW } from "#lib/series/series-overview.ts";
@@ -58,6 +65,8 @@
   const volume = $derived(
     screenshotMode.isOn ? standInVolume(data.volume) : data.volume,
   );
+  const progress: ContinueProgress = $derived({ ...volume, secondsLeft: null });
+  const isWide = new MediaQuery(EXPANDED_QUERY);
   const cover = $derived(
     (screenshotMode.isOn ? standInLook : realLook)({
       ...data.overview,
@@ -131,6 +140,13 @@
   />
   <div class="flex flex-col gap-xl max-expanded:mbs-sm">
     <VolumeAbout series={overview} {volume} {cover} {coverUrl} />
+    <ContinueCard
+      {progress}
+      words={VOLUME_CONTINUE_WORDS}
+      {cover}
+      {coverUrl}
+      isWide={isWide.current}
+    />
     {#if books?.list.kind === "failed"}
       <p class="text-body text-muted">{m.series_books_failed()}</p>
     {:else if books?.list.kind === "loaded"}

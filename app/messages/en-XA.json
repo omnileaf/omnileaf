@@ -2074,6 +2074,24 @@
   ],
   "series_volume_folder": "⟦{series} › {volume}········⟧",
   "series_volume_folder_note": "⟦Íñ ţĥíš ṽöļûɱé’š ƒöļðéŕ··········⟧",
+  "series_volume_all_read": "⟦Ýöû’ṽé ŕéáð éṽéŕý çĥáþţéŕ íñ ţĥíš ṽöļûɱé················⟧",
+  "series_volume_all_read_body": "⟦Ñéŵ çĥáþţéŕš íñ íţš ƒöļðéŕ šĥöŵ ûþ ĥéŕé.················⟧",
+  "series_volume_read_count": [
+    {
+      "declarations": [
+        "input read",
+        "input total",
+        "local totalPlural = total: plural",
+        "local formattedRead = read: number",
+        "local formattedTotal = total: number"
+      ],
+      "selectors": ["totalPlural"],
+      "match": {
+        "totalPlural=one": "⟦{formattedRead} öƒ {formattedTotal} çĥáþţéŕ ŕéáð····················⟧",
+        "totalPlural=other": "⟦{formattedRead} öƒ {formattedTotal} çĥáþţéŕš ŕéáð····················⟧"
+      }
+    }
+  ],
   "series_by": "⟦Ɓý {names}····⟧",
   "series_credit": "⟦{role}: {name}······⟧",
   "series_role_story": "⟦Šţöŕý··⟧",
