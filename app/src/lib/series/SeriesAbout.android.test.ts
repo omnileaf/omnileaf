@@ -306,3 +306,53 @@ test("keeps an iPhone's details without the order line or source icons", async (
   expect(order).toBeNull();
   expect(source.querySelector("[data-icon]")).toBeNull();
 });
+
+async function aboutOn(
+  platform: Platform,
+  connection: SeriesOverview["connection"],
+) {
+  await page.viewport(PHONE.width, PHONE.height);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  return render(SeriesAbout, {
+    overview: { ...OVERVIEW, connection },
+    details: undefined,
+    cover: { kind: "none" },
+    coverUrl: () => "",
+    isWide: false,
+    onMarkAll: () => Promise.resolve(),
+    onEditDetails: undefined,
+  });
+}
+
+test("dims the cover and tags the count line of a series that isn't connected on an Android phone", async () => {
+  const screen = await aboutOn("android", { kind: "notConnected" });
+
+  const cover = screen.getByRole("img", { name: /^Cover of/ }).element();
+
+  const tag = screen.getByText("Not connected");
+
+  await expect.element(tag).toBeVisible();
+  expect(tag.element().closest("p")?.textContent).toMatch(/^Manga · 8 books/);
+  expect(getComputedStyle(cover).opacity).toBe("0.45");
+});
+
+test("leaves a partly connected series' cover and count line as they are on an Android phone", async () => {
+  const screen = await aboutOn("android", {
+    kind: "partlyConnected",
+    booksNotConnected: 2,
+  });
+
+  const cover = screen.getByRole("img", { name: /^Cover of/ }).element();
+
+  expect({
+    tags: screen.getByText("Not connected").elements().length,
+    opacity: getComputedStyle(cover).opacity,
+  }).toEqual({ tags: 0, opacity: "1" });
+});
+
+test("tags no series that isn't connected off an Android phone", async () => {
+  const screen = await aboutOn("ios", { kind: "notConnected" });
+
+  expect(screen.getByText("Not connected").elements()).toHaveLength(0);
+});

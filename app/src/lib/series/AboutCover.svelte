@@ -17,10 +17,12 @@
     title,
     cover,
     coverUrl,
+    isDimmed = false,
   }: {
     title: string;
     cover: ShownCover;
     coverUrl: CoverUrl;
+    isDimmed?: boolean;
   } = $props();
 
   const platform = currentPlatform();
@@ -36,6 +38,7 @@
   class={[
     "relative flex items-center justify-center overflow-hidden rounded-series-cover bg-chip text-muted shadow-native-series-cover",
     ABOUT_COVER,
+    isDimmed && "opacity-45",
   ]}
 >
   {#if cover.kind === "none" && isAndroidPhone}
