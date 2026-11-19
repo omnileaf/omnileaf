@@ -153,14 +153,27 @@ impl Reporter {
     }
 }
 
+type ConsolePanicReport = Box<dyn Fn(&PanicHookInfo<'_>) + Send + Sync + 'static>;
+
 fn set_panic_hook(file: CrashReportFile, reporter: Arc<Reporter>) {
-    let previous = panic::take_hook();
+    let report_to_console = console_panic_report();
     panic::set_hook(Box::new(move |info| {
         if !is_panic_contained() {
             keep_for_next_run(&file, &reporter, info);
         }
-        previous(info);
+        report_to_console(info);
     }));
+}
+
+/// Android sends a release build's standard error to logcat, and a panic's message can name a book's files.
+#[cfg(all(target_os = "android", not(debug_assertions)))]
+fn console_panic_report() -> ConsolePanicReport {
+    Box::new(crate::release_log::panic_report(std::io::stderr))
+}
+
+#[cfg(not(all(target_os = "android", not(debug_assertions))))]
+fn console_panic_report() -> ConsolePanicReport {
+    panic::take_hook()
 }
 
 fn keep_for_next_run(file: &CrashReportFile, reporter: &Reporter, info: &PanicHookInfo<'_>) {
@@ -185,7 +198,7 @@ fn keep_for_next_run(file: &CrashReportFile, reporter: &Reporter, info: &PanicHo
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use std::{
         env, fs, panic, process,
         sync::{Arc, Mutex, PoisonError},
@@ -198,7 +211,7 @@ mod tests {
 
     use super::{CrashReporting, Reporter, set_panic_hook};
 
-    pub(super) static PANIC_HOOK: Mutex<()> = Mutex::new(());
+    pub(crate) static PANIC_HOOK: Mutex<()> = Mutex::new(());
 
     pub(super) fn sample_app() -> AppInfo {
         AppInfo {
