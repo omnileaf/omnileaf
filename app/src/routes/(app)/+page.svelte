@@ -35,7 +35,7 @@
   import AddFolderButton from "#lib/library/AddFolderButton.svelte";
   import { categorySource } from "#lib/library/category-source.svelte.ts";
   import CategoryTabs from "#lib/library/CategoryTabs.svelte";
-  import ChooseShareAgainSheet from "#lib/library/ChooseShareAgainSheet.svelte";
+  import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
   import { type CoverUrl, coverUrl } from "#lib/library/cover-url.ts";
   import type { SeriesMenuActions } from "#lib/library/series-menu.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
@@ -51,6 +51,7 @@
   import { viewDrawn } from "#lib/library/library-view.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { FolderCardsPhone } from "#lib/library/folder-cards-phone.svelte.ts";
+  import { FolderFinder } from "#lib/library/folder-finder.svelte.ts";
   import MissingFolderCard from "#lib/library/MissingFolderCard.svelte";
   import {
     dismissForThisVisit,
@@ -250,7 +251,6 @@
       : [],
   );
   let unlinking = $state<LibraryFolder | undefined>();
-  let choosingAgain = $state<MissingFolder | undefined>();
   let unlinkingBooks = $state<number | undefined>();
   const folderHandlers: MissingFolderActions = {
     showAnyway: ({ folder }) => {
@@ -260,11 +260,7 @@
         .then(loadMissingFolders);
     },
     find: (missing) => {
-      if (missing.problem.kind === "shareUnreachable") {
-        choosingAgain = missing;
-        return;
-      }
-      void relocate(missing);
+      folderFinder.find(missing);
     },
     unlink: ({ folder }) => {
       unlinking = folder;
@@ -284,27 +280,21 @@
     () => folderCardsPhone.isOn,
   );
 
-  async function relocate(missing: MissingFolder): Promise<void> {
-    const relocated = await commands.relocateLibraryFolder(
-      missing.folder.id,
-      new Channel(),
-    );
-    if (relocated.status === "error") {
-      reportError(relocated.error);
-    } else if (
-      relocated.data !== null &&
-      missing.problem.kind === "shareUnreachable"
-    ) {
-      if (relocated.data.outcome.kind === "unreachable") {
+  const folderFinder = new FolderFinder(
+    ({ folder }) => commands.relocateLibraryFolder(folder.id, new Channel()),
+    {
+      onError: reportError,
+      onShareStillUnreachable: (missing) => {
         folderNotices.stillFailing(missing);
         stillFailing = [...stillFailing, missing.folder.id];
-      } else {
+      },
+      onShareBack: (missing) => {
         folderNotices.back(missing);
         stillFailing = stillFailing.filter((id) => id !== missing.folder.id);
-      }
-    }
-    await loadMissingFolders();
-  }
+      },
+      onSettled: loadMissingFolders,
+    },
+  );
 
   async function signInTo(missing: MissingFolder): Promise<void> {
     const signedIn = await commands.signInToLibraryFolder(missing.folder.id);
@@ -1020,22 +1010,7 @@
   }}
 />
 
-<ChooseShareAgainSheet
-  choosing={choosingAgain?.problem.kind === "shareUnreachable"
-    ? { name: choosingAgain.folder.name, share: choosingAgain.problem.share }
-    : undefined}
-  platform={data.appInfo.platform}
-  onContinue={() => {
-    const chosen = choosingAgain;
-    choosingAgain = undefined;
-    if (chosen !== undefined) {
-      void relocate(chosen);
-    }
-  }}
-  onClose={() => {
-    choosingAgain = undefined;
-  }}
-/>
+<FindFolderSheet finder={folderFinder} platform={data.appInfo.platform} />
 
 {#if isIosPhone}
   <IosLabelSeriesSheet
