@@ -120,6 +120,13 @@ const WINDOW_BACKDROPS = [
   "none",
 ] as const satisfies readonly WindowBackdrop[];
 const PLATFORMS_WITHOUT_TRASH: readonly Platform[] = ["ios", "android"];
+const STACKS_SERIES_COVERS_BY_DEFAULT = {
+  android: false,
+  ios: true,
+  macos: true,
+  windows: true,
+  linux: true,
+} as const satisfies Record<Platform, boolean>;
 const MIXED_FILE_OUTCOMES = [
   { kind: "trashed" },
   { kind: "deleted" },
@@ -675,7 +682,10 @@ export function sampleBackend(
     ...NEW_LIBRARY_LISTING,
     sort: { by: "dateAdded", direction: "descending" },
   };
-  let view: LibraryView = DEFAULT_LIBRARY_VIEW;
+  let view: LibraryView = {
+    ...DEFAULT_LIBRARY_VIEW,
+    stacksSeriesCovers: STACKS_SERIES_COVERS_BY_DEFAULT[scenario.platform],
+  };
   let isFullScreen = false;
   let hasFinishedFirstLaunch = scenario.launch === "returning";
   let homeLocation: string = HOME_FOLDER_LOCATIONS[scenario.platform];
