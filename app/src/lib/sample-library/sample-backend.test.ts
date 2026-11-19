@@ -45,6 +45,20 @@ test("lists the library as the boards draw it, newest first", async () => {
   ]);
 });
 
+test("bundles no release notes, so the sample library never shows what's new", async () => {
+  const { backend } = backendFor();
+
+  const answers = [
+    await backend.whatsNew(),
+    await backend.whatsNewNotice({ kind: "notRecorded" }),
+  ];
+
+  expect(answers).toEqual([
+    { installed: null, earlier: [] },
+    { kind: "nothing" },
+  ]);
+});
+
 test("counts each series' books not yet read", async () => {
   const { backend } = backendFor();
 

@@ -35,6 +35,9 @@ mod problem_reporting;
 mod put_away;
 #[cfg(any(all(target_os = "android", not(debug_assertions)), test))]
 mod release_log;
+#[cfg(test)]
+#[path = "../build/release_notes.rs"]
+mod release_notes;
 #[cfg(target_os = "android")]
 mod report_downloads;
 mod report_relay;
@@ -60,6 +63,7 @@ mod tree_storage;
 mod version_details;
 mod volume_keys;
 mod wallpaper_colours;
+mod whats_new;
 mod window_backdrop;
 
 use std::{
@@ -144,6 +148,7 @@ pub fn run() {
             };
             let window_backdrop = main_window::open(app, window_backdrop)?;
             app.manage(core_of_this_build(window_backdrop));
+            app.manage(whats_new::bundled_notes()?);
             crash_reporting::install(app.handle());
             report_relay::install(app.handle());
             app.manage(launch);
