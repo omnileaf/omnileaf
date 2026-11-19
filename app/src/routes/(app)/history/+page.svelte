@@ -14,6 +14,7 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Skeleton } from "#lib/components/ui/skeleton/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
   import type { HistoryEntryActions } from "#lib/history/history-entry-actions.ts";
   import HistoryEntryRow from "#lib/history/HistoryEntryRow.svelte";
@@ -188,7 +189,7 @@
 
   onMount(() => {
     void history.start();
-    return listenForLibraryChanges(readAgain, reportError);
+    return listenForLibraryChanges(readAgain, reportFailure);
   });
 </script>
 

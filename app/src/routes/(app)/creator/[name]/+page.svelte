@@ -20,6 +20,7 @@
     BreadcrumbSeparator,
   } from "#lib/components/ui/breadcrumb/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
   import { coverTileLook } from "#lib/library/cover-tile.ts";
@@ -83,8 +84,8 @@
 
   onMount(() =>
     listenForLibraryChanges(() => {
-      invalidate(CREATOR_SERIES).catch(reportError);
-    }, reportError),
+      invalidate(CREATOR_SERIES).catch(reportFailure);
+    }, reportFailure),
   );
 
   async function readAgain(): Promise<void> {

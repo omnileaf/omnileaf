@@ -5,6 +5,7 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import {
     commands,
     type LibraryCategory,
@@ -171,7 +172,7 @@
     void loadLabelSupport();
     return listenForLibraryChanges(() => {
       void loadCategories();
-    }, reportError);
+    }, reportFailure);
   });
 </script>
 

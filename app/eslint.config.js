@@ -5,6 +5,13 @@ import { defineConfig } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
+export const REPORT_ERROR_ONLY_CALLED = {
+  selector:
+    "Identifier[name='reportError']:not(CallExpression > Identifier.callee):not(CallExpression > MemberExpression.callee > Identifier.property)",
+  message:
+    "Call reportError where the error is handled, or pass reportFailure. Handed on as a value, Chromium web views call it with the wrong this and throw Illegal invocation.",
+};
+
 export default defineConfig(
   {
     ignores: [
@@ -39,6 +46,7 @@ export default defineConfig(
         "error",
         { ignorePattern: "@ts-expect-error|prettier-ignore" },
       ],
+      "no-restricted-syntax": ["error", REPORT_ERROR_ONLY_CALLED],
     },
   },
   {

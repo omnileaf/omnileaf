@@ -14,6 +14,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import {
     commands,
     type OpenedBook,
@@ -950,7 +951,7 @@
   );
 
   $effect(() =>
-    turnsPagesWithVolumeKeys ? followVolumeKeys(act, reportError) : undefined,
+    turnsPagesWithVolumeKeys ? followVolumeKeys(act, reportFailure) : undefined,
   );
 
   onMount(() => {

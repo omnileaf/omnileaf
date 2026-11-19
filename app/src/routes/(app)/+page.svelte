@@ -118,6 +118,7 @@
   import NeedsAttentionBarButton from "#lib/problems/NeedsAttentionBarButton.svelte";
   import NeedsAttentionDot from "#lib/problems/NeedsAttentionDot.svelte";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
   import {
     EXPANDED_QUERY,
@@ -915,7 +916,7 @@
         void seriesCount.load();
       }
       pages.refreshBeside();
-    }, reportError);
+    }, reportFailure);
     return () => {
       stopListening();
       folderNotices.withdrawAll();
@@ -1030,14 +1031,14 @@
     bind:isOpen={isLabelling}
     series={labelled}
     startsAtTags={labelsFrom === "tags"}
-    onError={reportError}
+    onError={reportFailure}
   />
 {:else}
   <LabelSeriesDialog
     bind:isOpen={isLabelling}
     series={labelled}
     startsAtTags={labelsFrom === "tags"}
-    onError={reportError}
+    onError={reportFailure}
   />
 {/if}
 
@@ -1057,7 +1058,7 @@
   onSaved={() => {
     editedSeries = undefined;
   }}
-  onError={reportError}
+  onError={reportFailure}
 />
 
 {#if selection.isSelecting && !isMac}

@@ -3,6 +3,7 @@
 
   import { goto } from "$app/navigation";
   import { reportFileFailure } from "#lib/drop/drop-notices.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { openHandedDocuments } from "./open-handed-documents.ts";
   import { openHandedFiles } from "./open-handed-files.ts";
@@ -13,7 +14,7 @@
 
   let isUnsupportedShown = $state(false);
 
-  function reportFailure(error: unknown): void {
+  function reportOpeningFailure(error: unknown): void {
     if (
       typeof error === "object" &&
       error !== null &&
@@ -23,19 +24,19 @@
       isUnsupportedShown = true;
       return;
     }
-    reportFileFailure(notices, error, reportError);
+    reportFileFailure(notices, error, reportFailure);
   }
 
   onMount(() => {
     const stopOpeningFiles = openHandedFiles(
       (page) => void goto(page),
-      reportFailure,
+      reportOpeningFailure,
     );
     const stopOpeningDocuments = openHandedDocuments(
       () =>
         notices.present(OpeningDocumentToast, (toast) => ({ toast }), "polite")
           .dismiss,
-      reportFailure,
+      reportOpeningFailure,
     );
     return () => {
       stopOpeningFiles();
