@@ -7,6 +7,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   fakeAppInfo,
+  screenSizeOf,
   test,
   testOnlyInItsWebview,
 } from "./fixtures.ts";
@@ -141,7 +142,22 @@ test.describe("on Android", () => {
     await expect(rows(page).first()).toContainText(
       "Comics and Manga, picked with Android’s folder picker.",
     );
-    await expect(rows(page).last()).toContainText("Open Android settings");
+  });
+
+  test("ends with Open Android settings, in a list of its own on a phone", async ({
+    page,
+  }) => {
+    await openPermissions(page);
+    const settingsRows = rows(page).filter({
+      hasText: "Open Android settings",
+    });
+
+    await expect(
+      page.getByRole("main").getByRole("listitem").last(),
+    ).toContainText("Open Android settings");
+    await expect(settingsRows).toHaveCount(
+      screenSizeOf(page) === "phone" ? 0 : 1,
+    );
   });
 });
 

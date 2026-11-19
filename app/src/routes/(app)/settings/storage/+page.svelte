@@ -47,6 +47,7 @@
     class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none android:max-medium:gap-none"
   >
     <section
+      data-settings-end
       aria-labelledby={meterHeadingId}
       class={[
         "flex flex-col",
@@ -65,7 +66,10 @@
       </h2>
       <StorageMeter used={storage.use} />
     </section>
-    <section class={["flex flex-col overflow-hidden", card, bleed]}>
+    <section
+      data-settings-group
+      class={["flex flex-col overflow-hidden", card, bleed]}
+    >
       <div class={["flex flex-col", !android.isOn && "divide-y divide-border"]}>
         <CacheRow
           title={m.storage_cached_pages()}

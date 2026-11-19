@@ -1,6 +1,7 @@
 import { createContext } from "svelte";
 
 import { resolve } from "$app/paths";
+import type { ResolvedPathname } from "$app/types";
 import { assertNever } from "#lib/assert-never.ts";
 import { lastUnfinishedBookPage } from "#lib/history/last-book.ts";
 import {
@@ -19,7 +20,6 @@ function isOpeningPlace(stored: string | null): stored is OpeningPlace {
   return OPENING_PLACES.some((place) => place === stored);
 }
 
-/** Where Omnileaf opens when it starts: the library, History, or the last book, in the reader where it was left. */
 export class OpensOnSetting {
   choice: OpeningPlace = $state("library");
 
@@ -44,24 +44,51 @@ export function opensOnSettingForDocument(): OpensOnSetting {
 export const [getOpensOnSetting, setOpensOnSetting] =
   createContext<OpensOnSetting>();
 
-let hasOpened = false;
+type FindPage = () => Promise<ResolvedPathname | undefined>;
 
-/** The page Omnileaf opens on when it starts, chosen once, so the library a person comes back to later stays where they asked. */
-export async function openingPage(
+export type Opening =
+  | { readonly kind: "stays" }
+  | { readonly kind: "opensOn"; readonly page: ResolvedPathname }
+  | { readonly kind: "restores"; readonly page: ResolvedPathname };
+
+export type OpeningPage = (
   place: OpeningPlace,
-): Promise<string | undefined> {
-  if (hasOpened) {
-    return undefined;
-  }
-  hasOpened = true;
+  restored: ResolvedPathname | undefined,
+) => Promise<Opening>;
+
+const STAYS: Opening = { kind: "stays" };
+
+async function placePage(
+  place: OpeningPlace,
+  lastBook: FindPage,
+): Promise<ResolvedPathname | undefined> {
   switch (place) {
     case "library":
       return undefined;
     case "history":
       return resolve("/(app)/history");
     case "lastBook":
-      return lastUnfinishedBookPage();
+      return lastBook();
     default:
       return assertNever(place);
   }
 }
+
+export function openingPageOnce(lastBook: FindPage): OpeningPage {
+  let hasOpened = false;
+  return async (place, restored) => {
+    if (hasOpened) {
+      return STAYS;
+    }
+    hasOpened = true;
+    if (restored === undefined) {
+      const page = await placePage(place, lastBook);
+      return page === undefined ? STAYS : { kind: "opensOn", page };
+    }
+    return restored === resolve("/(app)")
+      ? STAYS
+      : { kind: "restores", page: restored };
+  };
+}
+
+export const openingPage: OpeningPage = openingPageOnce(lastUnfinishedBookPage);

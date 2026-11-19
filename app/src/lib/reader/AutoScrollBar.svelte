@@ -22,6 +22,7 @@
     onFaster,
     onStop,
     onReturnFocus,
+    onSpeed,
   }: {
     speed: AutoScrollSpeed;
     chapterProgress: number;
@@ -32,6 +33,7 @@
     onFaster: () => void;
     onStop: () => void;
     onReturnFocus: () => void;
+    onSpeed: (event: MouseEvent) => void;
   } = $props();
 
   const TUCK_AFTER_MS = 3000;
@@ -42,6 +44,11 @@
   const tucks = $derived(look.tucked !== null);
   const isTucked = $derived(tucks && !isPaused && !toolbar.isShown);
   let section: HTMLElement | undefined = $state();
+  let readoutButton: HTMLButtonElement | undefined = $state();
+
+  export function focusReadout(): void {
+    readoutButton?.focus();
+  }
 
   $effect(() => {
     if (!tucks) {
@@ -92,16 +99,24 @@
       : {},
   );
 
-  const roundedSpeed = $derived(Math.round(speed.pagesPerMinute * 2) / 2);
+  function nearestHalf(count: number): number {
+    return Math.round(count * 2) / 2;
+  }
+
   const readsChapterProgress = $derived(chrome.platform === "android");
   const percent = new Intl.NumberFormat(getLocale(), {
     style: "percent",
     roundingMode: "floor",
   });
   const speedLine = $derived(
-    speed.isMyPace
+    speed.kind === "myPace"
       ? m.reader_auto_scroll_your_pace()
-      : m.reader_pages_a_minute({ count: roundedSpeed }),
+      : m.reader_screens_a_minute({ count: speed.screensPerMinute }),
+  );
+  const speedName = $derived(
+    look.readoutButton !== null && speed.kind === "set"
+      ? m.reader_auto_scroll_speed_readout({ count: speed.screensPerMinute })
+      : undefined,
   );
   const announcement = $derived(
     isPaused ? m.reader_auto_scroll_paused() : speedLine,
@@ -125,8 +140,10 @@
     if (readsChapterProgress) {
       return speedLine;
     }
-    return speed.isMyPace
-      ? m.reader_about_pages_a_minute({ count: roundedSpeed })
+    return speed.kind === "myPace"
+      ? m.reader_about_pages_a_minute({
+          count: nearestHalf(speed.pagesPerMinute),
+        })
       : undefined;
   });
 </script>
@@ -176,12 +193,22 @@
       {#if hint !== undefined}
         <p class="text-caption text-muted">{hint}</p>
       {/if}
+      {#if speedName !== undefined}
+        <button
+          bind:this={readoutButton}
+          type="button"
+          aria-haspopup="dialog"
+          aria-label={speedName}
+          class={look.readoutButton}
+          onclick={onSpeed}
+        ></button>
+      {/if}
     </div>
     {#if !look.leadsWithToggle}
       {@render toggle()}
     {/if}
     <div class={look.actions}>
-      {#if !speed.isMyPace}
+      {#if speed.kind === "set"}
         <button
           type="button"
           aria-label={m.reader_auto_scroll_slower()}

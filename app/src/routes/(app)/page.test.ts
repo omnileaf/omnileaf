@@ -121,6 +121,7 @@ const LAYOUT_DATA = {
   libraryProblem: null,
   homeArrival: null,
   isFirstLaunch: false,
+  pageToRestore: undefined,
 } as const;
 
 function renderPage(screenshotMode: "on" | "off") {

@@ -33,14 +33,16 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
-    use crate::captured_log::CapturedLog;
+    use omnileaf_testkit::CapturedLog;
 
     #[test]
     fn warns_when_it_reads_a_clock_set_before_1970_as_the_epoch() {
         let log = CapturedLog::default();
         let before_1970 = UNIX_EPOCH - Duration::from_secs(1);
 
-        let read = tracing::subscriber::with_default(log.subscriber(), || unix_ms(before_1970));
+        let _capturing = log.capture();
+
+        let read = unix_ms(before_1970);
 
         assert_eq!(read, 0);
         assert!(log.text().contains("WARN"), "log: {}", log.text());

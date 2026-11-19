@@ -5,6 +5,7 @@ import type {
   SeriesCreator,
   SeriesNeighbour,
   SeriesOverview,
+  SeriesVolume,
 } from "#lib/ipc/bindings.ts";
 import { type NamedSeries, standInLook } from "#lib/library/series-look.ts";
 import { m } from "#lib/paraglide/messages.js";
@@ -63,6 +64,15 @@ export function standInOverview(overview: SeriesOverview): SeriesOverview {
     cover: null,
     folder: overview.folder === null ? null : folderStandIn(overview.folder),
     upNext: overview.upNext === null ? null : standInBook(overview.upNext),
+  };
+}
+
+export function standInVolume(volume: SeriesVolume): SeriesVolume {
+  return {
+    ...volume,
+    folder: volume.folder === null ? null : folderStandIn(volume.folder),
+    cover: null,
+    upNext: volume.upNext === null ? null : standInBook(volume.upNext),
   };
 }
 

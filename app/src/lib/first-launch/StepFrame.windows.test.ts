@@ -105,3 +105,20 @@ test("draws Back as the board's 32px subtle button around a 16px arrow on Window
     arrow: arrow?.getAttribute("width"),
   }).toEqual({ back: [32, 32], arrow: "16" });
 });
+
+test("leaves the footer out of a full page with no actions", async () => {
+  await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+  document.documentElement.dataset.platform = "windows";
+  document.documentElement.dataset.theme = "light";
+  const screen = await render(StepFrame, {
+    title: "How folders are read",
+    onBack: () => undefined,
+    children: nothing,
+  });
+
+  const title = screen.getByRole("heading", { level: 1 }).element();
+
+  expect(screen.container.querySelector("footer")).toBeNull();
+  expect(title.closest("header")).not.toBeNull();
+  expect(screen.getByRole("progressbar").elements()).toHaveLength(0);
+});

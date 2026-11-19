@@ -252,6 +252,15 @@ pub(crate) fn forget_root(transaction: &Transaction<'_>, id: RootId) -> Result<(
     Ok(())
 }
 
+macro_rules! stored_root_columns {
+    () => {
+        "id, kind, locator_kind, location, bookmark, tree_name, tree_place, added_at_ms,
+        unavailable_since_ms, shows_while_missing"
+    };
+}
+
+pub(crate) use stored_root_columns;
+
 pub(crate) fn stored_root(row: &Row<'_>) -> rusqlite::Result<LibraryRoot> {
     Ok(LibraryRoot {
         id: RootId(row.get(ID_COLUMN)?),

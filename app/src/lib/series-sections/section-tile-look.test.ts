@@ -33,6 +33,8 @@ const ANDROID_READ_MARK_INSET = "4px";
 const ANDROID_COVER_CORNER = "4px";
 const READ_CHECK_SIZE = 14;
 const ANDROID_READ_CHECK_SIZE = 16;
+const ANDROID_OUTLINE = "rgb(115, 125, 117)";
+const GAP_ICON_SIZE = 24;
 
 function volume(
   first: number,
@@ -343,6 +345,41 @@ test("rounds an Android missing run and focus outline to the cover's corner", as
     link: ANDROID_COVER_CORNER,
   });
 });
+
+test("edges an Android missing run with a 1px dashed Material outline", async () => {
+  const { gap } = await drawTiles("android");
+  const box = styleOf(gap.firstElementChild);
+
+  expect([box.borderTopWidth, box.borderTopStyle, box.borderTopColor]).toEqual([
+    "1px",
+    "dashed",
+    ANDROID_OUTLINE,
+  ]);
+});
+
+test.each<[DrawnPlatform, string]>([
+  ["linux", "lucide/folder-search.svg"],
+  ["macos", "lucide/folder-search.svg"],
+  ["ios", "lucide/light/folder-search.svg"],
+  ["android", "material-symbols/folder_eye.svg"],
+])(
+  "draws %s's folder search icon in a missing run at 24px",
+  async (platform, artwork) => {
+    const { gap } = await drawTiles(platform);
+    const icon = gap.querySelector('[data-icon="folder-search"]');
+
+    expect({
+      artwork: styleOf(icon).maskImage,
+      size: [
+        icon?.getBoundingClientRect().width,
+        icon?.getBoundingClientRect().height,
+      ],
+    }).toEqual({
+      artwork: expect.stringContaining(artwork) as unknown,
+      size: [GAP_ICON_SIZE, GAP_ICON_SIZE],
+    });
+  },
+);
 
 test("marks a finished Android volume with an accent circle at its cover's top start", async () => {
   const { link } = await drawTiles("android");

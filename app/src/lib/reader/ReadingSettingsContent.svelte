@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { Slider } from "#lib/components/ui/slider/index.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import ApplyToChoice from "./ApplyToChoice.svelte";
-  import { FASTEST_SPEED, SLOWEST_SPEED, SPEED_STEP } from "./auto-scroll.ts";
+  import AutoScrollSpeedSetting from "./AutoScrollSpeedSetting.svelte";
   import CropBordersSwitch from "./CropBordersSwitch.svelte";
   import KeepScreenOnSwitch from "./KeepScreenOnSwitch.svelte";
   import LightSliders from "./LightSliders.svelte";
@@ -12,17 +11,17 @@
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import { readingSettingsContentLook } from "./reading-settings-content-look.ts";
   import ReadingModeSelect from "./ReadingModeSelect.svelte";
-  import type {
-    PageFit,
-    PageLayout,
-    PageTurnStyle,
-    ReaderBackground,
-    ReaderControlsLook,
-    TapZones,
-    TapToScroll,
-    AutoScrollChoice,
-    ReaderLight,
-    ReaderSettings,
+  import {
+    type AutoScrollChoice,
+    type PageFit,
+    type PageLayout,
+    type PageTurnStyle,
+    type ReaderBackground,
+    type ReaderControlsLook,
+    type ReaderLight,
+    type ReaderSettings,
+    type TapToScroll,
+    type TapZones,
   } from "./reader-settings.svelte.ts";
   import SettingChoice from "./SettingChoice.svelte";
   import SkipUpNextSwitch from "./SkipUpNextSwitch.svelte";
@@ -141,29 +140,7 @@
           </p>
         </SettingChoice>
         {#if autoScrollChoice === "set"}
-          <div
-            class="grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"
-          >
-            <p id="{id}-rate" class="text-small font-medium">
-              {m.reader_auto_scroll_rate_value({
-                count: look.pagesPerMinute,
-              })}
-            </p>
-            <Slider
-              aria-labelledby="{id}-rate"
-              aria-label={m.reader_auto_scroll_rate()}
-              class="inline-setting-control"
-              min={SLOWEST_SPEED}
-              max={FASTEST_SPEED}
-              step={SPEED_STEP}
-              bind:value={
-                () => look.pagesPerMinute,
-                (pages: number) => {
-                  settings.change("pagesPerMinute", pages);
-                }
-              }
-            />
-          </div>
+          <AutoScrollSpeedSetting {settings} {seriesTitle} {control} />
         {/if}
         <Switch
           bind:checked={

@@ -133,6 +133,7 @@
 </script>
 
 <section
+  data-settings-group
   aria-labelledby="{id}-title"
   class={["flex flex-col", look.section, className]}
 >

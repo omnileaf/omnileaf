@@ -10,6 +10,12 @@ export const ABOUT_COVER =
 export const ABOUT_LINES =
   "flex flex-col items-center gap-xs max-inline-full expanded:items-start expanded:gap-native-series-lines-gap android:max-medium:min-inline-none android:max-medium:flex-1 android:max-medium:items-start android:max-medium:pbs-xs";
 
+export const ABOUT_TITLE =
+  "line-clamp-3 text-native-series-title/native-series-title font-bold tracking-native-series-title text-balance expanded:text-pretty android:max-medium:mbe-xs android:max-medium:text-native-page-title/native-page-title android:max-medium:font-native-page-title android:max-medium:tracking-native-page-title";
+
+export const ABOUT_META =
+  "text-native-series-meta/native-series-meta text-muted";
+
 export const ABOUT_TAG =
   "android:max-medium:rounded-native-segment android:max-medium:border-native-button-outline-edge android:max-medium:px-lg android:max-medium:text-native-button/native-button android:max-medium:font-native-button android:max-medium:tracking-native-button android:max-medium:text-foreground android:max-medium:min-block-native-button-small";
 

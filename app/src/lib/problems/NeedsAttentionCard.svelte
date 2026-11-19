@@ -25,6 +25,7 @@
 </script>
 
 <div
+  data-settings-end
   class="overflow-hidden rounded-list bg-warning-soft text-foreground android:rounded-android-md"
 >
   <Item look="settings-section" class="inline-full">

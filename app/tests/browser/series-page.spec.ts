@@ -1269,6 +1269,38 @@ test.describe("when marking books fails", () => {
   });
 });
 
+test.describe("when the volumes of chapters can't be counted", () => {
+  let reported: string[] = [];
+
+  test.use({
+    backend: {
+      ...SHELF_BACKEND,
+      seriesChapterVolumes: () => {
+        throw new CommandFailure({
+          code: "internal",
+          message: "the volumes of chapters could not be counted",
+        });
+      },
+      offerInterfaceErrorReport: (error) => {
+        reported.push(error.message);
+        return DEFAULT_BACKEND.offerInterfaceErrorReport(error);
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    reported = [];
+  });
+
+  test("still shows the series and reports why the counts are missing", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    await expect.poll(() => reported).toHaveLength(1);
+  });
+});
+
 test.describe("when showing a book's folder fails", () => {
   test.use({
     backend: {

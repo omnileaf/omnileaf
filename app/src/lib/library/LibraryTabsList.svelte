@@ -152,6 +152,7 @@
 </script>
 
 <ul
+  data-settings-group
   bind:this={list}
   aria-label={isMac ? m.library_tabs_title_mac() : m.library_tabs_title()}
   class={android.isOn

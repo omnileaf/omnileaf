@@ -107,7 +107,7 @@ const PLACEHOLDER = /\{\w+\}/;
 
 const QUIET_POLL_MS = 10;
 
-function sampleLibraryOn(
+export function sampleLibraryOn(
   platform: Platform,
   asked: Readonly<Record<string, string>> = {},
 ): FakeBackend {
@@ -237,7 +237,7 @@ function libraryFoundOn(platform: Platform): FakeBackend {
   };
 }
 
-async function serveSampleArt(page: Page): Promise<void> {
+export async function serveSampleArt(page: Page): Promise<void> {
   await page.route(fakeProtocolRoute("omni"), (route) => {
     const art = sampleArt(fakeProtocolPath(route.request().url(), "omni"));
     return art === undefined

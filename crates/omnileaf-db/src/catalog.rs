@@ -7,10 +7,12 @@ mod book_to_read;
 mod category_series;
 mod chapter_positions;
 mod chapter_search;
+mod chapter_volumes;
 mod closest_chapter_title_words;
 mod closest_title_words;
 pub(crate) mod cover;
 pub(crate) mod cursor;
+mod emptied_series_place;
 mod filter_choices;
 mod folder_group_series;
 pub(crate) mod folder_groups;
@@ -69,10 +71,12 @@ pub use chapter_search::{
     CHAPTER_CANDIDATES_PER_CALL, ChapterHit, ChapterTitleSource, search_chapters,
     search_chapters_count,
 };
+pub use chapter_volumes::{ChapterVolume, series_chapter_volumes};
 pub use closest_chapter_title_words::{ChapterSuggestion, closest_chapter_title};
 pub use closest_title_words::closest_title_words;
 pub use cover::{BookFileId, Cover, cover_file};
 pub use cursor::Cursor;
+pub use emptied_series_place::{EmptiedPlace, emptied_series_place};
 pub use filter_choices::{FilterChoices, filter_choices};
 pub use folder_group_series::{folder_group_series_count, folder_group_series_page};
 pub use folder_groups::{FolderGroup, FolderGroupSummary, folder_groups};
@@ -110,6 +114,7 @@ pub use series::{NamedSeries, NewSeries, SeriesFolder, SeriesNaming, add_series}
 pub use series_books::{
     BookListing, BookReading, BookSummary, BooksShown, series_books, unread_books, up_next,
 };
+pub use series_connection::{missing_root_of_book, missing_root_of_series};
 pub use series_count::series_count;
 pub use series_file_details::{
     SeriesFileDetails, SeriesPerson, series_file_details, series_people,

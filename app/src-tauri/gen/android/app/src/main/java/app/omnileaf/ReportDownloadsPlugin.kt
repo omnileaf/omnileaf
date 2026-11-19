@@ -1,7 +1,6 @@
 package app.omnileaf
 
 import android.app.Activity
-import android.os.Build
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -25,10 +24,8 @@ class ReportDownloadsPlugin(
     fun saveToDownloads(invoke: Invoke) {
         val args = invoke.parseArgs(SaveDownloadArgs::class.java)
         try {
-            val kept = saveToDownloads(Build.VERSION.SDK_INT, writer, args.name, args.text)
+            val kept = saveToDownloads(writer, args.name, args.text)
             invoke.resolve(JSObject().put("name", kept))
-        } catch (failure: UnsupportedOperationException) {
-            invoke.reject(failure.message ?: "saving to Downloads is not offered here")
         } catch (failure: java.io.IOException) {
             invoke.reject(failure.message ?: "save to Downloads")
         }

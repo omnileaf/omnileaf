@@ -16,7 +16,7 @@ class MainActivity : TauriActivity() {
     private var webView: WebView? = null
     private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
     internal val volumeKeys = VolumeKeyCapture()
-    internal val handedDocuments = HandedDocuments()
+    internal val launchRequests = LaunchRequests(ChosenIconActions)
     private val appLock by lazy {
         AppLockGate(this) { isCovered ->
             backNavigation?.followCover(isCovered)
@@ -31,8 +31,7 @@ class MainActivity : TauriActivity() {
     override val handleBackButton = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        ChosenIconActions.startNewPage()
-        takeLaunchRequests(savedInstanceState)
+        launchRequests.takeCreating(intent.launchIntent(), savedInstanceState?.savedScreen())
         showStartingBarIcons(startingTheme)
         showTheAppBehindTheNavigationButtons()
         turnScreen(resources.configuration)
@@ -43,8 +42,12 @@ class MainActivity : TauriActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intent.chosenIconAction()?.let(ChosenIconActions::choose)
-        intent.handedDocument()?.let(handedDocuments::receive)
+        launchRequests.take(intent.launchIntent())
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        launchRequests.routeToSave(webView?.url)?.let { route -> outState.putString(OPEN_ROUTE_KEY, route) }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -94,16 +97,6 @@ class MainActivity : TauriActivity() {
         turnScreen(resources.configuration)
     }
 
-    /**
-     * Android hands an activity it restores, or reopens from Recents, the intent that first started its task,
-     * so only a fresh launch carries a new choice.
-     */
-    private fun takeLaunchRequests(savedInstanceState: Bundle?) {
-        if (savedInstanceState != null || intent.isFromRecents) return
-        intent.chosenIconAction()?.let(ChosenIconActions::choose)
-        intent.handedDocument()?.let(handedDocuments::receive)
-    }
-
     private fun turnScreen(configuration: Configuration) {
         requestedOrientation = orientation.requestedOn(configuration)
     }
@@ -112,5 +105,6 @@ class MainActivity : TauriActivity() {
 /** Chromium draws an open select's options in a window of its own, above anything drawn over the page. */
 private const val BLUR_FOCUSED_FIELD = "document.activeElement?.blur()"
 
-private val Intent.isFromRecents: Boolean
-    get() = (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
+private const val OPEN_ROUTE_KEY = "app.omnileaf.OPEN_ROUTE"
+
+private fun Bundle.savedScreen(): SavedScreen = SavedScreen(getString(OPEN_ROUTE_KEY))

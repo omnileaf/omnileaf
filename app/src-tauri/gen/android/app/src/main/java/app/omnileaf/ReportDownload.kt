@@ -1,13 +1,10 @@
 package app.omnileaf
 
-import android.annotation.SuppressLint
 import android.content.ContentResolver
 import android.content.ContentValues
 import android.os.Environment
 import android.provider.MediaStore
 import java.io.IOException
-
-internal const val MIN_DOWNLOADS_SDK = 29
 
 internal fun interface DownloadWriter {
     fun write(
@@ -18,22 +15,12 @@ internal fun interface DownloadWriter {
 }
 
 internal fun saveToDownloads(
-    sdkInt: Int,
     writer: DownloadWriter,
     name: String,
     text: String,
-): String {
-    if (sdkInt < MIN_DOWNLOADS_SDK) {
-        throw UnsupportedOperationException("saving to Downloads needs Android 10 or newer")
-    }
-    return writer.write(name, "text/plain", text)
-}
+): String = writer.write(name, "text/plain", text)
 
-/**
- * MediaStore renames a file that would collide, so the name it kept is what the person finds in Downloads.
- * The Downloads collection exists from Android 10, and `saveToDownloads` refuses older phones before it writes.
- */
-@SuppressLint("NewApi")
+/** MediaStore renames a file that would collide, so the name it kept is what the person finds in Downloads. */
 internal class MediaStoreDownloads(
     private val resolver: ContentResolver,
 ) : DownloadWriter {

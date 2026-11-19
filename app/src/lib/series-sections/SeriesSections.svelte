@@ -34,6 +34,7 @@
     shownSection,
   } from "./section-listing";
   import BookSearchField from "./BookSearchField.svelte";
+  import type { ChapterVolumes } from "./chapter-volumes";
   import { sectionCount, tabWords } from "./section-names";
   import { showsSectionNotes } from "./section-note";
   import SectionHeading from "./SectionHeading.svelte";
@@ -47,6 +48,7 @@
     sections,
     missingVolumes,
     lastVolume,
+    chapterVolumes,
     listing,
     onListing,
     books,
@@ -58,6 +60,7 @@
     sections: readonly SeriesSection[];
     missingVolumes: readonly NumberRange[];
     lastVolume: number | null;
+    chapterVolumes: ChapterVolumes;
     listing: SeriesBookListing;
     onListing: (change: ListingChange) => void;
     books: ListedBooks | undefined;
@@ -147,6 +150,7 @@
         : undefined,
     view,
     series: { sections: kinds, missingVolumes, lastVolume },
+    chapterVolumes,
     direction: listing.direction,
     shown: listing.shown,
     search,

@@ -2,7 +2,6 @@ package app.omnileaf
 
 import android.app.Activity
 import android.graphics.Color
-import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -13,12 +12,6 @@ import app.tauri.annotation.TauriPlugin
 import app.tauri.plugin.Invoke
 import app.tauri.plugin.Plugin
 import app.tauri.plugin.PluginManager
-
-@ColorInt
-private const val LIGHT_SCRIM = 0xE6FFFFFF.toInt()
-
-@ColorInt
-private const val DARK_SCRIM = 0x801B1B1B.toInt()
 
 @InvokeArg
 class BarIcons(
@@ -74,21 +67,10 @@ class SystemBarsPlugin(
 
 fun ComponentActivity.showBarIcons(icons: BarIcons) {
     enableEdgeToEdge(
-        statusBarStyle = barStyle(icons, Color.TRANSPARENT, Color.TRANSPARENT),
-        navigationBarStyle = navigationBarStyle(icons),
+        statusBarStyle = barStyle(icons),
+        navigationBarStyle = barStyle(icons),
     )
 }
 
-/** From Android 10 the app shows behind the navigation buttons, while older versions keep a scrim that has to suit the icons. */
-private fun navigationBarStyle(icons: BarIcons): SystemBarStyle =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        barStyle(icons, Color.TRANSPARENT, Color.TRANSPARENT)
-    } else {
-        barStyle(icons, LIGHT_SCRIM, DARK_SCRIM)
-    }
-
-private fun barStyle(
-    icons: BarIcons,
-    lightScrim: Int,
-    darkScrim: Int,
-): SystemBarStyle = if (icons.areDark) SystemBarStyle.light(lightScrim, darkScrim) else SystemBarStyle.dark(darkScrim)
+private fun barStyle(icons: BarIcons): SystemBarStyle =
+    if (icons.areDark) SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT) else SystemBarStyle.dark(Color.TRANSPARENT)

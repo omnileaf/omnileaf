@@ -48,6 +48,15 @@ test("reads the value the WebView saved last for a key", () => {
   expect(lastSavedValue(log, "omnileaf.theme")).toBe("light");
 });
 
+test("reads the key asked for, not a longer key that starts with it", () => {
+  const log = Buffer.concat([
+    savedItem("omnileaf.screenshotMode", "off"),
+    savedItem("omnileaf.screenshotModeShortcut", "F9"),
+  ]);
+
+  expect(lastSavedValue(log, "omnileaf.screenshotMode")).toBe("off");
+});
+
 test("reads nothing for a key the WebView never saved", () => {
   const log = savedItem("omnileaf.language", "en");
 

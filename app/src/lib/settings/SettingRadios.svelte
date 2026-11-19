@@ -39,7 +39,7 @@
   const look = $derived(radiosLookFor(platform, android.isOn));
 </script>
 
-<section aria-labelledby="{id}-title" class={look.section}>
+<section data-settings-group aria-labelledby="{id}-title" class={look.section}>
   <h2
     id="{id}-title"
     class={[look.heading, startsPage && "android:max-medium:pbs-none"]}

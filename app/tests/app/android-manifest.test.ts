@@ -27,20 +27,23 @@ interface IntentFilter {
   pathPatterns: string[];
 }
 
+async function readManifest(): Promise<string> {
+  return readFile(MANIFEST, "utf8");
+}
+
 function attributeValues(filter: string, pattern: RegExp): string[] {
   return [...filter.matchAll(pattern)].map((found) => found[1] ?? "");
 }
 
 async function handledConfigChanges(): Promise<string[]> {
-  const manifest = await readFile(MANIFEST, "utf8");
+  const manifest = await readManifest();
   return (
     /android:configChanges="([^"]*)"/.exec(manifest)?.[1]?.split("|") ?? []
   );
 }
 
-async function intentFilters(): Promise<IntentFilter[]> {
-  const manifest = await readFile(MANIFEST, "utf8");
-  return [...manifest.matchAll(/<intent-filter>([\s\S]*?)<\/intent-filter>/g)]
+function filtersIn(text: string): IntentFilter[] {
+  return [...text.matchAll(/<intent-filter>([\s\S]*?)<\/intent-filter>/g)]
     .map((found) => found[1] ?? "")
     .map((filter) => ({
       action:
@@ -48,6 +51,39 @@ async function intentFilters(): Promise<IntentFilter[]> {
       mimeTypes: attributeValues(filter, /android:mimeType="([^"]*)"/g),
       pathPatterns: attributeValues(filter, /android:pathPattern="([^"]*)"/g),
     }));
+}
+
+async function intentFilters(): Promise<IntentFilter[]> {
+  return filtersIn(await readManifest());
+}
+
+async function intentFiltersOf(
+  element: string,
+  name: string,
+): Promise<IntentFilter[]> {
+  const manifest = await readManifest();
+  const escapedName = name.replaceAll(".", String.raw`\.`);
+  const withBody = new RegExp(
+    String.raw`<${element}\b[^>]*android:name="${escapedName}"[^>]*(?<!/)>([\s\S]*?)</${element}>`,
+  );
+  return filtersIn(manifest.match(withBody)?.[1] ?? "");
+}
+
+async function elementAttributes(
+  element: string,
+  name: string,
+): Promise<Record<string, string> | undefined> {
+  const manifest = await readManifest();
+  const tags = manifest.matchAll(new RegExp(`<${element}\\b([^>]*)>`, "g"));
+  return [...tags]
+    .map((tag) =>
+      Object.fromEntries(
+        [...(tag[1] ?? "").matchAll(/android:(\w+)="([^"]*)"/g)].map(
+          (attribute) => [attribute[1] ?? "", attribute[2] ?? ""],
+        ),
+      ),
+    )
+    .find((attributes) => attributes["name"] === name);
 }
 
 test("offers every comic archive type when a file is opened or shared", async () => {
@@ -89,6 +125,23 @@ test("offers generic rar types where a provider or a share may report a comic ar
   }
 });
 
+test("keeps the daily update check scheduled after the phone restarts", async () => {
+  expect(
+    await elementAttributes(
+      "uses-permission",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+    ),
+  ).toBeDefined();
+});
+
+test("runs the daily update check as a job only the system can start", async () => {
+  expect(await elementAttributes("service", ".UpdateCheckJob")).toEqual({
+    name: ".UpdateCheckJob",
+    permission: "android.permission.BIND_JOB_SERVICE",
+    exported: "false",
+  });
+});
+
 test("keeps the page open when Android's Bold text changes", async () => {
   const handled = await handledConfigChanges();
 
@@ -99,4 +152,33 @@ test("keeps the page open when Android's font size or display size changes", asy
   const handled = await handledConfigChanges();
 
   expect(handled).toEqual(expect.arrayContaining(["fontScale", "density"]));
+});
+
+test("asks for permission before posting update notifications", async () => {
+  expect(
+    await elementAttributes(
+      "uses-permission",
+      "android.permission.POST_NOTIFICATIONS",
+    ),
+  ).toBeDefined();
+});
+
+test("answers an update notice only from this app", async () => {
+  expect(await elementAttributes("receiver", ".UpdateNoticeReceiver")).toEqual({
+    name: ".UpdateNoticeReceiver",
+    exported: "false",
+  });
+});
+
+test("withdraws a stale update notice once the app is updated", async () => {
+  expect(
+    await elementAttributes("receiver", ".PackageReplacedReceiver"),
+  ).toEqual({
+    name: ".PackageReplacedReceiver",
+    exported: "false",
+  });
+  const filters = await intentFiltersOf("receiver", ".PackageReplacedReceiver");
+  expect(filters.map((filter) => filter.action)).toEqual([
+    "android.intent.action.MY_PACKAGE_REPLACED",
+  ]);
 });

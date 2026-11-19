@@ -11,7 +11,8 @@ use crate::{
     catalog::{
         BookFileToRemove, RootId,
         book_batches::{BOOKS_PER_QUERY, book_placeholders},
-        files_of_books, remove_book_files, remove_books_without_files,
+        files_of_books, remove_books_without_files,
+        root_files::delete_book_files_leaving_no_place,
         stored_id::stored_id,
     },
 };
@@ -71,7 +72,7 @@ pub(crate) fn remove_catalog_rows(
         files_of.entry(file.book).or_default().push(file);
     }
     for (root, locations) in &locations_in {
-        remove_book_files(connection, *root, locations)?;
+        delete_book_files_leaving_no_place(connection, *root, locations)?;
     }
     let mut removed = Vec::new();
     for book in books {

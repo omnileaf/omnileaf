@@ -5,6 +5,7 @@
     setSmartFeatures,
   } from "#lib/reader/smart-features.svelte.ts";
 
+  import { SERIES_CONTINUE_WORDS } from "./continue-card.ts";
   import ContinueCard from "./ContinueCard.svelte";
 
   let { overview }: { overview: SeriesOverview } = $props();
@@ -13,7 +14,8 @@
 </script>
 
 <ContinueCard
-  {overview}
+  progress={overview}
+  words={SERIES_CONTINUE_WORDS}
   cover={{ kind: "none" }}
   coverUrl={() => ""}
   isWide={false}

@@ -10,6 +10,7 @@ import {
   test,
   tokenColour,
 } from "./fixtures.ts";
+import { folderRow, goToStep, openFolderGuide } from "./first-launch-steps.ts";
 
 type WireFolder = Awaited<
   ReturnType<FakeBackend["libraryFolders"]>
@@ -23,7 +24,11 @@ const HOME: WireFolder = {
   isAvailable: true,
 };
 
+const LINK_STEP = 2;
 const LINK_HEADING = "Already have comics or books?";
+const GUIDE_HEADING = "How folders are read";
+const BAR_TITLE_SIZE = "22px";
+const BAR_TITLE_LINE = "28px";
 const HERO_ICON_SIZE = 32;
 const PLAIN_BUTTON_WEIGHT = "500";
 const TRANSPARENT = "rgba(0, 0, 0, 0)";
@@ -99,9 +104,7 @@ test.afterEach(() => {
 });
 
 async function goToTheLinkStep(page: Page): Promise<void> {
-  await page.goto("/first-launch");
-  await page.getByRole("button", { name: "Get started" }).click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await goToStep(page, LINK_STEP);
   await expect(
     page.getByRole("heading", { level: 1, name: LINK_HEADING }),
   ).toBeVisible();
@@ -185,13 +188,6 @@ test.describe(
         .getByRole("button", { name: "Continue" })
         .click();
       await expect(page.getByText("Counting… 38 so far")).toBeVisible();
-    }
-
-    function folderRow(page: Page, name: string) {
-      return page
-        .getByRole("region", { name: "Folders" })
-        .getByRole("listitem")
-        .filter({ hasText: name });
     }
 
     test("lists each folder as a three-line item: its name, where it is, then how many books", async ({
@@ -319,6 +315,87 @@ test.describe(
         );
         await expect(button).toHaveCSS("font-weight", BUTTON_LABEL_WEIGHT);
       }
+    });
+
+    test.describe("the folder guide from the folder step", () => {
+      test("opens How folders are read with the example folder as a tree", async ({
+        page,
+      }) => {
+        await goToTheLinkStep(page);
+
+        await openFolderGuide(page);
+
+        await expect(
+          page.getByRole("list", { name: "An example folder" }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("heading", { level: 1, name: LINK_HEADING }),
+        ).toHaveCount(0);
+      });
+
+      test("titles the guide in a top bar beside Back, with no step progress", async ({
+        page,
+      }) => {
+        await goToTheLinkStep(page);
+        await openFolderGuide(page);
+        const bar = page.getByRole("main").locator("header");
+
+        const title = bar.getByRole("heading", {
+          level: 1,
+          name: GUIDE_HEADING,
+        });
+
+        await expect(bar.getByRole("button", { name: "Back" })).toBeVisible();
+        await expect(title).toHaveCSS("font-size", BAR_TITLE_SIZE);
+        await expect(title).toHaveCSS("line-height", BAR_TITLE_LINE);
+        await expect(title).toHaveCSS("font-weight", REGULAR_WEIGHT);
+        await expect(page.getByRole("progressbar")).toHaveCount(0);
+        await expect(page.getByRole("main").locator("footer")).toHaveCount(0);
+      });
+
+      test("Back returns to the folder step with the linked folder still listed", async ({
+        page,
+      }) => {
+        await goToTheLinkStep(page);
+        await openFolderGuide(page);
+
+        await page
+          .getByRole("main")
+          .getByRole("button", { name: "Back", exact: true })
+          .click();
+
+        await expect(
+          page.getByRole("heading", { level: 1, name: LINK_HEADING }),
+        ).toBeFocused();
+        await expect(folderRow(page, MANGA.name)).toBeVisible();
+      });
+
+      test("the system back returns to the folder step, not the one before it", async ({
+        page,
+      }) => {
+        await goToTheLinkStep(page);
+        await openFolderGuide(page);
+
+        await page.goBack();
+
+        await expect(
+          page.getByRole("heading", { level: 1, name: LINK_HEADING }),
+        ).toBeVisible();
+        await expect(folderRow(page, MANGA.name)).toBeVisible();
+      });
+
+      test("keeps a folder being added while the guide is open", async ({
+        page,
+      }) => {
+        await startCounting(page);
+        await openFolderGuide(page);
+
+        await page.goBack();
+
+        await expect(page.getByText("Counting… 38 so far")).toBeVisible();
+        endScan();
+        await expect(folderRow(page, COMICS.name)).toBeVisible();
+      });
     });
   },
 );

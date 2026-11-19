@@ -243,6 +243,7 @@
 {@render listNotice?.(shownFolders)}
 
 <section
+  data-settings-group
   aria-labelledby={headingId}
   class={[!isInCard && "flex flex-col gap-lg"]}
 >

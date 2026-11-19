@@ -213,7 +213,7 @@ test("reads the three colours of each theme that the wallpaper's swatch is drawn
   });
 });
 
-test("has no swatch where Android has no colours from the wallpaper", async () => {
+test("has no swatch where the platform gives no wallpaper colours", async () => {
   expect(await readWallpaperSwatch(reading(null))).toBeNull();
 });
 

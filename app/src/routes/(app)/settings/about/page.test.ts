@@ -16,6 +16,7 @@ const PROPS = {
     isFirstLaunch: false,
     libraryProblem: null,
     homeArrival: null,
+    pageToRestore: undefined,
   },
   params: {},
 };

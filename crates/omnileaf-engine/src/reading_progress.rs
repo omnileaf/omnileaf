@@ -479,13 +479,11 @@ mod tests {
     use std::sync::atomic::{AtomicU64, Ordering};
 
     use omnileaf_db::{Config, Database, store::reading_state};
-    use omnileaf_testkit::ScratchFolder;
+    use omnileaf_testkit::{CapturedLog, ScratchFolder};
     use tokio::time::Duration;
 
     use super::*;
-    use crate::{
-        Clock, SystemClock, captured_log::CapturedLog, library_book::sample_book_id as book,
-    };
+    use crate::{Clock, SystemClock, library_book::sample_book_id as book};
 
     const PAGE_COUNT: usize = 8;
     const LAST_PAGE: u32 = 7;
@@ -855,7 +853,7 @@ mod tests {
         let folder = ScratchFolder::new("progress-warns-once");
         let mut keeper = keeper(&folder);
         let log = CapturedLog::default();
-        let _logging = tracing::subscriber::set_default(log.subscriber());
+        let _capturing = log.capture();
         refuse_saves(&keeper).await;
         read(&mut keeper, book(1), 3).await;
 
@@ -887,7 +885,7 @@ mod tests {
         let folder = ScratchFolder::new("progress-warns-after-nothing-unsaved");
         let mut keeper = keeper(&folder);
         let log = CapturedLog::default();
-        let _logging = tracing::subscriber::set_default(log.subscriber());
+        let _capturing = log.capture();
         refuse_saves(&keeper).await;
         read(&mut keeper, book(1), 3).await;
         keeper.save().await.unwrap_err();

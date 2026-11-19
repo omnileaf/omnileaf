@@ -2,6 +2,7 @@ import {
   type AdultContent,
   type AppLock,
   type BookFileState,
+  type ChapterVolume,
   DEFAULT_LIBRARY_VIEW,
   type DetailEdits,
   type FileOutcome,
@@ -14,6 +15,7 @@ import {
   type LibraryView,
   type Platform,
   type RemovalFailure,
+  type SeriesBook,
   type SeriesConnection,
   type SeriesFormat,
   type SignInOutcome,
@@ -264,7 +266,6 @@ function oneOf<Choice extends string>(
   return choices.find((choice) => choice === asked) ?? fallback;
 }
 
-/** Reads the sample library's scenario from a page address, such as `?platform=ios&library=empty`. */
 export function scenarioFrom(search: URLSearchParams): SampleScenario {
   const platform = oneOf(PLATFORMS, search.get("platform"), "linux");
   return {
@@ -544,6 +545,46 @@ const SAMPLE_CATEGORIES: readonly SampleCategory[] = [
   },
 ];
 
+function chapterVolumesOf(
+  books: readonly Pick<SeriesBook, "kind" | "volume" | "reading">[],
+): ChapterVolume[] {
+  const counted = new Map<number, ChapterVolume>();
+  for (const { kind, volume, reading } of books) {
+    if (kind !== "chapter" || volume === null) {
+      continue;
+    }
+    const before = counted.get(volume) ?? {
+      volume,
+      bookCount: 0,
+      readCount: 0,
+      startedCount: 0,
+    };
+    counted.set(volume, {
+      volume,
+      bookCount: before.bookCount + 1,
+      readCount: before.readCount + Number(reading.state === "read"),
+      startedCount:
+        before.startedCount + Number(reading.state !== "notStarted"),
+    });
+  }
+  return [...counted.values()].toSorted(
+    (earlier, later) => earlier.volume - later.volume,
+  );
+}
+
+function pageCountOf(
+  books: readonly Pick<SeriesBook, "pageCount">[],
+): number | null {
+  let pages = 0;
+  for (const { pageCount } of books) {
+    if (pageCount === null) {
+      return null;
+    }
+    pages += pageCount;
+  }
+  return pages;
+}
+
 function wireReading(reading: SampleReading) {
   return reading.state === "started"
     ? { state: "started" as const, page: reading.page }
@@ -618,7 +659,6 @@ function foundCoverOf(
     : bookCoverOf(series, slotOf(series, index));
 }
 
-/** Answers every command from the sample library, keeping what the reader marks or reads until the page reloads. */
 export function sampleBackend(
   scenario: SampleScenario,
   events: SampleEvents,
@@ -1266,6 +1306,8 @@ export function sampleBackend(
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
     systemAppLanguage: () => ({ offered: false, tag: null }),
+    savedRoute: () => null,
+    openingPageShown: () => null,
     watchSystemBoldText: () => null,
     systemClock: () => "followsLanguage",
     appLock: () => {
@@ -1836,7 +1878,19 @@ export function sampleBackend(
         bookCount: chapters.length,
         readCount: chapters.filter((book) => book.reading.state === "read")
           .length,
+        pageCount: pageCountOf(chapters),
+        upNext:
+          chapters.find((book) => book.reading.state === "started") ??
+          chapters.find((book) => book.reading.state !== "read") ??
+          null,
       };
+    },
+    seriesChapterVolumes: async (id) => {
+      await seriesReady();
+      const series = seriesWith(id);
+      return chapterVolumesOf(
+        booksOf(series).map((_, index) => wireBook(series, index)),
+      );
     },
     creatorSeries: (creator) =>
       seriesBy(creator).map((series) => ({

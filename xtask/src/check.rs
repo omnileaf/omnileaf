@@ -18,10 +18,15 @@ impl Group {
     }
 }
 
+pub(crate) enum Program {
+    OnPath(&'static str),
+    InWorkspace(&'static str),
+}
+
 pub(crate) struct Step {
     pub(crate) name: &'static str,
     pub(crate) group: Group,
-    pub(crate) program: &'static str,
+    pub(crate) program: Program,
     pub(crate) args: &'static [&'static str],
 }
 
@@ -31,13 +36,13 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "format",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &["fmt", "--all", "--check"],
     },
     Step {
         name: "lint",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "clippy",
             "--workspace",
@@ -52,13 +57,13 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "fuzz format",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &["fmt", "--manifest-path", "fuzz/Cargo.toml", "--check"],
     },
     Step {
         name: "fuzz lint",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "clippy",
             "--manifest-path",
@@ -73,7 +78,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "engine lint without rar",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "clippy",
             "--package",
@@ -88,7 +93,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "engine tests without rar",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "test",
             "--package",
@@ -110,7 +115,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: TEST,
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -122,7 +127,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "listing speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -140,7 +145,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "cb7 first page speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -158,7 +163,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "rar first page speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -178,7 +183,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "title page speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -196,7 +201,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "series books speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -214,7 +219,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "library filter speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -232,7 +237,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "library search speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -250,7 +255,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "title re-key speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -268,7 +273,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "profile switch speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -286,7 +291,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "scan speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -304,7 +309,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "cover speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -322,7 +327,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "page speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -340,7 +345,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "cropped page speed",
         group: Group::Rust,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "nextest",
             "run",
@@ -358,7 +363,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "webassembly",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "build",
             "--package",
@@ -371,67 +376,67 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "dependencies",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &["deny", "--locked", "check"],
     },
     Step {
         name: "policy",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &["xtask", "policy"],
     },
     Step {
         name: "licences",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &["xtask", "licences", "--check"],
     },
     Step {
         name: "vendored sources",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &["xtask", "vendor-check"],
     },
     Step {
         name: "sync rules",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &["xtask", "lint-sync"],
     },
     Step {
         name: "comment rules",
         group: Group::Portable,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &["xtask", "lint-comments"],
     },
     Step {
         name: "interface types",
         group: Group::Interface,
-        program: "pnpm",
+        program: Program::OnPath("pnpm"),
         args: &["--recursive", "run", "check"],
     },
     Step {
         name: "interface lint",
         group: Group::Interface,
-        program: "pnpm",
+        program: Program::OnPath("pnpm"),
         args: &["--recursive", "run", "lint"],
     },
     Step {
         name: "interface tests",
         group: Group::Interface,
-        program: "pnpm",
+        program: Program::OnPath("pnpm"),
         args: &["--recursive", "run", "test"],
     },
     Step {
         name: "interface build",
         group: Group::Interface,
-        program: "pnpm",
+        program: Program::OnPath("pnpm"),
         args: &["--recursive", "run", "build"],
     },
     Step {
         name: "browser tests",
         group: Group::Browser,
-        program: "pnpm",
+        program: Program::OnPath("pnpm"),
         args: &[
             "--recursive",
             "--workspace-concurrency=1",
@@ -442,13 +447,13 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "app tests",
         group: Group::App,
-        program: "pnpm",
+        program: Program::OnPath("pnpm"),
         args: &["--recursive", "run", "test:app"],
     },
     Step {
         name: "android rust lint",
         group: Group::Android,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "clippy",
             "--locked",
@@ -476,7 +481,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "android lint",
         group: Group::Android,
-        program: "app/src-tauri/gen/android/gradlew",
+        program: Program::InWorkspace("app/src-tauri/gen/android/gradlew"),
         args: &[
             "--project-dir",
             "app/src-tauri/gen/android",
@@ -489,7 +494,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "kotlin unit tests",
         group: Group::Android,
-        program: "app/src-tauri/gen/android/gradlew",
+        program: Program::InWorkspace("app/src-tauri/gen/android/gradlew"),
         args: &[
             "--project-dir",
             "app/src-tauri/gen/android",
@@ -500,13 +505,13 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "android tests",
         group: Group::Android,
-        program: "pnpm",
+        program: Program::OnPath("pnpm"),
         args: &["--recursive", "run", "test:android"],
     },
     Step {
         name: "ios lint",
         group: Group::Ios,
-        program: "cargo",
+        program: Program::OnPath("cargo"),
         args: &[
             "clippy",
             "--locked",
@@ -531,7 +536,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "folder bookmark tests",
         group: Group::Ios,
-        program: "swift",
+        program: Program::OnPath("swift"),
         args: &[
             "test",
             "--package-path",
@@ -541,7 +546,7 @@ pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "ios tests",
         group: Group::Ios,
-        program: "pnpm",
+        program: Program::OnPath("pnpm"),
         args: &["--recursive", "run", "test:ios"],
     },
 ];
@@ -686,19 +691,19 @@ mod tests {
         Step {
             name: "first",
             group: Group::Rust,
-            program: "true",
+            program: Program::OnPath("true"),
             args: &[],
         },
         Step {
             name: "second",
             group: Group::Interface,
-            program: "true",
+            program: Program::OnPath("true"),
             args: &[],
         },
         Step {
             name: "third",
             group: Group::Rust,
-            program: "true",
+            program: Program::OnPath("true"),
             args: &[],
         },
     ];
@@ -754,25 +759,25 @@ mod tests {
         Step {
             name: "rust",
             group: Group::Rust,
-            program: "true",
+            program: Program::OnPath("true"),
             args: &[],
         },
         Step {
             name: "portable",
             group: Group::Portable,
-            program: "true",
+            program: Program::OnPath("true"),
             args: &[],
         },
         Step {
             name: "android",
             group: Group::Android,
-            program: "true",
+            program: Program::OnPath("true"),
             args: &[],
         },
         Step {
             name: "ios",
             group: Group::Ios,
-            program: "true",
+            program: Program::OnPath("true"),
             args: &[],
         },
     ];

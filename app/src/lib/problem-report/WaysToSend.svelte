@@ -47,7 +47,11 @@
   const headingId = $props.id();
 </script>
 
-<section aria-labelledby={headingId} class="mbs-lg flex flex-col">
+<section
+  data-settings-group
+  aria-labelledby={headingId}
+  class="mbs-lg flex flex-col"
+>
   <h2 id={headingId} class="mbe-ways-heading-gap text-small font-semibold">
     {m.report_other_ways_to_send()}
   </h2>

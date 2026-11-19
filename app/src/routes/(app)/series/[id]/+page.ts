@@ -13,13 +13,23 @@ const MISSING: SeriesShown = { kind: "missing" };
 async function shownOf(
   id: Parameters<typeof commands.seriesOverview>[0],
 ): Promise<SeriesShown> {
-  const read = await commands.seriesOverview(id);
-  if (read.status === "ok") {
-    return { kind: "found", overview: read.data };
+  const [read, counted] = await Promise.all([
+    commands.seriesOverview(id),
+    commands.seriesChapterVolumes(id),
+  ]);
+  if (read.status === "error") {
+    return read.error.code === "seriesNotFound"
+      ? { kind: "missing" }
+      : { kind: "failed" };
   }
-  return read.error.code === "seriesNotFound"
-    ? { kind: "missing" }
-    : { kind: "failed" };
+  if (counted.status === "error") {
+    reportError(counted.error);
+  }
+  return {
+    kind: "found",
+    overview: read.data,
+    chapterVolumes: counted.status === "ok" ? counted.data : [],
+  };
 }
 
 function waited(ms: number): Promise<undefined> {

@@ -1,13 +1,20 @@
 import { expect, test } from "vitest";
 
-import type { NumberRange, SeriesBook } from "#lib/ipc/bindings.ts";
+import type {
+  ChapterVolume,
+  NumberRange,
+  SeriesBook,
+} from "#lib/ipc/bindings.ts";
 
 import {
-  bookIdsOf,
   booksOnly,
+  booksPicked,
   type GapPlacing,
+  pickKeysOf,
+  picksAVolumeStillComing,
   type SectionTile,
   tileKey,
+  withChapterVolumesFolded,
   withGaps,
 } from "./section-tiles";
 
@@ -48,12 +55,25 @@ function chapterIn(volumeNumber: number, chapter: number): SeriesBook {
   });
 }
 
+function unfiledChapter(chapter: number): SeriesBook {
+  return book(`c${String(chapter)}`, {
+    kind: "chapter",
+    numbers: { first: chapter, last: chapter },
+    section: "chapters",
+  });
+}
+
 function shapeOf(tiles: readonly SectionTile[]): string[] {
-  return tiles.map((tile) =>
-    tile.kind === "book"
-      ? tile.book.title
-      : `gap ${String(tile.missing.first)}-${String(tile.missing.last)}`,
-  );
+  return tiles.map((tile) => {
+    switch (tile.kind) {
+      case "book":
+        return tile.book.title;
+      case "volume":
+        return `volume ${String(tile.volume)}: ${tile.chapters.map(({ title }) => title).join(" ")}`;
+      case "gap":
+        return `gap ${String(tile.missing.first)}-${String(tile.missing.last)}`;
+    }
+  });
 }
 
 const FIVE_TO_SIX: NumberRange = { first: 5, last: 6 };
@@ -261,5 +281,100 @@ test("picks out the books, in order, and never a gap", () => {
     ],
   });
 
-  expect(bookIdsOf(tiles)).toEqual(["v4", "v7", "v9"]);
+  expect(pickKeysOf(tiles)).toEqual(["v4", "v7", "v9"]);
+});
+
+function counted(volumeNumber: number, bookCount: number): ChapterVolume {
+  return { volume: volumeNumber, bookCount, readCount: 0, startedCount: 0 };
+}
+
+test("folds the chapters filed in one volume into one tile, leaving volume books and unfiled chapters as they are", () => {
+  const books = [
+    volume(1),
+    chapterIn(2, 5),
+    chapterIn(2, 6),
+    chapterIn(3, 7),
+    unfiledChapter(20),
+  ];
+
+  const tiles = withChapterVolumesFolded(booksOnly(books), []);
+
+  expect(shapeOf(tiles)).toEqual([
+    "v1",
+    "volume 2: v2c5 v2c6",
+    "volume 3: v3c7",
+    "c20",
+  ]);
+});
+
+test("keeps the gaps around a folded volume", () => {
+  const books = [volume(4), chapterIn(7, 61), chapterIn(7, 62)];
+
+  const tiles = withChapterVolumesFolded(withGaps(books, IN_ORDER), []);
+
+  expect(shapeOf(tiles)).toEqual(["v4", "gap 5-6", "volume 7: v7c61 v7c62"]);
+});
+
+test("folds a volume's chapters the way they came when the last come first", () => {
+  const books = [chapterIn(7, 62), chapterIn(7, 61), volume(4)];
+
+  const tiles = withChapterVolumesFolded(
+    withGaps(books, { ...IN_ORDER, direction: "descending" }),
+    [],
+  );
+
+  expect(shapeOf(tiles)).toEqual(["volume 7: v7c62 v7c61", "gap 5-6", "v4"]);
+});
+
+test("folds a volume whose chapters came over two pages into one tile", () => {
+  const firstPage = [volume(1), chapterIn(2, 5)];
+  const secondPage = [chapterIn(2, 6), chapterIn(2, 7)];
+
+  const tiles = withChapterVolumesFolded(
+    booksOnly([...firstPage, ...secondPage]),
+    [],
+  );
+
+  expect(shapeOf(tiles)).toEqual(["v1", "volume 2: v2c5 v2c6 v2c7"]);
+});
+
+test("gives a folded volume the counts the library has for it, and none where it has none", () => {
+  const books = [chapterIn(2, 5), chapterIn(3, 7)];
+  const counts = [counted(2, 4), counted(9, 1)];
+
+  const tiles = withChapterVolumesFolded(booksOnly(books), counts);
+
+  expect(
+    tiles.map((tile) => (tile.kind === "volume" ? tile.counts : "not folded")),
+  ).toEqual([counted(2, 4), undefined]);
+});
+
+test("keys and picks a folded volume by its number, and picking it picks every chapter in it", () => {
+  const books = [volume(4), chapterIn(7, 61), chapterIn(7, 62)];
+  const tiles = withChapterVolumesFolded(booksOnly(books), []);
+
+  const picked = booksPicked(tiles, (key) => key === "volume-7");
+
+  expect([tiles.map(tileKey), pickKeysOf(tiles), picked]).toEqual([
+    ["v4", "volume-7"],
+    ["v4", "volume-7"],
+    ["v7c61", "v7c62"],
+  ]);
+});
+
+test("says a picked volume at the end of a list still loading may have chapters still to come", () => {
+  const tiles = withChapterVolumesFolded(
+    booksOnly([volume(1), chapterIn(2, 5), chapterIn(2, 6)]),
+    [],
+  );
+  const isLastPicked = (key: string) => key === "volume-2";
+  const isFirstPicked = (key: string) => key === "v1";
+
+  const answers = [
+    picksAVolumeStillComing(tiles, isLastPicked, false),
+    picksAVolumeStillComing(tiles, isLastPicked, true),
+    picksAVolumeStillComing(tiles, isFirstPicked, false),
+  ];
+
+  expect(answers).toEqual([true, false, false]);
 });

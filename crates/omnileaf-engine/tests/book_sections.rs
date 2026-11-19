@@ -17,7 +17,7 @@ mod support;
 
 use books::write_book;
 use omnileaf_engine::{
-    BookNumber, BookSection, LibraryListing, SeriesBook, SeriesBookListing, SeriesId,
+    BookNumber, BookSection, LibraryListing, ReadMark, SeriesBook, SeriesBookListing, SeriesId,
 };
 use scanned::Scanned;
 use serde_json::{Value, json};
@@ -212,6 +212,38 @@ async fn sums_up_a_volume_by_its_chapters_cover_and_folder() {
 }
 
 #[tokio::test]
+async fn serves_a_volumes_page_count_and_the_chapter_up_next_inside_it() {
+    let sample = Sample::scan("volume-pages-and-up-next", SERIES_04_BOOKS).await;
+    let library = &sample.scanned.library;
+    let first_chapter = sample
+        .listed(None)
+        .await
+        .into_iter()
+        .find(|book| book.title == "Sample Series 04 c001")
+        .unwrap()
+        .id;
+    library
+        .mark_books(vec![first_chapter], ReadMark::Read)
+        .await
+        .unwrap();
+
+    let found = library
+        .series_volume(sample.series, volume(1.0))
+        .await
+        .unwrap()
+        .unwrap();
+
+    let served = serde_json::to_value(found).unwrap();
+    assert_eq!(
+        (
+            served.get("pageCount").cloned(),
+            served.pointer("/upNext/title").cloned()
+        ),
+        (Some(json!(4)), Some(json!("Sample Series 04 c002.5")))
+    );
+}
+
+#[tokio::test]
 async fn names_no_folder_for_a_volume_whose_chapters_take_it_from_their_file_names() {
     let sample = Sample::scan(
         "volume-from-file-names",
@@ -242,6 +274,30 @@ async fn finds_no_volume_where_no_chapter_is_filed_in_one() {
     }
 
     assert_eq!(none, [true, true]);
+}
+
+#[tokio::test]
+async fn serves_each_volume_of_chapters_with_its_chapters_read_and_started() {
+    let sample = Sample::scan("chapter-volume-counts", SERIES_04_BOOKS).await;
+    let library = &sample.scanned.library;
+    let first_chapter = sample
+        .listed(None)
+        .await
+        .into_iter()
+        .find(|book| book.title == "Sample Series 04 c001")
+        .unwrap()
+        .id;
+    library
+        .mark_books(vec![first_chapter], ReadMark::Read)
+        .await
+        .unwrap();
+
+    let counted = library.series_chapter_volumes(sample.series).await.unwrap();
+
+    assert_eq!(
+        serde_json::to_value(counted).unwrap(),
+        json!([{"volume": 1.0, "bookCount": 2, "readCount": 1, "startedCount": 1}])
+    );
 }
 
 #[test]

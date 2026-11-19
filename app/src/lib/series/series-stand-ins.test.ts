@@ -5,16 +5,19 @@ import type {
   OpenedBook,
   SeriesBook,
   SeriesOverview,
+  SeriesVolume,
 } from "#lib/ipc/bindings.ts";
 import type { CoverPath } from "#lib/library/cover-url.ts";
 import { standInLook } from "#lib/library/series-look.ts";
 import { bookIdIn } from "#lib/reader/opened-book.ts";
+import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
 import type { SeriesId } from "#lib/series/series-id.ts";
 import {
   standInBook,
   standInHistoryEntry,
   standInOpenedBook,
   standInOverview,
+  standInVolume,
 } from "#lib/series/series-stand-ins.ts";
 
 const SERIES = "0190a3e4-0000-8000-8000-0000000000a1" as SeriesId;
@@ -183,4 +186,25 @@ test("shows no cover for the books either side of a book opened in Screenshot mo
   const standIn = standInOpenedBook(book);
 
   expect(standIn.next?.cover).toBeNull();
+});
+
+test("hides a volume's folder, its cover and the chapter to go on with behind stand-ins", () => {
+  const volume: SeriesVolume = {
+    volume: 3,
+    folder: "Volume 03",
+    cover: "thumb/v1/0190a3e4-0000-8000-8000-0000000000b3/1/1" as CoverPath,
+    bookCount: 8,
+    readCount: 2,
+    pageCount: 186,
+    upNext: seriesBook(9),
+  };
+
+  const standIn = standInVolume(volume);
+
+  expect(standIn).toEqual({
+    ...volume,
+    folder: folderStandIn("Volume 03"),
+    cover: null,
+    upNext: { ...seriesBook(9), title: "Book 9" },
+  });
 });
