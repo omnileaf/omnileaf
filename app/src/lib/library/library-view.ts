@@ -1,10 +1,12 @@
 import {
   COVERS_PER_ROW,
+  DEFAULT_LIBRARY_VIEW,
   type CoversPerRow,
   type LibraryDisplay,
   type LibraryGrouping,
   type LibraryView,
   type OnCovers,
+  type Platform,
 } from "#lib/ipc/bindings.ts";
 
 export type ScreenSize = keyof CoversPerRow;
@@ -14,6 +16,21 @@ export const SCREEN_SIZES: readonly ScreenSize[] = [
   "tablet",
   "desktop",
 ];
+
+const STACKS_SERIES_COVERS_BY_DEFAULT = {
+  android: false,
+  ios: true,
+  macos: true,
+  windows: true,
+  linux: true,
+} as const satisfies Record<Platform, boolean>;
+
+export function defaultLibraryView(platform: Platform): LibraryView {
+  return {
+    ...DEFAULT_LIBRARY_VIEW,
+    stacksSeriesCovers: STACKS_SERIES_COVERS_BY_DEFAULT[platform],
+  };
+}
 
 export function viewDrawn(
   view: LibraryView,

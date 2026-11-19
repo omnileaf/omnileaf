@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import { DEFAULT_LIBRARY_VIEW, type LibraryView } from "#lib/ipc/bindings.ts";
 
 import {
+  defaultLibraryView,
   withContinueRow,
   withCoversPerRow,
   withDisplay,
@@ -119,4 +120,14 @@ test("draws the saved view unchanged away from an Android phone", () => {
   } satisfies LibraryView;
 
   expect(viewDrawn(saved, false)).toEqual(saved);
+});
+
+test("starts a library's covers flat on android and stacked elsewhere, as the engine does", () => {
+  const platforms = ["android", "ios", "macos", "windows", "linux"] as const;
+
+  const stacked = platforms.map(
+    (platform) => defaultLibraryView(platform).stacksSeriesCovers,
+  );
+
+  expect(stacked).toEqual([false, true, true, true, true]);
 });

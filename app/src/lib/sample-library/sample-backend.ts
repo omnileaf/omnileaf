@@ -3,7 +3,6 @@ import {
   type AppLock,
   type BookFileState,
   type ChapterVolume,
-  DEFAULT_LIBRARY_VIEW,
   type DetailEdits,
   type FileOutcome,
   type FolderProblem,
@@ -28,6 +27,7 @@ import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 import { NEW_APP_LOCK } from "#lib/app-lock/app-lock.ts";
 import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
+import { defaultLibraryView } from "#lib/library/library-view.ts";
 import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
 import { phrasesOf } from "./chapter-phrases.ts";
 import { closestTitle, isTooShortToSuggest } from "./closest-words.ts";
@@ -120,13 +120,6 @@ const WINDOW_BACKDROPS = [
   "none",
 ] as const satisfies readonly WindowBackdrop[];
 const PLATFORMS_WITHOUT_TRASH: readonly Platform[] = ["ios", "android"];
-const STACKS_SERIES_COVERS_BY_DEFAULT = {
-  android: false,
-  ios: true,
-  macos: true,
-  windows: true,
-  linux: true,
-} as const satisfies Record<Platform, boolean>;
 const MIXED_FILE_OUTCOMES = [
   { kind: "trashed" },
   { kind: "deleted" },
@@ -682,10 +675,7 @@ export function sampleBackend(
     ...NEW_LIBRARY_LISTING,
     sort: { by: "dateAdded", direction: "descending" },
   };
-  let view: LibraryView = {
-    ...DEFAULT_LIBRARY_VIEW,
-    stacksSeriesCovers: STACKS_SERIES_COVERS_BY_DEFAULT[scenario.platform],
-  };
+  let view: LibraryView = defaultLibraryView(scenario.platform);
   let isFullScreen = false;
   let hasFinishedFirstLaunch = scenario.launch === "returning";
   let homeLocation: string = HOME_FOLDER_LOCATIONS[scenario.platform];

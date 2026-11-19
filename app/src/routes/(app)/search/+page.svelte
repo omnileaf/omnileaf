@@ -18,7 +18,6 @@
     type ChapterHitPage,
     commands,
     type LibrarySearch,
-    DEFAULT_LIBRARY_VIEW,
     type LibrarySeries,
     type LibraryView,
     type Platform,
@@ -84,6 +83,8 @@
     type Reveal,
   } from "#lib/virtual-grid/grid-keys.ts";
 
+  import { defaultLibraryView } from "#lib/library/library-view.ts";
+
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -94,7 +95,7 @@
     {
       read: () => commands.libraryView(),
       store: (chosen: LibraryView) => commands.setLibraryView(chosen),
-      fallback: DEFAULT_LIBRARY_VIEW,
+      fallback: defaultLibraryView(untrack(() => data.appInfo.platform)),
     },
     (error) => {
       reportError(error);
