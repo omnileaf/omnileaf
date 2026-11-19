@@ -1,6 +1,5 @@
 <script lang="ts">
   import { ArrowLeft, Unplug } from "@lucide/svelte";
-  import { Channel } from "@tauri-apps/api/core";
   import { onMount, type Snippet, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -18,8 +17,6 @@
     type ChapterHit,
     type ChapterHitPage,
     commands,
-    type IpcError,
-    type MissingFolder,
     type LibrarySearch,
     DEFAULT_LIBRARY_VIEW,
     type LibrarySeries,
@@ -29,11 +26,7 @@
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
-  import { FolderFinder } from "#lib/library/folder-finder.svelte.ts";
-  import {
-    noticeFolderBack,
-    noticeFolderStillMissing,
-  } from "#lib/library/missing-folder-notices.ts";
+  import { noticingFolderFinder } from "#lib/library/noticing-folder-finder.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import {
     type FilterCondition,
@@ -161,18 +154,8 @@
     ).notConnected !== undefined,
   );
   const notices = getNotices();
-  const folderFinder = new FolderFinder(
-    ({ folder }) => commands.relocateLibraryFolder(folder.id, new Channel()),
-    {
-      onError: reportError,
-      onShareStillUnreachable: (missing) => {
-        noticeFolderStillMissing(notices, missing);
-      },
-      onShareBack: (missing) => {
-        noticeFolderBack(notices, missing);
-      },
-      onSettled: () => lookAgain(searchKey),
-    },
+  const folderFinder = noticingFolderFinder(notices, () =>
+    lookAgain(searchKey),
   );
   const listsChapterTitles = $derived(
     data.appInfo.platform === "macos" || isAndroidPhone,
@@ -290,27 +273,11 @@
   }
 
   function findSeriesFolder(series: LibrarySeries): void {
-    void findFolderFrom(commands.seriesMissingFolder(series.id));
+    void folderFinder.findFrom(commands.seriesMissingFolder(series.id));
   }
 
   function findChapterFolder(hit: ChapterHit): void {
-    void findFolderFrom(commands.bookMissingFolder(hit.book));
-  }
-
-  async function findFolderFrom(
-    lookup: Promise<
-      | { status: "ok"; data: MissingFolder | null }
-      | { status: "error"; error: IpcError }
-    >,
-  ): Promise<void> {
-    const missing = await lookup;
-    if (missing.status === "error") {
-      reportError(missing.error);
-    } else if (missing.data === null) {
-      await lookAgain(searchKey);
-    } else {
-      folderFinder.find(missing.data);
-    }
+    void folderFinder.findFrom(commands.bookMissingFolder(hit.book));
   }
 
   function focusField(): void {

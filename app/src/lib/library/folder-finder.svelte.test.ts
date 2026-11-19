@@ -198,3 +198,50 @@ test("reports a relocation that fails and still settles", async () => {
 
   expect(record.heard).toEqual(["error folderUnreadable", "settled"]);
 });
+
+test("finds the folder a lookup answers", async () => {
+  const record = new FinderRecord({ status: "ok", data: null });
+  const finder = new FolderFinder(record.relocate, record.events);
+
+  await finder.findFrom(Promise.resolve({ status: "ok", data: MOVED }));
+  await record.settled;
+
+  expect(record.relocated).toEqual(["folder-moved"]);
+});
+
+test("settles without finding anything when a lookup answers no folder", async () => {
+  const record = new FinderRecord({ status: "ok", data: null });
+  const finder = new FolderFinder(record.relocate, record.events);
+
+  await finder.findFrom(Promise.resolve({ status: "ok", data: null }));
+
+  expect([record.relocated, record.heard]).toEqual([[], ["settled"]]);
+});
+
+test("reports a lookup that fails and finds nothing", async () => {
+  const record = new FinderRecord({ status: "ok", data: null });
+  const finder = new FolderFinder(record.relocate, record.events);
+
+  await finder.findFrom(Promise.resolve({ status: "error", error: FAILED }));
+
+  expect([record.relocated, record.heard]).toEqual([
+    [],
+    ["error folderUnreadable"],
+  ]);
+});
+
+test("reports an error with no receiver, as the window's reportError needs", async () => {
+  const record = new FinderRecord({ status: "error", error: FAILED });
+  const receivers: unknown[] = [];
+  const finder = new FolderFinder(record.relocate, {
+    ...record.events,
+    onError(this: unknown) {
+      receivers.push(this);
+    },
+  });
+
+  await finder.relocate(MOVED);
+  await finder.findFrom(Promise.resolve({ status: "error", error: FAILED }));
+
+  expect(receivers).toEqual([undefined, undefined]);
+});

@@ -4,6 +4,9 @@ import { m } from "#lib/paraglide/messages.js";
 import type { MissingFolderActions } from "./missing-folder-notices.ts";
 import { remedyOf, wordingOf } from "./missing-folder-wording.ts";
 
+export const ALERT_TEXT_BUTTON =
+  "border-0 bg-transparent px-md text-current text-native-notice-label/native-notice-label font-native-notice-label tracking-native-notice-label hover:bg-hover active:bg-pressed min-block-native-notice-action";
+
 export interface CardAction {
   readonly label: string;
   readonly run: () => void;

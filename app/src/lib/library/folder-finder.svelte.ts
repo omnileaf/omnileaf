@@ -9,6 +9,11 @@ export type RelocateFolder = (
   missing: MissingFolder,
 ) => ReturnType<typeof commands.relocateLibraryFolder>;
 
+export type MissingFolderLookup = Promise<
+  | { readonly status: "ok"; readonly data: MissingFolder | null }
+  | { readonly status: "error"; readonly error: IpcError }
+>;
+
 export interface FolderFinderEvents {
   readonly onError: (error: IpcError) => void;
   readonly onShareStillUnreachable: (missing: MissingFolder) => void;
@@ -44,6 +49,17 @@ export class FolderFinder {
     void this.relocate(missing);
   }
 
+  async findFrom(lookup: MissingFolderLookup): Promise<void> {
+    const missing = await lookup;
+    if (missing.status === "error") {
+      this.#reportError(missing.error);
+    } else if (missing.data === null) {
+      await this.events.onSettled();
+    } else {
+      this.find(missing.data);
+    }
+  }
+
   continueChoosing(): void {
     const chosen = this.#choosingAgain;
     this.#choosingAgain = undefined;
@@ -59,7 +75,7 @@ export class FolderFinder {
   async relocate(missing: MissingFolder): Promise<void> {
     const relocated = await this.relocateFolder(missing);
     if (relocated.status === "error") {
-      this.events.onError(relocated.error);
+      this.#reportError(relocated.error);
     } else if (
       relocated.data !== null &&
       missing.problem.kind === "shareUnreachable"
@@ -71,5 +87,11 @@ export class FolderFinder {
       }
     }
     await this.events.onSettled();
+  }
+
+  /** Calls the handler bare, since Chromium refuses `window.reportError` called on any other receiver. */
+  #reportError(error: IpcError): void {
+    const { onError } = this.events;
+    onError(error);
   }
 }

@@ -283,7 +283,9 @@
   const folderFinder = new FolderFinder(
     ({ folder }) => commands.relocateLibraryFolder(folder.id, new Channel()),
     {
-      onError: reportError,
+      onError: (error) => {
+        reportError(error);
+      },
       onShareStillUnreachable: (missing) => {
         folderNotices.stillFailing(missing);
         stillFailing = [...stillFailing, missing.folder.id];
