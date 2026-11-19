@@ -327,3 +327,35 @@ test("draws an unreadable book's Show the file with the Material icon on an Andr
   expect(show.querySelector('[data-icon="folder-open"]')).not.toBeNull();
   expect(show.querySelector("svg")).toBeNull();
 });
+
+test("says a book isn't connected, with Find the folder first and Back to the series", async () => {
+  await onAndroid();
+  const found: string[] = [];
+  const screen = await render(BookProblem, {
+    kind: "notConnected",
+    place: place(),
+    platform: "android",
+    onShowFile: () => undefined,
+    onFind: () => found.push("find"),
+  });
+
+  const actions = [
+    ...screen.container.querySelectorAll("main a, main button"),
+  ].map((action) => action.textContent.trim());
+  await screen.getByRole("button", { name: "Find the folder" }).click();
+
+  await expect
+    .element(screen.getByRole("heading", { name: "This book isn’t connected" }))
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByText(
+        "Its folder or drive may be disconnected. Your reading progress is safe.",
+      ),
+    )
+    .toBeVisible();
+  expect({ actions: actions.slice(-2), found }).toEqual({
+    actions: ["Find the folder", "Back to the series"],
+    found: ["find"],
+  });
+});

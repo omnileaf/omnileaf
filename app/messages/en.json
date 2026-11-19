@@ -2775,6 +2775,8 @@
   ],
   "reader_not_found": "This book isn't in your library",
   "reader_not_found_body": "It may have been removed, or the folder holding it taken out of the library.",
+  "reader_not_connected": "This book isn’t connected",
+  "reader_not_connected_body": "Its folder or drive may be disconnected. Your reading progress is safe.",
   "reader_unreadable": "This book couldn't be opened",
   "reader_unreadable_body": "Its file may have moved, or be damaged.",
   "reader_unsupported_title": "Omnileaf can't open this file",
