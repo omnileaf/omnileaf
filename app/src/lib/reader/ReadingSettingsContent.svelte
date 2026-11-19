@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { Slider } from "#lib/components/ui/slider/index.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import ApplyToChoice from "./ApplyToChoice.svelte";
+  import AutoScrollSpeedSetting from "./AutoScrollSpeedSetting.svelte";
   import CropBordersSwitch from "./CropBordersSwitch.svelte";
   import KeepScreenOnSwitch from "./KeepScreenOnSwitch.svelte";
   import LightSliders from "./LightSliders.svelte";
@@ -20,7 +20,6 @@
     type ReaderControlsLook,
     type ReaderLight,
     type ReaderSettings,
-    SCREENS_PER_MINUTE,
     type TapToScroll,
     type TapZones,
   } from "./reader-settings.svelte.ts";
@@ -141,29 +140,7 @@
           </p>
         </SettingChoice>
         {#if autoScrollChoice === "set"}
-          <div
-            class="grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"
-          >
-            <p id="{id}-rate" class="text-small font-medium">
-              {m.reader_auto_scroll_rate_value({
-                count: look.screensPerMinute,
-              })}
-            </p>
-            <Slider
-              aria-labelledby="{id}-rate"
-              aria-label={m.reader_auto_scroll_rate()}
-              class="inline-setting-control"
-              min={SCREENS_PER_MINUTE.slowest}
-              max={SCREENS_PER_MINUTE.fastest}
-              step={SCREENS_PER_MINUTE.step}
-              bind:value={
-                () => look.screensPerMinute,
-                (screens: number) => {
-                  settings.change("screensPerMinute", screens);
-                }
-              }
-            />
-          </div>
+          <AutoScrollSpeedSetting {settings} {seriesTitle} {control} />
         {/if}
         <Switch
           bind:checked={

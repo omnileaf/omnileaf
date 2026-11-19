@@ -156,3 +156,128 @@ test("keeps a whole number of screens a minute from 1 to 12", () => {
 
   expect(read).toEqual([1, 12, 3, 3, 3]);
 });
+
+test("keeps a series' own speed over every series' while the look applies to all of them", () => {
+  const store = memoryStore();
+  new ReaderSettings(store, SERIES).changeSpeed(5);
+
+  const again = new ReaderSettings(store, SERIES);
+  const other = new ReaderSettings(store, OTHER_SERIES);
+
+  expect([
+    again.scope,
+    again.speed,
+    again.look.screensPerMinute,
+    other.speed,
+  ]).toEqual(["all", 5, 5, 3]);
+});
+
+test("keeps a speed change on a series with no speed of its own to that series", () => {
+  const store = memoryStore();
+  const settings = new ReaderSettings(store, SERIES);
+
+  settings.changeSpeed(4);
+
+  expect([
+    new ReaderSettings(store, SERIES).speed,
+    new ReaderSettings(store, OTHER_SERIES).speed,
+  ]).toEqual([4, 3]);
+});
+
+test("saves the speed for every series once All series is chosen", () => {
+  const store = memoryStore();
+  const settings = new ReaderSettings(store, SERIES);
+  settings.changeSpeed(5);
+  settings.saveSpeedFor("all");
+
+  settings.changeSpeed(7);
+
+  expect([
+    settings.speed,
+    new ReaderSettings(store, SERIES).speed,
+    new ReaderSettings(store, OTHER_SERIES).speed,
+  ]).toEqual([7, 7, 7]);
+});
+
+test("drops the series' own speed once All series is chosen", () => {
+  const store = memoryStore();
+  const settings = new ReaderSettings(store, SERIES);
+  settings.changeSpeed(5);
+
+  settings.saveSpeedFor("all");
+  new ReaderDefaults(store).change("screensPerMinute", 9);
+
+  expect(new ReaderSettings(store, SERIES).speed).toBe(9);
+});
+
+test("keeps the speed it shows for this series once This series is chosen again", () => {
+  const store = memoryStore();
+  const settings = new ReaderSettings(store, SERIES);
+  settings.saveSpeedFor("all");
+
+  settings.saveSpeedFor("series");
+  new ReaderDefaults(store).change("screensPerMinute", 9);
+
+  expect(new ReaderSettings(store, SERIES).speed).toBe(3);
+});
+
+test("remembers All series for the series it was chosen in", () => {
+  const store = memoryStore();
+  new ReaderSettings(store, SERIES).saveSpeedFor("all");
+
+  expect([
+    new ReaderSettings(store, SERIES).speedSavedFor,
+    new ReaderSettings(store, OTHER_SERIES).speedSavedFor,
+  ]).toEqual(["all", "series"]);
+});
+
+test("leaves a series with no look of its own unsaved when every series' speed changes", () => {
+  const store = memoryStore();
+  const settings = new ReaderSettings(store, SERIES);
+  settings.saveSpeedFor("all");
+
+  settings.changeSpeed(4);
+
+  expect(store.values.has(`omnileaf.readerSettings.series.${SERIES}`)).toBe(
+    false,
+  );
+});
+
+test("goes back to every series' speed with Use the default", () => {
+  const store = memoryStore();
+  const settings = new ReaderSettings(store, SERIES);
+  settings.applyTo("series");
+  settings.changeSpeed(8);
+
+  settings.useDefaultSpeed();
+
+  expect([settings.speed, new ReaderSettings(store, SERIES).speed]).toEqual([
+    3, 3,
+  ]);
+});
+
+test("reads a series' stored speed outside 1 to 12 as none", () => {
+  const store = memoryStore();
+  store.values.set(
+    "omnileaf.readerSettings.all",
+    JSON.stringify({ screensPerMinute: 5 }),
+  );
+  store.values.set(
+    `omnileaf.readerSettings.series.${SERIES}`,
+    JSON.stringify({ screensPerMinute: 13 }),
+  );
+
+  const settings = new ReaderSettings(store, SERIES);
+
+  expect(settings.speed).toBe(5);
+});
+
+test("offers every series' speed as the default while the series has its own", () => {
+  const store = memoryStore();
+  new ReaderDefaults(store).change("screensPerMinute", 6);
+  const settings = new ReaderSettings(store, SERIES);
+
+  settings.changeSpeed(2);
+
+  expect([settings.speed, settings.defaultSpeed]).toEqual([2, 6]);
+});

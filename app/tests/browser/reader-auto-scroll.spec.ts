@@ -1,6 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { FakeBackend } from "./fake-backend.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
@@ -10,15 +9,14 @@ import {
   test,
 } from "./fixtures.ts";
 import {
-  BOOK_ID,
   BOOK_SERIES_ID,
-  NOT_STARTED,
-  readerBackend,
-  readerBook,
-  servePages,
+  openLongStrip,
+  tallStripBackend,
 } from "./reader-book.ts";
 
 const LOOK_KEY = "omnileaf.readerSettings.all";
+const SERIES_LOOK_KEY = `omnileaf.readerSettings.series.${BOOK_SERIES_ID}`;
+const SECONDS_PER_PAGE = 60;
 const HALF_A_MINUTE_MS = 30_000;
 const FOUR_SECONDS_MS = 4000;
 const SIX_SECONDS_MS = 6000;
@@ -34,40 +32,9 @@ const SMALLEST_IPHONE_WIDTH = 375;
 const VERY_LARGE_TEXT_SCALE = 3;
 const ANDROID_SPEED_BUTTON_PX = 40;
 
-function tallPages(secondsPerPage: number | null): FakeBackend {
-  return {
-    ...readerBackend(DEFAULT_BACKEND),
-    openBook: () => {
-      const book = readerBook(NOT_STARTED);
-      return {
-        ...book,
-        secondsPerPage,
-        pages: book.pages.map((page) => ({
-          ...page,
-          size: { width: 800, height: 2400 },
-        })),
-      };
-    },
-  };
-}
-
 async function openStrip(page: Page, look: object = {}): Promise<void> {
   await page.clock.install();
-  await page.addInitScript(
-    ({ series, lookKey, lookValue }) => {
-      localStorage.setItem(`omnileaf.stripFound.${series}`, "seen");
-      localStorage.setItem("omnileaf.readerGuide.strip", "seen");
-      localStorage.setItem(lookKey, lookValue);
-    },
-    {
-      series: BOOK_SERIES_ID,
-      lookKey: LOOK_KEY,
-      lookValue: JSON.stringify(look),
-    },
-  );
-  await servePages(page);
-  await page.goto(`/read/${BOOK_ID}`);
-  await expect(page.locator("[data-strip]")).toBeVisible();
+  await openLongStrip(page, { [LOOK_KEY]: JSON.stringify(look) });
 }
 
 function bar(page: Page): Locator {
@@ -169,7 +136,7 @@ async function sizesOf(parts: readonly Locator[]): Promise<number[][]> {
 }
 
 test.describe("at a set speed", () => {
-  test.use({ backend: tallPages(null) });
+  test.use({ backend: tallStripBackend(DEFAULT_BACKEND) });
 
   test("scrolls a fifth of a screen in four seconds at 3 screens a minute", async ({
     page,
@@ -228,10 +195,13 @@ test.describe("at a set speed", () => {
 
     await expect(bar(page)).toContainText("2 screens a minute");
     const stored = await page.evaluate(
-      (key) => localStorage.getItem(key),
-      LOOK_KEY,
+      (keys) => keys.map((key) => localStorage.getItem(key) ?? "{}"),
+      [LOOK_KEY, SERIES_LOOK_KEY],
     );
-    expect(JSON.parse(stored ?? "{}")).toMatchObject({ screensPerMinute: 2 });
+    expect(stored.map((look) => JSON.parse(look) as object)).toEqual([
+      {},
+      { screensPerMinute: 2 },
+    ]);
   });
 
   test("keeps scrolling with reduced motion, since you started it", async ({
@@ -367,7 +337,7 @@ test.describe(
   "the Android phone's floating toolbar",
   { tag: "@native" },
   () => {
-    test.use({ backend: tallPages(null) });
+    test.use({ backend: tallStripBackend(DEFAULT_BACKEND) });
 
     test("leads with the round Pause, then the readout, then Slower and Faster", async ({
       page,
@@ -750,7 +720,7 @@ test.describe(
 );
 
 test.describe("once the library knows the reading speed", () => {
-  test.use({ backend: tallPages(60) });
+  test.use({ backend: tallStripBackend(DEFAULT_BACKEND, SECONDS_PER_PAGE) });
 
   test("scrolls at my pace once it's chosen", async ({ page }) => {
     await openStrip(page, { autoScrollSpeed: "myPace" });
@@ -781,10 +751,7 @@ test.describe("once the library knows the reading speed", () => {
 
 test.describe("on an Android phone", () => {
   test.use({
-    backend: {
-      ...onPlatform("android").backend,
-      openBook: tallPages(60).openBook,
-    },
+    backend: tallStripBackend(onPlatform("android").backend, SECONDS_PER_PAGE),
   });
 
   test("says it runs at my pace, and to tap Play once paused", async ({
@@ -803,12 +770,7 @@ test.describe("on an Android phone", () => {
 });
 
 test.describe("on an iPhone", () => {
-  test.use({
-    backend: {
-      ...onPlatform("ios").backend,
-      openBook: tallPages(null).openBook,
-    },
-  });
+  test.use({ backend: tallStripBackend(onPlatform("ios").backend) });
 
   test("keeps its toolbar up while it runs", async ({ page }) => {
     await openStrip(page);
@@ -821,7 +783,7 @@ test.describe("on an iPhone", () => {
 });
 
 test.describe("its settings", () => {
-  test.use({ backend: tallPages(null) });
+  test.use({ backend: tallStripBackend(DEFAULT_BACKEND) });
 
   test("sets the speed and the pause at the end of a book in the long strip's Reading settings", async ({
     page,

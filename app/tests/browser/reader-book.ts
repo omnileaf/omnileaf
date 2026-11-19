@@ -1,4 +1,4 @@
-import type { Page, Route } from "@playwright/test";
+import { expect, type Page, type Route } from "@playwright/test";
 
 import type { PageCrop } from "../../src/lib/ipc/bindings.ts";
 import { type FakeBackend, fakeProtocolRoute } from "./fake-backend.ts";
@@ -151,6 +151,44 @@ export const readerBackend = (
   ...base,
   openBook: () => readerBook(opening),
 });
+
+const TALL_PAGE = { width: 800, height: 2400 } as const;
+
+export const tallStripBook = (secondsPerPage: number | null = null) => {
+  const book = readerBook(NOT_STARTED);
+  return {
+    ...book,
+    secondsPerPage,
+    pages: book.pages.map((page) => ({ ...page, size: TALL_PAGE })),
+  };
+};
+
+export const tallStripBackend = (
+  base: FakeBackend,
+  secondsPerPage: number | null = null,
+): FakeBackend => ({
+  ...base,
+  openBook: () => tallStripBook(secondsPerPage),
+});
+
+export async function openLongStrip(
+  page: Page,
+  stored: Record<string, string> = {},
+): Promise<void> {
+  await page.addInitScript(
+    ({ series, entries }) => {
+      localStorage.setItem(`omnileaf.stripFound.${series}`, "seen");
+      localStorage.setItem("omnileaf.readerGuide.strip", "seen");
+      for (const [key, value] of Object.entries(entries)) {
+        localStorage.setItem(key, value);
+      }
+    },
+    { series: BOOK_SERIES_ID, entries: stored },
+  );
+  await servePages(page);
+  await page.goto(`/read/${BOOK_ID}`);
+  await expect(page.locator("[data-strip]")).toBeVisible();
+}
 
 export async function pinchTo(page: Page, scale: number): Promise<void> {
   await page.evaluate((pinched) => {

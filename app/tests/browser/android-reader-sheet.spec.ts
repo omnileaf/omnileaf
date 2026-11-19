@@ -8,43 +8,15 @@ import {
   settle,
   test,
 } from "./fixtures.ts";
-import type { FakeBackend } from "./fake-backend.ts";
-import {
-  BOOK_ID,
-  BOOK_SERIES_ID,
-  NOT_STARTED,
-  readerBackend,
-  readerBook,
-  servePages,
-} from "./reader-book.ts";
+import { openLongStrip, tallStripBackend } from "./reader-book.ts";
 
 const ROW_START = 16;
 const TWO_LINE_ROW_PX = 72;
 
-const TALL_PAGES: FakeBackend = {
-  ...readerBackend(DEFAULT_BACKEND),
-  openBook: () => {
-    const book = readerBook(NOT_STARTED);
-    return {
-      ...book,
-      pages: book.pages.map((page) => ({
-        ...page,
-        size: { width: 800, height: 2400 },
-      })),
-    };
-  },
-};
-
-test.use({ backend: TALL_PAGES });
+test.use({ backend: tallStripBackend(DEFAULT_BACKEND) });
 
 async function openStripSettings(page: Page): Promise<void> {
-  await page.addInitScript((series) => {
-    localStorage.setItem(`omnileaf.stripFound.${series}`, "seen");
-    localStorage.setItem("omnileaf.readerGuide.strip", "seen");
-  }, BOOK_SERIES_ID);
-  await servePages(page);
-  await page.goto(`/read/${BOOK_ID}`);
-  await expect(page.locator("[data-strip]")).toBeVisible();
+  await openLongStrip(page);
   await page
     .getByRole("button", { name: "Reading settings", exact: true })
     .click();
