@@ -15,8 +15,9 @@ use omnileaf_db::{
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookFileToRemove, BookListing, BookToRead, Cover,
         LibraryRoot, NewRoot, PageDimensions, PageRequest, PageSize, PlaceInSeries,
-        RelatedSeriesWanted, RootId, RootKind, RootLocator, TreeUri, add_root, book_bookmarks,
-        book_to_read, bookmarked_roots, category_series_count, category_series_page, cover_file,
+        RelatedSeriesWanted, RootId, RootKind, RootLocator, SeriesOverview as StoredOverview,
+        TreeUri, add_root, book_bookmarks, book_to_read, bookmarked_roots, category_series_count,
+        category_series_page, cover_file, emptied_series_place,
         filter_choices as stored_filter_choices, folder_group_series_count,
         folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
@@ -39,9 +40,10 @@ use omnileaf_db::{
     library_listing::{library_listing, set_library_listing},
     library_tabs::{TabPlace, library_tabs, set_library_tabs},
     library_view::{library_view, set_library_view},
+    rusqlite::Connection,
     store::{Changed, Clock, Store, series_edits},
 };
-use omnileaf_formats::LocalStorage;
+use omnileaf_formats::{Details, LocalStorage};
 use tokio::{
     sync::{Mutex, MutexGuard, broadcast, watch},
     task::spawn_blocking,
@@ -147,6 +149,23 @@ pub struct Library {
 struct RootFiles {
     storage: Arc<dyn omnileaf_formats::Storage>,
     folder: PathBuf,
+}
+
+impl RootFiles {
+    fn nearest_folder(&self, folder: &Path) -> PathBuf {
+        folder
+            .ancestors()
+            .find(|candidate| self.holds_folder(candidate))
+            .unwrap_or_else(|| Path::new(""))
+            .to_path_buf()
+    }
+
+    fn holds_folder(&self, folder: &Path) -> bool {
+        matches!(
+            self.storage.details(&self.folder.join(folder)),
+            Ok(Details::Folder { .. })
+        )
+    }
 }
 
 #[derive(Clone, Copy, Default)]
@@ -870,7 +889,6 @@ impl Library {
             .await?)
     }
 
-    /// Fails with [`LibraryError::SeriesNotFound`] for a series the library doesn't show, being missing or empty of books.
     pub async fn series_overview(&self, id: SeriesId) -> Result<SeriesOverview, LibraryError> {
         self.save_reading_before_reading().await;
         let series = id.0;
@@ -949,15 +967,15 @@ impl Library {
         id: SeriesId,
         edits: DetailEdits,
     ) -> Result<(), LibraryError> {
-        let series = id.0;
-        let is_shown = self
+        let holds_books = self
             .store
             .database()
-            .read(move |connection| Ok(series_overview(connection, series)?.is_some()))
+            .read(move |connection| Ok(overview_with_books(connection, id)?.is_some()))
             .await?;
-        if !is_shown {
+        if !holds_books {
             return Err(LibraryError::SeriesNotFound { id });
         }
+        let series = id.0;
         let edits = edits.stored();
         Ok(self
             .store
@@ -971,7 +989,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let Some(overview) = series_overview(connection, series)? else {
+                let Some(overview) = overview_with_books(connection, id)? else {
                     return Ok(None);
                 };
                 Ok(Some((
@@ -1550,37 +1568,39 @@ impl Library {
             .await?)
     }
 
-    /// The file of a series' first book, to show in its folder; none for a series without books, or one in a folder only Android's documents provider can read.
-    pub async fn series_file(&self, id: SeriesId) -> Result<Option<PathBuf>, LibraryError> {
-        Ok(self
-            .first_book_to_read(id)
-            .await?
-            .as_ref()
-            .and_then(file_to_show))
+    pub async fn series_shown(&self, id: SeriesId) -> Result<Option<SeriesShown>, LibraryError> {
+        Ok(self.series_place(id).await?.map(SeriesPlace::shown))
     }
 
-    async fn first_book_to_read(&self, id: SeriesId) -> Result<Option<BookToRead>, LibraryError> {
-        Ok(self
+    async fn series_place(&self, id: SeriesId) -> Result<Option<SeriesPlace>, LibraryError> {
+        let stored = self
             .store
             .database()
             .read(move |connection| {
-                let request = PageRequest {
-                    after: None,
-                    size: PageSize::try_from(1)?,
-                };
-                let page = series_books(connection, id.0, BookListing::IN_ORDER, &request)?;
-                page.items
-                    .first()
-                    .map_or(Ok(None), |book| book_to_read(connection, book.id))
+                if let Some(book) = first_book_to_read(connection, id)? {
+                    return Ok(Some(SeriesPlace::Book(book)));
+                }
+                Ok(emptied_folder(connection, id)?.map(SeriesPlace::Emptied))
             })
-            .await?)
+            .await?;
+        Ok(match stored {
+            Some(SeriesPlace::Emptied(emptied)) => Some(SeriesPlace::Emptied(
+                self.nearest_folder_left(emptied).await?,
+            )),
+            other => other,
+        })
     }
 
-    pub async fn series_in_android_tree(
+    async fn nearest_folder_left(
         &self,
-        id: SeriesId,
-    ) -> Result<Option<ShownInTree>, LibraryError> {
-        Ok(self.first_book_to_read(id).await?.and_then(shown_in_tree))
+        emptied: EmptiedFolder,
+    ) -> Result<EmptiedFolder, LibraryError> {
+        let Some(files) = self.files_of(&emptied.root) else {
+            return Ok(emptied);
+        };
+        let EmptiedFolder { root, folder } = emptied;
+        let folder = spawn_blocking(move || files.nearest_folder(&folder)).await?;
+        Ok(EmptiedFolder { root, folder })
     }
 
     /// The file of a book, to show in its folder; none for a book the library lacks, or one in a folder only Android's documents provider can read.
@@ -2540,24 +2560,102 @@ impl From<omnileaf_db::Error> for LibraryError {
     }
 }
 
+fn overview_with_books(
+    connection: &Connection,
+    id: SeriesId,
+) -> Result<Option<StoredOverview>, omnileaf_db::Error> {
+    Ok(series_overview(connection, id.0)?.filter(StoredOverview::holds_books))
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ShownInTree {
     pub tree: AndroidTree,
     pub folder: PathBuf,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ShownOnDisk {
+    File(PathBuf),
+    Folder(PathBuf),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SeriesShown {
+    Tree(ShownInTree),
+    Disk(ShownOnDisk),
+}
+
+enum SeriesPlace {
+    Book(BookToRead),
+    Emptied(EmptiedFolder),
+}
+
+impl SeriesPlace {
+    fn shown(self) -> SeriesShown {
+        match self {
+            Self::Book(book) => match book.root {
+                RootLocator::AndroidTree(tree) => SeriesShown::Tree(ShownInTree {
+                    tree,
+                    folder: folder_holding(&book.location),
+                }),
+                root @ (RootLocator::Path(_) | RootLocator::AppleBookmark { .. }) => {
+                    SeriesShown::Disk(ShownOnDisk::File(root_folder(&root).join(&book.location)))
+                }
+            },
+            Self::Emptied(EmptiedFolder { root, folder }) => match root {
+                RootLocator::AndroidTree(tree) => SeriesShown::Tree(ShownInTree { tree, folder }),
+                root @ (RootLocator::Path(_) | RootLocator::AppleBookmark { .. }) => {
+                    SeriesShown::Disk(ShownOnDisk::Folder(root_folder(&root).join(folder)))
+                }
+            },
+        }
+    }
+}
+
+struct EmptiedFolder {
+    root: RootLocator,
+    folder: PathBuf,
+}
+
+fn first_book_to_read(
+    connection: &Connection,
+    id: SeriesId,
+) -> Result<Option<BookToRead>, omnileaf_db::Error> {
+    let request = PageRequest {
+        after: None,
+        size: PageSize::try_from(1)?,
+    };
+    let page = series_books(connection, id.0, BookListing::IN_ORDER, &request)?;
+    page.items
+        .first()
+        .map_or(Ok(None), |book| book_to_read(connection, book.id))
+}
+
+fn emptied_folder(
+    connection: &Connection,
+    id: SeriesId,
+) -> Result<Option<EmptiedFolder>, omnileaf_db::Error> {
+    let Some(place) = emptied_series_place(connection, id.0)? else {
+        return Ok(None);
+    };
+    Ok(Some(EmptiedFolder {
+        root: library_root(connection, place.root)?.locator,
+        folder: place.folder,
+    }))
+}
+
 fn shown_in_tree(found: BookToRead) -> Option<ShownInTree> {
     match found.root {
         RootLocator::AndroidTree(tree) => Some(ShownInTree {
             tree,
-            folder: found
-                .location
-                .parent()
-                .map(Path::to_path_buf)
-                .unwrap_or_default(),
+            folder: folder_holding(&found.location),
         }),
         RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => None,
     }
+}
+
+fn folder_holding(location: &Path) -> PathBuf {
+    location.parent().map(Path::to_path_buf).unwrap_or_default()
 }
 
 fn file_to_show(book: &BookToRead) -> Option<PathBuf> {

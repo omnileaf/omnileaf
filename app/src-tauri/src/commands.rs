@@ -15,8 +15,8 @@ use omnileaf_engine::{
     PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary,
     ReadingWeek, RemovalPreview, RemovalReport, RemovalTarget, ReportCode, ResourceRouter,
     RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
-    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SeriesVolume,
-    SpellingSuggestion, StorageUse, UtcOffset, WriterCursor, WriterPage,
+    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SeriesShown, SeriesVolume,
+    ShownOnDisk, SpellingSuggestion, StorageUse, UtcOffset, WriterCursor, WriterPage,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -1643,13 +1643,14 @@ async fn show_series_in_folder(
     library: State<'_, Library>,
     series: SeriesId,
 ) -> Result<(), IpcError> {
-    if let Some(shown) = library.series_in_android_tree(series).await? {
-        return show_tree_folder(&app, &shown).await;
-    }
-    let Some(file) = library.series_file(series).await? else {
+    let Some(shown) = library.series_shown(series).await? else {
         return Err(LibraryError::SeriesNotFound { id: series }.into());
     };
-    show_in_file_manager(&app, &file)
+    match shown {
+        SeriesShown::Tree(in_tree) => show_tree_folder(&app, &in_tree).await,
+        SeriesShown::Disk(ShownOnDisk::File(file)) => show_in_file_manager(&app, &file),
+        SeriesShown::Disk(ShownOnDisk::Folder(folder)) => open_in_file_manager(&app, &folder),
+    }
 }
 
 #[tauri::command]
@@ -1706,9 +1707,22 @@ async fn show_tree_folder(
 
 #[cfg(target_os = "ios")]
 fn show_in_file_manager(app: &AppHandle, file: &std::path::Path) -> Result<(), IpcError> {
-    let url = crate::files_app::folder_url(file).ok_or_else(|| {
+    let url = crate::files_app::containing_folder_url(file).ok_or_else(|| {
         IpcError::file_manager_unavailable(&std::io::Error::other("the file has no folder"))
     })?;
+    open_in_files(app, url)
+}
+
+#[cfg(target_os = "ios")]
+fn open_in_file_manager(app: &AppHandle, folder: &std::path::Path) -> Result<(), IpcError> {
+    let url = crate::files_app::folder_url(folder).ok_or_else(|| {
+        IpcError::file_manager_unavailable(&std::io::Error::other("the folder has no link"))
+    })?;
+    open_in_files(app, url)
+}
+
+#[cfg(target_os = "ios")]
+fn open_in_files(app: &AppHandle, url: String) -> Result<(), IpcError> {
     app.opener()
         .open_url(url, None::<&str>)
         .map_err(|error| IpcError::file_manager_unavailable(&error))
@@ -1718,6 +1732,16 @@ fn show_in_file_manager(app: &AppHandle, file: &std::path::Path) -> Result<(), I
 fn show_in_file_manager(app: &AppHandle, file: &std::path::Path) -> Result<(), IpcError> {
     app.opener()
         .reveal_item_in_dir(file)
+        .map_err(|error| IpcError::file_manager_unavailable(&error))
+}
+
+#[cfg(not(target_os = "ios"))]
+fn open_in_file_manager(app: &AppHandle, folder: &std::path::Path) -> Result<(), IpcError> {
+    let folder = folder.to_str().ok_or_else(|| {
+        IpcError::file_manager_unavailable(&std::io::Error::other("the folder's path is not text"))
+    })?;
+    app.opener()
+        .open_path(folder, None::<&str>)
         .map_err(|error| IpcError::file_manager_unavailable(&error))
 }
 

@@ -130,6 +130,7 @@
     }),
   );
   const foundId = $derived(found?.overview.id);
+  const holdsBooks = $derived((found?.overview.bookCount ?? 0) > 0);
 
   function volumePage(volume: number): ResolvedPathname {
     return resolve("/(app)/series/[id]/volume/[volume]", {
@@ -397,7 +398,7 @@
             isLabelling = true;
           }
         : undefined}
-      onEditDetails={keepsDetailEdits && found !== undefined
+      onEditDetails={keepsDetailEdits && holdsBooks
         ? editDetailsFromMenu
         : undefined}
       showFolder={{
