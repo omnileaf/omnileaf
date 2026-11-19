@@ -6,6 +6,7 @@
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
   import ProjectLinkRows from "#lib/about/ProjectLinkRows.svelte";
   import RowText from "#lib/about/RowText.svelte";
+  import UpdateCheckRow from "#lib/about/UpdateCheckRow.svelte";
   import { Bug, FileText, Info, Send } from "@lucide/svelte";
 
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
@@ -17,6 +18,10 @@
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+  import {
+    offersUpdateCheck,
+    updateCheckForApp,
+  } from "#lib/updates/update-check.svelte.ts";
   import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
   import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -37,6 +42,7 @@
   const opening = new LinkOpening(commands.openProjectLink);
 
   const yourReports = yourReportsForDocument();
+  const updateCheck = updateCheckForApp();
   const built = builtOn(import.meta.env.VITE_BUILD_DATE);
   const versionLine = $derived(
     built === undefined
@@ -113,6 +119,9 @@
             GROUP_PLATE,
           ]}
     >
+      {#if offersUpdateCheck(data.appInfo)}
+        <UpdateCheckRow checking={updateCheck} {look} />
+      {/if}
       <AboutPageRow
         route="/(app)/settings/about/report"
         icon={Bug}
