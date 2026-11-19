@@ -64,6 +64,7 @@
   import { seriesBookCommands } from "#lib/series/series-book-commands.ts";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
   import SeriesNotConnectedCard from "#lib/series/SeriesNotConnectedCard.svelte";
+  import { partlyConnectedWording } from "#lib/series/partly-connected.ts";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
   import { showFolderLabel, showSeriesFolder } from "#lib/page/show-file.ts";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
@@ -169,6 +170,28 @@
     () => listed,
   );
   const books = $derived(listedBooks.pages);
+  const loadedBooks = $derived(
+    books?.list.kind === "loaded"
+      ? screenshotMode.isOn
+        ? books.list.items.map(standInBook)
+        : books.list.items
+      : [],
+  );
+  const partlyAway = $derived.by(() => {
+    const connection = found?.overview.connection;
+    if (
+      !isAndroidPhone ||
+      overview === undefined ||
+      connection?.kind !== "partlyConnected"
+    ) {
+      return undefined;
+    }
+    return partlyConnectedWording({
+      awayCount: connection.booksNotConnected,
+      bookCount: overview.bookCount,
+      loaded: loadedBooks,
+    });
+  });
 
   function choose(change: ListingChange): void {
     chosen = { id: data.id, change: { ...chosenHere, ...change } };
@@ -484,11 +507,18 @@
         {:else}
           {#if isNotConnected}
             <SeriesNotConnectedCard
-              title={overview.title}
+              title={m.series_not_connected_title({ title: overview.title })}
+              body={m.series_not_connected_body()}
               onFind={findFolder}
               onCheckAgain={() => {
                 void checkAgain();
               }}
+            />
+          {:else if partlyAway !== undefined}
+            <SeriesNotConnectedCard
+              title={partlyAway.title}
+              body={partlyAway.body}
+              onFind={findFolder}
             />
           {/if}
           <ContinueCard
@@ -522,9 +552,7 @@
                   <p class="text-body text-muted">{m.series_books_failed()}</p>
                 {:else if books?.list.kind === "loaded"}
                   <SeriesBooks
-                    books={screenshotMode.isOn
-                      ? books.list.items.map(standInBook)
-                      : books.list.items}
+                    books={loadedBooks}
                     {sections}
                     seriesTitle={overview.title}
                     heading={seriesBooksHeading(found.overview)}

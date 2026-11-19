@@ -1606,6 +1606,75 @@
   "series_not_connected_body": "Its folder or drive may be disconnected. You can still change its reading state and tags. Your reading progress is safe.",
   "series_check_again": "Check again",
   "series_still_not_connected": "Still not connected",
+  "series_partly_connected_title": [
+    {
+      "declarations": [
+        "input count",
+        "input total",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number",
+        "local formattedTotal = total: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} of {formattedTotal} books isn’t connected",
+        "countPlural=other": "{formattedCount} of {formattedTotal} books aren’t connected"
+      }
+    }
+  ],
+  "series_away_volumes": [
+    {
+      "declarations": [
+        "input count",
+        "input volumes",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Volume {volumes} is on a drive that is not there.",
+        "countPlural=other": "Volumes {volumes} are on a drive that is not there."
+      }
+    }
+  ],
+  "series_away_named": [
+    {
+      "declarations": [
+        "input count",
+        "input names",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{names} is on a drive that is not there.",
+        "countPlural=other": "{names} are on a drive that is not there."
+      }
+    }
+  ],
+  "series_away_unnamed": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "It’s on a drive that is not there.",
+        "countPlural=other": "They’re on a drive that is not there."
+      }
+    }
+  ],
+  "series_away_others": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "The other book opens as usual.",
+        "countPlural=other": "The other {formattedCount} open as usual."
+      }
+    }
+  ],
+  "series_progress_safe": "Your reading progress is safe.",
   "series_back": "Library",
   "series_back_label": "Back to the library",
   "series_breadcrumb": "Breadcrumb",

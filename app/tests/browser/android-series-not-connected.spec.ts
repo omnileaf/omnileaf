@@ -68,7 +68,7 @@ test.use({ backend: awayShelf() });
 
 function card(page: Page): Locator {
   return page
-    .getByRole("status")
+    .locator('[data-slot="alert"]')
     .filter({ hasText: `${SERIES_TITLE} isn’t connected` });
 }
 
@@ -187,5 +187,85 @@ test.describe(
         expect(await accessibilityViolations(page)).toEqual([]);
       });
     }
+  },
+);
+
+const PARTLY = new FakeShelf([READ, UNREAD, UNREAD, UNREAD]);
+for (const book of PARTLY.books.slice(2)) {
+  book.file = { kind: "notConnected" };
+}
+
+test.describe(
+  "a series that is partly connected on an Android phone",
+  { tag: "@native" },
+  () => {
+    const shelf = PARTLY.backend();
+    test.use({
+      backend: {
+        ...shelf,
+        seriesOverview: async (id) => ({
+          ...(await shelf.seriesOverview(id)),
+          connection: { kind: "partlyConnected", booksNotConnected: 2 },
+        }),
+        seriesMissingFolder: (id) => {
+          asked.push(`series ${id}`);
+          return FOLDER;
+        },
+        relocateLibraryFolder: (id) => {
+          asked.push(`relocate ${id}`);
+          return null;
+        },
+      },
+    });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's Not connected look");
+      asked = [];
+    });
+
+    function partlyCard(page: Page): Locator {
+      return page
+        .locator('[data-slot="alert"]')
+        .filter({ hasText: "2 of 4 books aren’t connected" });
+    }
+
+    test("names the books that aren't connected and offers only Find the folder", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES_ID}`);
+
+      await expect(partlyCard(page)).toContainText(
+        `${PARTLY.titleOf(2)} and ${PARTLY.titleOf(3)} are on a drive that is not there. The other 2 open as usual. Your reading progress is safe.`,
+      );
+      await expect(partlyCard(page).getByRole("button")).toHaveText([
+        "Find the folder",
+      ]);
+    });
+
+    test("finds the folder from the card and still continues from a book that is there", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES_ID}`);
+
+      await partlyCard(page)
+        .getByRole("button", { name: "Find the folder" })
+        .click();
+
+      await expect
+        .poll(() => asked)
+        .toEqual([`series ${SERIES_ID}`, `relocate ${FOLDER.folder.id}`]);
+      await expect(
+        page.getByRole("link", { name: new RegExp(PARTLY.titleOf(1)) }).first(),
+      ).toBeVisible();
+    });
+
+    test("leaves the cover and count line as they are", async ({ page }) => {
+      await page.goto(`/series/${SERIES_ID}`);
+      await expect(partlyCard(page)).toBeVisible();
+
+      await expect(
+        page.getByRole("img", { name: `Cover of ${SERIES_TITLE}` }),
+      ).toHaveCSS("opacity", "1");
+    });
   },
 );
