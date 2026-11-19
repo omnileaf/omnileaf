@@ -54,6 +54,7 @@ test.describe(
         /^\s*Mark read$/,
         /^\s*Bookmark$/,
         /^\s*Select$/,
+        /^\s*Show the file$/,
         /^\s*Delete$/,
       ]);
     });

@@ -731,6 +731,7 @@
             askToRemoveBooks([book]);
           }
         : undefined}
+      onShowFile={phonePlatform === "android" ? onShowInFolder : undefined}
       onSwiped={(
         book: SeriesBook,
         read: ReadMark,
