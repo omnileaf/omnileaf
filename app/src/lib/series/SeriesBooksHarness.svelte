@@ -43,6 +43,8 @@
     onRemoveBookmarks={() => Promise.resolve(true)}
     onRemove={() => Promise.resolve(undefined)}
     onShowInFolder={() => undefined}
+    onNotConnected={() => undefined}
+    onFindFolder={() => undefined}
     {platform}
   />
 </main>

@@ -156,8 +156,8 @@
     onRemoveBookmarks: SeriesBookCommands["removeBookmarks"];
     onRemove: SeriesBookCommands["remove"];
     onShowInFolder: SeriesBookCommands["showFile"];
-    onNotConnected?: ((book: SeriesBook) => void) | undefined;
-    onFindFolder?: ((book: SeriesBook) => void) | undefined;
+    onNotConnected: (book: SeriesBook) => void;
+    onFindFolder: (book: SeriesBook) => void;
     platform: Platform;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
     controls?: BooksControls;

@@ -1,5 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
+import type { MissingFolder, SeriesBook } from "../../src/lib/ipc/bindings.ts";
+
 import {
   sampleBookId,
   sampleSeriesId,
@@ -478,6 +480,127 @@ test.describe(
         /^\s*Volume 1\s*Read\s*$/,
         /^\s*Volume 2\s*Read\s*$/,
       ]);
+    });
+  },
+);
+
+const AWAY_FOLDER: MissingFolder = {
+  folder: {
+    id: "0190a3e4-0000-7000-8000-0000000000f1" as MissingFolder["folder"]["id"],
+    kind: "linked",
+    name: "Comics",
+    location: "/storage/1A2B-3C4D/Comics",
+    isAvailable: false,
+  },
+  problem: { kind: "driveDisconnected" },
+  hiddenSeries: 0,
+  isShownAnyway: true,
+};
+
+let askedAway: string[] = [];
+
+function awayBook<Book extends { file: SeriesBook["file"] }>(book: Book): Book {
+  return { ...book, file: { kind: "notConnected" } };
+}
+
+function awayVolumeBackend(): FakeBackend {
+  const sample = sampleLibraryOn("android");
+  return {
+    ...sample,
+    seriesBooks: async (series, listing, after) => {
+      const page = await sample.seriesBooks(series, listing, after);
+      return { ...page, books: page.books.map(awayBook) };
+    },
+    seriesVolume: async (series, volume) => {
+      const found = await sample.seriesVolume(series, volume);
+      return found === null
+        ? null
+        : {
+            ...found,
+            upNext: found.upNext === null ? null : awayBook(found.upNext),
+          };
+    },
+    bookMissingFolder: (id) => {
+      askedAway.push(`book ${id}`);
+      return AWAY_FOLDER;
+    },
+    relocateLibraryFolder: (id) => {
+      askedAway.push(`relocate ${id}`);
+      return null;
+    },
+  };
+}
+
+function awayNotice(page: Page, title: string): Locator {
+  return page
+    .getByRole("listitem")
+    .filter({ has: page.getByText(title, { exact: true }) });
+}
+
+test.describe(
+  "A volume's page on an Android phone whose chapters aren't connected",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: awayVolumeBackend() });
+
+    test.beforeEach(async ({ page, platform }) => {
+      test.skip(platform !== "android", "Android phones' volume page");
+      askedAway = [];
+      await serveSampleArt(page);
+    });
+
+    test("says why instead of opening a chapter that isn't connected", async ({
+      page,
+    }) => {
+      await page.goto(VOLUME_PAGE);
+
+      await chapterRows(page)
+        .filter({ hasText: CHAPTER_SEVEN })
+        .getByRole("button", { name: new RegExp(`^${CHAPTER_SEVEN}`) })
+        .click();
+
+      await expect(
+        awayNotice(page, `${CHAPTER_SEVEN} isn’t connected`),
+      ).toContainText("It can’t be opened until its folder or drive is back.");
+      expect(new URL(page.url()).pathname).toBe(VOLUME_PAGE);
+    });
+
+    test("turns Continue into Find the folder for the chapter up next", async ({
+      page,
+    }) => {
+      await page.goto(VOLUME_PAGE);
+
+      await page
+        .getByRole("button", {
+          name: "Find the folder for Volume 2 · Chapter 6",
+        })
+        .click();
+
+      await expect
+        .poll(() => askedAway)
+        .toEqual([
+          `book ${sampleBookId(21, 6)}`,
+          `relocate ${AWAY_FOLDER.folder.id}`,
+        ]);
+    });
+
+    test("finds a chapter's folder from its sheet", async ({ page }) => {
+      await page.goto(VOLUME_PAGE);
+      await page
+        .getByRole("button", { name: `More for ${CHAPTER_SEVEN}` })
+        .click();
+
+      await page
+        .getByRole("dialog", { name: CHAPTER_SEVEN })
+        .getByRole("button", { name: "Find the folder" })
+        .click();
+
+      await expect
+        .poll(() => askedAway)
+        .toEqual([
+          `book ${sampleBookId(21, 7)}`,
+          `relocate ${AWAY_FOLDER.folder.id}`,
+        ]);
     });
   },
 );

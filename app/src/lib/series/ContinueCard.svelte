@@ -37,7 +37,7 @@
     cover: ShownCover;
     coverUrl: CoverUrl;
     isWide: boolean;
-    onFind?: ((book: SeriesBook) => void) | undefined;
+    onFind: (book: SeriesBook) => void;
   } = $props();
 
   const NO_COVER_ICON_SIZE = 24;
