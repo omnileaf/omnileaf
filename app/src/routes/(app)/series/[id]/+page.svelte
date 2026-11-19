@@ -11,6 +11,7 @@
     commands,
     type Platform,
     type ReadMark,
+    type SeriesBook,
     type SeriesBookListing,
     type SeriesDetails,
     type SeriesOverview,
@@ -35,6 +36,7 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
   import { checkFolderAgain } from "#lib/library/folder-check.ts";
+  import { noticeNotConnected } from "#lib/library/missing-folder-notices.ts";
   import { noticingFolderFinder } from "#lib/library/noticing-folder-finder.ts";
   import {
     rescanEveryFolder,
@@ -211,6 +213,16 @@
     if (foundId !== undefined) {
       void folderFinder.findFrom(commands.seriesMissingFolder(foundId));
     }
+  }
+
+  function findBookFolder(book: SeriesBook): void {
+    void folderFinder.findFrom(commands.bookMissingFolder(book.id));
+  }
+
+  function sayBookNotConnected(book: SeriesBook): void {
+    noticeNotConnected(notices, book.title, () => {
+      findBookFolder(book);
+    });
   }
 
   async function checkAgain(): Promise<void> {
@@ -485,6 +497,7 @@
             {cover}
             {coverUrl}
             isWide={isWide.current}
+            onFind={findBookFolder}
           />
           {#key foundId}
             <SeriesSections
@@ -527,6 +540,7 @@
                     onRemoveBookmarks={bookCommands.removeBookmarks}
                     onRemove={bookCommands.remove}
                     onShowInFolder={bookCommands.showFile}
+                    onNotConnected={sayBookNotConnected}
                     platform={data.appInfo.platform}
                     onPickedCount={(count: number | undefined) => {
                       pickedCount = count;

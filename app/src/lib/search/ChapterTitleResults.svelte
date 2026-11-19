@@ -89,7 +89,7 @@
             </span>
           </button>
           <RowActionButton
-            label={m.search_find_folder_for({ title: hit.seriesTitle })}
+            label={m.missing_find_folder_for({ title: hit.seriesTitle })}
             tooltip={m.missing_find_folder()}
             onclick={() => {
               onFind(hit);

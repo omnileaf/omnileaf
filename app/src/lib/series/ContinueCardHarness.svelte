@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SeriesOverview } from "#lib/ipc/bindings.ts";
+  import type { SeriesBook, SeriesOverview } from "#lib/ipc/bindings.ts";
   import {
     SmartFeatures,
     setSmartFeatures,
@@ -8,7 +8,13 @@
   import { SERIES_CONTINUE_WORDS } from "./continue-card.ts";
   import ContinueCard from "./ContinueCard.svelte";
 
-  let { overview }: { overview: SeriesOverview } = $props();
+  let {
+    overview,
+    onFind = () => undefined,
+  }: {
+    overview: SeriesOverview;
+    onFind?: (book: SeriesBook) => void;
+  } = $props();
 
   setSmartFeatures(new SmartFeatures(undefined));
 </script>
@@ -19,4 +25,5 @@
   cover={{ kind: "none" }}
   coverUrl={() => ""}
   isWide={false}
+  {onFind}
 />

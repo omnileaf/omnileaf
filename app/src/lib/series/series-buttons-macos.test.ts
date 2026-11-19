@@ -77,7 +77,7 @@ function asElement(element: Element): HTMLElement {
 
 test("draws Continue as macOS's 24 point primary button", async () => {
   await onPlatform("macos");
-  await render(ContinueLink, { book: BOOK });
+  await render(ContinueLink, { book: BOOK, onFind: () => undefined });
 
   const link = asElement(page.getByRole("link").element());
   const style = getComputedStyle(link);
@@ -131,7 +131,7 @@ test("keeps Continue, Tags and Mark read as they were on Linux", async () => {
     isWide: true,
     onMarkAll: () => Promise.resolve(),
   });
-  await render(ContinueLink, { book: BOOK });
+  await render(ContinueLink, { book: BOOK, onFind: () => undefined });
 
   expect(
     asElement(

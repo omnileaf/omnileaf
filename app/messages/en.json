@@ -154,6 +154,9 @@
   "missing_hide_again": "Hide them again",
   "missing_show_anyway": "Show them anyway",
   "missing_find_folder": "Find the folder",
+  "missing_not_connected_title": "{title} isn’t connected",
+  "missing_not_connected_body": "It can’t be opened until its folder or drive is back.",
+  "missing_find_folder_for": "Find the folder for {title}",
   "missing_choose_again": "Choose it again",
   "missing_unlink": "Unlink it",
   "missing_sign_in": "Sign in",
@@ -1526,9 +1529,6 @@
       }
     }
   ],
-  "search_not_connected_title": "{title} isn’t connected",
-  "search_not_connected_body": "It can’t be opened until its folder or drive is back.",
-  "search_find_folder_for": "Find the folder for {title}",
   "search_show_all": "Show all",
   "search_series_heading": "Series and books · {count}",
   "search_scope": "Search in",

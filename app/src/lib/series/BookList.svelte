@@ -45,6 +45,7 @@
     readonly more: "menu" | "sheet";
     readonly longPress: "menu" | "pick";
     readonly isSwipeCapsule: boolean;
+    readonly marksNotConnected: boolean;
   }
 
   const PHONE_LISTS: Readonly<Record<PhonePlatform, PhoneList>> = {
@@ -55,6 +56,7 @@
       more: "menu",
       longPress: "menu",
       isSwipeCapsule: true,
+      marksNotConnected: false,
     },
     android: {
       plate: "-ms-page-start -me-page-end",
@@ -63,6 +65,7 @@
       more: "sheet",
       longPress: "pick",
       isSwipeCapsule: false,
+      marksNotConnected: true,
     },
   };
 
@@ -82,6 +85,7 @@
     onRemoveBookmark,
     onDelete,
     onSwiped,
+    onNotConnected,
   }: {
     phone: PhonePlatform | undefined;
     books: readonly SeriesBook[];
@@ -102,6 +106,7 @@
       mark: ReadMark,
       how: "swiped" | "tapped",
     ) => void;
+    onNotConnected?: ((book: SeriesBook) => void) | undefined;
   } = $props();
 
   const phone = $derived(
@@ -359,22 +364,47 @@
             <BookRowText {book} />
           </a>
         {:else}
+          {@const whyAway =
+            phone.marksNotConnected && book.file.kind === "notConnected"
+              ? onNotConnected
+              : undefined}
           <Item
             look="row"
-            class={["self-stretch min-inline-none", ROW_FOCUS_RING]}
+            class={[
+              "self-stretch min-inline-none",
+              ROW_FOCUS_RING,
+              whyAway !== undefined && "text-start",
+            ]}
           >
             {#snippet child({ props })}
-              <a
-                {...props}
-                href={resolve("/read/[book]", { book: book.id })}
-                draggable="false"
-              >
-                <PhoneBookRowText
-                  {book}
-                  progress={phone.progress}
-                  hasTwoLineTitle={hasTwoLineTitles}
-                />
-              </a>
+              {#if whyAway === undefined}
+                <a
+                  {...props}
+                  href={resolve("/read/[book]", { book: book.id })}
+                  draggable="false"
+                >
+                  <PhoneBookRowText
+                    {book}
+                    progress={phone.progress}
+                    hasTwoLineTitle={hasTwoLineTitles}
+                  />
+                </a>
+              {:else}
+                <button
+                  {...props}
+                  type="button"
+                  onclick={() => {
+                    whyAway(book);
+                  }}
+                >
+                  <PhoneBookRowText
+                    {book}
+                    progress={phone.progress}
+                    hasTwoLineTitle={hasTwoLineTitles}
+                    isNotConnected
+                  />
+                </button>
+              {/if}
             {/snippet}
           </Item>
         {/if}
