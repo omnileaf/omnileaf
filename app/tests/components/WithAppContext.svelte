@@ -6,6 +6,12 @@
     setAnimationsSetting,
   } from "#lib/appearance/animations.svelte.ts";
 
+  import { CrashReportSetting } from "#lib/crash-report/choice.svelte.ts";
+  import {
+    CrashReporting,
+    setCrashReporting,
+  } from "#lib/crash-report/crash-reporting.svelte.ts";
+  import { commands } from "#lib/ipc/bindings.ts";
   import {
     setSidebarSetting,
     SidebarSetting,
@@ -34,6 +40,9 @@
 
   setScreenshotMode(untrack(() => screenshotMode));
   setNotices(new Notices());
+  setCrashReporting(
+    new CrashReporting(commands, new CrashReportSetting(undefined)),
+  );
   setNeedsAttention(
     new NeedsAttention(
       {
