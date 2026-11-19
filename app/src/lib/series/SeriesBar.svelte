@@ -5,7 +5,7 @@
   import { cn } from "#lib/components/cn.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
-  import type { ReadMark } from "#lib/ipc/bindings.ts";
+  import type { ReadMark, SeriesOverview } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import {
     currentPlatform,
@@ -16,7 +16,7 @@
   import { backIcon, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { backChip, menuChip } from "./series-chip.ts";
+  import { backChip, type BarPlacement, menuChip } from "./series-chip.ts";
   import SeriesMenu from "./SeriesMenu.svelte";
 
   const BACK_ICON_SIZE = 20;
@@ -32,6 +32,8 @@
     onLabel,
     onEditDetails,
     showFolder,
+    backToSeries,
+    restingPlacement = "band",
   }: {
     title: string | undefined;
     isTitleUnderBar: boolean;
@@ -44,15 +46,25 @@
       readonly label: string;
       readonly onShow: (() => void) | undefined;
     };
+    backToSeries?: Pick<SeriesOverview, "id" | "title"> | undefined;
+    restingPlacement?: BarPlacement;
   } = $props();
 
   const platform = currentPlatform();
+  const back = $derived(
+    backToSeries === undefined
+      ? { href: resolve("/(app)"), label: m.series_back_label() }
+      : {
+          href: resolve("/(app)/series/[id]", { id: backToSeries.id }),
+          label: m.back_to({ page: backToSeries.title }),
+        },
+  );
   const width = new WindowWidth();
   const isNative = $derived(isPhone(platform, width.current));
   const isAndroidPhone = $derived(
     phoneOf(platform, width.current) === "android",
   );
-  const placement = $derived(isTitleUnderBar ? "folded" : "band");
+  const placement = $derived(isTitleUnderBar ? "folded" : restingPlacement);
   const hasTabsAtTop = $derived(hasTopTabBar(platform, width.current));
   const barBlock = $derived.by(() => {
     if (hasTabsAtTop) {
@@ -79,9 +91,9 @@
   ]}
 >
   <a
-    href={resolve("/(app)")}
+    href={back.href}
     data-back-link
-    aria-label={m.series_back_label()}
+    aria-label={back.label}
     class={cn(
       "flex items-center justify-center gap-2xs rounded-full",
       backChip(platform, width.current, placement),
