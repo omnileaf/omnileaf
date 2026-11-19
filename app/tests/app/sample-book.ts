@@ -14,6 +14,8 @@ export const FIRST_SERIES_COVER = xpath(
 );
 
 const GUIDE_TIMEOUT_MS = 3_000;
+const READER_PAGE_COUNT =
+  "//main//span[@data-reader-count or @data-reader-resting-count]";
 const GOT_IT = xpath("//*[@role='note']//button[normalize-space()='Got it']");
 
 export const SHOWS_VOLUMES_AS_COVERS =
@@ -83,13 +85,19 @@ export async function goBackToTheLibrary(session: Session): Promise<void> {
 
 export function shownPageCount(page: number, count: number): Locator {
   return xpath(
-    `//main//span[@data-reader-count][normalize-space()='${String(page)} / ${String(count)}']`,
+    `${READER_PAGE_COUNT}[normalize-space()='${String(page)} / ${String(count)}']`,
+  );
+}
+
+export function pageCountOf(count: number): Locator {
+  return xpath(
+    `${READER_PAGE_COUNT}[contains(normalize-space(), ' / ${String(count)}')]`,
   );
 }
 
 export function pageCounterAt(page: number): Locator {
   return xpath(
-    `//main//span[@data-reader-count][starts-with(normalize-space(), '${String(page)} / ')]`,
+    `${READER_PAGE_COUNT}[starts-with(normalize-space(), '${String(page)} / ')]`,
   );
 }
 

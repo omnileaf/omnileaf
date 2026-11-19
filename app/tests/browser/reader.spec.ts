@@ -707,6 +707,19 @@ test("keeps a small page count on screen while the controls are hidden", async (
   await expect(pageCounts(page, 2)).toHaveCount(1);
 });
 
+test("marks the page count kept on screen while the controls are hidden", async ({
+  page,
+}) => {
+  await openBook(page);
+  const restingCount = page.locator("main [data-reader-resting-count]");
+
+  await page.keyboard.press("ArrowRight");
+
+  await expectControlsHidden(page);
+  await expect(restingCount).toBeVisible();
+  await expect(restingCount).toHaveText(`2 / ${String(PAGE_COUNT)}`);
+});
+
 test("lays the bottom bar out as previous chapter, page count, slider and next chapter", async ({
   page,
 }) => {
