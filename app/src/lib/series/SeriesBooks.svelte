@@ -136,6 +136,7 @@
     onRemove,
     onShowInFolder,
     onNotConnected,
+    onFindFolder,
     platform,
     onPickedCount,
     controls = OWN_CONTROLS,
@@ -156,6 +157,7 @@
     onRemove: SeriesBookCommands["remove"];
     onShowInFolder: SeriesBookCommands["showFile"];
     onNotConnected?: ((book: SeriesBook) => void) | undefined;
+    onFindFolder?: ((book: SeriesBook) => void) | undefined;
     platform: Platform;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
     controls?: BooksControls;
@@ -740,6 +742,7 @@
         void markSwiped(book, read, how);
       }}
       {onNotConnected}
+      {onFindFolder}
     />
     {#if isPhonePicking && phone !== undefined}
       <Portal>

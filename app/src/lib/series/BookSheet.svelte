@@ -7,6 +7,7 @@
     Eye,
     EyeOff,
     FolderOpen,
+    FolderSearch,
     ListChecks,
     Play,
     Trash,
@@ -29,6 +30,8 @@
   import { readingWords } from "./book-reading";
 
   const ICON_SIZE = 18;
+  const OFF =
+    "aria-disabled:cursor-default aria-disabled:text-foreground/38 aria-disabled:hover:bg-transparent";
   const ACTION =
     "gap-md rounded-control px-sm text-body font-medium min-block-touch-target ios:flex-row-reverse ios:justify-between ios:rounded-none ios:px-lg";
 
@@ -41,6 +44,7 @@
     onRemoveBookmark,
     onShowFile,
     onDelete,
+    onFind,
   }: {
     book: SeriesBook;
     isOnPhone: boolean;
@@ -50,6 +54,7 @@
     onRemoveBookmark?: (() => void) | undefined;
     onShowFile?: (() => void) | undefined;
     onDelete?: (() => void) | undefined;
+    onFind?: (() => void) | undefined;
   } = $props();
 
   const deleteTone = $derived(
@@ -59,8 +64,16 @@
     isOnPhone ? `${ITEM_LOOKS.row} ${ROW_FOCUS_RING}` : ACTION,
   );
   const actions = $derived(bookActions(book.reading));
+  const readLabel = $derived(
+    actions.read === "continue"
+      ? m.series_continue_reading()
+      : m.series_start_reading(),
+  );
   const marks = $derived(isOnPhone ? actions.marks : [actions.mark]);
   const isFileThere = $derived(book.file.kind === "present");
+  const find = $derived(
+    isOnPhone && book.file.kind === "notConnected" ? onFind : undefined,
+  );
   let isOpen = $state(false);
 
   function close(): void {
@@ -130,17 +143,37 @@
         ? "flex flex-col pbs-sm pbe-sheet-bottom"
         : "flex flex-col px-sm pbs-sm pbe-sheet-bottom ios:mx-sheet-inline ios:mbs-md ios:mbe-sheet-bottom ios:divide-y ios:divide-ios-separator ios:overflow-hidden ios:rounded-ios-cell ios:bg-ios-cell ios:p-none"}
     >
-      <a
-        href={resolve("/read/[book]", { book: book.id })}
-        class={["flex items-center hover:bg-hover", action]}
-      >
-        <Play size={ICON_SIZE} aria-hidden="true" />
-        <span data-slot="item-title">
-          {actions.read === "continue"
-            ? m.series_continue_reading()
-            : m.series_start_reading()}
-        </span>
-      </a>
+      {#if find !== undefined}
+        <Button
+          type="button"
+          look="row"
+          class={action}
+          onclick={() => {
+            close();
+            find();
+          }}
+        >
+          <FolderSearch size={ICON_SIZE} aria-hidden="true" />
+          <span data-slot="item-title">{m.missing_find_folder()}</span>
+        </Button>
+        <Button
+          type="button"
+          look="row"
+          aria-disabled="true"
+          class={[action, OFF]}
+        >
+          <Play size={ICON_SIZE} aria-hidden="true" />
+          <span data-slot="item-title">{readLabel}</span>
+        </Button>
+      {:else}
+        <a
+          href={resolve("/read/[book]", { book: book.id })}
+          class={["flex items-center hover:bg-hover", action]}
+        >
+          <Play size={ICON_SIZE} aria-hidden="true" />
+          <span data-slot="item-title">{readLabel}</span>
+        </a>
+      {/if}
       {#each marks as mark (mark)}
         <Button
           type="button"
@@ -207,10 +240,7 @@
           type="button"
           look="row"
           aria-disabled={!isFileThere}
-          class={[
-            action,
-            "aria-disabled:cursor-default aria-disabled:text-foreground/38 aria-disabled:hover:bg-transparent",
-          ]}
+          class={[action, OFF]}
           onclick={() => {
             if (isFileThere) {
               close();
@@ -226,10 +256,13 @@
         <Button
           type="button"
           look="row"
-          class={[action, deleteTone]}
+          aria-disabled={find !== undefined}
+          class={[action, deleteTone, OFF]}
           onclick={() => {
-            close();
-            onDelete();
+            if (find === undefined) {
+              close();
+              onDelete();
+            }
           }}
         >
           <Trash size={ICON_SIZE} aria-hidden="true" />

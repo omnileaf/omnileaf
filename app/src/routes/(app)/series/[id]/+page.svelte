@@ -569,6 +569,7 @@
                     onRemove={bookCommands.remove}
                     onShowInFolder={bookCommands.showFile}
                     onNotConnected={sayBookNotConnected}
+                    onFindFolder={findBookFolder}
                     platform={data.appInfo.platform}
                     onPickedCount={(count: number | undefined) => {
                       pickedCount = count;

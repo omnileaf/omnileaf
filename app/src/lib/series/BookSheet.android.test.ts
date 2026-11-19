@@ -85,3 +85,73 @@ test("turns Show the file off for a book whose file isn't there", async () => {
   await expect.element(showFile).toHaveAttribute("aria-disabled", "true");
   expect(heard).toEqual([]);
 });
+
+async function openAwaySheet(heard: string[]): Promise<void> {
+  await page.viewport(400, 800);
+  followCorePlatform("android");
+  const away: SeriesBook = { ...STARTED, file: { kind: "notConnected" } };
+  await render(BookSheet, {
+    book: away,
+    isOnPhone: true,
+    onMark: (mark: ReadMark) => heard.push(`mark ${mark}`),
+    onSelect: () => heard.push("select"),
+    onShowFile: () => heard.push("show file"),
+    onDelete: () => heard.push("delete"),
+    onFind: () => heard.push("find"),
+  });
+  await page.getByRole("button", { name: `More for ${away.title}` }).click();
+  await expect.element(page.getByRole("dialog")).toBeVisible();
+}
+
+function clickAnyway(name: string): void {
+  const element = page
+    .getByRole("dialog")
+    .getByRole("button", { name })
+    .element();
+  if (!(element instanceof HTMLElement)) {
+    throw new Error(`${name} drew no element`);
+  }
+  element.click();
+}
+
+test("puts Find the folder first for a book that isn't connected", async () => {
+  const heard: string[] = [];
+  await openAwaySheet(heard);
+
+  const names = actionNames();
+  await page.getByRole("button", { name: "Find the folder" }).click();
+
+  expect({ first: names.find((name) => name !== ""), heard }).toEqual({
+    first: "Find the folder",
+    heard: ["find"],
+  });
+});
+
+test("turns Continue reading, Show the file and Delete off for a book that isn't connected", async () => {
+  const heard: string[] = [];
+  await openAwaySheet(heard);
+
+  for (const name of ["Continue reading", "Show the file", "Delete"]) {
+    clickAnyway(name);
+  }
+
+  expect({
+    off: ["Continue reading", "Show the file", "Delete"].map((name) =>
+      page
+        .getByRole("dialog")
+        .getByRole("button", { name })
+        .element()
+        .getAttribute("aria-disabled"),
+    ),
+    heard,
+  }).toEqual({ off: ["true", "true", "true"], heard: [] });
+});
+
+test("keeps marking a book that isn't connected", async () => {
+  const heard: string[] = [];
+  await openAwaySheet(heard);
+
+  await page.getByRole("button", { name: "Mark unread" }).click();
+
+  expect(heard).toEqual(["mark unread"]);
+});
