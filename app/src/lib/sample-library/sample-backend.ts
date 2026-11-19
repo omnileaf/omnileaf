@@ -822,6 +822,23 @@ export function sampleBackend(
     };
   }
 
+  function missingFolderEntry(kind: Exclude<MissingKind, "none">) {
+    return {
+      folder: missingFolderOf(kind),
+      problem: MISSING_FOLDERS[kind].problem,
+      hiddenSeries: MISSING_FOLDER_SERIES.size,
+      isShownAnyway: missingFolder.isShownAnyway,
+    };
+  }
+
+  function missingFolderHolding(series: SampleSeries | undefined) {
+    return scenario.missing === "none" ||
+      series === undefined ||
+      connectionOf(series).kind === "connected"
+      ? null
+      : missingFolderEntry(scenario.missing);
+  }
+
   function hiddenSeries(): number {
     return library.filter(isOutOfReach).length;
   }
@@ -930,10 +947,12 @@ export function sampleBackend(
     );
   }
 
+  function locateSeries(id: string): SampleSeries | undefined {
+    return library.find((series) => sampleSeriesId(series.number) === id);
+  }
+
   function seriesWith(id: string): SampleSeries {
-    const found = library.find(
-      (series) => sampleSeriesId(series.number) === id,
-    );
+    const found = locateSeries(id);
     if (found === undefined) {
       throw failure("seriesNotFound", "that series isn't in the library");
     }
@@ -1403,14 +1422,9 @@ export function sampleBackend(
     missingLibraryFolders: () =>
       scenario.missing === "none" || missingFolder.isFound
         ? []
-        : [
-            {
-              folder: missingFolderOf(scenario.missing),
-              problem: MISSING_FOLDERS[scenario.missing].problem,
-              hiddenSeries: MISSING_FOLDER_SERIES.size,
-              isShownAnyway: missingFolder.isShownAnyway,
-            },
-          ],
+        : [missingFolderEntry(scenario.missing)],
+    seriesMissingFolder: (id) => missingFolderHolding(locateSeries(id)),
+    bookMissingFolder: (id) => missingFolderHolding(locateBook(id)?.series),
     libraryHiddenSeriesCount: hiddenSeries,
     showMissingLibraryFolder: (_id, isShown) => {
       missingFolder.isShownAnyway = isShown;

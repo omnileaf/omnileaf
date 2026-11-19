@@ -177,6 +177,8 @@ macro_rules! app_commands {
             set_library_tabs,
             library_spelling_suggestion,
             missing_library_folders,
+            series_missing_folder,
+            book_missing_folder,
             library_hidden_series_count,
             show_missing_library_folder,
             relocate_library_folder,
@@ -392,6 +394,24 @@ async fn missing_library_folders(
     library: State<'_, Library>,
 ) -> Result<Vec<MissingFolder>, IpcError> {
     Ok(library.missing_folders(&SystemShares).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn series_missing_folder(
+    library: State<'_, Library>,
+    id: SeriesId,
+) -> Result<Option<MissingFolder>, IpcError> {
+    Ok(library.missing_folder_of_series(id, &SystemShares).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn book_missing_folder(
+    library: State<'_, Library>,
+    id: BookId,
+) -> Result<Option<MissingFolder>, IpcError> {
+    Ok(library.missing_folder_of_book(id, &SystemShares).await?)
 }
 
 #[tauri::command]

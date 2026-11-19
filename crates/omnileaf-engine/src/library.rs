@@ -10,7 +10,7 @@ use std::{
 };
 
 use omnileaf_db::{
-    Config, Database,
+    Config, Connection, Database,
     adult_content::set_adult_content,
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookFileToRemove, BookListing, BookToRead, Cover,
@@ -21,14 +21,14 @@ use omnileaf_db::{
         filter_choices as stored_filter_choices, folder_group_series_count,
         folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
-        mark_root_unavailable, missing_roots, page_dimensions, person_series, place_in_series,
-        record_page_count, related_series, relocate_roots, remember_root_share, remove_book_files,
-        remove_books_without_files, remove_root, root_book_count, root_files, root_share,
-        root_shares, series_books, series_chapter_volumes, series_count, series_file_details,
-        series_numberings, series_overview, series_page, series_people, series_titles,
-        series_volume, show_root_while_missing, store_page_dimensions, unread_books, up_next,
-        writer_series_count, writer_series_page, writerless_series_count, writerless_series_page,
-        writers,
+        mark_root_unavailable, missing_root_of_book, missing_root_of_series, missing_roots,
+        page_dimensions, person_series, place_in_series, record_page_count, related_series,
+        relocate_roots, remember_root_share, remove_book_files, remove_books_without_files,
+        remove_root, root_book_count, root_files, root_share, series_books, series_chapter_volumes,
+        series_count, series_file_details, series_numberings, series_overview, series_page,
+        series_people, series_titles, series_volume, show_root_while_missing,
+        store_page_dimensions, unread_books, up_next, writer_series_count, writer_series_page,
+        writerless_series_count, writerless_series_page, writers,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     hidden_file_types::{hidden_file_types, hide_file_type, show_file_type},
@@ -79,7 +79,7 @@ use crate::{
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
     macos_share::share_address_in_mount_table,
-    missing_folder::problem_of,
+    missing_folder::MissingRoot,
     moved_home::{move_home, settle_home},
     network_share::unreachable_share_of,
     opened_file::OpenedFiles,
@@ -1729,27 +1729,67 @@ impl Library {
         &self,
         shares: &impl ShareLookup,
     ) -> Result<Vec<MissingFolder>, LibraryError> {
-        let (roots, mut remembered) = self
+        let roots = self
             .store
             .database()
             .read(|connection| {
-                let roots = missing_roots(connection)?
+                missing_roots(connection)?
                     .into_iter()
-                    .map(|root| {
-                        let hidden = hidden_series_count(connection, Some(root.id))?;
-                        Ok((root, hidden))
-                    })
-                    .collect::<Result<Vec<_>, omnileaf_db::Error>>()?;
-                Ok::<_, omnileaf_db::Error>((roots, root_shares(connection)?))
+                    .map(|root| MissingRoot::read(connection, root))
+                    .collect::<Result<Vec<_>, _>>()
             })
             .await?;
         let mut missing = Vec::with_capacity(roots.len());
-        for (root, hidden) in roots {
-            let share = remembered.remove(&root.id).map(ShareAddress::new);
-            let problem = problem_of(&root.locator, share, shares).await;
-            missing.push(MissingFolder::of(root, problem, hidden));
+        for root in roots {
+            missing.push(root.into_missing_folder(shares).await);
         }
         Ok(missing)
+    }
+
+    pub async fn missing_folder_of_series(
+        &self,
+        series: SeriesId,
+        shares: &impl ShareLookup,
+    ) -> Result<Option<MissingFolder>, LibraryError> {
+        self.missing_folder_holding(
+            move |connection| missing_root_of_series(connection, series.0),
+            shares,
+        )
+        .await
+    }
+
+    pub async fn missing_folder_of_book(
+        &self,
+        book: BookId,
+        shares: &impl ShareLookup,
+    ) -> Result<Option<MissingFolder>, LibraryError> {
+        self.missing_folder_holding(
+            move |connection| missing_root_of_book(connection, book.0),
+            shares,
+        )
+        .await
+    }
+
+    async fn missing_folder_holding(
+        &self,
+        missing_root: impl FnOnce(&Connection) -> Result<Option<LibraryRoot>, omnileaf_db::Error>
+        + Send
+        + 'static,
+        shares: &impl ShareLookup,
+    ) -> Result<Option<MissingFolder>, LibraryError> {
+        let root = self
+            .store
+            .database()
+            .read(move |connection| {
+                missing_root(connection)?
+                    .map(|root| MissingRoot::read(connection, root))
+                    .transpose()
+            })
+            .await?;
+        Ok(match root {
+            Some(root) => Some(root.into_missing_folder(shares).await),
+            None => None,
+        })
     }
 
     #[tracing::instrument(skip_all)]

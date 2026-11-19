@@ -3,7 +3,10 @@ use std::{
     path::{Component, MAIN_SEPARATOR_STR, Path, PathBuf},
 };
 
-use omnileaf_db::catalog::{LibraryRoot, RootLocator};
+use omnileaf_db::{
+    catalog::{LibraryRoot, RootLocator, hidden_series_count, root_share},
+    rusqlite::Connection,
+};
 use serde::Serialize;
 use specta::Type;
 use tokio::task::spawn_blocking;
@@ -51,19 +54,36 @@ impl From<UnreachableShare> for FolderProblem {
     }
 }
 
-impl MissingFolder {
-    pub(crate) fn of(root: LibraryRoot, problem: FolderProblem, hidden_series: u32) -> Self {
-        let is_shown_anyway = root.shows_while_missing;
-        Self {
-            folder: LibraryFolder::from(root),
+pub(crate) struct MissingRoot {
+    root: LibraryRoot,
+    hidden_series: u32,
+    remembered_share: Option<ShareAddress>,
+}
+
+impl MissingRoot {
+    pub(crate) fn read(
+        connection: &Connection,
+        root: LibraryRoot,
+    ) -> Result<Self, omnileaf_db::Error> {
+        Ok(Self {
+            hidden_series: hidden_series_count(connection, Some(root.id))?,
+            remembered_share: root_share(connection, root.id)?.map(ShareAddress::new),
+            root,
+        })
+    }
+
+    pub(crate) async fn into_missing_folder(self, shares: &impl ShareLookup) -> MissingFolder {
+        let problem = problem_of(&self.root.locator, self.remembered_share, shares).await;
+        MissingFolder {
+            is_shown_anyway: self.root.shows_while_missing,
+            folder: LibraryFolder::from(self.root),
             problem,
-            hidden_series,
-            is_shown_anyway,
+            hidden_series: self.hidden_series,
         }
     }
 }
 
-pub(crate) async fn problem_of(
+async fn problem_of(
     locator: &RootLocator,
     remembered: Option<ShareAddress>,
     shares: &impl ShareLookup,

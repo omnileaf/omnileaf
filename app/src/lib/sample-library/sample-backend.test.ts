@@ -1363,6 +1363,35 @@ test("tells a series of a missing folder and its books apart from one connected 
   ]);
 });
 
+test("finds the missing folder of a series and a book only while they aren't connected", async () => {
+  const { backend } = backendFor("?missing=folder");
+
+  const found = await Promise.all([
+    backend.seriesMissingFolder(sampleSeriesId(3)),
+    backend.bookMissingFolder(sampleBookId(3, 1)),
+    backend.seriesMissingFolder(sampleSeriesId(4)),
+    backend.bookMissingFolder(sampleBookId(4, 1)),
+  ]);
+
+  expect(found.map((missing) => missing?.folder.name ?? null)).toEqual([
+    "Comics",
+    "Comics",
+    null,
+    null,
+  ]);
+});
+
+test("finds no missing folder for a series or a book the library doesn't hold", async () => {
+  const { backend } = backendFor("?missing=folder");
+
+  const found = await Promise.all([
+    backend.seriesMissingFolder(sampleSeriesId(999)),
+    backend.bookMissingFolder(sampleBookId(999, 1)),
+  ]);
+
+  expect(found).toEqual([null, null]);
+});
+
 test("lists the series of a folder found again as connected", async () => {
   const { backend } = backendFor("?missing=folder");
   const [missing] = await backend.missingLibraryFolders();
