@@ -10,7 +10,7 @@ use std::{
 };
 
 use omnileaf_db::{
-    Config, Connection, Database,
+    Config, Database,
     adult_content::set_adult_content,
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookFileToRemove, BookListing, BookToRead, Cover,
