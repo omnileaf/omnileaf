@@ -23,7 +23,7 @@
   }: {
     book: SeriesBook;
     class?: string;
-    onFind?: ((book: SeriesBook) => void) | undefined;
+    onFind: (book: SeriesBook) => void;
   } = $props();
 
   const platform = currentPlatform();
