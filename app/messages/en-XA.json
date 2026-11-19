@@ -951,6 +951,13 @@
   "whats_new_fix_in": "⟦Ƒíẋéð íñ {version}········⟧",
   "whats_new_earlier": "⟦Éáŕļíéŕ ṽéŕšíöñš·······⟧",
   "whats_new_in": "⟦Ŵĥáţ’š ñéŵ íñ {version}··········⟧",
+  "whats_new_kind_breaking": "⟦Ɓŕéáķíñĝ çĥáñĝéš·······⟧",
+  "whats_new_kind_sec": "⟦Šéçûŕíţý····⟧",
+  "whats_new_kind_feat": "⟦Ñéŵ··⟧",
+  "whats_new_kind_perf": "⟦Ƒášţéŕ···⟧",
+  "whats_new_kind_fix": "⟦Ƒíẋéð··⟧",
+  "whats_new_see_all": "⟦Šéé áļļ çĥáñĝéš······⟧",
+  "whats_new_got_it": "⟦Ĝöţ íţ···⟧",
   "whats_new_first_release": "⟦Ƒíŕšţ ŕéļéášé······⟧",
   "whats_new_fixes_only": "⟦Ƒíẋéš öñļý····⟧",
   "whats_new_count_breaking": [
