@@ -795,7 +795,7 @@
   const isAnotherSheetOpen = $derived(
     removing !== undefined ||
       unlinking !== undefined ||
-      choosingAgain !== undefined ||
+      folderFinder.shareToChoose !== undefined ||
       isLabelling ||
       editedSeries !== undefined ||
       needsAttention.isShown ||
