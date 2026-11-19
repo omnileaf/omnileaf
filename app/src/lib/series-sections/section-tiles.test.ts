@@ -11,6 +11,7 @@ import {
   booksPicked,
   type GapPlacing,
   pickKeysOf,
+  picksAVolumeStillComing,
   type SectionTile,
   tileKey,
   withChapterVolumesFolded,
@@ -359,4 +360,21 @@ test("keys and picks a folded volume by its number, and picking it picks every c
     ["v4", "volume-7"],
     ["v7c61", "v7c62"],
   ]);
+});
+
+test("says a picked volume at the end of a list still loading may have chapters still to come", () => {
+  const tiles = withChapterVolumesFolded(
+    booksOnly([volume(1), chapterIn(2, 5), chapterIn(2, 6)]),
+    [],
+  );
+  const isLastPicked = (key: string) => key === "volume-2";
+  const isFirstPicked = (key: string) => key === "v1";
+
+  const answers = [
+    picksAVolumeStillComing(tiles, isLastPicked, false),
+    picksAVolumeStillComing(tiles, isLastPicked, true),
+    picksAVolumeStillComing(tiles, isFirstPicked, false),
+  ];
+
+  expect(answers).toEqual([true, false, false]);
 });

@@ -6,6 +6,7 @@ import {
 } from "../../src/lib/sample-library/sample-library.ts";
 import {
   accessibilityViolations,
+  boxOf,
   expect,
   framesPassed,
   LARGEST_TEXT_SCALE,
@@ -403,6 +404,83 @@ test.describe("A volume's page on an Android phone", { tag: "@native" }, () => {
     expect(await textClippedUnmarked(page)).toEqual([]);
   });
 });
+
+function volumeTiles(page: Page): Locator {
+  return page.getByRole("list", { name: "Volumes" }).getByRole("link");
+}
+
+test.describe(
+  "A volume of chapters on its series' page on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(async ({ page, platform }) => {
+      test.skip(platform !== "android", "Android phones' volume tiles");
+      await serveSampleArt(page);
+    });
+
+    test("shows each volume of chapters as one tile saying how much of it is read", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES}`);
+
+      await expect(volumeTiles(page)).toHaveText([
+        /^\s*Volume 1\s*Read\s*$/,
+        /^\s*Volume 2\s*1 of 4 chapters read\s*$/,
+      ]);
+      await expect(
+        volumeTiles(page).first().locator("[data-read-mark]"),
+      ).toHaveCount(1);
+    });
+
+    test("draws a bar under a volume in progress, filled to its chapters read, across the tile", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES}`);
+      const second = volumeTiles(page).filter({ hasText: "Volume 2" });
+      const bar = second.locator("[role=progressbar]");
+
+      await expect(bar).toHaveAttribute("aria-valuenow", "1");
+      await expect(bar).toHaveAttribute("aria-valuemax", "4");
+      expect((await boxOf(bar)).width).toBe((await boxOf(second)).width);
+      await expect(
+        volumeTiles(page).first().locator("[role=progressbar]"),
+      ).toHaveCount(0);
+    });
+
+    test("opens a volume's page from its tile, and Back comes back to the volumes", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES}`);
+
+      await volumeTiles(page).filter({ hasText: "Volume 2" }).click();
+
+      await expect(page).toHaveURL(VOLUME_PAGE);
+      await page
+        .getByRole("link", { name: `Back to ${SERIES_TITLE}`, exact: true })
+        .click();
+      await expect(page).toHaveURL(`/series/${SERIES}`);
+      await expect(volumeTiles(page)).toHaveCount(2);
+    });
+
+    test("picks every chapter in a volume when its tile is picked, and marks them all", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES}`);
+      const second = volumeTiles(page).filter({ hasText: "Volume 2" });
+      await second.focus();
+      await page.keyboard.press("Space");
+      const picked = page.getByRole("group", { name: "Selected books" });
+
+      await expect(picked).toContainText("4 books");
+      await picked.getByRole("button", { name: "Mark read" }).click();
+
+      await expect(volumeTiles(page)).toHaveText([
+        /^\s*Volume 1\s*Read\s*$/,
+        /^\s*Volume 2\s*Read\s*$/,
+      ]);
+    });
+  },
+);
 
 test.describe(
   "A volume's page on an Android phone when the catalog can't be read",

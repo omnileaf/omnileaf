@@ -5,6 +5,7 @@
 
   import { goto, invalidate } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import type { ResolvedPathname } from "$app/types";
   import {
     type AdultTreatment,
     commands,
@@ -129,6 +130,13 @@
     }),
   );
   const foundId = $derived(found?.overview.id);
+
+  function volumePage(volume: number): ResolvedPathname {
+    return resolve("/(app)/series/[id]/volume/[volume]", {
+      id: data.id,
+      volume: String(volume),
+    });
+  }
   const overview = $derived(
     found === undefined || !screenshotMode.isOn
       ? found?.overview
@@ -431,6 +439,10 @@
               sections={found.overview.sections}
               missingVolumes={found.overview.missingVolumes}
               lastVolume={found.overview.lastVolume}
+              chapterVolumes={{
+                counts: found.chapterVolumes,
+                pageOf: volumePage,
+              }}
               listing={listed}
               onListing={choose}
               {books}

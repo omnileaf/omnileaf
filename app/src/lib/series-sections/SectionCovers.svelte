@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { ResolvedPathname } from "$app/types";
   import type { SeriesBook } from "#lib/ipc/bindings.ts";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -8,6 +9,7 @@
 
   import SectionCover from "./SectionCover.svelte";
   import SectionGap from "./SectionGap.svelte";
+  import SectionVolumeCover from "./SectionVolumeCover.svelte";
   import { coversGrid, sectionTileLook } from "./section-tile";
   import {
     type PickKey,
@@ -22,6 +24,7 @@
     isComplete,
     onNearEnd,
     usesStandIns,
+    volumePage,
     selection,
   }: {
     tiles: readonly SectionTile[];
@@ -29,6 +32,7 @@
     isComplete: boolean;
     onNearEnd: () => void;
     usesStandIns: boolean;
+    volumePage: (volume: number) => ResolvedPathname;
     selection: Selection<PickKey> | undefined;
   } = $props();
 
@@ -57,7 +61,16 @@
       {selection}
       order={pickOrder}
     />
-  {:else if tile.kind === "gap"}
+  {:else if tile.kind === "volume"}
+    <SectionVolumeCover
+      {tile}
+      href={volumePage(tile.volume)}
+      cover={shownCover(tile.chapters[0])}
+      {look}
+      {selection}
+      order={pickOrder}
+    />
+  {:else}
     <SectionGap missing={tile.missing} {look} />
   {/if}
 {/snippet}
