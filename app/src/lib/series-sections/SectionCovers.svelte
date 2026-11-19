@@ -9,7 +9,12 @@
   import SectionCover from "./SectionCover.svelte";
   import SectionGap from "./SectionGap.svelte";
   import { coversGrid, sectionTileLook } from "./section-tile";
-  import { bookIdsOf, type SectionTile, tileKey } from "./section-tiles";
+  import {
+    type PickKey,
+    pickKeysOf,
+    type SectionTile,
+    tileKey,
+  } from "./section-tiles";
 
   let {
     tiles,
@@ -24,14 +29,14 @@
     isComplete: boolean;
     onNearEnd: () => void;
     usesStandIns: boolean;
-    selection: Selection<SeriesBook["id"]> | undefined;
+    selection: Selection<PickKey> | undefined;
   } = $props();
 
   const platform = currentPlatform();
   const look = sectionTileLook(platform);
   const width = new WindowWidth();
   const grid = $derived(coversGrid(platform, width.current));
-  const bookOrder = () => bookIdsOf(tiles);
+  const pickOrder = () => pickKeysOf(tiles);
 
   function shownCover(book: SeriesBook): ShownCover {
     if (usesStandIns) {
@@ -50,9 +55,9 @@
       cover={shownCover(tile.book)}
       {look}
       {selection}
-      order={bookOrder}
+      order={pickOrder}
     />
-  {:else}
+  {:else if tile.kind === "gap"}
     <SectionGap missing={tile.missing} {look} />
   {/if}
 {/snippet}
