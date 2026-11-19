@@ -110,8 +110,12 @@ test("keeps an iPhone's continue card as it was", async () => {
   });
 });
 
-async function awayCardOn(platform: Platform, found: string[] = []) {
-  await page.viewport(PHONE.width, PHONE.height);
+async function awayCardOn(
+  platform: Platform,
+  found: string[] = [],
+  size: { readonly width: number; readonly height: number } = PHONE,
+) {
+  await page.viewport(size.width, size.height);
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   return render(ContinueCardHarness, {
@@ -143,4 +147,18 @@ test("keeps Continue while the next book isn't connected on an iPhone", async ()
   await expect
     .element(screen.getByRole("link", { name: "Continue Volume 3 at page 14" }))
     .toBeVisible();
+});
+
+test("turns Continue into Find the folder while the next book isn't connected on an Android tablet", async () => {
+  const found: string[] = [];
+  const screen = await awayCardOn("android", found, {
+    width: 900,
+    height: 800,
+  });
+
+  await screen
+    .getByRole("button", { name: "Find the folder for Volume 3" })
+    .click();
+
+  expect(found).toEqual(["Volume 3"]);
 });

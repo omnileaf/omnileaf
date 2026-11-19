@@ -34,15 +34,11 @@
     SeriesOverview,
   } from "#lib/ipc/bindings.ts";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
+  import { marksBooksNotConnected } from "#lib/library/not-connected.ts";
   import NotConnectedTag from "#lib/library/NotConnectedTag.svelte";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import {
-    currentPlatform,
-    isPhone,
-    isPointer,
-    phoneOf,
-  } from "#lib/page/platform.ts";
+  import { currentPlatform, isPhone, isPointer } from "#lib/page/platform.ts";
   import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -122,11 +118,9 @@
 
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const isAndroidPhone = $derived(
-    phoneOf(platform, width.current) === "android",
-  );
   const isNotConnected = $derived(
-    isAndroidPhone && overview.connection.kind === "notConnected",
+    marksBooksNotConnected(platform) &&
+      overview.connection.kind === "notConnected",
   );
   const detailsRow = $derived(
     isPhone(platform, width.current) ? DETAILS_ROWS[platform] : undefined,

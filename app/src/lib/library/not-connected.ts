@@ -10,3 +10,7 @@ export function isNotConnected(
     !series.isConnected && coverTileLook(platform).notConnected !== undefined
   );
 }
+
+export function marksBooksNotConnected(platform: Platform): boolean {
+  return platform === "android";
+}

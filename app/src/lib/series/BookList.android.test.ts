@@ -115,3 +115,24 @@ test("keeps opening a book that isn't connected on an iPhone", async () => {
     tags: screen.getByText("Not connected").elements().length,
   }).toEqual({ links: 2, tags: 0 });
 });
+
+test("keeps a book that isn't connected from opening and tags it on an Android tablet", async () => {
+  const touched: string[] = [];
+  await page.viewport(900, 800);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("android");
+  const screen = await render(BookListHarness, {
+    phone: undefined,
+    books: AWAY_BOOKS,
+    onNotConnected: ({ title }: SeriesBook) => touched.push(title),
+  });
+
+  const away = screen.getByRole("button", { name: /^Volume 1/ });
+  await away.click();
+
+  await expect.element(away.getByText("Not connected")).toBeVisible();
+  expect({
+    links: screen.getByRole("link").elements().length,
+    touched,
+  }).toEqual({ links: 1, touched: ["Volume 1"] });
+});

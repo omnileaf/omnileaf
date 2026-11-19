@@ -6,6 +6,7 @@
   import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { SeriesBook } from "#lib/ipc/bindings.ts";
+  import { marksBooksNotConnected } from "#lib/library/not-connected.ts";
   import { phoneAction } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
@@ -31,7 +32,9 @@
     phoneOf(platform, width.current) === "android",
   );
   const find = $derived(
-    isAndroidPhone && book.file.kind === "notConnected" ? onFind : undefined,
+    marksBooksNotConnected(platform) && book.file.kind === "notConnected"
+      ? onFind
+      : undefined,
   );
   const look = $derived.by(() => {
     if (platform === "macos" || platform === "windows") {

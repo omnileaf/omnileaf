@@ -3,7 +3,13 @@ import type { Locator, Page } from "@playwright/test";
 import type { MissingFolder } from "../../src/lib/ipc/bindings.ts";
 
 import type { FakeBackend } from "./fake-backend.ts";
-import { accessibilityViolations, expect, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  EXPANDED_MIN_WIDTH,
+  expect,
+  MEDIUM_MIN_WIDTH,
+  test,
+} from "./fixtures.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const READ = { state: "read" } as const;
@@ -175,6 +181,49 @@ test.describe(
         .poll(() => asked)
         .toEqual([`book ${SHELF.idOf(2)}`, `relocate ${FOLDER.folder.id}`]);
     });
+
+    for (const width of [MEDIUM_MIN_WIDTH + 100, EXPANDED_MIN_WIDTH + 200]) {
+      test.describe(`on an Android tablet ${String(width)}px wide`, () => {
+        test.use({ viewport: { width, height: 900 } });
+
+        test("warns, dims and tags the series, and its books say why", async ({
+          page,
+        }) => {
+          await page.goto(`/series/${SERIES_ID}`);
+
+          await expect(card(page)).toBeVisible();
+          await expect(
+            page.getByRole("img", { name: `Cover of ${SERIES_TITLE}` }),
+          ).toHaveCSS("opacity", "0.45");
+          const away = page.getByRole("button", {
+            name: new RegExp(`^${SHELF.titleOf(0)}`),
+          });
+          await page
+            .getByRole(width >= EXPANDED_MIN_WIDTH ? "table" : "list", {
+              name: "Books",
+            })
+            .scrollIntoViewIfNeeded();
+          await away.click();
+          await expect(
+            notice(page, `${SHELF.titleOf(0)} isn’t connected`),
+          ).toBeVisible();
+        });
+
+        test("turns Continue into Find the folder for the next book", async ({
+          page,
+        }) => {
+          await page.goto(`/series/${SERIES_ID}`);
+
+          await page
+            .getByRole("button", { name: `Find the folder for ${UP_NEXT}` })
+            .click();
+
+          await expect
+            .poll(() => asked)
+            .toEqual([`book ${SHELF.idOf(2)}`, `relocate ${FOLDER.folder.id}`]);
+        });
+      });
+    }
 
     for (const colorScheme of ["light", "dark"] as const) {
       test(`passes the accessibility checks in the ${colorScheme} theme`, async ({

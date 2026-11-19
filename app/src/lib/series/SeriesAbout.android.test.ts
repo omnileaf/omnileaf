@@ -307,11 +307,14 @@ test("keeps an iPhone's details without the order line or source icons", async (
   expect(source.querySelector("[data-icon]")).toBeNull();
 });
 
+const TABLET = { width: 900, height: 800 } as const;
+
 async function aboutOn(
   platform: Platform,
   connection: SeriesOverview["connection"],
+  size: { readonly width: number; readonly height: number } = PHONE,
 ) {
-  await page.viewport(PHONE.width, PHONE.height);
+  await page.viewport(size.width, size.height);
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   return render(SeriesAbout, {
@@ -355,4 +358,13 @@ test("tags no series that isn't connected off an Android phone", async () => {
   const screen = await aboutOn("ios", { kind: "notConnected" });
 
   expect(screen.getByText("Not connected").elements()).toHaveLength(0);
+});
+
+test("dims the cover and tags the count line of a series that isn't connected on an Android tablet", async () => {
+  const screen = await aboutOn("android", { kind: "notConnected" }, TABLET);
+
+  const cover = screen.getByRole("img", { name: /^Cover of/ }).element();
+
+  await expect.element(screen.getByText("Not connected")).toBeVisible();
+  expect(getComputedStyle(cover).opacity).toBe("0.45");
 });

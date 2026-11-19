@@ -6,6 +6,7 @@ import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  MEDIUM_MIN_WIDTH,
   test,
 } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
@@ -182,6 +183,24 @@ test.describe(
         notice(page, `${AWAY_CHAPTER} isn’t connected`),
       ).toBeVisible();
       expect(new URL(page.url()).pathname).toBe("/search");
+    });
+
+    test.describe("on an Android tablet", () => {
+      test.use({ viewport: { width: MEDIUM_MIN_WIDTH + 100, height: 900 } });
+
+      test("tags a series that isn't connected and says why instead of opening it", async ({
+        page,
+      }) => {
+        await search(page);
+
+        await expect(awaySeries(page).getByText("Not connected")).toBeVisible();
+        await awaySeries(page).click();
+
+        await expect(
+          notice(page, `${AWAY_TITLE} isn’t connected`),
+        ).toBeVisible();
+        expect(new URL(page.url()).pathname).toBe("/search");
+      });
     });
 
     for (const colorScheme of ["light", "dark"] as const) {
