@@ -1,6 +1,7 @@
 <script lang="ts">
   import { m } from "#lib/paraglide/messages.js";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import EarlierVersions from "#lib/whats-new/EarlierVersions.svelte";
   import NotesSections from "#lib/whats-new/NotesSections.svelte";
 
   import type { PageProps } from "./$types";
@@ -16,4 +17,7 @@
   class="mbs-pane-gap flex flex-col android:max-medium:mbs-none two-pane:max-inline-section"
 >
   <NotesSections notes={data.installed} />
+  {#if data.earlier.length > 0}
+    <EarlierVersions earlier={data.earlier} />
+  {/if}
 </div>

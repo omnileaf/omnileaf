@@ -7,9 +7,9 @@ import type { PageLoad } from "./$types";
 const NOT_FOUND = 404;
 
 export const load: PageLoad = async () => {
-  const { installed } = await commands.whatsNew();
+  const { installed, earlier } = await commands.whatsNew();
   if (installed === null) {
     error(NOT_FOUND, "no notes bundled for the installed version");
   }
-  return { installed };
+  return { installed, earlier };
 };

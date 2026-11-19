@@ -1,5 +1,6 @@
 <script lang="ts">
   import appIcon from "#branding/icon.svg";
+  import { CurrentAboutLook } from "#lib/about/about-look.svelte.ts";
   import AboutFailures from "#lib/about/AboutFailures.svelte";
   import CopyVersionButton from "#lib/about/CopyVersionButton.svelte";
   import AboutPageRow from "#lib/about/AboutPageRow.svelte";
@@ -10,13 +11,10 @@
   import UpdateBanner from "#lib/updates/UpdateBanner.svelte";
   import { Bug, FileText, Info, Send, Sparkles } from "@lucide/svelte";
 
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { Item } from "#lib/components/ui/item/index.ts";
   import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { GROUP_PLATE } from "#lib/page/plates.ts";
-  import { isPhone, isPointer } from "#lib/page/platform.ts";
+  import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import {
@@ -24,12 +22,11 @@
     updateCheckForApp,
   } from "#lib/updates/update-check.svelte.ts";
   import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
-  import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
   import { whatsNewRowHint } from "#lib/whats-new/about-row.ts";
 
-  import type { AboutLook } from "#lib/about/look.ts";
+  import { type AboutLook, ROW_LISTS } from "#lib/about/look.ts";
   import {
     buildDateText,
     builtOn,
@@ -63,15 +60,8 @@
       getLocale(),
     ),
   );
-  const width = new WindowWidth();
-  const android = new AndroidPhone();
-  const look: AboutLook = $derived(
-    android.isOn
-      ? "android"
-      : isPhone(data.appInfo.platform, width.current)
-        ? "phone"
-        : "pane",
-  );
+  const aboutLook = new CurrentAboutLook();
+  const look: AboutLook = $derived(aboutLook.current);
   const whatsNewHint = $derived(
     whatsNewRowHint(data.appInfo.platform, data.whatsNew),
   );
@@ -120,14 +110,7 @@
     </p>
   </div>
   <div>
-    <ul
-      class={look === "android"
-        ? FLUSH_LIST
-        : [
-            "divide-y divide-border overflow-hidden rounded-list border border-border bg-card",
-            GROUP_PLATE,
-          ]}
-    >
+    <ul class={ROW_LISTS[look]}>
       {#if offersUpdateCheck(data.appInfo)}
         <UpdateCheckRow checking={updateCheck} {look} />
         <li>
