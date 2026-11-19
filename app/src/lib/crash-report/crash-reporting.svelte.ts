@@ -77,6 +77,8 @@ export class CrashReporting {
 
   #interfaceErrorOffered = false;
 
+  #hasLookedForSaved = $state(false);
+
   #isSending = false;
 
   readonly copying: DetailsCopying;
@@ -88,10 +90,18 @@ export class CrashReporting {
     this.copying = new DetailsCopying(backend.copyCrashReport);
   }
 
+  get isQuiet(): boolean {
+    return this.#hasLookedForSaved && this.prompt.kind === "hidden";
+  }
+
   async offerSaved(): Promise<void> {
-    const saved = await this.backend.offerSavedCrashReport();
-    if (saved.status === "ok" && saved.data !== null) {
-      await this.follow(saved.data);
+    try {
+      const saved = await this.backend.offerSavedCrashReport();
+      if (saved.status === "ok" && saved.data !== null) {
+        await this.follow(saved.data);
+      }
+    } finally {
+      this.#hasLookedForSaved = true;
     }
   }
 

@@ -52,6 +52,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import type { PageProps } from "./$types";
+  import { whatsNewSeenForApp } from "#lib/whats-new/whats-new-seen.ts";
 
   let { data }: PageProps = $props();
 
@@ -263,6 +264,11 @@
     if (result.status === "error") {
       return "failed";
     }
+    await whatsNewSeenForApp()
+      .recordFirstInstall(data.appInfo.version, commands.whatsNewNotice)
+      .catch((error: unknown) => {
+        reportError(error);
+      });
     isLeaving = true;
     await dropStepEntries();
     await goto(resolve(SECTION_ROUTE_IDS.library), {

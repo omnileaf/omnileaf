@@ -109,6 +109,30 @@ test("shows the report a crash left behind, asking first", async () => {
   expect(calls.sent).toBe(0);
 });
 
+test("is not quiet until it has looked for a report a crash left behind", () => {
+  const { reporting } = reportingWith("ask", { saved: null });
+
+  expect(reporting.isQuiet).toBe(false);
+});
+
+test("is quiet once it finds no report a crash left behind", async () => {
+  const { reporting } = reportingWith("ask", { saved: null });
+
+  await reporting.offerSaved();
+
+  expect(reporting.isQuiet).toBe(true);
+});
+
+test("is not quiet while it asks about a report, and quiet again once declined", async () => {
+  const { reporting } = reportingWith("ask");
+  await reporting.offerSaved();
+  const whileAsking = reporting.isQuiet;
+
+  await reporting.decline();
+
+  expect([whileAsking, reporting.isQuiet]).toEqual([false, true]);
+});
+
 test("words an interface error left by an earlier run as an interface error", async () => {
   const { reporting } = reportingWith("ask", { saved: INTERFACE_ERROR });
 

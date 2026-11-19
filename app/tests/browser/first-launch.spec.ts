@@ -24,6 +24,7 @@ import {
   IPAD_USER_AGENT,
   IPHONE_USER_AGENT,
   expect,
+  FAKE_APP_VERSION,
   LARGEST_TEXT_SCALE,
   MEDIUM_MIN_WIDTH,
   onPlatform,
@@ -453,6 +454,33 @@ test("goes through every step and opens the library once finished", async ({
   await expect(page).toHaveURL("/");
   await expect(heading(page, "Library")).toBeFocused();
   expect(device.finishes).toBe(1);
+});
+
+test.describe("on a build that bundles notes for its version", () => {
+  test.use({
+    backend: {
+      ...FIRST_LAUNCH_BACKEND,
+      whatsNewNotice: (lastSeen) =>
+        lastSeen.kind === "firstInstall"
+          ? { kind: "record" }
+          : { kind: "nothing" },
+    },
+  });
+
+  test("keeps the installed version's notes as seen once finished, so a new install shows no What’s new", async ({
+    page,
+  }) => {
+    await page.goto("/first-launch");
+
+    for (const step of STEPS) {
+      await page.getByRole("button", { name: step.leaveWith }).click();
+    }
+    await expect(page).toHaveURL("/");
+
+    expect(
+      await page.evaluate(() => localStorage.getItem("omnileaf.whatsNewSeen")),
+    ).toBe(FAKE_APP_VERSION);
+  });
 });
 
 test("opens on the first launch until the device has finished it", async ({
