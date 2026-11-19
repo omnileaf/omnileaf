@@ -3,13 +3,13 @@ use std::{
     io,
     num::NonZeroUsize,
     ops::Range,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock, PoisonError, RwLock},
 };
 
 use omnileaf_cache::{CacheError, DiskCache, MemoryCache};
 use omnileaf_db::catalog::{BookFileId, BookReading as StoredReading};
-use omnileaf_formats::{Book, FormatError};
+use omnileaf_formats::{Book, Details, FormatError, Storage};
 use omnileaf_imaging::{
     BookSideBorders, ImagingError, PageFormat, Transcoded, crop_side_borders, crop_white_borders,
     page_size, shrink_page, transcode,
@@ -25,6 +25,7 @@ use crate::{
     file_type::FileType,
     lane::{Job, LaneStopped},
     library::BookToOpen,
+    library_folder::root_folder,
     open_books::{BookFileAt, LastOpened, OpenBook, OpenBooks, PageAt},
     page_lane::{AskedPageError, PageLane},
     page_sizes::{PageSizes, SizeFill, SizeFills, fill_sizes, opening_window, probe_window},
@@ -73,6 +74,8 @@ pub enum OpenBookError {
     BookNotFound { id: BookId },
     #[error("read book {id} from a folder this build can't open")]
     FolderClosed { id: BookId },
+    #[error("read book {id}, whose folder or drive isn't there")]
+    NotConnected { id: BookId },
     #[error("read the file of book {id}")]
     Unreadable {
         id: BookId,
@@ -123,6 +126,24 @@ impl OpenBookError {
             Some(_) | None => Self::Unreadable { id, source },
         }
     }
+}
+
+async fn connected_book_to_open(
+    library: &Library,
+    id: BookId,
+) -> Result<BookToOpen, OpenBookError> {
+    let to_open = library
+        .book_to_open(id)
+        .await?
+        .ok_or(OpenBookError::BookNotFound { id })?;
+    if library.is_book_not_connected(id).await? {
+        return Err(OpenBookError::NotConnected { id });
+    }
+    Ok(to_open)
+}
+
+fn is_folder_gone(storage: &dyn Storage, folder: &Path) -> bool {
+    !matches!(storage.details(folder), Ok(Details::Folder { .. }))
 }
 
 impl PageError {
@@ -187,10 +208,7 @@ impl Pages {
             .undecodable
             .write()
             .unwrap_or_else(PoisonError::into_inner) = undecodable.into_iter().collect();
-        let to_open = library
-            .book_to_open(id)
-            .await?
-            .ok_or(OpenBookError::BookNotFound { id })?;
+        let to_open = connected_book_to_open(library, id).await?;
         let found = &to_open.found;
         let file = BookFileAt {
             book: found.id,
@@ -212,13 +230,20 @@ impl Pages {
             .book_file(found)
             .ok_or(OpenBookError::FolderClosed { id })?;
         let file_type = FileType::of(&located.path);
+        let folder = root_folder(&found.root);
         let reading = found.reading;
         let (opened, sizes, probed, direction) = self
             .lane
             .run(move || {
-                let opened = shared.books.open(file, &located)?;
+                let opened = shared.books.open(file, &located).map_err(|source| {
+                    if is_folder_gone(&*located.storage, &folder) {
+                        OpenBookError::NotConnected { id }
+                    } else {
+                        OpenBookError::unreadable(id, file_type, source)
+                    }
+                })?;
                 let direction = written_direction(&mut opened.lock());
-                Ok::<_, FormatError>(match known {
+                Ok::<_, OpenBookError>(match known {
                     Some(sizes) if sizes.len() == opened.page_count => {
                         (opened, sizes, None, direction)
                     }
@@ -233,8 +258,7 @@ impl Pages {
                     }
                 })
             })
-            .await?
-            .map_err(|source| OpenBookError::unreadable(id, file_type, source))?;
+            .await??;
         match probed {
             Some(window) if window.len() < opened.page_count => {
                 self.fill_sizes_later(&opened, found.file, sizes.clone(), window);

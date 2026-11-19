@@ -1998,6 +1998,9 @@ export function sampleBackend(
     },
     openBook: (id) => {
       const { series, index } = bookWith(id);
+      if (!isConnected(series)) {
+        throw failure("bookNotConnected", "the book's folder isn't there");
+      }
       const book = series.books[index];
       if (book === undefined || book.file === "missing") {
         throw failure("bookUnreadable", "the book's file is missing");
