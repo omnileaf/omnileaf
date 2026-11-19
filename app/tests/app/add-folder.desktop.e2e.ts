@@ -50,6 +50,8 @@ return series !== null && series.children.length > 0 && getComputedStyle(series)
 const EVERY_COVER_SHOWN = `const covers = [...document.querySelectorAll("ul[aria-label='Series'] img")];
 return covers.length === ${String(SAMPLE_LIBRARY.series)} && covers.every((cover) => cover.complete && cover.naturalWidth > 0);`;
 
+const SHOWN_ORIGIN = "return location.origin;";
+
 const FIRST_COVER = `return document.querySelector("ul[aria-label='Series'] img")?.src ?? null;`;
 
 const COVER_ON_PAGE_SHOWN = `const cover = document.querySelector("img");
@@ -117,8 +119,13 @@ test.runIf(process.platform === "linux")(
     );
     const cover = String(await appSession().run(FIRST_COVER));
     const page = await servePageShowing(cover);
+    const appOrigin = String(await appSession().run(SHOWN_ORIGIN));
     onTestFinished(async () => {
       await appSession().run("setTimeout(() => history.back()); return null;");
+      await appSession().waitUntil(
+        `return location.origin === ${JSON.stringify(appOrigin)} && document.readyState === "complete";`,
+        "the app's own page again after the page served over http",
+      );
     });
 
     await appSession().run(
