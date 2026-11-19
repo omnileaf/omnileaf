@@ -190,7 +190,7 @@ mod tests {
         let text = written.text();
         assert!(caught.is_err());
         assert!(
-            text.starts_with("panic at app/src-tauri/src/release_log.rs:"),
+            text.starts_with(&format!("panic at {}:", file!())),
             "{text}"
         );
         assert!(!text.contains("Diary"), "{text}");
