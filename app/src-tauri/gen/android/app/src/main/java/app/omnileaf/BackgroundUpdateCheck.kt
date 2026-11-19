@@ -4,7 +4,6 @@ import android.app.job.JobInfo
 import android.app.job.JobScheduler
 import android.content.ComponentName
 import android.content.Context
-import app.tauri.Logger
 import java.time.Duration
 
 private const val UPDATE_CHECK_JOB_ID = 7001
@@ -48,7 +47,7 @@ internal class SystemUpdateCheckJobs(
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setPersisted(true)
                 .build()
-        if (scheduler.schedule(job) != JobScheduler.RESULT_SUCCESS) Logger.warn("Android refused to schedule the daily update check")
+        if (scheduler.schedule(job) != JobScheduler.RESULT_SUCCESS) APP_LOG.warn(LogEvent.UPDATE_CHECK_NOT_SCHEDULED, LogReason.REFUSED)
     }
 
     override fun cancel() = scheduler.cancel(UPDATE_CHECK_JOB_ID)

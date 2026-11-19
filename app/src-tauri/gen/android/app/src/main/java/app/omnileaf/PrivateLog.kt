@@ -13,6 +13,8 @@ internal enum class LogEvent(
     val id: String,
 ) {
     SCREEN_LOCK_PROMPT_FAILED("screen_lock_prompt_failed"),
+    UPDATE_CHECK_FAILED("update_check_failed"),
+    UPDATE_CHECK_NOT_SCHEDULED("update_check_not_scheduled"),
 }
 
 internal enum class LogReason(
@@ -30,6 +32,9 @@ internal enum class LogReason(
     HARDWARE_NOT_PRESENT("hardware_not_present"),
     NO_DEVICE_CREDENTIAL("no_device_credential"),
     SECURITY_UPDATE_REQUIRED("security_update_required"),
+    INTERRUPTED("interrupted"),
+    IO_ERROR("io_error"),
+    REFUSED("refused"),
     UNKNOWN("unknown"),
 }
 
