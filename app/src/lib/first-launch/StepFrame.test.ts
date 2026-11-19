@@ -91,3 +91,45 @@ test("draws the step as a 4px bar beside a 12px count on Android", async () => {
   expect(style.paddingLeft).toBe("8px");
   expect(style.paddingRight).toBe("16px");
 });
+
+const GUIDE_TITLE = "How folders are read";
+const PHONE_WINDOW = { width: 400, height: 800 } as const;
+const DIALOG_WINDOW = { width: 1280, height: 800 } as const;
+
+async function renderTitledFrame(window: { width: number; height: number }) {
+  await page.viewport(window.width, window.height);
+  return render(StepFrame, {
+    title: GUIDE_TITLE,
+    onBack: () => undefined,
+    children: nothing,
+  });
+}
+
+test("sets a titled frame's title in the top bar beside Back, with no progress, on an Android phone", async () => {
+  followCorePlatform("android");
+  const screen = await renderTitledFrame(PHONE_WINDOW);
+
+  const title = screen.getByRole("heading", { level: 1, name: GUIDE_TITLE });
+  const style = getComputedStyle(title.element());
+
+  expect(title.element().closest("header")).not.toBeNull();
+  expect(screen.getByRole("progressbar").elements()).toHaveLength(0);
+  expect([style.fontSize, style.lineHeight]).toEqual(["22px", "28px"]);
+});
+
+test("leaves the footer out on a phone when the frame has no actions", async () => {
+  followCorePlatform("android");
+  const screen = await renderTitledFrame(PHONE_WINDOW);
+
+  expect(screen.container.querySelector("footer")).toBeNull();
+});
+
+test("keeps Back alone in the dialog's footer when the frame has no actions", async () => {
+  const screen = await renderTitledFrame(DIALOG_WINDOW);
+
+  const footer = screen.container.querySelector("footer");
+
+  expect(footer?.querySelectorAll("button")).toHaveLength(1);
+  expect(footer?.querySelector("button")?.textContent.trim()).toBe("Back");
+  expect(footer?.querySelector(":scope > div")).toBeNull();
+});

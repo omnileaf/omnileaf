@@ -8,6 +8,7 @@
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import ChoicesStep from "#lib/first-launch/ChoicesStep.svelte";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
+  import FolderGuideStep from "#lib/first-launch/FolderGuideStep.svelte";
   import FoundLibraryStep from "#lib/first-launch/FoundLibraryStep.svelte";
   import { FIRST_LAUNCH_ROUTE } from "#lib/first-launch/gate.ts";
   import HomeStep from "#lib/first-launch/HomeStep.svelte";
@@ -67,6 +68,8 @@
       ? "ready"
       : (resumingAt ?? page.state.firstLaunchStep ?? "welcome"),
   );
+  const showsFolderGuide = $derived(page.state.folderGuide === true);
+  const view = $derived(showsFolderGuide ? "folder-guide" : step);
 
   const folders = new LibraryFolders(
     commands.libraryFolders,
@@ -103,7 +106,7 @@
 
   let adultTreatment: AdultTreatment = $state("blur");
   let card: HTMLElement | undefined = $state();
-  let shownStep: FirstLaunchStep | undefined;
+  let shownView: typeof view | undefined;
 
   onMount(() => {
     if (resumingAt !== undefined) {
@@ -121,16 +124,21 @@
     return isFreshLaunch && homeArrival === "moved" ? "home" : undefined;
   }
 
-  async function resumeAt(resumed: FirstLaunchStep): Promise<void> {
-    await goto(resolve(FIRST_LAUNCH_ROUTE), {
+  function pushFirstLaunchState(state: typeof page.state): Promise<void> {
+    return goto(resolve(FIRST_LAUNCH_ROUTE), { shallow: true, state });
+  }
+
+  function replaceFirstLaunchState(state: typeof page.state): Promise<void> {
+    return goto(resolve(FIRST_LAUNCH_ROUTE), {
       shallow: true,
       replace: true,
-      state: { firstLaunchStep: "welcome" },
+      state,
     });
-    await goto(resolve(FIRST_LAUNCH_ROUTE), {
-      shallow: true,
-      state: { firstLaunchStep: resumed },
-    });
+  }
+
+  async function resumeAt(resumed: FirstLaunchStep): Promise<void> {
+    await replaceFirstLaunchState({ firstLaunchStep: "welcome" });
+    await pushFirstLaunchState({ firstLaunchStep: resumed });
     resumingAt = undefined;
   }
 
@@ -175,19 +183,20 @@
   }
 
   $effect(() => {
-    if (shownStep !== undefined && shownStep !== step) {
+    if (shownView !== undefined && shownView !== view) {
       card?.querySelector<HTMLHeadingElement>("h1")?.focus();
     }
-    shownStep = step;
+    shownView = view;
   });
+
+  async function showFolderGuide(): Promise<void> {
+    await pushFirstLaunchState({ firstLaunchStep: step, folderGuide: true });
+  }
 
   async function next(): Promise<void> {
     const after = stepAfter(step);
     if (after !== undefined) {
-      await goto(resolve(FIRST_LAUNCH_ROUTE), {
-        shallow: true,
-        state: { firstLaunchStep: after },
-      });
+      await pushFirstLaunchState({ firstLaunchStep: after });
     }
   }
 
@@ -286,7 +295,9 @@
         isSetupPage ? "min-block-none" : "pbs-safe-top expanded:pbs-none",
       ]}
     >
-      {#if step === "welcome"}
+      {#if showsFolderGuide}
+        <FolderGuideStep onBack={back} />
+      {:else if step === "welcome"}
         <WelcomeStep {device} onNext={next} />
       {:else if step === "home" && foundLibrary !== null}
         <FoundLibraryStep
@@ -323,6 +334,9 @@
           {notices}
           onBack={back}
           onNext={next}
+          onShowFolderGuide={() => {
+            void showFolderGuide();
+          }}
         />
       {:else if step === "choices"}
         <ChoicesStep
