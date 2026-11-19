@@ -34,6 +34,16 @@ class LockStateTest {
     }
 
     @Test
+    fun `stays covered after a screen is rebuilt in place while covered`() {
+        state.returned(isOn = true, LockAfter.THIRTY_MINUTES)
+        state.left(isStillInTheApp = true)
+
+        val covers = state.returned(isOn = true, LockAfter.THIRTY_MINUTES)
+
+        assertEquals(true, covers)
+    }
+
+    @Test
     fun `covers a quick return when set to lock immediately`() {
         startedOpen()
         leaveFor(1)

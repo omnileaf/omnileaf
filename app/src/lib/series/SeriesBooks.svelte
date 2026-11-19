@@ -13,7 +13,6 @@
     BookSection,
     Platform,
     ReadMark,
-    RemovalReport,
     RemovalTarget,
     SeriesBook,
     SeriesBookListing,
@@ -45,6 +44,8 @@
   import type { BookRows, SearchPlace } from "./book-listing";
   import { booksMatching } from "./book-search";
   import { type BooksControls, OWN_CONTROLS } from "./books-controls";
+  import type { BooksHeading } from "./books-heading";
+  import type { SeriesBookCommands } from "./series-book-commands";
   import BookTable from "./BookTable.svelte";
   import { Selection } from "#lib/page/selection.svelte.ts";
   import BarControls from "./BarControls.svelte";
@@ -123,9 +124,7 @@
     books,
     sections,
     seriesTitle,
-    bookCount,
-    readCount,
-    bookmarkCount,
+    heading: shownHeading,
     listing,
     onListing,
     isComplete,
@@ -139,31 +138,26 @@
     platform,
     onPickedCount,
     controls = OWN_CONTROLS,
+    hasShownChoices = true,
   }: {
     books: readonly SeriesBook[];
     sections: readonly BookSection[];
     seriesTitle: string;
-    bookCount: number;
-    readCount: number;
-    bookmarkCount: number;
+    heading: BooksHeading;
     listing: SeriesBookListing;
     onListing: (change: ListingChange) => void;
     isComplete: boolean;
     onNearEnd: () => void;
     onLoadAll: () => Promise<void>;
-    onMark: (books: BookId[], mark: ReadMark) => Promise<boolean>;
-    onBookmark: (
-      books: BookId[],
-    ) => Promise<{ newlyBookmarked: number; failed: boolean }>;
-    onRemoveBookmarks: (books: BookId[]) => Promise<boolean>;
-    onRemove: (
-      targets: RemovalTarget[],
-      deleteFiles: boolean,
-    ) => Promise<RemovalReport | undefined>;
-    onShowInFolder: (book: BookId) => void;
+    onMark: SeriesBookCommands["mark"];
+    onBookmark: SeriesBookCommands["bookmark"];
+    onRemoveBookmarks: SeriesBookCommands["removeBookmarks"];
+    onRemove: SeriesBookCommands["remove"];
+    onShowInFolder: SeriesBookCommands["showFile"];
     platform: Platform;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
     controls?: BooksControls;
+    hasShownChoices?: boolean;
   } = $props();
 
   type Outcome =
@@ -215,14 +209,6 @@
   );
   const showsOwnHeading = $derived(
     (controls.kind === "own" && !headsListingChoices) || isPickingInFlow,
-  );
-  const readSummary = $derived(
-    bookmarkCount > 0
-      ? m.series_read_and_bookmarked({
-          read: readCount,
-          bookmarked: bookmarkCount,
-        })
-      : m.series_read_only({ read: readCount }),
   );
   const topBarCountId = `${headingId}-picked`;
   const labelledBy = $derived.by(() => {
@@ -499,9 +485,9 @@
 {#snippet listingHead()}
   <div class="flex flex-1 flex-wrap items-baseline gap-x-sm min-inline-none">
     <h2 bind:this={heading} id={headingId} tabindex="-1" class={BOOKS_HEADING}>
-      {m.series_books_heading({ count: bookCount })}
+      {shownHeading.title}
     </h2>
-    <p class={READ_SUMMARY}>{readSummary}</p>
+    <p class={READ_SUMMARY}>{shownHeading.line}</p>
   </div>
 {/snippet}
 
@@ -573,13 +559,13 @@
       >
         {isPickingInFlow
           ? m.series_selected_count({ count: selection.count })
-          : m.series_books_heading({ count: bookCount })}
+          : shownHeading.title}
       </h2>
       {#if isPhonePickingInFlow}
         {@render barControls(phone?.trailing ?? [])}
       {:else if !isPickingInFlow && !isWide.current}
         <p class="flex-1 {READ_SUMMARY}">
-          {readSummary}
+          {shownHeading.line}
         </p>
       {:else if isPickingInFlow}
         <Button
@@ -646,6 +632,7 @@
       {searchPlace}
       bind:isSearching
       head={headsListingChoices ? listingHead : undefined}
+      {hasShownChoices}
     />
   {/if}
   {#if isComplete && shownBooks.length === 0}

@@ -20,6 +20,7 @@ const CHAPTER_HITS = Array.from({ length: 8 }, (_, index) => ({
   position: index + 1,
   title: `Harbour chapter ${String(index + 1)}`,
   matchedIn: "fileName",
+  file: { kind: "present" },
 })) as never[];
 
 testOnlyInItsWebview("macos");

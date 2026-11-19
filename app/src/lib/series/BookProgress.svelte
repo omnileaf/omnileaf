@@ -4,6 +4,7 @@
   import type { SeriesBook } from "#lib/ipc/bindings.ts";
 
   import { progressOf, progressWords } from "./book-reading";
+  import { ROW_PROGRESS } from "./row-progress";
 
   let { book, class: className }: { book: SeriesBook; class?: string } =
     $props();
@@ -16,6 +17,6 @@
     aria-label={progressWords(book)}
     max={progress.pages}
     value={progress.page}
-    class={cn("block-progress-thin inline-row-progress", className)}
+    class={cn(ROW_PROGRESS, className)}
   />
 {/if}

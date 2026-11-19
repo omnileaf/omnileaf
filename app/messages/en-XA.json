@@ -1132,7 +1132,6 @@
   "appearance_colours_omnileaf_hint": "⟦Ţĥé áþþ'š öŵñ ţĥéɱé. Ţĥé ðéƒáûļţ.··············⟧",
   "appearance_colours_wallpaper": "⟦Ƒŕöɱ ýöûŕ ŵáļļþáþéŕ········⟧",
   "appearance_colours_wallpaper_hint": "⟦Çöļöûŕš Áñðŕöíð þíçķš ƒŕöɱ ýöûŕ ŵáļļþáþéŕ.·················⟧",
-  "appearance_colours_android_version": "⟦Áñðŕöíð 12 áñð ļáţéŕ.·········⟧",
   "appearance_colours_covers": "⟦Çöṽéŕš áñð þáĝéš ķééþ ţĥéíŕ öŵñ çöļöûŕš.················⟧",
   "appearance_windows_colour_settings": "⟦Ŵíñðöŵš çöļöûŕ šéţţíñĝš··········⟧",
   "appearance_windows_colour_settings_failed": "⟦Çöûļðñ'ţ öþéñ Ŵíñðöŵš çöļöûŕ šéţţíñĝš···············⟧",
@@ -1240,6 +1239,7 @@
   "first_launch_link_hint_android_tablet": "⟦Ƒöļðéŕš öñ ţĥíš ðéṽíçé, áñ ŠÐ çáŕð öŕ á ÛŠƁ ðŕíṽé áļļ ŵöŕķ.························⟧",
   "first_launch_link_hint_ios": "⟦Ƒöļðéŕš íñ Ƒíļéš, íÇļöûð Ðŕíṽé öŕ á çöññéçţéð ðŕíṽé áļļ ŵöŕķ.·························⟧",
   "first_launch_link_hint_desktop": "⟦Ƒöļðéŕš öñ ţĥíš çöɱþûţéŕ, éẋţéŕñáļ ðŕíṽéš áñð ñéţŵöŕķ šĥáŕéš áļļ ŵöŕķ.····························⟧",
+  "first_launch_folder_guide": "⟦Ĥöŵ šĥöûļð ɱý ƒöļðéŕš ļööķ?···········⟧",
   "first_launch_skip_phone": "⟦Šķíþ, Í'ļļ áðð ţĥéɱ ļáţéŕ··········⟧",
   "first_launch_skip_desktop": "⟦Šķíþ ƒöŕ ñöŵ·····⟧",
   "first_launch_pick_folder_title": "⟦Þíçķ á ƒöļðéŕ······⟧",
@@ -2055,6 +2055,43 @@
   "series_mark_all_unread": "⟦Ṁáŕķ áļļ ûñŕéáð······⟧",
   "series_about": "⟦Áƀöûţ ţĥíš šéŕíéš·······⟧",
   "series_cover": "⟦Çöṽéŕ öƒ {title}·······⟧",
+  "series_volume_about": "⟦Áƀöûţ ţĥíš ṽöļûɱé·······⟧",
+  "series_volume_counts": "⟦Ṽöļûɱé · {chapters}········⟧",
+  "series_volume_counts_pages": "⟦Ṽöļûɱé · {chapters} · {pages}············⟧",
+  "series_page_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} þáĝé·········⟧",
+        "countPlural=other": "⟦{formattedCount} þáĝéš·········⟧"
+      }
+    }
+  ],
+  "series_volume_folder": "⟦{series} › {volume}········⟧",
+  "series_volume_folder_note": "⟦Íñ ţĥíš ṽöļûɱé’š ƒöļðéŕ··········⟧",
+  "series_volume_all_read": "⟦Ýöû’ṽé ŕéáð éṽéŕý çĥáþţéŕ íñ ţĥíš ṽöļûɱé················⟧",
+  "series_volume_all_read_body": "⟦Ñéŵ çĥáþţéŕš íñ íţš ƒöļðéŕ šĥöŵ ûþ ĥéŕé.················⟧",
+  "series_volume_read_count": [
+    {
+      "declarations": [
+        "input read",
+        "input total",
+        "local totalPlural = total: plural",
+        "local formattedRead = read: number",
+        "local formattedTotal = total: number"
+      ],
+      "selectors": ["totalPlural"],
+      "match": {
+        "totalPlural=one": "⟦{formattedRead} öƒ {formattedTotal} çĥáþţéŕ ŕéáð····················⟧",
+        "totalPlural=other": "⟦{formattedRead} öƒ {formattedTotal} çĥáþţéŕš ŕéáð····················⟧"
+      }
+    }
+  ],
   "series_by": "⟦Ɓý {names}····⟧",
   "series_credit": "⟦{role}: {name}······⟧",
   "series_role_story": "⟦Šţöŕý··⟧",
@@ -2093,6 +2130,7 @@
   "series_detail_from_file_names": "⟦Ƒŕöɱ ţĥé ƒíļé ñáɱéš········⟧",
   "series_detail_from_files": "⟦Ƒŕöɱ ţĥé ƒíļéš (ÇöɱíçÍñƒö.ẋɱļ)············⟧",
   "series_detail_edited_by_you": "⟦Éðíţéð ƀý ýöû······⟧",
+  "series_detail_order": "⟦Ýöûŕ éðíţš çöɱé ƒíŕšţ, ţĥéñ ţĥé ƒíļéš, ţĥéñ ţĥé ƒöļðéŕ áñð ƒíļé ñáɱéš.····························⟧",
   "series_edit_details": "⟦Éðíţ ðéţáíļš·····⟧",
   "edit_details_menu": "⟦Éðíţ ðéţáíļš…······⟧",
   "edit_details_intro": "⟦Ýöûŕ çĥáñĝéš šĥöŵ öñļý íñ Öɱñíļéáƒ; ţĥé ƒíļéš šţáý áš ţĥéý áŕé.··························⟧",
@@ -2342,12 +2380,8 @@
   "reader_auto_scroll_my_pace": "⟦Ṁý þáçé···⟧",
   "reader_auto_scroll_set_speed": "⟦Šéţ šþééð····⟧",
   "reader_auto_scroll_help": "⟦Ķééþš šçŕöļļíñĝ ŵíţĥ ŕéðûçéð ɱöţíöñ öñ, šíñçé ýöû šţáŕţéð íţ.·························⟧",
-  "reader_auto_scroll_rate": "⟦Þáĝéš á ɱíñûţé······⟧",
-  "reader_auto_scroll_rate_value": "⟦Þáĝéš á ɱíñûţé: {count}··········⟧",
-  "reader_pause_at_end": "⟦Þáûšé áûţö šçŕöļļ áţ ţĥé éñð öƒ á ƀööķ················⟧",
-  "reader_auto_scroll_pace": "⟦Áûţö šçŕöļļ áţ ɱý þáçé·········⟧",
-  "reader_auto_scroll_pace_help": "⟦Šţáŕţš áûţö šçŕöļļ áţ ýöûŕ öŵñ šþééð.···············⟧",
-  "reader_pages_a_minute": [
+  "reader_auto_scroll_speed_title": "⟦Áûţö šçŕöļļ šþééð·······⟧",
+  "reader_auto_scroll_speed_readout": [
     {
       "declarations": [
         "input count",
@@ -2356,8 +2390,31 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "⟦{formattedCount} þáĝé á ɱíñûţé············⟧",
-        "countPlural=other": "⟦{formattedCount} þáĝéš á ɱíñûţé·············⟧"
+        "countPlural=one": "⟦Áûţö šçŕöļļ šþééð, {formattedCount} šçŕééñ á ɱíñûţé·····················⟧",
+        "countPlural=other": "⟦Áûţö šçŕöļļ šþééð, {formattedCount} šçŕééñš á ɱíñûţé·····················⟧"
+      }
+    }
+  ],
+  "reader_auto_scroll_rate": "⟦Šçŕééñš á ɱíñûţé·······⟧",
+  "reader_auto_scroll_rate_value": "⟦Šçŕééñš á ɱíñûţé: {count}··········⟧",
+  "reader_save_speed_for": "⟦Šáṽé ţĥé šþééð ƒöŕ········⟧",
+  "reader_speed_saved_for_series": "⟦Šáṽéð ƒöŕ {series} öñļý. Ƒŕöɱ {slowest} ţö {fastest} šçŕééñš á ɱíñûţé; ţĥé ðéƒáûļţ íš {default}.·······································⟧",
+  "reader_speed_saved_for_all": "⟦Šáṽéð ƒöŕ éṽéŕý šéŕíéš. Ƒŕöɱ {slowest} ţö {fastest} šçŕééñš á ɱíñûţé; ţĥé ðéƒáûļţ íš {default}.······································⟧",
+  "reader_use_default_speed": "⟦Ûšé ţĥé ðéƒáûļţ ({count})··········⟧",
+  "reader_pause_at_end": "⟦Þáûšé áûţö šçŕöļļ áţ ţĥé éñð öƒ á ƀööķ················⟧",
+  "reader_auto_scroll_pace": "⟦Áûţö šçŕöļļ áţ ɱý þáçé·········⟧",
+  "reader_auto_scroll_pace_help": "⟦Šţáŕţš áûţö šçŕöļļ áţ ýöûŕ öŵñ šþééð.···············⟧",
+  "reader_screens_a_minute": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šçŕééñ á ɱíñûţé·············⟧",
+        "countPlural=other": "⟦{formattedCount} šçŕééñš á ɱíñûţé··············⟧"
       }
     }
   ],

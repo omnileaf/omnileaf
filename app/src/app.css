@@ -366,6 +366,7 @@
   --spacing-folder-depth-1: 1.25rem;
   --spacing-folder-depth-2: 2.5rem;
   --spacing-folder-depth-3: 3.75rem;
+  --spacing-folder-row: 0.375rem;
   --spacing-cover-stack-room: 0.625rem;
   --spacing-cover-sheet: 1.5rem;
   --spacing-cover-sheet-far: 0.875rem;
@@ -1548,6 +1549,36 @@
       var(--native-spacing-row-rule-start) +
         var(--native-spacing-row-rule-indent)
     );
+  }
+}
+
+@utility settings-dividers {
+  &
+    :is(
+      [data-settings-group],
+      [data-settings-end],
+      :has([data-settings-group], [data-settings-end])
+    )
+    ~ [data-settings-group]:not(
+      :is([data-settings-group], [data-settings-end]) *
+    ),
+  &
+    :is(
+      [data-settings-group],
+      [data-settings-end],
+      :has([data-settings-group], [data-settings-end])
+    )
+    ~ *
+    [data-settings-group]:not(
+      :is([data-settings-group], [data-settings-end]) *
+    ) {
+    margin-block-start: var(--spacing-sm);
+    border-block-start: 1px solid var(--native-color-settings-rule);
+    border-image: linear-gradient(
+        var(--native-color-settings-rule),
+        var(--native-color-settings-rule)
+      )
+      1 / 1px 0 0 / 0 100vw;
   }
 }
 

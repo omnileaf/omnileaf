@@ -1,5 +1,5 @@
 use omnileaf_sync_proto::{BookId, SeriesId};
-use rusqlite::{Connection, Row, Statement, ToSql, named_params};
+use rusqlite::{Connection, OptionalExtension, Row, Statement, ToSql, named_params};
 
 use crate::{
     Error,
@@ -16,15 +16,26 @@ use crate::{
     reading_order::{KeyRange, last_first_keys, section_keys, volume_keys},
 };
 
-macro_rules! books_in_series {
-    ($direction:literal $(, $condition:expr)*) => {
+macro_rules! books_with_reading {
+    ($condition:expr) => {
         concat!(
             "SELECT book.id, book.reading_order_key,
                 book_state.is_read, book_state.is_started, book_state.position_page
             FROM book
             LEFT JOIN book_state ON book_state.book_id = book.id
-            WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = :series)",
-            $(" AND ", $condition,)*
+            WHERE ",
+            $condition
+        )
+    };
+}
+
+macro_rules! books_in_series {
+    ($direction:literal $(, $condition:expr)*) => {
+        concat!(
+            books_with_reading!(concat!(
+                "book.series_local_id = (SELECT local_id FROM series WHERE id = :series)",
+                $(" AND ", $condition,)*
+            )),
             " ORDER BY book.reading_order_key ", $direction, ", book.id ", $direction
         )
     };
@@ -96,6 +107,8 @@ macro_rules! in_range {
     };
 }
 
+pub(crate) use in_range;
+
 macro_rules! after_cursor {
     ($comparison:literal) => {
         concat!(
@@ -128,15 +141,18 @@ const NEXT_BOOKMARKED_IN_RANGE: &str =
 const LAST_BOOKMARKED_IN_RANGE: &str = books_in_series!("DESC", bookmarked!(), in_range!());
 const PREVIOUS_BOOKMARKED_IN_RANGE: &str =
     books_in_series!("DESC", bookmarked!(), after_cursor!("<"), in_range!());
-const UP_NEXT: &str = concat!(
-    "SELECT book.id, book.reading_order_key,
-        book_state.is_read, book_state.is_started, book_state.position_page
-    FROM book
-    LEFT JOIN book_state ON book_state.book_id = book.id
-    WHERE book.id = (SELECT ",
+const UP_NEXT: &str = books_with_reading!(concat!(
+    "book.id = (SELECT ",
     book_up_next!(),
     " FROM series WHERE series.id = :series)"
-);
+));
+const UP_NEXT_IN_RANGE: &str = books_with_reading!(concat!(
+    "book.id = (SELECT coalesce((",
+    first_book_in_series!(in_range!(), "book_state.is_started IS 1", not_read!()),
+    "), (",
+    first_book_in_series!(in_range!(), not_read!()),
+    ")) FROM series WHERE series.id = :series)"
+));
 const BOOK_DETAILS: &str = "SELECT book.title, book.added_at_ms, book.page_count,
         book.kind, book.first_number, book.last_number, book.number_source,
         book.volume_number, book.volume_source,
@@ -337,7 +353,11 @@ pub fn series_books(
     for (book, _) in &mut rows {
         fill_details(&mut details, book)?;
     }
-    note_book_connections(connection, rows.iter_mut().map(|(book, _)| book))?;
+    note_book_connections(
+        connection,
+        rows.iter_mut()
+            .map(|(book, _)| (book.id, &mut book.is_connected)),
+    )?;
     Ok(Page::of(rows, request.size))
 }
 
@@ -451,15 +471,56 @@ fn books_between(
 #[tracing::instrument(skip_all, fields(%series))]
 pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookSummary>, Error> {
     let _snapshot = snapshot(connection)?;
-    let mut statement = connection.prepare(UP_NEXT)?;
-    let mut rows = statement.query(named_params! { ":series": series.as_bytes() })?;
-    let Some(row) = rows.next()? else {
+    book_up_next_in(connection, series, UpNextScope::WholeSeries)
+}
+
+pub(crate) fn up_next_in_range(
+    connection: &Connection,
+    series: SeriesId,
+    keys: &KeyRange,
+) -> Result<Option<BookSummary>, Error> {
+    book_up_next_in(connection, series, UpNextScope::Range(keys))
+}
+
+#[derive(Clone, Copy)]
+enum UpNextScope<'a> {
+    WholeSeries,
+    Range(&'a KeyRange),
+}
+
+fn book_up_next_in(
+    connection: &Connection,
+    series: SeriesId,
+    scope: UpNextScope<'_>,
+) -> Result<Option<BookSummary>, Error> {
+    let found_in_order =
+        |row: &Row<'_>| stored_book(series, BookListing::IN_ORDER, stored_reading(row)?, row);
+    let found = match scope {
+        UpNextScope::WholeSeries => connection.query_row(
+            UP_NEXT,
+            named_params! { ":series": series.as_bytes() },
+            found_in_order,
+        ),
+        UpNextScope::Range(keys) => connection.query_row(
+            UP_NEXT_IN_RANGE,
+            named_params! {
+                ":series": series.as_bytes(),
+                ":range_start": keys.start,
+                ":range_end": keys.end,
+            },
+            found_in_order,
+        ),
+    }
+    .optional()?;
+    let Some((mut book, cursor)) = found else {
         return Ok(None);
     };
-    let (mut book, cursor) = stored_book(series, BookListing::IN_ORDER, stored_reading(row)?, row)?;
     book.position = books_before(connection, &cursor)? + 1;
     fill_details(&mut connection.prepare(BOOK_DETAILS)?, &mut book)?;
-    note_book_connections(connection, std::iter::once(&mut book))?;
+    note_book_connections(
+        connection,
+        std::iter::once((book.id, &mut book.is_connected)),
+    )?;
     Ok(Some(book))
 }
 
@@ -765,5 +826,31 @@ mod tests {
         .chain(["SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN".to_owned()])
         .collect();
         assert_eq!(plan, expected);
+    }
+
+    #[test]
+    fn finds_what_is_up_next_in_a_range_by_walking_its_books_in_order_without_scanning_or_sorting()
+    {
+        let scratch = ScratchLibrary::new("up-next-in-range-plan");
+
+        let plan = scratch.query_plan(UP_NEXT_IN_RANGE);
+
+        let books_in_range = "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND reading_order_key>? AND reading_order_key<?)";
+        let their_state = "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN";
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING PRIMARY KEY (id=?)",
+                "SCALAR SUBQUERY 3",
+                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+                "CORRELATED SCALAR SUBQUERY 1",
+                books_in_range,
+                their_state,
+                "CORRELATED SCALAR SUBQUERY 2",
+                books_in_range,
+                their_state,
+                their_state,
+            ]
+        );
     }
 }

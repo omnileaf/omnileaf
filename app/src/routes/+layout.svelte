@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
+  import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
 
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
@@ -28,6 +29,7 @@
   import IconActionsSync from "#lib/icon-actions/IconActionsSync.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
   import { followHistoryForBack } from "#lib/navigation/android-back.ts";
+  import { showOpeningPage } from "#lib/navigation/restored-route.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
     languageSettingForDocument,
@@ -106,6 +108,18 @@
   let { data, children }: LayoutProps = $props();
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
+  const keepsThemeNatively = untrack(() => data.appInfo.platform) === "android";
+  let isThemeKept = $state(!keepsThemeNatively);
+  if (keepsThemeNatively) {
+    void commands.rememberedTheme().then((kept) => {
+      if (kept.status === "ok") {
+        themeSetting.adopt(kept.data);
+      } else {
+        reportError(kept.error);
+      }
+      isThemeKept = true;
+    });
+  }
   const colours = setColoursSetting(coloursSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
   const screenshotMode = setScreenshotMode(
@@ -146,6 +160,11 @@
   const bookPresence = setBookPresence(new BookPresence());
   setPreviousScreens(new PreviousScreens());
   followHistoryForBack(() => data.appInfo.platform);
+  afterNavigate(({ type }) => {
+    if (type === "enter") {
+      void showOpeningPage(data.pageToRestore, data.appInfo.platform);
+    }
+  });
 
   function settleScreenshotMode(): void {
     screenshotMode.settle();
@@ -203,6 +222,9 @@
   }
 
   $effect(() => {
+    if (!isThemeKept) {
+      return;
+    }
     void followWindowBackdropOnceThemed(
       data.appInfo.windowBackdrop,
       commands.matchSystemBars(

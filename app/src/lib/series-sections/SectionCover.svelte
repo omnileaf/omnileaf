@@ -14,8 +14,7 @@
 
   import { bookWords, volumeWords } from "./book-number-words";
   import type { SectionTileLook } from "./section-tile";
-
-  type BookId = SeriesBook["id"];
+  import type { PickKey } from "./section-tiles";
 
   let {
     book,
@@ -27,8 +26,8 @@
     book: SeriesBook;
     cover: ShownCover;
     look: SectionTileLook;
-    selection: Selection<BookId> | undefined;
-    order: () => readonly BookId[];
+    selection: Selection<PickKey> | undefined;
+    order: () => readonly PickKey[];
   } = $props();
 
   const meta = $derived(
@@ -40,7 +39,7 @@
   const isPicked = $derived(selection?.has(book.id) === true);
 </script>
 
-<div data-book-id={book.id}>
+<div data-pick-key={book.id}>
   <PickableLink
     id={book.id}
     href={resolve("/read/[book]", { book: book.id })}

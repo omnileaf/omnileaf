@@ -1,12 +1,5 @@
 <script lang="ts">
-  import {
-    BookImage,
-    ChevronDown,
-    ChevronUp,
-    Folder,
-    Info,
-    Pencil,
-  } from "@lucide/svelte";
+  import { ChevronDown, ChevronUp, Info, Pencil } from "@lucide/svelte";
   import { tick } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
@@ -40,33 +33,34 @@
     SeriesDetails,
     SeriesOverview,
   } from "#lib/ipc/bindings.ts";
-  import CoverImage from "#lib/library/CoverImage.svelte";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone, phoneOf } from "#lib/page/platform.ts";
+  import { currentPlatform, isPhone, isPointer } from "#lib/page/platform.ts";
   import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
 
+  import AboutCover from "./AboutCover.svelte";
   import ComingSoonControl from "./ComingSoonControl.svelte";
   import SeriesActions from "./SeriesActions.svelte";
   import { SERIES_CONTROL } from "./series-control.ts";
   import SeriesCredits from "./SeriesCredits.svelte";
   import SeriesDetailsList from "./SeriesDetailsList.svelte";
+  import SeriesFolderLine from "./SeriesFolderLine.svelte";
   import SeriesSummary from "./SeriesSummary.svelte";
   import {
     ABOUT_COLUMN,
-    ABOUT_COVER,
     ABOUT_DETAILS_CARD,
     ABOUT_HEAD,
     ABOUT_LINES,
+    ABOUT_META,
     ABOUT_TAG,
+    ABOUT_TITLE,
   } from "./series-about-layout.ts";
 
   const ICON_SIZE = 16;
-  const NO_COVER_ICON_SIZE = 32;
 
   interface DetailsRow {
     readonly plate: string;
@@ -85,6 +79,18 @@
       closed: "chevron-down",
       open: "chevron-up",
     },
+    linux: undefined,
+    macos: undefined,
+    windows: undefined,
+  };
+
+  type OrderLinePlace = "aboveDetails";
+
+  const ORDER_LINE_PLACES: Readonly<
+    Record<Platform, OrderLinePlace | undefined>
+  > = {
+    android: "aboveDetails",
+    ios: undefined,
     linux: undefined,
     macos: undefined,
     windows: undefined,
@@ -110,11 +116,13 @@
 
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const isAndroidPhone = $derived(
-    phoneOf(platform, width.current) === "android",
-  );
   const detailsRow = $derived(
     isPhone(platform, width.current) ? DETAILS_ROWS[platform] : undefined,
+  );
+  const orderLinePlace = $derived(
+    isPointer(platform) || isPhone(platform, width.current)
+      ? ORDER_LINE_PLACES[platform]
+      : undefined,
   );
 
   let areDetailsOpen = $state(false);
@@ -132,26 +140,9 @@
 
 <section aria-label={m.series_about()} class={ABOUT_COLUMN}>
   <div class={ABOUT_HEAD}>
-    <div
-      role="img"
-      aria-label={m.series_cover({ title: overview.title })}
-      class={[
-        "relative flex items-center justify-center overflow-hidden rounded-series-cover bg-chip text-muted shadow-native-series-cover",
-        ABOUT_COVER,
-      ]}
-    >
-      {#if cover.kind === "none" && isAndroidPhone}
-        <Icon name="book" />
-      {:else if cover.kind === "none"}
-        <BookImage size={NO_COVER_ICON_SIZE} aria-hidden="true" />
-      {/if}
-      <CoverImage {cover} {coverUrl} />
-    </div>
+    <AboutCover title={overview.title} {cover} {coverUrl} />
     <div class={ABOUT_LINES}>
-      <h1
-        tabindex="-1"
-        class="line-clamp-3 text-native-series-title/native-series-title font-bold tracking-native-series-title text-balance expanded:text-pretty android:max-medium:mbe-xs android:max-medium:text-native-page-title/native-page-title android:max-medium:font-native-page-title android:max-medium:tracking-native-page-title"
-      >
+      <h1 tabindex="-1" class={ABOUT_TITLE}>
         {overview.title}
       </h1>
       <SeriesCredits
@@ -161,7 +152,7 @@
           void showAllCreators();
         }}
       />
-      <p class="text-native-series-meta/native-series-meta text-muted">
+      <p class={ABOUT_META}>
         {#if overview.bookCount === 0}
           {m.series_no_books_count()}
         {:else if overview.format === null}
@@ -171,19 +162,7 @@
         {/if}
       </p>
       {#if overview.folder !== null}
-        <p
-          class="flex items-center gap-icon-gap text-native-series-meta/native-series-meta text-muted max-inline-full"
-        >
-          <Folder
-            role="img"
-            aria-label={m.series_folder()}
-            class="shrink-0 block-native-series-icon inline-native-series-icon"
-          />
-          <span
-            class="truncate font-mono text-native-series-path/native-series-path"
-            >{overview.folder}</span
-          >
-        </p>
+        <SeriesFolderLine folder={overview.folder} />
       {/if}
     </div>
   </div>
@@ -252,7 +231,12 @@
         </CardAction>
       </CardHeader>
       <CardContent class="px-lg">
-        <SeriesDetailsList {overview} {sourced} bind:ref={details} />
+        <SeriesDetailsList
+          {overview}
+          {sourced}
+          hasOrderLineAbove={orderLinePlace === "aboveDetails"}
+          bind:ref={details}
+        />
       </CardContent>
     </Card>
   {:else if overview.bookCount > 0}
@@ -297,7 +281,12 @@
             ABOUT_DETAILS_CARD,
           ]}
         >
-          <SeriesDetailsList {overview} {sourced} bind:ref={details} />
+          <SeriesDetailsList
+            {overview}
+            {sourced}
+            hasOrderLineAbove={orderLinePlace === "aboveDetails"}
+            bind:ref={details}
+          />
         </Card>
       </CollapsibleContent>
     </Collapsible>

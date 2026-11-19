@@ -41,7 +41,7 @@
 </script>
 
 {#if android.isOn}
-  <ul class={FLUSH_LIST}>
+  <ul data-settings-group class={FLUSH_LIST}>
     {#each entries as entry (entry.route)}
       <li>
         <Item look="row">

@@ -31,6 +31,7 @@
     notices,
     onBack,
     onNext,
+    onShowFolderGuide,
   }: {
     platform: Platform;
     folders: LibraryFolders;
@@ -39,6 +40,7 @@
     notices: Notices;
     onBack: () => void;
     onNext: () => void;
+    onShowFolderGuide: () => void;
   } = $props();
 
   const screenshotMode = getScreenshotMode();
@@ -114,6 +116,11 @@
         <WidthWording wording={HINT[platform]} />
       {/snippet}
     </LinkedFolders>
+    <div class="flex">
+      <StepButton kind="quiet" onclick={onShowFolderGuide}>
+        {m.first_launch_folder_guide()}
+      </StepButton>
+    </div>
   </div>
   <PickFolderSheet
     isOpen={pickerQuestion.isAsking}

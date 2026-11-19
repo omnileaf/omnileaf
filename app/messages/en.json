@@ -1132,7 +1132,6 @@
   "appearance_colours_omnileaf_hint": "The app's own theme. The default.",
   "appearance_colours_wallpaper": "From your wallpaper",
   "appearance_colours_wallpaper_hint": "Colours Android picks from your wallpaper.",
-  "appearance_colours_android_version": "Android 12 and later.",
   "appearance_colours_covers": "Covers and pages keep their own colours.",
   "appearance_windows_colour_settings": "Windows colour settings",
   "appearance_windows_colour_settings_failed": "Couldn't open Windows colour settings",
@@ -1240,6 +1239,7 @@
   "first_launch_link_hint_android_tablet": "Folders on this device, an SD card or a USB drive all work.",
   "first_launch_link_hint_ios": "Folders in Files, iCloud Drive or a connected drive all work.",
   "first_launch_link_hint_desktop": "Folders on this computer, external drives and network shares all work.",
+  "first_launch_folder_guide": "How should my folders look?",
   "first_launch_skip_phone": "Skip, I'll add them later",
   "first_launch_skip_desktop": "Skip for now",
   "first_launch_pick_folder_title": "Pick a folder",
@@ -2056,6 +2056,43 @@
   "series_mark_all_unread": "Mark all unread",
   "series_about": "About this series",
   "series_cover": "Cover of {title}",
+  "series_volume_about": "About this volume",
+  "series_volume_counts": "Volume · {chapters}",
+  "series_volume_counts_pages": "Volume · {chapters} · {pages}",
+  "series_page_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} page",
+        "countPlural=other": "{formattedCount} pages"
+      }
+    }
+  ],
+  "series_volume_folder": "{series} › {volume}",
+  "series_volume_folder_note": "In this volume’s folder",
+  "series_volume_all_read": "You’ve read every chapter in this volume",
+  "series_volume_all_read_body": "New chapters in its folder show up here.",
+  "series_volume_read_count": [
+    {
+      "declarations": [
+        "input read",
+        "input total",
+        "local totalPlural = total: plural",
+        "local formattedRead = read: number",
+        "local formattedTotal = total: number"
+      ],
+      "selectors": ["totalPlural"],
+      "match": {
+        "totalPlural=one": "{formattedRead} of {formattedTotal} chapter read",
+        "totalPlural=other": "{formattedRead} of {formattedTotal} chapters read"
+      }
+    }
+  ],
   "series_by": "By {names}",
   "series_credit": "{role}: {name}",
   "series_role_story": "Story",
@@ -2094,6 +2131,7 @@
   "series_detail_from_file_names": "From the file names",
   "series_detail_from_files": "From the files (ComicInfo.xml)",
   "series_detail_edited_by_you": "Edited by you",
+  "series_detail_order": "Your edits come first, then the files, then the folder and file names.",
   "series_edit_details": "Edit details",
   "edit_details_menu": "Edit details…",
   "edit_details_intro": "Your changes show only in Omnileaf; the files stay as they are.",
@@ -2343,12 +2381,8 @@
   "reader_auto_scroll_my_pace": "My pace",
   "reader_auto_scroll_set_speed": "Set speed",
   "reader_auto_scroll_help": "Keeps scrolling with reduced motion on, since you started it.",
-  "reader_auto_scroll_rate": "Pages a minute",
-  "reader_auto_scroll_rate_value": "Pages a minute: {count}",
-  "reader_pause_at_end": "Pause auto scroll at the end of a book",
-  "reader_auto_scroll_pace": "Auto scroll at my pace",
-  "reader_auto_scroll_pace_help": "Starts auto scroll at your own speed.",
-  "reader_pages_a_minute": [
+  "reader_auto_scroll_speed_title": "Auto scroll speed",
+  "reader_auto_scroll_speed_readout": [
     {
       "declarations": [
         "input count",
@@ -2357,8 +2391,31 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "{formattedCount} page a minute",
-        "countPlural=other": "{formattedCount} pages a minute"
+        "countPlural=one": "Auto scroll speed, {formattedCount} screen a minute",
+        "countPlural=other": "Auto scroll speed, {formattedCount} screens a minute"
+      }
+    }
+  ],
+  "reader_auto_scroll_rate": "Screens a minute",
+  "reader_auto_scroll_rate_value": "Screens a minute: {count}",
+  "reader_save_speed_for": "Save the speed for",
+  "reader_speed_saved_for_series": "Saved for {series} only. From {slowest} to {fastest} screens a minute; the default is {default}.",
+  "reader_speed_saved_for_all": "Saved for every series. From {slowest} to {fastest} screens a minute; the default is {default}.",
+  "reader_use_default_speed": "Use the default ({count})",
+  "reader_pause_at_end": "Pause auto scroll at the end of a book",
+  "reader_auto_scroll_pace": "Auto scroll at my pace",
+  "reader_auto_scroll_pace_help": "Starts auto scroll at your own speed.",
+  "reader_screens_a_minute": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} screen a minute",
+        "countPlural=other": "{formattedCount} screens a minute"
       }
     }
   ],

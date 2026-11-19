@@ -13,6 +13,7 @@ export interface AutoScrollLook {
   readonly leadsWithToggle: boolean;
   readonly toggle: string;
   readonly readout: string;
+  readonly readoutButton: string | null;
   readonly state: string;
   readonly actions: string;
   readonly speedButton: string;
@@ -32,6 +33,7 @@ const GLASS_LOOK: AutoScrollLook = {
   toggle:
     "flex items-center justify-center rounded-full bg-foreground text-background block-touch-target inline-touch-target focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
   readout: "flex flex-col",
+  readoutButton: null,
   state: "text-small font-semibold",
   actions: "flex items-center justify-end gap-xs",
   speedButton: READER_BUTTON,
@@ -49,7 +51,9 @@ const FLOATING_TOOLBAR_LOOK: AutoScrollLook = {
     variantClasses("primary", "regular", true, "android"),
     "block-native-target inline-native-target",
   ),
-  readout: "flex min-inline-none flex-1 flex-col",
+  readout: "relative flex min-inline-none flex-1 flex-col",
+  readoutButton:
+    "absolute inset-none rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
   state: "text-body font-medium",
   actions: "flex shrink-0 items-center gap-sm",
   speedButton: variantClasses("secondary", "regular", true, "android"),

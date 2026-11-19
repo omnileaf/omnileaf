@@ -126,7 +126,6 @@ export type WallpaperSwatch = Record<
   Record<"primary" | "secondaryContainer" | "surfaceContainerLow", string>
 >;
 
-/** Android below 12 has no wallpaper colours, so this is null there. */
 export async function readWallpaperSwatch(
   readers: Pick<ColourReaders, "wallpaperColours"> = commands,
 ): Promise<WallpaperSwatch | null> {

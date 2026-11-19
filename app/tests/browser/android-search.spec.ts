@@ -29,6 +29,7 @@ const CHAPTER_HITS = [1, 2].map((position) => ({
   position,
   title: `Harbour chapter ${String(position)}`,
   matchedIn: "fileName" as const,
+  file: { kind: "present" as const },
 }));
 
 test.use({

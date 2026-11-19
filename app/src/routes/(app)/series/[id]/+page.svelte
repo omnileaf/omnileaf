@@ -1,18 +1,16 @@
 <script lang="ts">
-  import { BookmarkX, CircleAlert, RefreshCw } from "@lucide/svelte";
+  import { CircleAlert, RefreshCw } from "@lucide/svelte";
   import { onMount, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { goto, invalidate } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import type { ResolvedPathname } from "$app/types";
   import {
     type AdultTreatment,
     commands,
     type Platform,
     type ReadMark,
-    type RemovalReport,
-    type RemovalTarget,
-    type SeriesBook,
     type SeriesBookListing,
     type SeriesDetails,
     type SeriesOverview,
@@ -42,8 +40,10 @@
   import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { SERIES_CONTINUE_WORDS } from "#lib/series/continue-card.ts";
   import ContinueCard from "#lib/series/ContinueCard.svelte";
   import { seriesBookList } from "#lib/series/series-books.svelte.ts";
+  import { listedSeriesBooks } from "#lib/series/listed-series-books.svelte.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import {
     SERIES_OVERVIEW,
@@ -52,17 +52,16 @@
   import { EVERY_BOOK_IN_ORDER } from "#lib/series/book-listing.ts";
   import type { BooksControls } from "#lib/series/books-controls.ts";
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
+  import { seriesBooksHeading } from "#lib/series/books-heading.ts";
+  import { seriesBookCommands } from "#lib/series/series-book-commands.ts";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
-  import {
-    showBookFile,
-    showFolderLabel,
-    showSeriesFolder,
-  } from "#lib/page/show-file.ts";
+  import { showFolderLabel, showSeriesFolder } from "#lib/page/show-file.ts";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
   import type { EditedSeries } from "#lib/series/edited-series.ts";
   import SeriesBand from "#lib/series/SeriesBand.svelte";
   import SeriesBar from "#lib/series/SeriesBar.svelte";
+  import { watchTitleUnderBar } from "#lib/series/title-under-bar.ts";
   import SeriesTitleBar from "#lib/series/SeriesTitleBar.svelte";
   import {
     standInBook,
@@ -131,6 +130,13 @@
     }),
   );
   const foundId = $derived(found?.overview.id);
+
+  function volumePage(volume: number): ResolvedPathname {
+    return resolve("/(app)/series/[id]/volume/[volume]", {
+      id: data.id,
+      volume: String(volume),
+    });
+  }
   const overview = $derived(
     found === undefined || !screenshotMode.isOn
       ? found?.overview
@@ -141,20 +147,16 @@
       ? undefined
       : (screenshotMode.isOn ? standInLook : realLook)(found.overview).cover,
   );
-  const books = $derived(
-    foundId === undefined ? undefined : seriesBookList(foundId, () => listed),
+  const listedBooks = listedSeriesBooks(
+    () => foundId,
+    () => listed,
   );
-  const listingKey = $derived(
-    [listed.shown, listed.direction, listed.section, listed.volume].join(":"),
-  );
-  let startedFor: string | undefined;
+  const books = $derived(listedBooks.pages);
 
   function choose(change: ListingChange): void {
     chosen = { id: data.id, change: { ...chosenHere, ...change } };
     listingChoices.keep(data.id, chosen.change);
-    if (listingKey === startedFor) {
-      void books?.start();
-    }
+    listedBooks.startAgain();
   }
 
   let sourcedDetails: SeriesDetails | undefined = $state();
@@ -167,27 +169,6 @@
   let barHeight = $state(0);
   let pickedCount: number | undefined = $state();
   let isTitleUnderBar = $state(false);
-
-  function watchTitleUnderBar(barBottom: number): () => void {
-    const title = document.querySelector("main h1");
-    if (title === null) {
-      return () => undefined;
-    }
-    const watching = new IntersectionObserver(
-      ([seen]) => {
-        if (seen !== undefined) {
-          isTitleUnderBar =
-            !seen.isIntersecting &&
-            seen.boundingClientRect.bottom <= (seen.rootBounds?.top ?? 0);
-        }
-      },
-      { rootMargin: `${String(-barBottom)}px 0px 0px 0px` },
-    );
-    watching.observe(title);
-    return () => {
-      watching.disconnect();
-    };
-  }
 
   async function rescan(): Promise<void> {
     await rescanEveryFolder();
@@ -204,91 +185,12 @@
     void books?.load();
   }
 
-  async function mark(picked: SeriesBook["id"][], read: ReadMark) {
-    const marked = await commands.markBooks(picked, read);
-    if (marked.status === "error") {
-      reportError(marked.error);
-      return false;
-    }
-    readAgain();
-    return true;
-  }
-
-  function showFileOf(book: SeriesBook["id"]): void {
-    showBookFile(book, notices);
-  }
-
-  async function removeBooks(
-    targets: RemovalTarget[],
-    deleteFiles: boolean,
-  ): Promise<RemovalReport | undefined> {
-    const removed = await commands.removeFromLibrary(targets, deleteFiles);
-    if (removed.status === "error") {
-      reportError(removed.error);
-      return undefined;
-    }
-    readAgain();
-    return removed.data;
-  }
-
-  async function bookmarkSelected(
-    picked: SeriesBook["id"][],
-  ): Promise<{ newlyBookmarked: number; failed: boolean }> {
-    if (foundId === undefined) {
-      return { newlyBookmarked: 0, failed: true };
-    }
-    if (books?.list.kind !== "loaded") {
-      reportError(new Error(`read the books of series ${foundId} to bookmark`));
-      notices.show({
-        tone: "warning",
-        icon: BookmarkX,
-        title: m.series_bookmark_failed(),
-        body: m.series_bookmark_failed_body(),
-      });
-      return { newlyBookmarked: 0, failed: true };
-    }
-    const alreadyBookmarked = new Set(
-      books.list.items
-        .filter((book) => book.isBookmarked)
-        .map((book) => book.id),
-    );
-    const toBookmark = picked.filter((id) => !alreadyBookmarked.has(id));
-    const results = await Promise.all(
-      toBookmark.map((id) => commands.bookmarkPages(id, [0], true)),
-    );
-    const bookmarked = results.filter((result) => result.status === "ok");
-    const failed = bookmarked.length < toBookmark.length;
-    for (const result of results) {
-      if (result.status === "error") {
-        reportError(result.error);
-      }
-    }
-    if (failed) {
-      notices.show({
-        tone: "warning",
-        icon: BookmarkX,
-        title: m.series_bookmark_failed(),
-        body: m.series_bookmark_failed_body(),
-      });
-    }
-    readAgain();
-    return { newlyBookmarked: bookmarked.length, failed };
-  }
-
-  async function removeBookmarks(picked: SeriesBook["id"][]): Promise<boolean> {
-    const cleared = await commands.clearBookmarks(picked);
-    if (cleared.status === "error") {
-      reportError(cleared.error);
-      notices.show({
-        tone: "warning",
-        icon: BookmarkX,
-        title: m.series_bookmark_failed(),
-        body: m.series_bookmark_failed_body(),
-      });
-    }
-    readAgain();
-    return cleared.status === "ok";
-  }
+  const bookCommands = seriesBookCommands({
+    listName: () => `series ${data.id}`,
+    listed: () => books?.list,
+    notices,
+    readAgain,
+  });
 
   function opposite(read: ReadMark): ReadMark {
     return read === "read" ? "unread" : "read";
@@ -314,11 +216,11 @@
     const changing = all.list.items
       .filter((book) => (book.reading.state === "read") !== (read === "read"))
       .map((book) => book.id);
-    if (changing.length > 0 && (await mark(changing, read))) {
+    if (changing.length > 0 && (await bookCommands.mark(changing, read))) {
       notices.offerUndo({
         title: markedTitle(read, changing.length),
         undo: () => {
-          void mark(changing, opposite(read));
+          void bookCommands.mark(changing, opposite(read));
         },
       });
     }
@@ -358,17 +260,10 @@
   });
 
   $effect(() => {
-    const list = books;
-    const key = listingKey;
-    untrack(() => {
-      startedFor = key;
-      void list?.start();
-    });
-  });
-
-  $effect(() => {
     if (overview !== undefined && barHeight > 0 && !hasToolbar) {
-      return watchTitleUnderBar(barHeight);
+      return watchTitleUnderBar(barHeight, (isUnder) => {
+        isTitleUnderBar = isUnder;
+      });
     }
     return undefined;
   });
@@ -532,17 +427,27 @@
             onShowFolder={showInFolder}
           />
         {:else}
-          <ContinueCard {overview} {cover} {coverUrl} isWide={isWide.current} />
+          <ContinueCard
+            progress={overview}
+            words={SERIES_CONTINUE_WORDS}
+            {cover}
+            {coverUrl}
+            isWide={isWide.current}
+          />
           {#key foundId}
             <SeriesSections
               sections={found.overview.sections}
               missingVolumes={found.overview.missingVolumes}
               lastVolume={found.overview.lastVolume}
+              chapterVolumes={{
+                counts: found.chapterVolumes,
+                pageOf: volumePage,
+              }}
               listing={listed}
               onListing={choose}
               {books}
               usesStandIns={screenshotMode.isOn}
-              onMark={mark}
+              onMark={bookCommands.mark}
               onPickedCount={(count: number | undefined) => {
                 pickedCount = count;
               }}
@@ -557,9 +462,7 @@
                       : books.list.items}
                     {sections}
                     seriesTitle={overview.title}
-                    bookCount={found.overview.bookCount}
-                    readCount={found.overview.readCount}
-                    bookmarkCount={found.overview.bookmarkCount}
+                    heading={seriesBooksHeading(found.overview)}
                     {listing}
                     onListing={choose}
                     isComplete={books.list.isComplete}
@@ -567,11 +470,11 @@
                       void books.loadMore();
                     }}
                     onLoadAll={() => books.loadAll()}
-                    onMark={mark}
-                    onBookmark={bookmarkSelected}
-                    onRemoveBookmarks={removeBookmarks}
-                    onRemove={removeBooks}
-                    onShowInFolder={showFileOf}
+                    onMark={bookCommands.mark}
+                    onBookmark={bookCommands.bookmark}
+                    onRemoveBookmarks={bookCommands.removeBookmarks}
+                    onRemove={bookCommands.remove}
+                    onShowInFolder={bookCommands.showFile}
                     platform={data.appInfo.platform}
                     onPickedCount={(count: number | undefined) => {
                       pickedCount = count;

@@ -1,8 +1,8 @@
-import type { MissingFolder } from "../../src/lib/ipc/bindings.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  MISSING_COMICS,
   test,
   tokenColour,
 } from "./fixtures.ts";
@@ -15,22 +15,8 @@ test.use({
     ...DEFAULT_BACKEND,
     librarySeries: pagedSeries(() => LIBRARY),
     librarySeriesCount: () => LIBRARY.length,
-    missingLibraryFolders: () =>
-      [
-        {
-          folder: {
-            id: "5a4d1e00-0000-4000-8002-000000000002",
-            kind: "linked",
-            name: "Comics",
-            location: "/media/Comics",
-            isAvailable: false,
-          },
-          problem: { kind: "missing" },
-          hiddenSeries: 41,
-          isShownAnyway: false,
-        },
-      ] as MissingFolder[],
-    libraryHiddenSeriesCount: () => 41,
+    missingLibraryFolders: () => [MISSING_COMICS],
+    libraryHiddenSeriesCount: () => MISSING_COMICS.hiddenSeries,
   },
 });
 

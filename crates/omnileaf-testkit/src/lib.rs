@@ -1,4 +1,6 @@
 mod archive;
+#[cfg(feature = "log-capture")]
+mod captured_log;
 mod cb7;
 mod encoded_page;
 mod error;
@@ -14,6 +16,8 @@ mod strip;
 mod timing_budget;
 
 pub use archive::{ArchiveEntry, Compression, cbz, cut_inside_entry};
+#[cfg(feature = "log-capture")]
+pub use captured_log::{CapturedLog, Capturing};
 pub use cb7::{Packing, cb7};
 pub use encoded_page::{
     ENCODED_PAGE_HEIGHT, ENCODED_PAGE_INK, ENCODED_PAGE_PAPER, ENCODED_PAGE_WIDTH,

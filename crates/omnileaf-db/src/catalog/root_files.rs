@@ -5,7 +5,13 @@ use rusqlite::{Connection, OptionalExtension, Row};
 
 use crate::{
     Error,
-    catalog::{RootId, folder_joins::forget_emptied_folders, native_path, stored_id::stored_id},
+    catalog::{
+        RootId,
+        emptied_series_place::{RemovedFile, remember_emptied_places},
+        folder_joins::forget_emptied_folders,
+        native_path,
+        stored_id::stored_id,
+    },
 };
 
 const FILES_IN_ROOT: &str = "SELECT book_file.book_id, location, size_bytes, modified_at_ms,
@@ -48,18 +54,28 @@ pub fn remove_book_files(
     root: RootId,
     locations: &[PathBuf],
 ) -> Result<Vec<BookId>, Error> {
+    let removed = delete_book_files_leaving_no_place(connection, root, locations)?;
+    remember_emptied_places(connection, root, &removed)?;
+    Ok(removed.into_iter().map(|file| file.book).collect())
+}
+
+pub(crate) fn delete_book_files_leaving_no_place<'a>(
+    connection: &Connection,
+    root: RootId,
+    locations: &'a [PathBuf],
+) -> Result<Vec<RemovedFile<'a>>, Error> {
     let mut remove = connection.prepare(REMOVE_FILE)?;
-    let mut held = Vec::with_capacity(locations.len());
+    let mut removed = Vec::with_capacity(locations.len());
     for location in locations {
-        let removed: Option<BookId> = remove
+        let book: Option<BookId> = remove
             .query_row((root.0, native_path::to_bytes(location)), |row| {
                 stored_id(row, "book_id")
             })
             .optional()?;
-        held.extend(removed);
+        removed.extend(book.map(|book| RemovedFile { book, location }));
     }
     forget_emptied_folders(connection, root, locations)?;
-    Ok(held)
+    Ok(removed)
 }
 
 fn stored_file(row: &Row<'_>) -> rusqlite::Result<StoredFile> {

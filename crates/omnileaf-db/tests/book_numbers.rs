@@ -11,9 +11,10 @@ use omnileaf_db::{
     Database,
     catalog::{
         BookDetails, BookFile, BookListing, BookNumber, BookSection, BookSummary, BooksShown,
-        NewRoot, NewSeries, NumberRange, Numbering, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, ScannedBook, SortDirection, Sourced, ValueSource, add_root,
-        record_moved_books, record_scanned_books, series_books, series_numberings, series_volume,
+        ChapterVolume, NewRoot, NewSeries, NumberRange, Numbering, PageRequest, PageSize, RootId,
+        RootKind, RootLocator, ScannedBook, SortDirection, Sourced, ValueSource, VolumeOverview,
+        add_root, record_moved_books, record_scanned_books, series_books, series_chapter_volumes,
+        series_numberings, series_volume,
     },
     rusqlite::types::Value,
 };
@@ -106,6 +107,46 @@ impl Library {
             };
             after = Some(next.to_string().parse().unwrap());
         }
+    }
+
+    async fn change(&self, statement: &'static str) {
+        self.database
+            .write(move |transaction| {
+                transaction.execute(statement, [])?;
+                Ok(())
+            })
+            .await
+            .unwrap();
+    }
+
+    async fn volume_overview(&self, thousandths: u32) -> Option<VolumeOverview> {
+        let series = NewSeries::local(SERIES, ADDED_AT_MS).unwrap().id();
+        self.database
+            .read(move |connection| {
+                series_volume(
+                    connection,
+                    series,
+                    BookNumber::from_thousandths(thousandths),
+                )
+            })
+            .await
+            .unwrap()
+    }
+
+    async fn up_next_in(&self, thousandths: u32) -> Option<(String, u32)> {
+        self.volume_overview(thousandths)
+            .await
+            .unwrap()
+            .up_next
+            .map(|book| (book.title, book.position))
+    }
+
+    async fn chapter_volumes(&self) -> Vec<ChapterVolume> {
+        let series = NewSeries::local(SERIES, ADDED_AT_MS).unwrap().id();
+        self.database
+            .read(move |connection| series_chapter_volumes(connection, series))
+            .await
+            .unwrap()
     }
 
     async fn numbers(&self) -> Vec<StoredNumbers> {
@@ -884,6 +925,163 @@ async fn sums_up_a_volume_by_its_chapters_read_cover_and_folder() {
             None,
         ]
     );
+}
+
+#[tokio::test]
+async fn counts_the_pages_of_a_volume_across_its_chapters() {
+    let library = Library::open("volume-pages").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change(
+            "UPDATE book SET page_count = CASE title
+                WHEN 'v02 c005' THEN 20 WHEN 'v02 c006' THEN 22 WHEN 'v02 c007' THEN 24
+                ELSE page_count END",
+        )
+        .await;
+
+    let counted = [
+        library.volume_overview(2000).await,
+        library.volume_overview(3000).await,
+    ]
+    .map(|found| found.unwrap().page_count);
+
+    assert_eq!(counted, [Some(66), Some(1)]);
+}
+
+#[tokio::test]
+async fn counts_no_pages_for_a_volume_while_a_chapter_has_no_page_count() {
+    let library = Library::open("volume-pages-unknown").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change("UPDATE book SET page_count = NULL WHERE title = 'v02 c006'")
+        .await;
+
+    let counted = [
+        library.volume_overview(2000).await,
+        library.volume_overview(3000).await,
+    ]
+    .map(|found| found.unwrap().page_count);
+
+    assert_eq!(counted, [None, Some(1)]);
+}
+
+#[tokio::test]
+async fn goes_on_inside_a_volume_from_its_started_chapter_before_any_unread_one() {
+    let library = Library::open("volume-up-next-started").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change(
+            "INSERT INTO book_state (book_id, is_read, position_page)
+            SELECT id, title = 'v02 c005', iif(title = 'v02 c007', 3, NULL) FROM book
+            WHERE title IN ('v02 c005', 'v02 c007')",
+        )
+        .await;
+
+    let up_next = library.up_next_in(2000).await;
+
+    assert_eq!(up_next, Some(("v02 c007".to_owned(), 4)));
+}
+
+#[tokio::test]
+async fn goes_on_inside_a_volume_from_its_first_chapter_not_read_whatever_is_started_outside_it() {
+    let library = Library::open("volume-up-next-unread").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change(
+            "INSERT INTO book_state (book_id, is_read, position_page)
+            SELECT id, title = 'v02 c005', iif(title = 'v03 c009', 3, NULL) FROM book
+            WHERE title IN ('v02 c005', 'v03 c009')",
+        )
+        .await;
+
+    let up_next = [
+        library.up_next_in(2000).await,
+        library.up_next_in(3000).await,
+    ];
+
+    assert_eq!(
+        up_next,
+        [
+            Some(("v02 c006".to_owned(), 3)),
+            Some(("v03 c009".to_owned(), 6))
+        ]
+    );
+}
+
+#[tokio::test]
+async fn has_nothing_up_next_inside_a_volume_whose_chapters_are_all_read() {
+    let library = Library::open("volume-up-next-none").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change(
+            "INSERT INTO book_state (book_id, is_read)
+            SELECT id, 1 FROM book WHERE title LIKE 'v02 %'",
+        )
+        .await;
+
+    let up_next = [
+        library.up_next_in(2000).await,
+        library.up_next_in(3000).await,
+    ];
+
+    assert_eq!(up_next, [None, Some(("v03 c009".to_owned(), 6))]);
+}
+
+fn chapter_volume(volume: u32, counts: [u32; 3]) -> ChapterVolume {
+    let [book_count, read_count, started_count] = counts;
+    ChapterVolume {
+        volume: BookNumber::from_thousandths(volume),
+        book_count,
+        read_count,
+        started_count,
+    }
+}
+
+#[tokio::test]
+async fn counts_the_chapters_read_and_started_in_each_volume_made_of_chapters() {
+    let library = Library::open("chapter-volume-counts").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change(
+            "INSERT INTO book_state (book_id, is_read, position_page)
+            SELECT id, title IN ('v02 c005', 'v03 c009', 'Volume 2', 'c020'),
+                iif(title = 'v02 c006', 3, NULL)
+            FROM book WHERE title IN ('v02 c005', 'v02 c006', 'v03 c009', 'Volume 2', 'c020')",
+        )
+        .await;
+
+    let counted = library.chapter_volumes().await;
+
+    assert_eq!(
+        counted,
+        [
+            chapter_volume(2000, [3, 1, 2]),
+            chapter_volume(2500, [1, 0, 0]),
+            chapter_volume(3000, [1, 1, 1]),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn counts_no_volume_of_chapters_in_a_series_whose_chapters_are_not_filed_in_volumes() {
+    let library = Library::open("chapter-volume-none").await;
+    let found = books_of_two_volumes(&library)
+        .into_iter()
+        .filter(|book| {
+            !matches!(
+                book.numbering,
+                Some(Numbering::Chapter {
+                    volume: Some(_),
+                    ..
+                })
+            )
+        })
+        .collect();
+    library.record(found).await;
+
+    let counted = library.chapter_volumes().await;
+
+    assert_eq!(counted, []);
 }
 
 #[tokio::test]

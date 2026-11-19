@@ -1,6 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { FakeBackend } from "./fake-backend.ts";
+import {
+  bar,
+  holdClockStill,
+  isFocusInsideTheBar,
+  scrollTopOf,
+  startAutoScroll,
+  TOOLBAR_TUCKS_MS,
+} from "./auto-scroll.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
@@ -10,22 +17,20 @@ import {
   test,
 } from "./fixtures.ts";
 import {
-  BOOK_ID,
   BOOK_SERIES_ID,
-  NOT_STARTED,
-  readerBackend,
-  readerBook,
-  servePages,
+  openLongStrip,
+  tallStripBackend,
 } from "./reader-book.ts";
 
 const LOOK_KEY = "omnileaf.readerSettings.all";
+const SERIES_LOOK_KEY = `omnileaf.readerSettings.series.${BOOK_SERIES_ID}`;
+const SECONDS_PER_PAGE = 60;
 const HALF_A_MINUTE_MS = 30_000;
+const FOUR_SECONDS_MS = 4000;
 const SIX_SECONDS_MS = 6000;
 const FEW_SECONDS_MS = 2000;
 const CLOSE_PX = 8;
-const PAUSE_AHEAD_MS = 500;
 const CONTROLS_GONE_MS = 4000;
-const TOOLBAR_TUCKS_MS = 3500;
 const ANDROID_ROUND_BUTTON_PX = 48;
 const NARROWEST_WIDTHS = [360, 375] as const;
 const NARROW_HEIGHT = 800;
@@ -33,62 +38,9 @@ const SMALLEST_IPHONE_WIDTH = 375;
 const VERY_LARGE_TEXT_SCALE = 3;
 const ANDROID_SPEED_BUTTON_PX = 40;
 
-function tallPages(secondsPerPage: number | null): FakeBackend {
-  return {
-    ...readerBackend(DEFAULT_BACKEND),
-    openBook: () => {
-      const book = readerBook(NOT_STARTED);
-      return {
-        ...book,
-        secondsPerPage,
-        pages: book.pages.map((page) => ({
-          ...page,
-          size: { width: 800, height: 2400 },
-        })),
-      };
-    },
-  };
-}
-
 async function openStrip(page: Page, look: object = {}): Promise<void> {
   await page.clock.install();
-  await page.addInitScript(
-    ({ series, lookKey, lookValue }) => {
-      localStorage.setItem(`omnileaf.stripFound.${series}`, "seen");
-      localStorage.setItem("omnileaf.readerGuide.strip", "seen");
-      localStorage.setItem(lookKey, lookValue);
-    },
-    {
-      series: BOOK_SERIES_ID,
-      lookKey: LOOK_KEY,
-      lookValue: JSON.stringify(look),
-    },
-  );
-  await servePages(page);
-  await page.goto(`/read/${BOOK_ID}`);
-  await expect(page.locator("[data-strip]")).toBeVisible();
-}
-
-function bar(page: Page): Locator {
-  return page.getByRole("region", { name: "Auto scroll" });
-}
-
-async function startAutoScroll(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Show the controls" }).click();
-  await page.getByRole("button", { name: "Start auto scroll" }).click();
-  await expect(bar(page)).toBeVisible();
-}
-
-async function isFocusInsideTheBar(page: Page): Promise<boolean> {
-  return page.evaluate(() => {
-    const focused = document.activeElement;
-    return [...document.querySelectorAll("section")].some(
-      (section) =>
-        section.querySelector("h2")?.textContent.trim() === "Auto scroll" &&
-        focused !== null &&
-        section.contains(focused),
-    );
-  });
+  await openLongStrip(page, { [LOOK_KEY]: JSON.stringify(look) });
 }
 
 async function closeReadingSettings(page: Page): Promise<void> {
@@ -97,21 +49,17 @@ async function closeReadingSettings(page: Page): Promise<void> {
     .click();
 }
 
-/** Holds the page's clock still, so only the time the test runs on moves the strip. */
-async function holdTime(page: Page): Promise<void> {
-  const now = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(now + PAUSE_AHEAD_MS);
-}
-
-async function scrollTopOf(page: Page): Promise<number> {
-  return page.locator("[data-strip]").evaluate((element) => element.scrollTop);
-}
-
 async function pageHeightOf(page: Page): Promise<number> {
   return page
     .locator("[data-strip]")
     .getByRole("img", { name: "Page 1", exact: true })
     .evaluate((element) => element.getBoundingClientRect().height);
+}
+
+async function screenHeightOf(page: Page): Promise<number> {
+  return page
+    .locator("[data-strip]")
+    .evaluate((element) => element.clientHeight);
 }
 
 async function leftEdgesOf(parts: readonly Locator[]): Promise<number[]> {
@@ -162,19 +110,19 @@ async function sizesOf(parts: readonly Locator[]): Promise<number[][]> {
 }
 
 test.describe("at a set speed", () => {
-  test.use({ backend: tallPages(null) });
+  test.use({ backend: tallStripBackend(DEFAULT_BACKEND) });
 
-  test("scrolls a fifth of a page in six seconds at 2 pages a minute", async ({
+  test("scrolls a fifth of a screen in four seconds at 3 screens a minute", async ({
     page,
   }) => {
     await openStrip(page);
-    const height = await pageHeightOf(page);
+    const height = await screenHeightOf(page);
     await startAutoScroll(page);
-    await expect(bar(page)).toContainText("2 pages a minute");
-    await holdTime(page);
+    await expect(bar(page)).toContainText("3 screens a minute");
+    await holdClockStill(page);
     const start = await scrollTopOf(page);
 
-    await page.clock.runFor(SIX_SECONDS_MS);
+    await page.clock.runFor(FOUR_SECONDS_MS);
 
     expect(
       Math.abs((await scrollTopOf(page)) - start - height / 5),
@@ -208,23 +156,26 @@ test.describe("at a set speed", () => {
     await expect(bar(page)).toContainText("Space pauses");
   });
 
-  test("goes faster and slower half a page a minute at a time", async ({
+  test("goes faster and slower one screen a minute at a time", async ({
     page,
   }) => {
     await openStrip(page);
     await startAutoScroll(page);
 
     await bar(page).getByRole("button", { name: "Faster" }).click();
-    await expect(bar(page)).toContainText("2.5 pages a minute");
+    await expect(bar(page)).toContainText("4 screens a minute");
     await bar(page).getByRole("button", { name: "Slower" }).click();
     await bar(page).getByRole("button", { name: "Slower" }).click();
 
-    await expect(bar(page)).toContainText("1.5 pages a minute");
+    await expect(bar(page)).toContainText("2 screens a minute");
     const stored = await page.evaluate(
-      (key) => localStorage.getItem(key),
-      LOOK_KEY,
+      (keys) => keys.map((key) => localStorage.getItem(key) ?? "{}"),
+      [LOOK_KEY, SERIES_LOOK_KEY],
     );
-    expect(JSON.parse(stored ?? "{}")).toMatchObject({ pagesPerMinute: 1.5 });
+    expect(stored.map((look) => JSON.parse(look) as object)).toEqual([
+      {},
+      { screensPerMinute: 2 },
+    ]);
   });
 
   test("keeps scrolling with reduced motion, since you started it", async ({
@@ -278,7 +229,7 @@ test.describe("at a set speed", () => {
 
       const spans = [
         await textSpanOf(
-          bar(page).getByText("2 pages a minute", { exact: true }),
+          bar(page).getByText("3 screens a minute", { exact: true }),
         ),
         ...(await spansOf([
           bar(page).getByRole("button", { name: "Pause" }),
@@ -305,7 +256,7 @@ test.describe("at a set speed", () => {
 
     const spans = [
       await textSpanOf(
-        bar(page).getByText("2 pages a minute", { exact: true }),
+        bar(page).getByText("3 screens a minute", { exact: true }),
       ),
       ...(await spansOf([bar(page).getByRole("button", { name: "Pause" })])),
     ];
@@ -360,7 +311,7 @@ test.describe(
   "the Android phone's floating toolbar",
   { tag: "@native" },
   () => {
-    test.use({ backend: tallPages(null) });
+    test.use({ backend: tallStripBackend(DEFAULT_BACKEND) });
 
     test("leads with the round Pause, then the readout, then Slower and Faster", async ({
       page,
@@ -376,7 +327,7 @@ test.describe(
 
       const lefts = await leftEdgesOf([
         bar(page).getByRole("button", { name: "Pause" }),
-        bar(page).getByText("2 pages a minute", { exact: true }),
+        bar(page).getByText("3 screens a minute", { exact: true }),
         bar(page).getByRole("button", { name: "Slower" }),
         bar(page).getByRole("button", { name: "Faster" }),
       ]);
@@ -673,7 +624,7 @@ test.describe(
         bar(page).getByText("0% of the chapter", { exact: true }),
       ).toBeVisible();
       await expect(
-        bar(page).getByText("2 pages a minute", { exact: true }),
+        bar(page).getByText("3 screens a minute", { exact: true }),
       ).toBeVisible();
     });
 
@@ -715,10 +666,10 @@ test.describe(
       await bar(page).getByRole("button", { name: "Faster" }).click();
 
       await expect(
-        bar(page).getByText("2.5 pages a minute", { exact: true }),
+        bar(page).getByText("4 screens a minute", { exact: true }),
       ).toBeVisible();
       const live = page.locator("[aria-live]").filter({ hasText: "minute" });
-      await expect(live).toHaveText("2.5 pages a minute");
+      await expect(live).toHaveText("4 screens a minute");
       await expect(
         page.locator("[aria-live]").filter({ hasText: "%" }),
       ).toHaveCount(0);
@@ -743,7 +694,7 @@ test.describe(
 );
 
 test.describe("once the library knows the reading speed", () => {
-  test.use({ backend: tallPages(60) });
+  test.use({ backend: tallStripBackend(DEFAULT_BACKEND, SECONDS_PER_PAGE) });
 
   test("scrolls at my pace once it's chosen", async ({ page }) => {
     await openStrip(page, { autoScrollSpeed: "myPace" });
@@ -751,16 +702,30 @@ test.describe("once the library knows the reading speed", () => {
     await startAutoScroll(page);
 
     await expect(bar(page)).toContainText("Your pace");
-    await expect(bar(page)).not.toContainText("pages a minute");
+    await expect(bar(page)).not.toContainText("screens a minute");
+  });
+
+  test("scrolls a tenth of a page in six seconds at a page a minute", async ({
+    page,
+  }) => {
+    await openStrip(page, { autoScrollSpeed: "myPace" });
+    const height = await pageHeightOf(page);
+    await startAutoScroll(page);
+    await expect(bar(page)).toContainText("Your pace");
+    await holdClockStill(page);
+    const start = await scrollTopOf(page);
+
+    await page.clock.runFor(SIX_SECONDS_MS);
+
+    expect(
+      Math.abs((await scrollTopOf(page)) - start - height / 10),
+    ).toBeLessThanOrEqual(CLOSE_PX);
   });
 });
 
 test.describe("on an Android phone", () => {
   test.use({
-    backend: {
-      ...onPlatform("android").backend,
-      openBook: tallPages(60).openBook,
-    },
+    backend: tallStripBackend(onPlatform("android").backend, SECONDS_PER_PAGE),
   });
 
   test("says it runs at my pace, and to tap Play once paused", async ({
@@ -779,12 +744,7 @@ test.describe("on an Android phone", () => {
 });
 
 test.describe("on an iPhone", () => {
-  test.use({
-    backend: {
-      ...onPlatform("ios").backend,
-      openBook: tallPages(null).openBook,
-    },
-  });
+  test.use({ backend: tallStripBackend(onPlatform("ios").backend) });
 
   test("keeps its toolbar up while it runs", async ({ page }) => {
     await openStrip(page);
@@ -797,7 +757,7 @@ test.describe("on an iPhone", () => {
 });
 
 test.describe("its settings", () => {
-  test.use({ backend: tallPages(null) });
+  test.use({ backend: tallStripBackend(DEFAULT_BACKEND) });
 
   test("sets the speed and the pause at the end of a book in the long strip's Reading settings", async ({
     page,
@@ -815,7 +775,7 @@ test.describe("its settings", () => {
       ),
     ).toBeVisible();
     await expect(
-      autoScroll.getByRole("slider", { name: "Pages a minute" }),
+      autoScroll.getByRole("slider", { name: "Screens a minute" }),
     ).toBeVisible();
     await autoScroll
       .getByRole("switch", { name: "Pause auto scroll at the end of a book" })

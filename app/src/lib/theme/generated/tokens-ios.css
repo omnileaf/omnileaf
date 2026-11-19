@@ -391,6 +391,7 @@
   --native-color-tab-indicator: var(--foreground);
   --native-color-tab-rule: var(--border);
   --native-color-sheet-rule: var(--border);
+  --native-color-settings-rule: var(--border);
   --native-color-row-current: transparent;
   --native-color-on-row-current: var(--foreground);
   --native-radius-outlined-field: 4px;
@@ -424,6 +425,7 @@
   --native-color-tile-pressed: transparent;
   --native-color-tile-check-fill: transparent;
   --native-color-tile-check-edge: transparent;
+  --native-color-gap-edge: var(--secondary-text);
   --native-spacing-tile-edge: 0px;
   --native-spacing-tile-lift: 0px;
   --native-spacing-tile-badge: 0px;

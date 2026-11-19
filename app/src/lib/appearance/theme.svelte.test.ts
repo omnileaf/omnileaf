@@ -155,3 +155,33 @@ test("goes back to the chosen theme once the preview ends", () => {
 
   expect([root.dataset.theme, setting.preference]).toEqual(["dark", "dark"]);
 });
+
+test("takes the theme Android kept when the page lost the choice", () => {
+  const store = memoryStore();
+  const setting = new ThemeSetting(
+    store,
+    darkModeQuery(true),
+    document.createElement("div"),
+  );
+
+  setting.adopt("light");
+
+  expect([
+    setting.preference,
+    setting.resolved,
+    store.values.get(PREFERENCE_KEY),
+  ]).toEqual(["light", "light", "light"]);
+});
+
+test("keeps its own choice while Android has kept none", () => {
+  const store = memoryStore({ [PREFERENCE_KEY]: "dark" });
+  const setting = new ThemeSetting(
+    store,
+    darkModeQuery(false),
+    document.createElement("div"),
+  );
+
+  setting.adopt(null);
+
+  expect([setting.preference, setting.resolved]).toEqual(["dark", "dark"]);
+});

@@ -3,12 +3,13 @@ import { promisify } from "node:util";
 
 import { afterAll, beforeAll, expect, test } from "vitest";
 
-import { mainNavigationLink, useAppSession } from "./app-session.ts";
+import { openSettingsPage, useAppSession } from "./app-session.ts";
 import { capability } from "./app-under-test.ts";
 import { openFromTheLauncher } from "./icon-action-intent.ts";
 import { followRestartedApp } from "./restarted-app.ts";
+import { waitUntilSavedOnThePhone } from "./saved-local-storage.ts";
 import { segmentedOption } from "./segmented-control.ts";
-import { pollUntil, xpath } from "./webdriver.ts";
+import { pollUntil } from "./webdriver.ts";
 
 const APP_ID = "app.omnileaf";
 const ADB_TIMEOUT_MS = 30_000;
@@ -21,11 +22,8 @@ const NIGHT_QUALIFIER = /\snight\s/;
 const APP_PROCESS_RECORD = `:${APP_ID}/u`;
 const PROCESS_RECORD_SEPARATOR = "*APP*";
 const CONFIGURATION_LINE = "Configuration={";
+const THEME_KEY = "omnileaf.theme";
 
-const SETTINGS_LINK = mainNavigationLink("Settings");
-const APPEARANCE_LINK = xpath(
-  "//main//a[not(ancestor::nav)][starts-with(normalize-space(), 'Appearance')]",
-);
 const PREFERS_LIGHT =
   "return matchMedia('(prefers-color-scheme: light)').matches;";
 
@@ -71,9 +69,16 @@ async function restorePhoneNightMode(): Promise<void> {
 }
 
 async function chooseTheme(label: string): Promise<void> {
-  await (await appSession().waitFor(SETTINGS_LINK)).click();
-  await (await appSession().waitFor(APPEARANCE_LINK)).click();
+  await openSettingsPage(appSession(), "Appearance");
   await (await appSession().waitFor(segmentedOption("//main", label))).click();
+}
+
+async function waitForSavedTheme(theme: string): Promise<void> {
+  await waitUntilSavedOnThePhone(
+    THEME_KEY,
+    (saved) => saved === theme,
+    `the ${theme} theme to be saved on the phone`,
+  );
 }
 
 async function updateTheApp(): Promise<void> {
@@ -134,6 +139,7 @@ test(
   async () => {
     await chooseTheme("Light");
     await waitForAppNightMode("notnight");
+    await waitForSavedTheme("light");
 
     await updateTheApp();
     await openFromTheLauncher();

@@ -2,7 +2,6 @@ package app.omnileaf
 
 import android.app.Activity
 import android.content.res.Configuration
-import android.os.Build
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -35,8 +34,6 @@ class SystemBoldTextPlugin(
     }
 
     private fun follow(configuration: Configuration) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            changes?.follow(configuration.fontWeightAdjustment)
-        }
+        changes?.follow(configuration.fontWeightAdjustment)
     }
 }

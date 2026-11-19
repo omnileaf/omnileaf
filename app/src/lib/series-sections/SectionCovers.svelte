@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { ResolvedPathname } from "$app/types";
   import type { SeriesBook } from "#lib/ipc/bindings.ts";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -8,8 +9,14 @@
 
   import SectionCover from "./SectionCover.svelte";
   import SectionGap from "./SectionGap.svelte";
+  import SectionVolumeCover from "./SectionVolumeCover.svelte";
   import { coversGrid, sectionTileLook } from "./section-tile";
-  import { bookIdsOf, type SectionTile, tileKey } from "./section-tiles";
+  import {
+    type PickKey,
+    pickKeysOf,
+    type SectionTile,
+    tileKey,
+  } from "./section-tiles";
 
   let {
     tiles,
@@ -17,6 +24,7 @@
     isComplete,
     onNearEnd,
     usesStandIns,
+    volumePage,
     selection,
   }: {
     tiles: readonly SectionTile[];
@@ -24,14 +32,15 @@
     isComplete: boolean;
     onNearEnd: () => void;
     usesStandIns: boolean;
-    selection: Selection<SeriesBook["id"]> | undefined;
+    volumePage: (volume: number) => ResolvedPathname;
+    selection: Selection<PickKey> | undefined;
   } = $props();
 
   const platform = currentPlatform();
   const look = sectionTileLook(platform);
   const width = new WindowWidth();
   const grid = $derived(coversGrid(platform, width.current));
-  const bookOrder = () => bookIdsOf(tiles);
+  const pickOrder = () => pickKeysOf(tiles);
 
   function shownCover(book: SeriesBook): ShownCover {
     if (usesStandIns) {
@@ -50,7 +59,16 @@
       cover={shownCover(tile.book)}
       {look}
       {selection}
-      order={bookOrder}
+      order={pickOrder}
+    />
+  {:else if tile.kind === "volume"}
+    <SectionVolumeCover
+      {tile}
+      href={volumePage(tile.volume)}
+      cover={shownCover(tile.chapters[0])}
+      {look}
+      {selection}
+      order={pickOrder}
     />
   {:else}
     <SectionGap missing={tile.missing} {look} />

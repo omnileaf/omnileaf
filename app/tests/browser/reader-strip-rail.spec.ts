@@ -2,13 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import type { FakeBackend } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, onPlatform, test } from "./fixtures.ts";
-import {
-  BOOK_ID,
-  BOOK_SERIES_ID,
-  NOT_STARTED,
-  readerBook,
-  servePages,
-} from "./reader-book.ts";
+import { openLongStrip, tallStripBook } from "./reader-book.ts";
 
 const CLOSE_PX = 6;
 const SCRUBBER_SIDE_GAP_PX = 8;
@@ -16,28 +10,8 @@ const SCRUBBER_SIDE_GAP_PX = 8;
 function tallPages(base: FakeBackend, bookmarked: number[] | null = null) {
   return {
     ...base,
-    openBook: () => {
-      const book = readerBook(NOT_STARTED);
-      return {
-        ...book,
-        bookmarkedPages: bookmarked,
-        pages: book.pages.map((page) => ({
-          ...page,
-          size: { width: 800, height: 2400 },
-        })),
-      };
-    },
+    openBook: () => ({ ...tallStripBook(), bookmarkedPages: bookmarked }),
   } satisfies FakeBackend;
-}
-
-async function openStrip(page: Page): Promise<void> {
-  await page.addInitScript((series) => {
-    localStorage.setItem(`omnileaf.stripFound.${series}`, "seen");
-    localStorage.setItem("omnileaf.readerGuide.strip", "seen");
-  }, BOOK_SERIES_ID);
-  await servePages(page);
-  await page.goto(`/read/${BOOK_ID}`);
-  await expect(page.locator("[data-strip]")).toBeVisible();
 }
 
 function rail(page: Page): Locator {
@@ -58,7 +32,7 @@ test.describe("on a desktop", () => {
   test("shows where the strip is on a rail at the window's right edge", async ({
     page,
   }) => {
-    await openStrip(page);
+    await openLongStrip(page);
     await expect(rail(page)).toBeVisible();
     const track = await boxOf(rail(page));
     const viewport = page.viewportSize();
@@ -79,7 +53,7 @@ test.describe("on a desktop", () => {
   });
 
   test("scrolls the strip as its rail is dragged", async ({ page }) => {
-    await openStrip(page);
+    await openLongStrip(page);
     const track = await boxOf(rail(page));
     const thumb = await boxOf(rail(page).locator("[data-rail-thumb]"));
 
@@ -103,7 +77,7 @@ test.describe("on a desktop", () => {
   });
 
   test("marks a bookmarked page on the rail", async ({ page }) => {
-    await openStrip(page);
+    await openLongStrip(page);
 
     await expect(rail(page).locator("[data-rail-tick]")).toHaveCount(1);
   });
@@ -113,7 +87,7 @@ test.describe("on a phone", () => {
   test.use({ backend: tallPages(onPlatform("android").backend) });
 
   test("leaves the rail out", async ({ page }) => {
-    await openStrip(page);
+    await openLongStrip(page);
 
     await expect(rail(page)).toBeHidden();
   });
@@ -123,7 +97,7 @@ test.describe("on a phone", () => {
     { tag: "@native" },
     async ({ page, platform }) => {
       test.skip(platform !== "android", "Android's vertical page slider");
-      await openStrip(page);
+      await openLongStrip(page);
       const scrubber = page.locator("[data-scrubber]");
 
       await expect(scrubber).toBeVisible();

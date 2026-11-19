@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import english from "../../messages/en.json" with { type: "json" };
 import { expect } from "./fixtures.ts";
@@ -28,4 +28,20 @@ export async function goToStep(
       .click();
     await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
   }
+}
+
+export function folderRow(page: Page, name: string): Locator {
+  return page
+    .getByRole("region", { name: "Folders" })
+    .getByRole("listitem")
+    .filter({ hasText: name });
+}
+
+export async function openFolderGuide(page: Page): Promise<void> {
+  await page
+    .getByRole("button", { name: "How should my folders look?" })
+    .click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "How folders are read" }),
+  ).toBeFocused();
 }

@@ -1,7 +1,8 @@
 import type { Page } from "@playwright/test";
 
-import type { Platform, WallpaperColours } from "../../src/lib/ipc/bindings.ts";
+import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import { BLUE_WALLPAPER } from "../sample-wallpaper.ts";
+import { CommandFailure } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -16,17 +17,26 @@ const LIGHT_PRIMARY = "--android-wallpaper-light-primary";
 const BLUE_PRIMARY = "#416189";
 const OMNILEAF_FOOTER = "Covers and pages keep their own colours.";
 
-let wallpaper: WallpaperColours | null = BLUE_WALLPAPER;
+let isWallpaperReadable = true;
 
 test.use({
   backend: {
     ...onPlatform("android").backend,
-    wallpaperColours: () => wallpaper,
+    wallpaperColours: () => {
+      if (!isWallpaperReadable) {
+        throw new CommandFailure({
+          code: "internal",
+          message:
+            "Android took too long to give the colours it takes from the wallpaper",
+        });
+      }
+      return BLUE_WALLPAPER;
+    },
   },
 });
 
 test.beforeEach(() => {
-  wallpaper = BLUE_WALLPAPER;
+  isWallpaperReadable = true;
 });
 
 async function openAppearance(page: Page): Promise<void> {
@@ -69,7 +79,6 @@ test.describe("the Colours choice on Android", { tag: "@native" }, () => {
     await expect(
       page.getByText("Colours Android picks from your wallpaper."),
     ).toBeVisible();
-    await expect(page.getByText("Android 12 and later.")).toBeVisible();
     await expect(page.getByText(OMNILEAF_FOOTER)).toBeVisible();
     await expect(page.locator(ROOT)).not.toHaveAttribute("data-colours");
   });
@@ -150,17 +159,16 @@ test.describe("the Colours choice on Android", { tag: "@native" }, () => {
     );
   });
 
-  test("hides the choice below Android 12, where there are no wallpaper colours", async ({
+  test("hides the choice when Android can't give its wallpaper colours", async ({
     page,
   }) => {
-    wallpaper = null;
+    isWallpaperReadable = false;
 
     await openAppearance(page);
 
     await expect(page.getByRole("radiogroup", { name: "Colours" })).toHaveCount(
       0,
     );
-    await expect(page.getByText("Android 12 and later.")).toHaveCount(0);
   });
 
   for (const colorScheme of ["light", "dark"] as const) {
@@ -227,7 +235,6 @@ for (const platform of OTHER_PLATFORMS) {
       await expect(
         page.getByRole("radiogroup", { name: "Colours" }),
       ).toHaveCount(0);
-      await expect(page.getByText("Android 12 and later.")).toHaveCount(0);
     });
   });
 }

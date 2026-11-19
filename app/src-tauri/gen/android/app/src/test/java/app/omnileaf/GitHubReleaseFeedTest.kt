@@ -2,7 +2,6 @@ package app.omnileaf
 
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
@@ -272,10 +271,13 @@ class GitHubReleaseFeedTest {
     }
 
     @Test
-    fun `lets a failure that is not about the connection through as itself`() {
+    fun `fails on a request that broke in a way that is not about the connection`() {
         val feed = GitHubReleaseFeed(INSTALLED, apiBase = "file:///nowhere", repository = REPOSITORY, watchdog = watchdog)
 
-        assertThrows(ClassCastException::class.java) { UpdateCheck(feed).check(INSTALLED) }
+        val result = UpdateCheck(feed).check(INSTALLED)
+
+        val cause = (result as? CheckResult.Failed)?.cause
+        assertTrue("$result", cause?.cause is ClassCastException)
     }
 
     @Test

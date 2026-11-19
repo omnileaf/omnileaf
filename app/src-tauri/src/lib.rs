@@ -36,6 +36,7 @@ mod put_away;
 mod report_downloads;
 mod report_relay;
 mod report_sending;
+mod restored_route;
 mod runtime_config;
 mod scheduled_rescans;
 mod screen_orientation;
@@ -197,6 +198,7 @@ fn with_android_plugins(app: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri
         .plugin(icon_actions::plugin())
         .plugin(volume_keys::plugin())
         .plugin(open_with::plugin())
+        .plugin(restored_route::plugin())
 }
 
 fn open_library(app: &App, config: &RuntimeConfig) -> Result<Option<HomeArrival>, Box<dyn Error>> {

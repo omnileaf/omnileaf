@@ -4,6 +4,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  pixelOf,
   test,
   testOnlyInItsWebview,
 } from "./fixtures.ts";
@@ -128,20 +129,6 @@ async function resolvedColour(page: Page, colour: string): Promise<string> {
   }, colour);
 }
 
-async function pixelOf(page: Page, colour: string): Promise<number[]> {
-  return page.evaluate((value) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1;
-    canvas.height = 1;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (context === null) {
-      throw new Error("no 2d canvas");
-    }
-    context.fillStyle = value;
-    context.fillRect(0, 0, 1, 1);
-    return [...context.getImageData(0, 0, 1, 1).data];
-  }, colour);
-}
 const WHOLE_PIXEL_OUTLINE = 1;
 
 function pickedCover(page: Page, index: number): Locator {

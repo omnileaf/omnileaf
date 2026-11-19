@@ -48,6 +48,7 @@
     suitsMode,
   } from "#lib/reader/cropped-pages.ts";
   import AutoScrollBar from "#lib/reader/AutoScrollBar.svelte";
+  import AutoScrollSpeedSheet from "#lib/reader/AutoScrollSpeedSheet.svelte";
   import {
     autoScrollSpeed,
     fasterSpeed,
@@ -256,12 +257,17 @@
         scrollByScreen: (step: number) => boolean;
         scrollByPixels: (pixels: number) => boolean;
         shownPageHeight: () => number;
+        shownScreenHeight: () => number;
         place: () => StripPlace | undefined;
         scrubTo: (along: number) => void;
       }
     | undefined = $state();
   let paged: { place: () => SpreadPlace | undefined } | undefined = $state();
   let autoScroll: "off" | "running" | "paused" = $state("off");
+  let autoScrollBar: { focusReadout: () => void } | undefined = $state();
+  let isSpeedOpen = $state(false);
+  let resumesAfterSpeed = false;
+  let isSpeedTapped = false;
   let isTouchPausing = false;
   const pausesHintId = $props.id();
   const zonesPause = $derived.by(() => autoScroll === "running");
@@ -271,7 +277,7 @@
   const scrollSpeed = $derived(
     autoScrollSpeed({
       choice: canUseMyPace ? look.autoScrollSpeed : "set",
-      pagesPerMinute: look.pagesPerMinute,
+      screensPerMinute: look.screensPerMinute,
       secondsPerPage: book.secondsPerPage,
     }),
   );
@@ -422,6 +428,36 @@
     autoScroll = autoScroll === "running" ? "paused" : "running";
   }
 
+  function pauseIfRunning(): boolean {
+    const wasRunning = autoScroll === "running";
+    if (wasRunning) {
+      autoScroll = "paused";
+    }
+    return wasRunning;
+  }
+
+  function openSpeed(event: MouseEvent): void {
+    resumesAfterSpeed = pauseIfRunning();
+    isSpeedTapped = isPointerClick(event);
+    isSpeedOpen = true;
+  }
+
+  function closeSpeed(): void {
+    isSpeedOpen = false;
+    if (resumesAfterSpeed && autoScroll === "paused") {
+      autoScroll = "running";
+    }
+    resumesAfterSpeed = false;
+  }
+
+  function returnFocusFromSpeed(): void {
+    if (isSpeedTapped) {
+      heading?.focus();
+      return;
+    }
+    autoScrollBar?.focusReadout();
+  }
+
   function stopAutoScroll(): void {
     autoScroll = "off";
     heading?.focus();
@@ -443,10 +479,7 @@
   }
 
   function pauseOnTouch(): void {
-    isTouchPausing = autoScroll === "running";
-    if (isTouchPausing) {
-      autoScroll = "paused";
-    }
+    isTouchPausing = pauseIfRunning();
   }
 
   function onStripZone(event: MouseEvent, zone: ReaderAction): void {
@@ -470,11 +503,10 @@
     let frame = requestAnimationFrame(function step(now: number) {
       const elapsed = now - last;
       last = now;
-      const pixels = pixelsScrolled(
-        elapsed,
-        scrollSpeed.pagesPerMinute,
-        strip?.shownPageHeight() ?? 0,
-      );
+      const pixels = pixelsScrolled(elapsed, scrollSpeed, {
+        page: strip?.shownPageHeight() ?? 0,
+        screen: strip?.shownScreenHeight() ?? 0,
+      });
       if (strip?.scrollByPixels(pixels) === false) {
         reachStripEnd();
         return;
@@ -1281,21 +1313,23 @@
       </header>
       {#if autoScroll !== "off" && !controls.isShown}
         <AutoScrollBar
+          bind:this={autoScrollBar}
           speed={scrollSpeed}
           chapterProgress={stripProgress}
           isPaused={autoScroll === "paused"}
           isTouch={!isPointer(platform)}
           onToggle={toggleAutoScroll}
           onSlower={() => {
-            settings.change("pagesPerMinute", slowerSpeed(look.pagesPerMinute));
+            settings.changeSpeed(slowerSpeed(settings.speed));
           }}
           onFaster={() => {
-            settings.change("pagesPerMinute", fasterSpeed(look.pagesPerMinute));
+            settings.changeSpeed(fasterSpeed(settings.speed));
           }}
           onStop={stopAutoScroll}
           onReturnFocus={() => {
             heading?.focus();
           }}
+          onSpeed={openSpeed}
         />
       {/if}
       {#if isStripShown && chrome.spans}
@@ -1370,6 +1404,7 @@
           class="pointer-events-none absolute inset-x-none inset-be-reader-bar-bottom flex justify-center"
         >
           <span
+            data-reader-resting-count
             class={cn(
               "rounded-full px-sm py-2xs text-caption font-semibold tabular-nums",
               chrome.floats
@@ -1453,6 +1488,13 @@
       onClose={() => {
         openSettings(false);
       }}
+    />
+    <AutoScrollSpeedSheet
+      isOpen={isSpeedOpen}
+      {settings}
+      seriesTitle={named.seriesTitle}
+      onClose={closeSpeed}
+      onReturnFocus={returnFocusFromSpeed}
     />
     <p role="status" class="sr-only">{announced}</p>
   </main>

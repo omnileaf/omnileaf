@@ -25,7 +25,7 @@ const TODAYS_LOOK: PagesListLook = {
   rowIdle:
     "font-medium text-sidebar-ink hover:bg-hover active:bg-pressed desktop:font-regular",
   icon: "shrink-0 desktop:block-sidebar-icon desktop:inline-sidebar-icon",
-  page: "two-pane:max-inline-section",
+  page: "two-pane:max-inline-section android:max-medium:settings-dividers",
 };
 
 const MACOS_LOOK: PagesListLook = {

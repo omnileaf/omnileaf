@@ -33,9 +33,11 @@ export interface ReaderLook {
   readonly pageTurn: PageTurnStyle;
   readonly tapToScroll: TapToScroll;
   readonly autoScrollSpeed: AutoScrollChoice;
-  readonly pagesPerMinute: number;
+  readonly screensPerMinute: number;
   readonly pausesAtEnd: boolean;
 }
+
+type ScopedLookKey = Exclude<keyof ReaderLook, "screensPerMinute">;
 
 export const PAGE_LAYOUTS: readonly PageLayout[] = ["automatic", "one", "two"];
 export const PAGE_FITS: readonly PageFit[] = ["screen", "width", "height"];
@@ -51,7 +53,6 @@ export const AUTO_SCROLL_CHOICES: readonly AutoScrollChoice[] = [
   "myPace",
   "set",
 ];
-const PAGES_PER_MINUTE = { lowest: 0.5, highest: 10 };
 export const CONTROLS_LOOKS: readonly ReaderControlsLook[] = [
   "dark",
   "matchApp",
@@ -70,14 +71,16 @@ export const DEFAULT_LOOK: ReaderLook = {
   pageTurn: "instant",
   tapToScroll: "topAndBottom",
   autoScrollSpeed: "myPace",
-  pagesPerMinute: 2,
+  screensPerMinute: 3,
   pausesAtEnd: true,
 };
 
 const ALL_KEY = "omnileaf.readerSettings.all";
 const SERIES_KEY_PREFIX = "omnileaf.readerSettings.series.";
 const SCOPE_KEY_PREFIX = "omnileaf.readerSettings.scope.";
+const SPEED_SAVED_FOR_KEY_PREFIX = "omnileaf.readerSettings.speedSavedFor.";
 const PERCENT = { lowest: 0, highest: 100 };
+export const SCREENS_PER_MINUTE = { slowest: 1, fastest: 12, step: 1 } as const;
 
 function oneOf<T>(choices: readonly T[], value: unknown): T | undefined {
   return choices.find((choice) => choice === value);
@@ -104,10 +107,13 @@ function lightIn(value: unknown): ReaderLight | undefined {
     : undefined;
 }
 
-function pagesPerMinute(value: unknown): number | undefined {
+function screensPerMinute(value: unknown): number | undefined {
   return typeof value === "number" &&
-    value >= PAGES_PER_MINUTE.lowest &&
-    value <= PAGES_PER_MINUTE.highest
+    Number.isInteger(
+      (value - SCREENS_PER_MINUTE.slowest) / SCREENS_PER_MINUTE.step,
+    ) &&
+    value >= SCREENS_PER_MINUTE.slowest &&
+    value <= SCREENS_PER_MINUTE.fastest
     ? value
     : undefined;
 }
@@ -141,7 +147,7 @@ function lookIn(text: string | null): Partial<ReaderLook> {
     pageTurn: oneOf(PAGE_TURN_STYLES, stored.pageTurn),
     tapToScroll: oneOf(TAP_TO_SCROLL, stored.tapToScroll),
     autoScrollSpeed: oneOf(AUTO_SCROLL_CHOICES, stored.autoScrollSpeed),
-    pagesPerMinute: pagesPerMinute(stored.pagesPerMinute),
+    screensPerMinute: screensPerMinute(stored.screensPerMinute),
     pausesAtEnd: flag(stored.pausesAtEnd),
   };
   return Object.fromEntries(
@@ -152,12 +158,14 @@ function lookIn(text: string | null): Partial<ReaderLook> {
 /** How the reader shows one series' books, set for that series or shared by every series. */
 export class ReaderSettings {
   scope: SettingsScope = $state("all");
+  speedSavedFor: SettingsScope = $state("series");
 
   #shared: ReaderLook = $state(DEFAULT_LOOK);
   #own: Partial<ReaderLook> = $state({});
   readonly #sharedStored: StoredPreference;
   readonly #ownStored: StoredPreference;
   readonly #scopeStored: StoredPreference;
+  readonly #speedSavedForStored: StoredPreference;
 
   constructor(store: PreferenceStore | undefined, series: string) {
     this.#sharedStored = new StoredPreference(store, ALL_KEY);
@@ -169,30 +177,78 @@ export class ReaderSettings {
       store,
       `${SCOPE_KEY_PREFIX}${series}`,
     );
+    this.#speedSavedForStored = new StoredPreference(
+      store,
+      `${SPEED_SAVED_FOR_KEY_PREFIX}${series}`,
+    );
     this.#shared = { ...DEFAULT_LOOK, ...lookIn(this.#sharedStored.read()) };
     this.#own = lookIn(this.#ownStored.read());
     this.scope = this.#scopeStored.read() === "series" ? "series" : "all";
+    this.speedSavedFor =
+      this.#speedSavedForStored.read() === "all" ? "all" : "series";
   }
 
   get look(): ReaderLook {
-    return this.scope === "series"
-      ? { ...this.#shared, ...this.#own }
-      : this.#shared;
+    const look =
+      this.scope === "series"
+        ? { ...this.#shared, ...this.#own }
+        : this.#shared;
+    return { ...look, screensPerMinute: this.speed };
   }
 
-  change<Key extends keyof ReaderLook>(key: Key, value: ReaderLook[Key]): void {
+  change<Key extends ScopedLookKey>(key: Key, value: ReaderLook[Key]): void {
     if (this.scope === "series") {
-      this.#own = { ...this.#own, [key]: value };
-      this.#ownStored.writeIfPossible(JSON.stringify(this.#own));
+      this.#keepOwn({ ...this.#own, [key]: value });
     } else {
-      this.#shared = { ...this.#shared, [key]: value };
-      this.#sharedStored.writeIfPossible(JSON.stringify(this.#shared));
+      this.#keepShared({ ...this.#shared, [key]: value });
     }
   }
 
   applyTo(scope: SettingsScope): void {
     this.scope = scope;
     this.#scopeStored.writeIfPossible(scope);
+  }
+
+  get speed(): number {
+    return this.#own.screensPerMinute ?? this.#shared.screensPerMinute;
+  }
+
+  get defaultSpeed(): number {
+    return this.#shared.screensPerMinute;
+  }
+
+  saveSpeedFor(scope: SettingsScope): void {
+    this.speedSavedFor = scope;
+    this.#speedSavedForStored.writeIfPossible(scope);
+    this.changeSpeed(this.speed);
+  }
+
+  changeSpeed(screensPerMinute: number): void {
+    if (this.speedSavedFor === "series") {
+      this.#keepOwn({ ...this.#own, screensPerMinute });
+    } else {
+      this.#keepShared({ ...this.#shared, screensPerMinute });
+      this.useDefaultSpeed();
+    }
+  }
+
+  useDefaultSpeed(): void {
+    if (this.#own.screensPerMinute === undefined) {
+      return;
+    }
+    const own = { ...this.#own };
+    delete own.screensPerMinute;
+    this.#keepOwn(own);
+  }
+
+  #keepOwn(own: Partial<ReaderLook>): void {
+    this.#own = own;
+    this.#ownStored.writeIfPossible(JSON.stringify(own));
+  }
+
+  #keepShared(shared: ReaderLook): void {
+    this.#shared = shared;
+    this.#sharedStored.writeIfPossible(JSON.stringify(shared));
   }
 }
 

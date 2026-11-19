@@ -83,7 +83,11 @@
 
 <SectionHeading title={m.accessibility_title()} />
 <div class="mbs-pane-gap flex flex-col android:max-medium:mbs-none">
-  <section aria-labelledby={textHeadingId} class="flex flex-col">
+  <section
+    data-settings-group
+    aria-labelledby={textHeadingId}
+    class="flex flex-col"
+  >
     <h2 id={textHeadingId} class={FLUSH_LIST_HEADING}>
       {m.accessibility_text()}
     </h2>
@@ -116,7 +120,11 @@
       }}
     />
   </section>
-  <section aria-labelledby={motionHeadingId} class="flex flex-col">
+  <section
+    data-settings-group
+    aria-labelledby={motionHeadingId}
+    class="flex flex-col"
+  >
     <h2 id={motionHeadingId} class={FLUSH_LIST_HEADING}>
       {m.accessibility_motion_and_contrast()}
     </h2>
@@ -140,7 +148,11 @@
       }}
     />
   </section>
-  <section aria-labelledby={touchHeadingId} class="flex flex-col">
+  <section
+    data-settings-group
+    aria-labelledby={touchHeadingId}
+    class="flex flex-col"
+  >
     <h2 id={touchHeadingId} class={FLUSH_LIST_HEADING}>
       {m.accessibility_touch()}
     </h2>
@@ -171,7 +183,7 @@
       />
     </div>
   </section>
-  <ul class={FLUSH_LIST}>
+  <ul data-settings-group class={FLUSH_LIST}>
     <li>
       <Item look="row" class={ROW_FOCUS_RING}>
         {#snippet child({ props })}

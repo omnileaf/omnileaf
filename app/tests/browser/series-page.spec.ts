@@ -25,6 +25,7 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 import { NOT_STARTED as UNOPENED, readerBook } from "./reader-book.ts";
+import { fitPhoneToShowRow, showChoices } from "./show-row-fit.ts";
 import { settleBarTitle } from "./series-bar.ts";
 import {
   BOOKS_PER_PAGE,
@@ -173,12 +174,6 @@ function selectAllControl(page: Page): Locator {
     : page.getByRole("button", { name: "Select all" });
 }
 
-function showChoices(page: Page): Locator {
-  return page
-    .getByRole("group", { name: "Show" })
-    .or(page.getByRole("radiogroup", { name: "Show" }));
-}
-
 function shown(page: Page, name: string): Locator {
   return showChoices(page).getByRole("radio", { name, exact: true });
 }
@@ -211,48 +206,6 @@ async function edgesMissedWithin(
         .map(([edge]) => edge);
     },
     target / 2 - TOUCH_EDGE_SLACK_PX,
-  );
-}
-
-async function fitPhoneToShowRow(page: Page): Promise<void> {
-  const spare = await showChoices(page).evaluate((group) => {
-    const segments = [...group.querySelectorAll(":scope > [role=radio]")];
-    const track = getComputedStyle(group);
-    const room =
-      group.clientWidth -
-      Number.parseFloat(track.paddingInlineStart) -
-      Number.parseFloat(track.paddingInlineEnd) -
-      (segments.length - 1) * Number.parseFloat(track.columnGap);
-    return segments.reduce((left, segment) => {
-      const alone = segment.cloneNode(true);
-      if (!(alone instanceof HTMLElement)) {
-        throw new Error("a Show segment is not an element");
-      }
-      alone.style.position = "absolute";
-      group.append(alone);
-      const natural = alone.getBoundingClientRect().width;
-      alone.remove();
-      const { marginInlineStart, marginInlineEnd } = getComputedStyle(segment);
-      return (
-        left -
-        natural -
-        Number.parseFloat(marginInlineStart) -
-        Number.parseFloat(marginInlineEnd)
-      );
-    }, room);
-  });
-  const viewport = viewportOf(page);
-  await page.setViewportSize({
-    ...viewport,
-    width: viewport.width - Math.floor(spare),
-  });
-  await page.evaluate(
-    () =>
-      new Promise((refitted) =>
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => requestAnimationFrame(refitted)),
-        ),
-      ),
   );
 }
 
@@ -1313,6 +1266,38 @@ test.describe("when marking books fails", () => {
     ).toBeVisible();
     await expect.poll(() => reported).toHaveLength(1);
     expect(overviewsRead).toBe(readBefore);
+  });
+});
+
+test.describe("when the volumes of chapters can't be counted", () => {
+  let reported: string[] = [];
+
+  test.use({
+    backend: {
+      ...SHELF_BACKEND,
+      seriesChapterVolumes: () => {
+        throw new CommandFailure({
+          code: "internal",
+          message: "the volumes of chapters could not be counted",
+        });
+      },
+      offerInterfaceErrorReport: (error) => {
+        reported.push(error.message);
+        return DEFAULT_BACKEND.offerInterfaceErrorReport(error);
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    reported = [];
+  });
+
+  test("still shows the series and reports why the counts are missing", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    await expect.poll(() => reported).toHaveLength(1);
   });
 });
 

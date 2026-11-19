@@ -1,8 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
-import { boxOf, expect, test, tokenColour } from "./fixtures.ts";
+import { boxOf, expect, setTextScale, test, tokenColour } from "./fixtures.ts";
 import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
+import { fitPhoneToShowRow } from "./show-row-fit.ts";
 
 const TONAL_BAR = "rgb(233, 240, 232)";
 const OTHER_SERIES = {
@@ -16,6 +17,9 @@ const OTHER_SERIES = {
 } as const;
 
 const PIXEL_9_PRO = { width: 412, height: 915 };
+const BOARD_PHONE = { width: 390, height: 844 };
+const LARGER_TEXT_SCALE = 1.3;
+const SHOW_CHOICES = ["All", "Unread", "Bookmarked"] as const;
 const STATUS_BAR = 24;
 const NAVIGATION_BAR = 24;
 const TOP_APP_BAR = 64;
@@ -39,6 +43,21 @@ async function openSeries(page: Page): Promise<void> {
     { top: STATUS_BAR, bottom: NAVIGATION_BAR },
   );
   await page.goto(`/series/${SERIES_ID}`);
+}
+
+function showChoice(page: Page, name: string): Locator {
+  return page
+    .getByRole("radiogroup", { name: "Show" })
+    .getByRole("radio", { name, exact: true });
+}
+
+async function showRows(page: Page): Promise<string[][]> {
+  const tops = await Promise.all(
+    SHOW_CHOICES.map(async (name) => (await boxOf(showChoice(page, name))).y),
+  );
+  return [...new Set(tops)].map((top) =>
+    SHOW_CHOICES.filter((_, index) => tops[index] === top),
+  );
 }
 
 function topAppBar(page: Page): Locator {
@@ -296,6 +315,54 @@ test.describe(
   },
 );
 
+for (const phone of [BOARD_PHONE, PIXEL_9_PRO]) {
+  test.describe(
+    `the Show choices on an Android phone ${String(phone.width)} wide as the text grows`,
+    { tag: "@native" },
+    () => {
+      test.use({
+        viewport: phone,
+        backend: new FakeShelf([READ]).backend(),
+      });
+
+      test.beforeEach(({ platform }) => {
+        test.skip(platform !== "android", "Android's Show choices");
+      });
+
+      test("keeps All, Unread and Bookmarked on one row at the default text size once the widest fits each column", async ({
+        page,
+      }) => {
+        await openSeries(page);
+        await fitPhoneToShowRow(page);
+
+        await expect.poll(() => showRows(page)).toEqual([[...SHOW_CHOICES]]);
+      });
+
+      test("wraps into two equal columns at larger text, Bookmarked across both below", async ({
+        page,
+      }) => {
+        await setTextScale(page, LARGER_TEXT_SCALE);
+        await openSeries(page);
+
+        await expect
+          .poll(() => showRows(page))
+          .toEqual([["All", "Unread"], ["Bookmarked"]]);
+        const [all, unread, bookmarked] = await Promise.all([
+          boxOf(showChoice(page, "All")),
+          boxOf(showChoice(page, "Unread")),
+          boxOf(showChoice(page, "Bookmarked")),
+        ]);
+        expect(unread.width).toBeCloseTo(all.width, 0);
+        expect(bookmarked.x).toBe(all.x);
+        expect(bookmarked.x + bookmarked.width).toBeCloseTo(
+          unread.x + unread.width,
+          0,
+        );
+      });
+    },
+  );
+}
+
 test.describe(
   "showing a series' folder on an Android phone",
   { tag: "@native" },
@@ -362,6 +429,119 @@ test.describe(
 
         await expect.poll(() => shown).toEqual([SERIES_ID]);
       });
+    });
+  },
+);
+
+const LONG_TITLE_BOOKS = 90;
+const LONG_TITLE_EVERY = 3;
+const LARGER_TEXT = 1.3;
+const WRAPPED_TITLES = '[data-slot="item-title"] { white-space: normal; }';
+const SCROLL_STEP = 20;
+const FRAMES_SCROLLED = 30;
+const FRAMES_TO_SETTLE = 3;
+
+function longTitledShelf(): FakeShelf {
+  const shelf = new FakeShelf(
+    Array.from({ length: LONG_TITLE_BOOKS }, () => READ),
+  );
+  for (let index = 0; index < LONG_TITLE_BOOKS; index += LONG_TITLE_EVERY) {
+    shelf.retitle(
+      index,
+      `The Long Road Home Across the Northern Sea, Part ${String(index + 1)}`,
+    );
+  }
+  return shelf;
+}
+
+async function openWithTwoLineTitles(page: Page): Promise<Locator> {
+  await setTextScale(page, LARGER_TEXT);
+  await page.addInitScript((wrapped) => {
+    document.addEventListener("DOMContentLoaded", () => {
+      const style = document.createElement("style");
+      style.textContent = wrapped;
+      document.head.append(style);
+    });
+  }, WRAPPED_TITLES);
+  await openSeries(page);
+  const list = page.getByRole("list", { name: "Books" });
+  await expect(list.getByRole("listitem").first()).toBeVisible();
+  return list;
+}
+
+async function scrollToEnd(page: Page): Promise<void> {
+  await page.getByRole("main").evaluate(async (main, frames) => {
+    const settled = async () => {
+      for (let frame = 0; frame < frames; frame += 1) {
+        await new Promise(requestAnimationFrame);
+      }
+    };
+    let height: number;
+    do {
+      height = main.scrollHeight;
+      main.scrollTo({ top: height });
+      await settled();
+    } while (main.scrollHeight !== height);
+  }, FRAMES_TO_SETTLE);
+}
+
+test.describe(
+  "a long series with two-line titles at larger text on an Android phone",
+  { tag: "@native" },
+  () => {
+    const shelf = longTitledShelf();
+
+    test.use({ backend: shelf.backend() });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's book list");
+    });
+
+    test("ends the book list at the bottom of its last row", async ({
+      page,
+    }) => {
+      const list = await openWithTwoLineTitles(page);
+
+      await scrollToEnd(page);
+
+      const last = list.getByRole("listitem").last();
+      await expect(last).toContainText(shelf.titleOf(LONG_TITLE_BOOKS - 1));
+      await expect(last).toBeInViewport({ ratio: 1 });
+      const [row, frame] = await Promise.all([
+        boxOf(last),
+        boxOf(list.locator("..")),
+      ]);
+      expect(row.y + row.height).toBeCloseTo(frame.y + frame.height, 1);
+    });
+
+    test("keeps each row in place on every frame while scrolling back up from the end", async ({
+      page,
+    }) => {
+      const list = await openWithTwoLineTitles(page);
+      await scrollToEnd(page);
+
+      const moves = await list.evaluate(
+        async (ul, { step, frames }) => {
+          const main = ul.closest("main");
+          const row = [...ul.children].find(
+            (item) =>
+              item.getBoundingClientRect().top >=
+              (main?.getBoundingClientRect().top ?? 0),
+          );
+          const tops = [row?.getBoundingClientRect().top ?? 0];
+          for (let frame = 0; frame < frames; frame += 1) {
+            main?.scrollBy({ top: -step });
+            await new Promise(requestAnimationFrame);
+            tops.push(row?.getBoundingClientRect().top ?? 0);
+          }
+          return tops.slice(1).map((top, index) => top - (tops[index] ?? 0));
+        },
+        { step: SCROLL_STEP, frames: FRAMES_SCROLLED },
+      );
+
+      expect(moves.map((move) => Math.round(move))).toEqual(
+        Array.from({ length: FRAMES_SCROLLED }, () => SCROLL_STEP),
+      );
     });
   },
 );

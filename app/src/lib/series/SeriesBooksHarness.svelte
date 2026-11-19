@@ -2,6 +2,7 @@
   import type { BookSection, Platform, SeriesBook } from "#lib/ipc/bindings.ts";
   import { Notices, setNotices } from "#lib/notices/notices.ts";
 
+  import { seriesBooksHeading } from "./books-heading.ts";
   import SeriesBooks from "./SeriesBooks.svelte";
   import {
     SwipeActionsSetting,
@@ -27,9 +28,11 @@
     {books}
     {sections}
     seriesTitle="Sample Series 04"
-    bookCount={8}
-    readCount={2}
-    bookmarkCount={2}
+    heading={seriesBooksHeading({
+      bookCount: 8,
+      readCount: 2,
+      bookmarkCount: 2,
+    })}
     listing={{ shown: "all", direction: "ascending" }}
     onListing={() => undefined}
     isComplete

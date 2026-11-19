@@ -2,11 +2,9 @@ package app.omnileaf
 
 import android.app.Activity
 import android.app.UiModeManager
-import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.ColorRes
-import androidx.annotation.RequiresApi
 import androidx.annotation.StyleRes
 import app.tauri.annotation.InvokeArg
 
@@ -40,15 +38,8 @@ internal fun StartingTheme.applicationNightMode(): Int =
         StartingTheme.DARK -> UiModeManager.MODE_NIGHT_YES
     }
 
-/** From Android 12 the system keeps an app's own night mode across cold starts and updates, and draws the splash screen in it. */
+/** The system keeps an app's own night mode across cold starts and updates, and draws the splash screen in it. */
 fun Activity.keepStartingTheme(theme: StartingTheme) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        keepApplicationNightMode(theme)
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-private fun Activity.keepApplicationNightMode(theme: StartingTheme) {
     getSystemService(UiModeManager::class.java).setApplicationNightMode(theme.applicationNightMode())
 }
 

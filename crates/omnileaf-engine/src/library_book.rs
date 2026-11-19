@@ -44,6 +44,16 @@ pub enum BookFileState {
     NotConnected,
 }
 
+impl BookFileState {
+    pub(crate) const fn of_connection(is_connected: bool) -> Self {
+        if is_connected {
+            Self::Present
+        } else {
+            Self::NotConnected
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(tag = "state", rename_all = "camelCase")]
 pub enum BookReading {
@@ -132,11 +142,7 @@ impl From<BookSummary> for SeriesBook {
             page_count: book.page_count,
             is_bookmarked: book.is_bookmarked,
             is_new: false,
-            file: if book.is_connected {
-                BookFileState::Present
-            } else {
-                BookFileState::NotConnected
-            },
+            file: BookFileState::of_connection(book.is_connected),
             kind: numbering.map(|numbering| numbering.kind().into()),
             numbers: numbering
                 .and_then(|numbering| numbering.number())

@@ -10,6 +10,7 @@ declare global {
   namespace App {
     interface PageState {
       firstLaunchStep?: FirstLaunchStep;
+      folderGuide?: boolean;
       readerOpensAtEnd?: boolean;
       readerJumped?: boolean;
       libraryTag?: string;

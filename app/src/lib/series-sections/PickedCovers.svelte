@@ -2,6 +2,7 @@
   import { tick } from "svelte";
 
   import { beforeNavigate } from "$app/navigation";
+  import type { ResolvedPathname } from "$app/types";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import DragBox from "#lib/library/DragBox.svelte";
   import { DragSelect } from "#lib/library/drag-select.svelte.ts";
@@ -12,7 +13,13 @@
   import { shortcut } from "#lib/shortcut.ts";
 
   import SectionCovers from "./SectionCovers.svelte";
-  import { bookIdsOf, type SectionTile } from "./section-tiles";
+  import {
+    booksPicked,
+    type PickKey,
+    pickKeysOf,
+    picksAVolumeStillComing,
+    type SectionTile,
+  } from "./section-tiles";
 
   type BookId = SeriesBook["id"];
 
@@ -38,17 +45,19 @@
     isComplete: boolean;
     onNearEnd: () => void;
     usesStandIns: boolean;
+    volumePage: (volume: number) => ResolvedPathname;
     onMark: (books: BookId[], mark: ReadMark) => Promise<boolean>;
     onLoadAll: () => Promise<void>;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
   } = $props();
 
-  const selection = new Selection<BookId>();
+  const selection = new Selection<PickKey>();
   const dragSelect = new DragSelect(selection, {
-    cells: "[data-book-id]",
+    cells: "[data-pick-key]",
     idOf: (cell) =>
-      bookIdsOf(tiles).find((book) => book === cell.dataset.bookId),
+      pickKeysOf(tiles).find((key) => key === cell.dataset.pickKey),
   });
+  const pickedBooks = $derived(booksPicked(tiles, (key) => selection.has(key)));
   const platform = currentPlatform();
   let outcome: Outcome = $state({ kind: "none" });
   let area: HTMLElement | undefined = $state();
@@ -56,19 +65,19 @@
 
   $effect(() => {
     const report = onPickedCount;
-    report?.(selection.count > 0 ? selection.count : undefined);
+    report?.(pickedBooks.length > 0 ? pickedBooks.length : undefined);
     return () => {
       report?.(undefined);
     };
   });
-  let focusedBook: string | undefined;
+  let focusedTile: string | undefined;
 
   function noteFocusedBook({ target }: FocusEvent): void {
     const cover =
       target instanceof Element
-        ? target.closest<HTMLElement>("[data-book-id]")
+        ? target.closest<HTMLElement>("[data-pick-key]")
         : null;
-    focusedBook = cover?.dataset.bookId ?? focusedBook;
+    focusedTile = cover?.dataset.pickKey ?? focusedTile;
   }
 
   function isFocusHereOrLost(): boolean {
@@ -82,10 +91,10 @@
 
   function coverLinkToFocus(): HTMLElement | null | undefined {
     const focused =
-      focusedBook === undefined
+      focusedTile === undefined
         ? null
         : area?.querySelector<HTMLElement>(
-            `[data-book-id="${CSS.escape(focusedBook)}"] [data-pickable-link]`,
+            `[data-pick-key="${CSS.escape(focusedTile)}"] [data-pickable-link]`,
           );
     return focused ?? area?.querySelector<HTMLElement>("[data-pickable-link]");
   }
@@ -103,8 +112,9 @@
     selection.begin();
     await onLoadAll();
     await tick();
-    selection.pickAll(bookIdsOf(tiles));
-    outcome = { kind: "pickedAll", count: selection.count };
+    selection.pickAll(pickKeysOf(tiles));
+    await tick();
+    outcome = { kind: "pickedAll", count: pickedBooks.length };
   }
 
   beforeNavigate((navigation) => {
@@ -119,7 +129,17 @@
   });
 
   async function mark(read: ReadMark): Promise<void> {
-    const picked = selection.picked;
+    if (
+      picksAVolumeStillComing(
+        tiles,
+        (key) => selection.has(key),
+        covers.isComplete,
+      )
+    ) {
+      await onLoadAll();
+      await tick();
+    }
+    const picked = pickedBooks;
     const isMarked = await onMark(picked, read);
     outcome = isMarked
       ? { kind: "marked", mark: read, count: picked.length }
@@ -174,10 +194,10 @@
       <DragBox box={dragSelect.box} />
     {/if}
   </div>
-  {#if selection.count > 0}
+  {#if pickedBooks.length > 0}
     <SelectionBar
       bind:element={bar}
-      count={selection.count}
+      count={pickedBooks.length}
       onMark={(read: ReadMark) => {
         void mark(read);
       }}

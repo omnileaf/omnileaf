@@ -10,20 +10,14 @@
 )]
 mod support;
 
-use std::{
-    fs, io,
-    path::Path,
-    sync::{Arc, Mutex, mpsc},
-    thread,
-    time::Duration,
-};
+use std::{fs, path::Path, sync::mpsc, thread, time::Duration};
 
 use omnileaf_engine::{
     BookId, BookReading, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
     LibraryListing, LibrarySeries, OpenedBook, ProbedFormat, READING_SAVE_DELAY, ReadMark,
     ReadingSaved, ResourceRouter, SeriesBookListing, SeriesId, UtcOffset,
 };
-use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
+use omnileaf_testkit::{ArchiveEntry, CapturedLog, Compression, PageShape, cbz, page_jpeg};
 use support::{FixedClock, ScratchFolder};
 use tokio::{
     sync::{
@@ -208,41 +202,6 @@ async fn before_the_save_delay<T>(call: impl Future<Output = T>) -> T {
     drop(release);
     clock_held.await.unwrap().unwrap_err();
     output
-}
-
-/// The warnings logged on this thread, which runs the test and the library's tasks alike.
-#[derive(Clone, Default)]
-struct Warnings(Arc<Mutex<Vec<u8>>>);
-
-impl io::Write for Warnings {
-    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        self.0.lock().unwrap().extend_from_slice(bytes);
-        Ok(bytes.len())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
-impl Warnings {
-    fn listen(&self) -> tracing::subscriber::DefaultGuard {
-        let writer = self.clone();
-        tracing::subscriber::set_default(
-            tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::WARN)
-                .with_ansi(false)
-                .with_writer(move || writer.clone())
-                .finish(),
-        )
-    }
-
-    fn logged(&self) -> Vec<String> {
-        String::from_utf8_lossy(&self.0.lock().unwrap())
-            .lines()
-            .map(str::to_owned)
-            .collect()
-    }
 }
 
 fn started_on(page_from_one: u32) -> BookReading {
@@ -513,11 +472,26 @@ async fn opens_a_book_opened_again_while_saves_fail_on_the_page_reading_reached(
     assert_eq!((again.start_page, again.reading), (4, started_on(5)));
 }
 
+fn warn_that_a_save_failed() {
+    tracing::warn!("a save failed");
+}
+
+#[test]
+fn hears_a_warning_whose_callsite_another_thread_met_first() {
+    let log = CapturedLog::default();
+    let _capturing = log.capture();
+    thread::spawn(warn_that_a_save_failed).join().unwrap();
+
+    warn_that_a_save_failed();
+
+    assert_eq!(log.warnings().len(), 1, "{:#?}", log.warnings());
+}
+
 #[tokio::test(start_paused = true)]
 async fn warns_once_of_saves_that_keep_failing_however_often_the_library_is_read() {
     let shelf = Shelf::with_two_books("warns-once-while-saves-fail").await;
-    let warnings = Warnings::default();
-    let _listening = warnings.listen();
+    let log = CapturedLog::default();
+    let _capturing = log.capture();
     shelf.refuse_saves();
     let opened = shelf.restore(0).await;
     shelf.show(&opened, 4).await;
@@ -530,7 +504,7 @@ async fn warns_once_of_saves_that_keep_failing_however_often_the_library_is_read
     let settled = shelf.library.put_away().await;
 
     assert!(settled.is_err(), "saves still refused");
-    assert_eq!(warnings.logged().len(), 1, "{:#?}", warnings.logged());
+    assert_eq!(log.warnings().len(), 1, "{:#?}", log.warnings());
 }
 
 #[tokio::test(start_paused = true)]

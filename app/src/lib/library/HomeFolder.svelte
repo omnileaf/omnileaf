@@ -47,7 +47,7 @@
   const android = new AndroidPhone();
 </script>
 
-<section aria-labelledby={headingId} class={className}>
+<section data-settings-group aria-labelledby={headingId} class={className}>
   {#if folders.kind === "loaded" && folders.home !== undefined}
     {@const home = folders.home}
     <div
