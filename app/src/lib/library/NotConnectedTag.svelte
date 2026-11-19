@@ -6,13 +6,22 @@
 
   const TAG_ICON_SIZE = 12;
 
-  let { class: className }: { class?: ClassValue } = $props();
+  const LOOKS = {
+    outlined: "ring-1 ring-control-edge ring-inset",
+    filled: "bg-background",
+  } as const;
+
+  let {
+    look = "outlined",
+    class: className,
+  }: { look?: keyof typeof LOOKS; class?: ClassValue } = $props();
 </script>
 
 <span
   data-slot="not-connected-tag"
   class={[
-    "inline-flex shrink-0 items-center gap-xs rounded-full px-sm py-2xs text-caption font-semibold whitespace-nowrap text-danger ring-1 ring-control-edge ring-inset",
+    "inline-flex shrink-0 items-center gap-xs rounded-full px-sm py-2xs text-caption font-semibold whitespace-nowrap text-danger",
+    LOOKS[look],
     className,
   ]}
 >

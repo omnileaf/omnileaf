@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    FolderSearch,
     ListFilter,
     type LucideProps,
     RotateCcwClock,
@@ -11,6 +12,7 @@
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
   import { coverUrl } from "#lib/library/cover-url.ts";
+  import NotConnectedTag from "#lib/library/NotConnectedTag.svelte";
   import {
     realLook,
     type ShownCover,
@@ -18,6 +20,7 @@
   } from "#lib/library/series-look.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
 
   import { LIBRARY_STATES } from "./places";
   import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
@@ -35,12 +38,14 @@
     choice,
     isActive,
     usesStandIns,
+    isNotConnected = false,
     onChoose,
   }: {
     id: string;
     choice: Choice;
     isActive: boolean;
     usesStandIns: boolean;
+    isNotConnected?: boolean;
     onChoose: () => void;
   } = $props();
 
@@ -110,9 +115,29 @@
             "",
           detail: m.quick_open_library_filter(),
         };
+      case "findFolder":
+        return {
+          icon: FolderSearch,
+          label: m.missing_find_folder(),
+          detail: usesStandIns
+            ? folderStandIn(choice.missing.folder.name)
+            : choice.missing.folder.name,
+        };
     }
   });
   const isMac = currentPlatform() === "macos";
+
+  function enterHint(): string {
+    if (isNotConnected) {
+      return m.quick_open_enter_finds_folder();
+    }
+    if (continuesReading(choice)) {
+      return isMac
+        ? m.quick_open_enter_continues_mac()
+        : m.quick_open_enter_continues();
+    }
+    return isMac ? m.search_key_open_mac() : m.search_key_open();
+  }
 </script>
 
 <Command.Item
@@ -142,20 +167,19 @@
     </span>
   {/if}
   <span class="flex flex-1 flex-col min-inline-none">
-    <span class="truncate text-small font-semibold">{shown.label}</span>
+    <span class="flex items-center gap-sm min-inline-none">
+      <span class="truncate text-small font-semibold">{shown.label}</span>
+      {#if isNotConnected}
+        <NotConnectedTag look="filled" />
+      {/if}
+    </span>
     <span class={["text-caption", isActive ? "text-foreground" : "text-muted"]}>
       {shown.detail}
     </span>
   </span>
   {#if isActive}
     <span aria-hidden="true" class="shrink-0 text-caption text-foreground">
-      {continuesReading(choice)
-        ? isMac
-          ? m.quick_open_enter_continues_mac()
-          : m.quick_open_enter_continues()
-        : isMac
-          ? m.search_key_open_mac()
-          : m.search_key_open()}
+      {enterHint()}
     </span>
   {/if}
 </Command.Item>

@@ -13,9 +13,12 @@
     commands,
     type HistoryEntry,
     type LibrarySeries,
+    type MissingFolder,
     type Platform,
     SEARCH_MAX_CHARS,
   } from "#lib/ipc/bindings.ts";
+  import type { FolderFinder } from "#lib/library/folder-finder.svelte.ts";
+  import { marksBooksNotConnected } from "#lib/library/not-connected.ts";
   import {
     type FilterCondition,
     NEW_LIBRARY_LISTING,
@@ -57,16 +60,23 @@
     platform,
     quickOpen,
     usesStandIns,
+    finder,
+    missingFolders,
   }: {
     platform: Platform;
     quickOpen: QuickOpenState;
     usesStandIns: boolean;
+    finder: Pick<FolderFinder, "find" | "findFrom">;
+    missingFolders: readonly MissingFolder[];
   } = $props();
+
+  const marksAway = $derived(marksBooksNotConnected(platform));
 
   let text = $state("");
   let answered = $state("");
   let series: readonly LibrarySeries[] = $state([]);
   let unfinished: readonly HistoryEntry[] = $state([]);
+  let awayBooks: ReadonlyMap<string, MissingFolder> = $state(new Map());
   let recent: readonly string[] = $state([]);
   let selectedKey = $state("");
   let latestSearch = 0;
@@ -119,6 +129,12 @@
             ...(SETTINGS_PLACE === undefined
               ? []
               : [{ kind: "place" as const, place: SETTINGS_PLACE }]),
+            ...(marksAway
+              ? missingFolders.map((missing): Choice => ({
+                  kind: "findFolder",
+                  missing,
+                }))
+              : []),
           ],
         },
       ]);
@@ -180,10 +196,54 @@
 
   async function loadUnfinished(): Promise<void> {
     const page = await commands.readingHistory(null, { kind: "unfinished" });
-    unfinished =
+    const shown =
       page.status === "ok" ? page.data.entries.slice(0, UNFINISHED_SHOWN) : [];
+    awayBooks =
+      marksAway && missingFolders.length > 0
+        ? await awayFoldersOf(shown)
+        : new Map();
+    unfinished = shown;
     if (text === "") {
       selectFirstChoice();
+    }
+  }
+
+  async function awayFoldersOf(
+    entries: readonly HistoryEntry[],
+  ): Promise<ReadonlyMap<string, MissingFolder>> {
+    const looked = await Promise.all(
+      entries.map(async ({ book }) => {
+        const missing = await commands.bookMissingFolder(book);
+        return missing.status === "ok" && missing.data !== null
+          ? ([book, missing.data] as const)
+          : undefined;
+      }),
+    );
+    return new Map(looked.filter((away) => away !== undefined));
+  }
+
+  function isAway(choice: Choice): boolean {
+    switch (choice.kind) {
+      case "continue":
+        return awayBooks.has(choice.entry.book);
+      case "series":
+        return marksAway && !choice.series.isConnected;
+      case "place":
+      case "search":
+      case "showLibrary":
+      case "findFolder":
+        return false;
+    }
+  }
+
+  function findFolderOf(choice: Choice): void {
+    if (choice.kind === "continue") {
+      const missing = awayBooks.get(choice.entry.book);
+      if (missing !== undefined) {
+        finder.find(missing);
+      }
+    } else if (choice.kind === "series") {
+      void finder.findFrom(commands.seriesMissingFolder(choice.series.id));
     }
   }
 
@@ -244,6 +304,10 @@
       return;
     }
     quickOpen.close();
+    if (isAway(choice)) {
+      findFolderOf(choice);
+      return;
+    }
     switch (choice.kind) {
       case "series":
         void goto(
@@ -263,6 +327,9 @@
         return;
       case "showLibrary":
         void showLibrary(choice.state);
+        return;
+      case "findFolder":
+        finder.find(choice.missing);
         return;
     }
   }
@@ -388,6 +455,7 @@
                     {choice}
                     isActive={choiceKey(choice) === selectedKey}
                     {usesStandIns}
+                    isNotConnected={isAway(choice)}
                     onChoose={() => {
                       choose(choice);
                     }}
