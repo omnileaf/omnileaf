@@ -5,6 +5,7 @@ import {
   EXPANDED_MIN_WIDTH,
   expect,
   onPlatform,
+  settle,
   test,
   testOnlyInItsWebview,
   viewportOf,
@@ -106,6 +107,7 @@ test.describe("on a desktop", () => {
     await openLibrary(page);
     await page.keyboard.press("Shift+Slash");
     await expect(sheet(page)).toBeVisible();
+    await settle(sheet(page));
     await sheet(page)
       .getByRole("button", { name: "Close keyboard shortcuts" })
       .hover();

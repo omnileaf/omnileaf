@@ -206,6 +206,7 @@ test("closes the sheet with one Esc while the pointer rests on its close button"
   await openBook(page);
   await page.getByRole("button", { name: "Keyboard shortcuts" }).click();
   await expect(sheet(page)).toBeVisible();
+  await settle(sheet(page));
   await sheet(page)
     .getByRole("button", { name: "Close keyboard shortcuts" })
     .hover();
