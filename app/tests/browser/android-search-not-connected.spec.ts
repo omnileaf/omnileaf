@@ -15,6 +15,7 @@ const CATALOG = sampleSeries(2).map((series, index) =>
   index === AWAY_AT ? { ...series, isConnected: false } : series,
 );
 const AWAY_SERIES = CATALOG[AWAY_AT];
+const THERE = CATALOG[0];
 const AWAY_TITLE = AWAY_SERIES?.title ?? "";
 
 const FOLDER: MissingFolder = {
@@ -30,6 +31,28 @@ const FOLDER: MissingFolder = {
   isShownAnyway: true,
 };
 
+const AWAY_CHAPTER = "Salt and Harbour Lights";
+const CHAPTER_HITS = [
+  {
+    series: THERE?.id ?? "",
+    seriesTitle: THERE?.title ?? "",
+    book: "0190a3e4-0000-8000-8000-000000000101",
+    position: 1,
+    title: "The Harbour Gate at Night",
+    matchedIn: "fileName" as const,
+    file: { kind: "present" as const },
+  },
+  {
+    series: AWAY_SERIES?.id ?? "",
+    seriesTitle: AWAY_TITLE,
+    book: "0190a3e4-0000-8000-8000-000000000102",
+    position: 4,
+    title: AWAY_CHAPTER,
+    matchedIn: "fileName" as const,
+    file: { kind: "notConnected" as const },
+  },
+];
+
 let asked: string[] = [];
 
 test.use({
@@ -38,8 +61,17 @@ test.use({
     librarySeries: () => ({ series: CATALOG, next: null }),
     librarySearch: () => ({ series: CATALOG, next: null }),
     librarySearchCount: () => CATALOG.length,
+    librarySearchChapters: () => ({
+      hits: CHAPTER_HITS,
+      next: null,
+      count: CHAPTER_HITS.length,
+    }),
     seriesMissingFolder: (id) => {
       asked.push(`series ${id}`);
+      return FOLDER;
+    },
+    bookMissingFolder: (id) => {
+      asked.push(`book ${id}`);
       return FOLDER;
     },
     relocateLibraryFolder: (id) => {
@@ -69,7 +101,7 @@ function notice(page: Page, title: string): Locator {
 }
 
 test.describe(
-  "a series that isn't connected in an Android phone's search",
+  "a series or chapter that isn't connected in an Android phone's search",
   { tag: "@native" },
   () => {
     test.beforeEach(({ platform }) => {
@@ -120,6 +152,38 @@ test.describe(
         ]);
     });
 
+    test("finds a chapter's folder from the button that ends its row", async ({
+      page,
+    }) => {
+      await search(page);
+
+      await page
+        .getByRole("button", { name: `Find the folder for ${AWAY_TITLE}` })
+        .click();
+
+      await expect
+        .poll(() => asked)
+        .toEqual([
+          `book ${CHAPTER_HITS[1]?.book ?? ""}`,
+          `relocate ${FOLDER.folder.id}`,
+        ]);
+    });
+
+    test("says why instead of opening a chapter that isn't connected", async ({
+      page,
+    }) => {
+      await search(page);
+
+      await page
+        .getByRole("button", { name: new RegExp(AWAY_CHAPTER) })
+        .click();
+
+      await expect(
+        notice(page, `${AWAY_CHAPTER} isn’t connected`),
+      ).toBeVisible();
+      expect(new URL(page.url()).pathname).toBe("/search");
+    });
+
     for (const colorScheme of ["light", "dark"] as const) {
       test(`passes the accessibility checks in the ${colorScheme} theme`, async ({
         page,
@@ -127,6 +191,9 @@ test.describe(
         await page.emulateMedia({ colorScheme });
         await search(page);
         await expect(awaySeries(page).getByText("Not connected")).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: new RegExp(AWAY_CHAPTER) }),
+        ).toBeVisible();
 
         expect(await accessibilityViolations(page)).toEqual([]);
       });

@@ -1528,6 +1528,7 @@
   ],
   "search_not_connected_title": "{title} isn’t connected",
   "search_not_connected_body": "It can’t be opened until its folder or drive is back.",
+  "search_find_folder_for": "Find the folder for {title}",
   "search_show_all": "Show all",
   "search_series_heading": "Series and books · {count}",
   "search_scope": "Search in",

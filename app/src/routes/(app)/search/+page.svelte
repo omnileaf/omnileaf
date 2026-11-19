@@ -293,6 +293,10 @@
     void findFolderFrom(commands.seriesMissingFolder(series.id));
   }
 
+  function findChapterFolder(hit: ChapterHit): void {
+    void findFolderFrom(commands.bookMissingFolder(hit.book));
+  }
+
   async function findFolderFrom(
     lookup: Promise<
       | { status: "ok"; data: MissingFolder | null }
@@ -616,6 +620,12 @@
           onShowAll={() => {
             void chapters.loadAll();
           }}
+          onNotConnected={(hit: ChapterHit) => {
+            sayNotConnected(hit.title, () => {
+              findChapterFolder(hit);
+            });
+          }}
+          onFind={findChapterFolder}
         />
       {/if}
     {/if}
