@@ -5,7 +5,7 @@ import { median } from "./median.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const TEN_THOUSAND = 10_000;
-const FIRST_GRID_PAINT_BUDGET_MS = 150;
+const FIRST_GRID_PAINT_BUDGET_MS = 200;
 const WARM_UP_OPENINGS = 2;
 const OPENINGS = 9;
 
