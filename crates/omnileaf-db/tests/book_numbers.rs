@@ -11,9 +11,10 @@ use omnileaf_db::{
     Database,
     catalog::{
         BookDetails, BookFile, BookListing, BookNumber, BookSection, BookSummary, BooksShown,
-        NewRoot, NewSeries, NumberRange, Numbering, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, ScannedBook, SortDirection, Sourced, ValueSource, VolumeOverview, add_root,
-        record_moved_books, record_scanned_books, series_books, series_numberings, series_volume,
+        ChapterVolume, NewRoot, NewSeries, NumberRange, Numbering, PageRequest, PageSize, RootId,
+        RootKind, RootLocator, ScannedBook, SortDirection, Sourced, ValueSource, VolumeOverview,
+        add_root, record_moved_books, record_scanned_books, series_books, series_chapter_volumes,
+        series_numberings, series_volume,
     },
     rusqlite::types::Value,
 };
@@ -138,6 +139,14 @@ impl Library {
             .unwrap()
             .up_next
             .map(|book| (book.title, book.position))
+    }
+
+    async fn chapter_volumes(&self) -> Vec<ChapterVolume> {
+        let series = NewSeries::local(SERIES, ADDED_AT_MS).unwrap().id();
+        self.database
+            .read(move |connection| series_chapter_volumes(connection, series))
+            .await
+            .unwrap()
     }
 
     async fn numbers(&self) -> Vec<StoredNumbers> {
@@ -1016,6 +1025,63 @@ async fn has_nothing_up_next_inside_a_volume_whose_chapters_are_all_read() {
     ];
 
     assert_eq!(up_next, [None, Some(("v03 c009".to_owned(), 6))]);
+}
+
+fn chapter_volume(volume: u32, counts: [u32; 3]) -> ChapterVolume {
+    let [book_count, read_count, started_count] = counts;
+    ChapterVolume {
+        volume: BookNumber::from_thousandths(volume),
+        book_count,
+        read_count,
+        started_count,
+    }
+}
+
+#[tokio::test]
+async fn counts_the_chapters_read_and_started_in_each_volume_made_of_chapters() {
+    let library = Library::open("chapter-volume-counts").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .change(
+            "INSERT INTO book_state (book_id, is_read, position_page)
+            SELECT id, title IN ('v02 c005', 'v03 c009', 'Volume 2', 'c020'),
+                iif(title = 'v02 c006', 3, NULL)
+            FROM book WHERE title IN ('v02 c005', 'v02 c006', 'v03 c009', 'Volume 2', 'c020')",
+        )
+        .await;
+
+    let counted = library.chapter_volumes().await;
+
+    assert_eq!(
+        counted,
+        [
+            chapter_volume(2000, [3, 1, 2]),
+            chapter_volume(2500, [1, 0, 0]),
+            chapter_volume(3000, [1, 1, 1]),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn counts_no_volume_of_chapters_in_a_series_whose_chapters_are_not_filed_in_volumes() {
+    let library = Library::open("chapter-volume-none").await;
+    let found = books_of_two_volumes(&library)
+        .into_iter()
+        .filter(|book| {
+            !matches!(
+                book.numbering,
+                Some(Numbering::Chapter {
+                    volume: Some(_),
+                    ..
+                })
+            )
+        })
+        .collect();
+    library.record(found).await;
+
+    let counted = library.chapter_volumes().await;
+
+    assert_eq!(counted, []);
 }
 
 #[tokio::test]

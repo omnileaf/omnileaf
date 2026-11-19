@@ -89,6 +89,7 @@ export const commands = {
 	pageCount: number | null,
 	upNext: SeriesBook | null,
 } | null, IpcError>(__TAURI_INVOKE("series_volume", { id, volume })),
+	seriesChapterVolumes: (id: string & { readonly __brand: "SeriesId" }) => typedError<ChapterVolume[], IpcError>(__TAURI_INVOKE("series_chapter_volumes", { id })),
 	creatorSeries: (creator: string) => typedError<CreatorSeries[], IpcError>(__TAURI_INVOKE("creator_series", { creator })),
 	bookmarkPages: (book: string & { readonly __brand: "BookId" }, pages: number[], isBookmarked: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("bookmark_pages", { book, pages, isBookmarked })),
 	clearBookmarks: (books: (string & { readonly __brand: "BookId" })[]) => typedError<number, IpcError>(__TAURI_INVOKE("clear_bookmarks", { books })),
@@ -358,6 +359,13 @@ export type ChapterHitPage = {
 };
 
 export type ChapterTitleSource = "fileName" | "comicInfo";
+
+export type ChapterVolume = {
+	volume: number,
+	bookCount: number,
+	readCount: number,
+	startedCount: number,
+};
 
 export type ChosenHomeFolder = {
 	location: string,

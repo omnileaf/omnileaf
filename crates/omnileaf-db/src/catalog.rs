@@ -7,6 +7,7 @@ mod book_to_read;
 mod category_series;
 mod chapter_positions;
 mod chapter_search;
+mod chapter_volumes;
 mod closest_chapter_title_words;
 mod closest_title_words;
 pub(crate) mod cover;
@@ -70,6 +71,7 @@ pub use chapter_search::{
     CHAPTER_CANDIDATES_PER_CALL, ChapterHit, ChapterTitleSource, search_chapters,
     search_chapters_count,
 };
+pub use chapter_volumes::{ChapterVolume, series_chapter_volumes};
 pub use closest_chapter_title_words::{ChapterSuggestion, closest_chapter_title};
 pub use closest_title_words::closest_title_words;
 pub use cover::{BookFileId, Cover, cover_file};

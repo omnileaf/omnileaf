@@ -23,10 +23,11 @@ use omnileaf_db::{
         mark_root_unavailable, missing_roots, page_dimensions, person_series, place_in_series,
         record_page_count, related_series, relocate_roots, remember_root_share, remove_book_files,
         remove_books_without_files, remove_root, root_book_count, root_files, root_share,
-        root_shares, series_books, series_count, series_file_details, series_numberings,
-        series_overview, series_page, series_people, series_titles, series_volume,
-        show_root_while_missing, store_page_dimensions, unread_books, up_next, writer_series_count,
-        writer_series_page, writerless_series_count, writerless_series_page, writers,
+        root_shares, series_books, series_chapter_volumes, series_count, series_file_details,
+        series_numberings, series_overview, series_page, series_people, series_titles,
+        series_volume, show_root_while_missing, store_page_dimensions, unread_books, up_next,
+        writer_series_count, writer_series_page, writerless_series_count, writerless_series_page,
+        writers,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     hidden_file_types::{hidden_file_types, hide_file_type, show_file_type},
@@ -49,15 +50,15 @@ use tokio::{
 
 use crate::{
     AdultContent, AppLanguage, BookCursor, BookFile, BookId, BookNumber, BookPlace, BookSessions,
-    BooksRemoval, CategoryId, ChapterCursor, ChapterHitPage, CoversPerRowOutOfRange, CreatorSeries,
-    DetailEdits, FileRemoval, FileType, FolderCursor, FolderGroupCursor, FolderGroupId,
-    FolderGroupPage, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor,
-    HistoryMark, HistoryOf, HistoryPage, HistorySeries, HomeChoice, LibraryChanges, LibraryFilter,
-    LibraryFilterChoices, LibraryFolder, LibraryFolderGroup, LibraryListing, LibrarySearch,
-    LibraryTab, LibraryView, LibraryWriter, LocalDay, LogStandIns, MissingFolder, ReadMark,
-    ReadingSummary, ReadingWeek, RemovalPreview, RemovalReport, RemovalTarget, RescanOutcome,
-    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
-    SeriesId, SeriesOverview, SeriesPage, SeriesVolume, ShareAddress, ShareLookup,
+    BooksRemoval, CategoryId, ChapterCursor, ChapterHitPage, ChapterVolume, CoversPerRowOutOfRange,
+    CreatorSeries, DetailEdits, FileRemoval, FileType, FolderCursor, FolderGroupCursor,
+    FolderGroupId, FolderGroupPage, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary,
+    HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries, HomeChoice, LibraryChanges,
+    LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryFolderGroup, LibraryListing,
+    LibrarySearch, LibraryTab, LibraryView, LibraryWriter, LocalDay, LogStandIns, MissingFolder,
+    ReadMark, ReadingSummary, ReadingWeek, RemovalPreview, RemovalReport, RemovalTarget,
+    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
+    SeriesDetails, SeriesId, SeriesOverview, SeriesPage, SeriesVolume, ShareAddress, ShareLookup,
     UnreachableShare, UtcOffset, WriterCursor, WriterPage,
     adult_content::{AdultSeen, AdultView},
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
@@ -922,6 +923,19 @@ impl Library {
             .read(move |connection| series_volume(connection, series, volume.in_catalog()))
             .await?;
         Ok(found.map(|found| SeriesVolume::new(volume, found)))
+    }
+
+    pub async fn series_chapter_volumes(
+        &self,
+        id: SeriesId,
+    ) -> Result<Vec<ChapterVolume>, LibraryError> {
+        let series = id.0;
+        let counted = self
+            .store
+            .database()
+            .read(move |connection| series_chapter_volumes(connection, series))
+            .await?;
+        Ok(counted.into_iter().map(ChapterVolume::from).collect())
     }
 
     /// Whether the library keeps edits over the files' details, which the interface offers Edit details by.
