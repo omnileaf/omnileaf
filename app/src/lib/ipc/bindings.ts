@@ -37,6 +37,10 @@ export const commands = {
 	updateStatus: () => typedError<UpdateStatus, IpcError>(__TAURI_INVOKE("update_status")),
 	checkForUpdates: () => typedError<CheckedForUpdates, IpcError>(__TAURI_INVOKE("check_for_updates")),
 	checkForUpdatesIfDue: () => typedError<CheckedForUpdates, IpcError>(__TAURI_INVOKE("check_for_updates_if_due")),
+	setAutomaticUpdateCheck: (isOn: boolean) => typedError<UpdateStatus, IpcError>(__TAURI_INVOKE("set_automatic_update_check", { isOn })),
+	snoozeUpdate: (version: string) => typedError<UpdateStatus, IpcError>(__TAURI_INVOKE("snooze_update", { version })),
+	skipUpdate: (version: string) => typedError<UpdateStatus, IpcError>(__TAURI_INVOKE("skip_update", { version })),
+	openReleasePage: () => typedError<null, IpcError>(__TAURI_INVOKE("open_release_page")),
 	watchSystemBoldText: (onChange: Channel<boolean>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_bold_text", { onChange })),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
