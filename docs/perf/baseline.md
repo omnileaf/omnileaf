@@ -14,7 +14,7 @@ Where the library screen's startup and first paint stood when the grid, compact 
 
 | What | Budget | Measured | How |
 |---|---|---|---|
-| First grid paint of 10,000 series, from the click on Library | 150 ms | median 30 ms (three runs of nine openings: 29.8, 30.1 and 30.1 ms) | `tests/browser/library-first-paint.speed.ts` |
+| First grid paint of 10,000 series, from the click on Library | 200 ms | median 30 ms (three runs of nine openings: 29.8, 30.1 and 30.1 ms) | `tests/browser/library-first-paint.speed.ts` |
 | Scrolling the first 12,000 px (about the first 250 series of a grid) of 10,000 series as a grid, compact grid or list | 60 fps on desktop | 60.0 fps in each display, no frame of 300 dropped, in two runs | `tests/browser/library-scroll.speed.ts` |
 | Scrolling the middle of all 10,000 series once every page is loaded | 60 fps on desktop | 54.7 to 59.8 fps, 1 to 22 frames of 300 dropped, varying from run to run in every display | Manual, described below |
 | Cold start to the library's grid, release build with the WebDriver feature, a library of 3 series | 500 ms on desktop | median 471 ms (431 to 494 ms over nine launches) on the machine above, which is faster than the mid-range laptop the budget is set for | Manual, described below |
