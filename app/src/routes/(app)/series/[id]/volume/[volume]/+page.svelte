@@ -4,9 +4,16 @@
 
   import { invalidate } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { commands, type SeriesBookListing } from "#lib/ipc/bindings.ts";
+  import {
+    commands,
+    type SeriesBook,
+    type SeriesBookListing,
+  } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
+  import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import { noticeNotConnected } from "#lib/library/missing-folder-notices.ts";
+  import { noticingFolderFinder } from "#lib/library/noticing-folder-finder.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { getBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -99,6 +106,21 @@
     readAgain,
   });
 
+  const folderFinder = noticingFolderFinder(notices, () => {
+    readAgain();
+    return Promise.resolve();
+  });
+
+  function findBookFolder(book: SeriesBook): void {
+    void folderFinder.findFrom(commands.bookMissingFolder(book.id));
+  }
+
+  function sayBookNotConnected(book: SeriesBook): void {
+    noticeNotConnected(notices, book.title, () => {
+      findBookFolder(book);
+    });
+  }
+
   function choose(change: ListingChange): void {
     chosen = { volume: volumeKey, change: { ...chosenHere, ...change } };
     listedBooks.startAgain();
@@ -146,6 +168,7 @@
       {cover}
       {coverUrl}
       isWide={isWide.current}
+      onFind={findBookFolder}
     />
     {#if books?.list.kind === "failed"}
       <p class="text-body text-muted">{m.series_books_failed()}</p>
@@ -170,8 +193,12 @@
         onRemoveBookmarks={bookCommands.removeBookmarks}
         onRemove={bookCommands.remove}
         onShowInFolder={bookCommands.showFile}
+        onNotConnected={sayBookNotConnected}
+        onFindFolder={findBookFolder}
         platform={data.appInfo.platform}
       />
     {/if}
   </div>
 </div>
+
+<FindFolderSheet finder={folderFinder} platform={data.appInfo.platform} />
