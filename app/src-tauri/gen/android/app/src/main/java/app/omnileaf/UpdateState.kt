@@ -12,7 +12,6 @@ private const val LATEST_HEADLINE = "latestHeadline"
 private const val CHECKED_AT = "checkedAt"
 private const val ATTEMPTED_AT = "attemptedAt"
 private const val LAST_OUTCOME = "lastOutcome"
-private const val NOTIFIED_VERSION = "notifiedVersion"
 
 internal interface UpdateStore {
     fun snapshot(): Map<String, String>
@@ -37,7 +36,7 @@ internal class UpdateState(
     var notifies: Boolean
         get() = store.snapshot()[NOTIFIES].toBoolean()
         set(value) = store.write(mapOf(NOTIFIES to value.toString()))
-    val choices: UpdateChoices get() = store.snapshot().let { UpdateChoices(it.version(SKIPPED_VERSION), it.snooze()) }
+    val choices: UpdateChoices get() = store.snapshot().choices()
     val latest: PublishedRelease? get() = store.snapshot().latest()
     val checkedAt: Instant? get() = store.snapshot().instant(CHECKED_AT)
     val lastOutcome: UpdateOutcome?
@@ -45,8 +44,12 @@ internal class UpdateState(
             val stored = store.snapshot()[LAST_OUTCOME]
             return UpdateOutcome.entries.find { it.name == stored }
         }
-    val notifiedVersion: ReleaseVersion? get() = store.snapshot().version(NOTIFIED_VERSION)
     val attemptedAt: Instant? get() = store.snapshot().instant(ATTEMPTED_AT)
+
+    fun offer(
+        installed: ReleaseVersion,
+        now: Instant,
+    ): PublishedRelease? = store.snapshot().let { it.choices().offer(installed, it.latest(), now) }
 
     fun skip(version: ReleaseVersion) = store.write(mapOf(SKIPPED_VERSION to version.toString()))
 
@@ -56,8 +59,6 @@ internal class UpdateState(
     ) {
         store.write(mapOf(SNOOZED_VERSION to version.toString(), SNOOZED_AT to now.toEpochMilli().toString()))
     }
-
-    fun markNotified(version: ReleaseVersion) = store.write(mapOf(NOTIFIED_VERSION to version.toString()))
 
     fun markAttempted(now: Instant) = store.write(mapOf(ATTEMPTED_AT to now.toEpochMilli().toString()))
 
@@ -90,6 +91,8 @@ private fun Map<String, String>.version(key: String): ReleaseVersion? = get(key)
 private fun Map<String, String>.instant(key: String): Instant? = get(key)?.toLongOrNull()?.let(Instant::ofEpochMilli)
 
 private fun Map<String, String>.latest(): PublishedRelease? = version(LATEST_VERSION)?.let { PublishedRelease(it, get(LATEST_HEADLINE)) }
+
+private fun Map<String, String>.choices(): UpdateChoices = UpdateChoices(version(SKIPPED_VERSION), snooze())
 
 private fun Map<String, String>.snooze(): Snooze? {
     val version = version(SNOOZED_VERSION) ?: return null
