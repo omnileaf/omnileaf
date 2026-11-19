@@ -941,6 +941,14 @@
   "your_reports_none": "⟦Ñö ŕéþöŕţš ýéţ.······⟧",
   "about_licences": "⟦Öþéñ-šöûŕçé ļíçéñçéš········⟧",
   "about_licences_hint": "⟦Ţĥé þáçķáĝéš Öɱñíļéáƒ íš ƀûíļţ ŵíţĥ··············⟧",
+  "whats_new_title": "⟦Ŵĥáţ’š ñéŵ····⟧",
+  "whats_new_hint": "⟦Ñöţéš ƒöŕ {version}········⟧",
+  "whats_new_hint_with_earlier": "⟦Ñöţéš ƒöŕ {version} áñð éáŕļíéŕ ṽéŕšíöñš················⟧",
+  "whats_new_breaking_in": "⟦Ɓŕéáķíñĝ çĥáñĝéš íñ {version}············⟧",
+  "whats_new_sec_in": "⟦Šéçûŕíţý ƒíẋéš íñ {version}···········⟧",
+  "whats_new_feat_in": "⟦Ñéŵ íñ {version}·······⟧",
+  "whats_new_perf_in": "⟦Ƒášţéŕ íñ {version}········⟧",
+  "whats_new_fix_in": "⟦Ƒíẋéð íñ {version}········⟧",
   "licences_intro": "⟦Ṁáðé ƒŕöɱ ţĥé þáçķáĝéš ţĥíš ƀûíļð öƒ Öɱñíļéáƒ ûšéš. Éáçĥ öþéñš íţš ļíçéñçé ţéẋţ.································⟧",
   "licences_show_all": [
     {

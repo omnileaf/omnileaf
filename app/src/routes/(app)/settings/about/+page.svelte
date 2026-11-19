@@ -8,7 +8,7 @@
   import RowText from "#lib/about/RowText.svelte";
   import UpdateCheckRow from "#lib/about/UpdateCheckRow.svelte";
   import UpdateBanner from "#lib/updates/UpdateBanner.svelte";
-  import { Bug, FileText, Info, Send } from "@lucide/svelte";
+  import { Bug, FileText, Info, Send, Sparkles } from "@lucide/svelte";
 
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { Item } from "#lib/components/ui/item/index.ts";
@@ -27,6 +27,7 @@
   import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
+  import { whatsNewRowHint } from "#lib/whats-new/about-row.ts";
 
   import type { AboutLook } from "#lib/about/look.ts";
   import {
@@ -70,6 +71,9 @@
       : isPhone(data.appInfo.platform, width.current)
         ? "phone"
         : "pane",
+  );
+  const whatsNewHint = $derived(
+    whatsNewRowHint(data.appInfo.platform, data.whatsNew),
   );
   const reportHint = $derived(
     isPointer(data.appInfo.platform)
@@ -138,6 +142,16 @@
             }}
           />
         </li>
+      {/if}
+      {#if whatsNewHint !== undefined}
+        <AboutPageRow
+          route="/(app)/settings/about/whats-new"
+          icon={Sparkles}
+          iconName="sparkles"
+          label={m.whats_new_title()}
+          hint={whatsNewHint}
+          {look}
+        />
       {/if}
       <AboutPageRow
         route="/(app)/settings/about/report"
