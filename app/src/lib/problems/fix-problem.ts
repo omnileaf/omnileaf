@@ -1,5 +1,3 @@
-import { Channel } from "@tauri-apps/api/core";
-
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 import {
@@ -7,16 +5,20 @@ import {
   type IpcError,
   type MissingFolder,
 } from "#lib/ipc/bindings.ts";
+import type { FolderFinder } from "#lib/library/folder-finder.svelte.ts";
 import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
 
 import type { Problem } from "./needs-attention.svelte";
 
-export async function fixProblem(problem: Problem): Promise<void> {
+export async function fixProblem(
+  problem: Problem,
+  finder: Pick<FolderFinder, "find">,
+): Promise<void> {
   if (problem.kind === "lowSpace") {
     await goto(resolve("/(app)/settings/storage"));
     return;
   }
-  const fixed = await fixFolder(problem.missing);
+  const fixed = await fixFolder(problem.missing, finder);
   if (fixed.status === "error") {
     reportError(fixed.error);
   }
@@ -24,13 +26,17 @@ export async function fixProblem(problem: Problem): Promise<void> {
 
 type Fixed = { status: "ok" } | { status: "error"; error: IpcError };
 
-function fixFolder({ folder, problem }: MissingFolder): Promise<Fixed> {
-  switch (problem.kind) {
+function fixFolder(
+  missing: MissingFolder,
+  finder: Pick<FolderFinder, "find">,
+): Promise<Fixed> {
+  switch (missing.problem.kind) {
     case "needsSignIn":
-      return commands.signInToLibraryFolder(folder.id);
+      return commands.signInToLibraryFolder(missing.folder.id);
     case "needsMounting":
-      return rescanFolderWithProgress(folder.id, () => undefined);
+      return rescanFolderWithProgress(missing.folder.id, () => undefined);
     default:
-      return commands.relocateLibraryFolder(folder.id, new Channel());
+      finder.find(missing);
+      return Promise.resolve({ status: "ok" });
   }
 }
