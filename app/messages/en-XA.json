@@ -2055,6 +2055,25 @@
   "series_mark_all_unread": "⟦Ṁáŕķ áļļ ûñŕéáð······⟧",
   "series_about": "⟦Áƀöûţ ţĥíš šéŕíéš·······⟧",
   "series_cover": "⟦Çöṽéŕ öƒ {title}·······⟧",
+  "series_volume_about": "⟦Áƀöûţ ţĥíš ṽöļûɱé·······⟧",
+  "series_volume_counts": "⟦Ṽöļûɱé · {chapters}········⟧",
+  "series_volume_counts_pages": "⟦Ṽöļûɱé · {chapters} · {pages}············⟧",
+  "series_page_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} þáĝé·········⟧",
+        "countPlural=other": "⟦{formattedCount} þáĝéš·········⟧"
+      }
+    }
+  ],
+  "series_volume_folder": "⟦{series} › {volume}········⟧",
+  "series_volume_folder_note": "⟦Íñ ţĥíš ṽöļûɱé’š ƒöļðéŕ··········⟧",
   "series_by": "⟦Ɓý {names}····⟧",
   "series_credit": "⟦{role}: {name}······⟧",
   "series_role_story": "⟦Šţöŕý··⟧",

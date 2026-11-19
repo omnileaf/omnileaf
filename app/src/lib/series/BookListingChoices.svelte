@@ -98,6 +98,7 @@
     searchPlace,
     isSearching = $bindable(false),
     head,
+    hasShownChoices = true,
   }: {
     phone: PhonePlatform | undefined;
     listing: SeriesBookListing;
@@ -108,6 +109,7 @@
     searchPlace: SearchPlace;
     isSearching?: boolean;
     head?: Snippet | undefined;
+    hasShownChoices?: boolean;
   } = $props();
 
   const isShownReplaced = $derived(
@@ -316,13 +318,11 @@
       {@render phoneFind(phone)}
       {@render sortMenu()}
     </div>
-    <div class="flex">
-      {#if isShownReplaced}
-        {@render searchBar()}
-      {:else}
-        {@render phoneShown(phone)}
-      {/if}
-    </div>
+    {#if isShownReplaced}
+      <div class="flex">{@render searchBar()}</div>
+    {:else if hasShownChoices}
+      <div class="flex">{@render phoneShown(phone)}</div>
+    {/if}
   </div>
 {:else}
   <div class="flex flex-wrap items-center gap-sm">
@@ -350,27 +350,31 @@
       </InputGroup>
     {/if}
     {#if phone !== undefined}
-      {#if !isShownReplaced}
+      {#if !isShownReplaced && hasShownChoices}
         {@render phoneShown(phone)}
       {/if}
       {@render phoneFind(phone)}
     {:else if isNativeDesktop}
-      <div class="flex items-center gap-sm min-inline-none max-expanded:flex-1">
-        <span id={showLabelId} class="text-small text-muted">
-          {m.series_show()}
-        </span>
-        <SegmentedControl
-          options={SHOWN_OPTIONS}
-          labels={SHOWN_LABELS}
-          chosen={listing.shown}
-          labelledBy={showLabelId}
-          isFullWidth
-          hasWindowsLook
-          hasEqualColumns
-          class="flex-1 min-inline-none"
-          onChoose={chooseShown}
-        />
-      </div>
+      {#if hasShownChoices}
+        <div
+          class="flex items-center gap-sm min-inline-none max-expanded:flex-1"
+        >
+          <span id={showLabelId} class="text-small text-muted">
+            {m.series_show()}
+          </span>
+          <SegmentedControl
+            options={SHOWN_OPTIONS}
+            labels={SHOWN_LABELS}
+            chosen={listing.shown}
+            labelledBy={showLabelId}
+            isFullWidth
+            hasWindowsLook
+            hasEqualColumns
+            class="flex-1 min-inline-none"
+            onChoose={chooseShown}
+          />
+        </div>
+      {/if}
       {#if !isWide.current}
         <Button
           type="button"
@@ -387,21 +391,23 @@
         </Button>
       {/if}
     {:else}
-      <ToggleGroup
-        aria-label={m.series_show()}
-        class="max-expanded:flex-1"
-        bind:value={() => listing.shown, chooseShown}
-      >
-        {#each SHOWN_OPTIONS as shown (shown)}
-          <ToggleGroupItem
-            value={shown}
-            data-label={SHOWN_LABELS[shown]()}
-            class="max-expanded:grow"
-          >
-            {SHOWN_LABELS[shown]()}
-          </ToggleGroupItem>
-        {/each}
-      </ToggleGroup>
+      {#if hasShownChoices}
+        <ToggleGroup
+          aria-label={m.series_show()}
+          class="max-expanded:flex-1"
+          bind:value={() => listing.shown, chooseShown}
+        >
+          {#each SHOWN_OPTIONS as shown (shown)}
+            <ToggleGroupItem
+              value={shown}
+              data-label={SHOWN_LABELS[shown]()}
+              class="max-expanded:grow"
+            >
+              {SHOWN_LABELS[shown]()}
+            </ToggleGroupItem>
+          {/each}
+        </ToggleGroup>
+      {/if}
       {#if !isWide.current}
         <Tooltip
           label={m.series_find_book()}

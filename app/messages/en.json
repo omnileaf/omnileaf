@@ -2056,6 +2056,25 @@
   "series_mark_all_unread": "Mark all unread",
   "series_about": "About this series",
   "series_cover": "Cover of {title}",
+  "series_volume_about": "About this volume",
+  "series_volume_counts": "Volume · {chapters}",
+  "series_volume_counts_pages": "Volume · {chapters} · {pages}",
+  "series_page_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} page",
+        "countPlural=other": "{formattedCount} pages"
+      }
+    }
+  ],
+  "series_volume_folder": "{series} › {volume}",
+  "series_volume_folder_note": "In this volume’s folder",
   "series_by": "By {names}",
   "series_credit": "{role}: {name}",
   "series_role_story": "Story",

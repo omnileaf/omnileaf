@@ -138,6 +138,7 @@
     platform,
     onPickedCount,
     controls = OWN_CONTROLS,
+    hasShownChoices = true,
   }: {
     books: readonly SeriesBook[];
     sections: readonly BookSection[];
@@ -156,6 +157,7 @@
     platform: Platform;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
     controls?: BooksControls;
+    hasShownChoices?: boolean;
   } = $props();
 
   type Outcome =
@@ -630,6 +632,7 @@
       {searchPlace}
       bind:isSearching
       head={headsListingChoices ? listingHead : undefined}
+      {hasShownChoices}
     />
   {/if}
   {#if isComplete && shownBooks.length === 0}
