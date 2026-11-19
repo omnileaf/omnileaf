@@ -22,6 +22,7 @@
     onFaster,
     onStop,
     onReturnFocus,
+    onSpeed,
   }: {
     speed: AutoScrollSpeed;
     chapterProgress: number;
@@ -32,6 +33,7 @@
     onFaster: () => void;
     onStop: () => void;
     onReturnFocus: () => void;
+    onSpeed: (event: MouseEvent) => void;
   } = $props();
 
   const TUCK_AFTER_MS = 3000;
@@ -42,6 +44,11 @@
   const tucks = $derived(look.tucked !== null);
   const isTucked = $derived(tucks && !isPaused && !toolbar.isShown);
   let section: HTMLElement | undefined = $state();
+  let readoutButton: HTMLButtonElement | undefined = $state();
+
+  export function focusReadout(): void {
+    readoutButton?.focus();
+  }
 
   $effect(() => {
     if (!tucks) {
@@ -105,6 +112,11 @@
     speed.kind === "myPace"
       ? m.reader_auto_scroll_your_pace()
       : m.reader_screens_a_minute({ count: speed.screensPerMinute }),
+  );
+  const speedName = $derived(
+    look.readoutButton !== null && speed.kind === "set"
+      ? m.reader_auto_scroll_speed_readout({ count: speed.screensPerMinute })
+      : undefined,
   );
   const announcement = $derived(
     isPaused ? m.reader_auto_scroll_paused() : speedLine,
@@ -180,6 +192,16 @@
       <p class={look.state}>{status}</p>
       {#if hint !== undefined}
         <p class="text-caption text-muted">{hint}</p>
+      {/if}
+      {#if speedName !== undefined}
+        <button
+          bind:this={readoutButton}
+          type="button"
+          aria-haspopup="dialog"
+          aria-label={speedName}
+          class={look.readoutButton}
+          onclick={onSpeed}
+        ></button>
       {/if}
     </div>
     {#if !look.leadsWithToggle}

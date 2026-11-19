@@ -2344,6 +2344,21 @@
   "reader_auto_scroll_my_pace": "My pace",
   "reader_auto_scroll_set_speed": "Set speed",
   "reader_auto_scroll_help": "Keeps scrolling with reduced motion on, since you started it.",
+  "reader_auto_scroll_speed_title": "Auto scroll speed",
+  "reader_auto_scroll_speed_readout": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Auto scroll speed, {formattedCount} screen a minute",
+        "countPlural=other": "Auto scroll speed, {formattedCount} screens a minute"
+      }
+    }
+  ],
   "reader_auto_scroll_rate": "Screens a minute",
   "reader_auto_scroll_rate_value": "Screens a minute: {count}",
   "reader_save_speed_for": "Save the speed for",
