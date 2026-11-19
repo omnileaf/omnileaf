@@ -58,7 +58,7 @@ use crate::{
     HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries, HomeChoice, LibraryChanges,
     LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryFolderGroup, LibraryListing,
     LibrarySearch, LibraryTab, LibraryView, LibraryWriter, LocalDay, LogStandIns, MissingFolder,
-    ReadMark, ReadingSummary, ReadingWeek, RemovalPreview, RemovalReport, RemovalTarget,
+    Platform, ReadMark, ReadingSummary, ReadingWeek, RemovalPreview, RemovalReport, RemovalTarget,
     RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
     SeriesDetails, SeriesId, SeriesOverview, SeriesPage, SeriesVolume, ShareAddress, ShareLookup,
     UnreachableShare, UtcOffset, WriterCursor, WriterPage,
@@ -1406,7 +1406,7 @@ impl Library {
     pub async fn view(&self) -> Result<LibraryView, LibraryError> {
         let stored = self.store.database().read(library_view).await?;
         stored.map_or_else(
-            || Ok(LibraryView::default()),
+            || Ok(LibraryView::default_on(Platform::CURRENT)),
             |view| LibraryView::try_from(view).map_err(LibraryError::StoredView),
         )
     }

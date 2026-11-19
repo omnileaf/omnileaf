@@ -5,6 +5,8 @@ use omnileaf_db::library_view::{
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
+use crate::Platform;
+
 #[expect(
     clippy::struct_excessive_bools,
     reason = "each is a switch of its own in the view options"
@@ -141,6 +143,23 @@ impl<const FEWEST: u8, const MOST: u8> From<CoversPerRowCount<FEWEST, MOST>> for
 impl<const FEWEST: u8, const MOST: u8> Type for CoversPerRowCount<FEWEST, MOST> {
     fn definition(types: &mut Types) -> DataType {
         u8::definition(types)
+    }
+}
+
+const fn stacks_series_covers_by_default(platform: Platform) -> bool {
+    match platform {
+        Platform::Android => false,
+        Platform::Ios | Platform::Macos | Platform::Windows | Platform::Linux => true,
+    }
+}
+
+impl LibraryView {
+    #[must_use]
+    pub fn default_on(platform: Platform) -> Self {
+        Self {
+            stacks_series_covers: stacks_series_covers_by_default(platform),
+            ..Self::default()
+        }
     }
 }
 
@@ -311,6 +330,22 @@ mod tests {
         let view = LibraryView::default();
 
         assert!(view.stacks_series_covers);
+    }
+
+    #[test]
+    fn keeps_a_new_library_s_covers_flat_on_android_and_stacks_them_elsewhere() {
+        let platforms = [
+            Platform::Android,
+            Platform::Ios,
+            Platform::Macos,
+            Platform::Windows,
+            Platform::Linux,
+        ];
+
+        let stacked =
+            platforms.map(|platform| LibraryView::default_on(platform).stacks_series_covers);
+
+        assert_eq!(stacked, [false, true, true, true, true]);
     }
 
     #[test]
