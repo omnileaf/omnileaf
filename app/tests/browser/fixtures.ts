@@ -80,6 +80,13 @@ export const MISSING_COMICS: WireMissingFolder = {
   isShownAnyway: false,
 };
 
+function refuseUpdateCheck(): never {
+  throw new CommandFailure({
+    code: "updateCheckUnavailable",
+    message: "this build doesn't check for updates",
+  });
+}
+
 export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
   libraryProblem: () => null,
@@ -263,6 +270,9 @@ export const DEFAULT_BACKEND: FakeBackend = {
   rememberAppLockWords: () => null,
   turnAppLockOff: () => null,
   chooseLockAfter: () => null,
+  updateStatus: refuseUpdateCheck,
+  checkForUpdates: refuseUpdateCheck,
+  checkForUpdatesIfDue: refuseUpdateCheck,
   wallpaperColours: () => null,
   accentColours: () => null,
   captureVolumeKeys: () => null,

@@ -359,6 +359,13 @@ function failure(code: IpcErrorCode, message: string): CommandFailure {
   return new CommandFailure({ code, message });
 }
 
+function refuseUpdateCheck(): never {
+  throw failure(
+    "updateCheckUnavailable",
+    "this build doesn't check for updates",
+  );
+}
+
 function offsetFrom(cursor: string | null): number {
   return cursor === null ? 0 : Number(cursor);
 }
@@ -1329,6 +1336,9 @@ export function sampleBackend(
       appLock = { ...appLock, lockAfter };
       return null;
     },
+    updateStatus: refuseUpdateCheck,
+    checkForUpdates: refuseUpdateCheck,
+    checkForUpdatesIfDue: refuseUpdateCheck,
     wallpaperColours: () => null,
     accentColours: () => null,
     captureVolumeKeys: () => null,

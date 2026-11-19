@@ -28,6 +28,7 @@ use tauri_specta::{Builder, Commands, collect_commands, collect_events};
 use crate::crash_reporting::developer_crashes;
 use crate::{
     app_lock::{self, AppLock, AppLockTurning, LockAfter, LockWords},
+    app_updates::{self, CheckedForUpdates, UpdateStatus},
     back_navigation, back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
     default_viewer::{self, DefaultViewer},
@@ -86,6 +87,9 @@ macro_rules! app_commands {
             turn_app_lock_off,
             remember_app_lock_words,
             choose_lock_after,
+            update_status,
+            check_for_updates,
+            check_for_updates_if_due,
             watch_system_bold_text,
             wallpaper_colours,
             accent_colours,
@@ -539,6 +543,24 @@ async fn turn_app_lock_off(app: AppHandle) -> Result<(), IpcError> {
 #[specta::specta]
 async fn choose_lock_after(app: AppHandle, lock_after: LockAfter) -> Result<(), IpcError> {
     app_lock::choose_lock_after(&app, lock_after).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn update_status(app: AppHandle) -> Result<UpdateStatus, IpcError> {
+    app_updates::status(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn check_for_updates(app: AppHandle) -> Result<CheckedForUpdates, IpcError> {
+    app_updates::check(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn check_for_updates_if_due(app: AppHandle) -> Result<CheckedForUpdates, IpcError> {
+    app_updates::check_if_due(&app).await
 }
 
 #[tauri::command]

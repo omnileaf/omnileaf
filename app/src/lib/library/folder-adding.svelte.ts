@@ -85,6 +85,7 @@ const FAILURES = {
   replyAddressInvalid: ADDING_FAILED,
   reportRefused: ADDING_FAILED,
   appLockUnavailable: ADDING_FAILED,
+  updateCheckUnavailable: ADDING_FAILED,
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 

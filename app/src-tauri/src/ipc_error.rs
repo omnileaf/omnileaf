@@ -71,6 +71,7 @@ pub(crate) enum IpcErrorCode {
         expect(dead_code, reason = "Android has an app lock")
     )]
     AppLockUnavailable,
+    UpdateCheckUnavailable,
     Internal,
 }
 
@@ -173,6 +174,13 @@ impl IpcError {
         Self {
             code: IpcErrorCode::AppLockUnavailable,
             message: "the app lock isn't offered here",
+        }
+    }
+
+    pub(crate) fn update_check_unavailable() -> Self {
+        Self {
+            code: IpcErrorCode::UpdateCheckUnavailable,
+            message: "this build doesn't check for updates",
         }
     }
 
