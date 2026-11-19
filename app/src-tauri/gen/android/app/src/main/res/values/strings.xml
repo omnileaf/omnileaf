@@ -6,4 +6,8 @@
     <string name="app_lock_unlock">Unlock</string>
     <string name="app_lock_unlock_prompt">Unlock Omnileaf</string>
     <string name="app_lock_turned_off_no_screen_lock">App lock was turned off because this phone has no screen lock.</string>
+    <string name="update_notice_channel">Updates</string>
+    <string name="update_notice_title">Omnileaf %1$s is available</string>
+    <string name="update_notice_view_release">View release</string>
+    <string name="update_notice_skip">Skip this version</string>
 </resources>

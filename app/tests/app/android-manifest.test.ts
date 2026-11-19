@@ -42,9 +42,8 @@ async function handledConfigChanges(): Promise<string[]> {
   );
 }
 
-async function intentFilters(): Promise<IntentFilter[]> {
-  const manifest = await readManifest();
-  return [...manifest.matchAll(/<intent-filter>([\s\S]*?)<\/intent-filter>/g)]
+function filtersIn(text: string): IntentFilter[] {
+  return [...text.matchAll(/<intent-filter>([\s\S]*?)<\/intent-filter>/g)]
     .map((found) => found[1] ?? "")
     .map((filter) => ({
       action:
@@ -52,6 +51,22 @@ async function intentFilters(): Promise<IntentFilter[]> {
       mimeTypes: attributeValues(filter, /android:mimeType="([^"]*)"/g),
       pathPatterns: attributeValues(filter, /android:pathPattern="([^"]*)"/g),
     }));
+}
+
+async function intentFilters(): Promise<IntentFilter[]> {
+  return filtersIn(await readManifest());
+}
+
+async function intentFiltersOf(
+  element: string,
+  name: string,
+): Promise<IntentFilter[]> {
+  const manifest = await readManifest();
+  const escapedName = name.replaceAll(".", String.raw`\.`);
+  const withBody = new RegExp(
+    String.raw`<${element}\b[^>]*android:name="${escapedName}"[^>]*(?<!/)>([\s\S]*?)</${element}>`,
+  );
+  return filtersIn(manifest.match(withBody)?.[1] ?? "");
 }
 
 async function elementAttributes(
@@ -137,4 +152,33 @@ test("keeps the page open when Android's font size or display size changes", asy
   const handled = await handledConfigChanges();
 
   expect(handled).toEqual(expect.arrayContaining(["fontScale", "density"]));
+});
+
+test("asks for permission before posting update notifications", async () => {
+  expect(
+    await elementAttributes(
+      "uses-permission",
+      "android.permission.POST_NOTIFICATIONS",
+    ),
+  ).toBeDefined();
+});
+
+test("answers an update notice only from this app", async () => {
+  expect(await elementAttributes("receiver", ".UpdateNoticeReceiver")).toEqual({
+    name: ".UpdateNoticeReceiver",
+    exported: "false",
+  });
+});
+
+test("withdraws a stale update notice once the app is updated", async () => {
+  expect(
+    await elementAttributes("receiver", ".PackageReplacedReceiver"),
+  ).toEqual({
+    name: ".PackageReplacedReceiver",
+    exported: "false",
+  });
+  const filters = await intentFiltersOf("receiver", ".PackageReplacedReceiver");
+  expect(filters.map((filter) => filter.action)).toEqual([
+    "android.intent.action.MY_PACKAGE_REPLACED",
+  ]);
 });

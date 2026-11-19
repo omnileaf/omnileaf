@@ -89,4 +89,16 @@ class ReleaseVersionTest {
 
         assertEquals(listOf(version("1.2.3"), null, null, null, null), tags.map { ReleaseVersion.fromStableTag(it) })
     }
+
+    @Test
+    fun `reads back the stable version its release tag names`() {
+        val stable = listOf("0.2.0", "1.0.10", "12.3.4").map(::version)
+
+        assertEquals(stable, stable.map { ReleaseVersion.fromStableTag(it.tag) })
+    }
+
+    @Test
+    fun `tags a pre-release with its suffix`() {
+        assertEquals("v0.3.0-rc.1", version("0.3.0-rc.1").tag)
+    }
 }

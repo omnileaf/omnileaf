@@ -1,11 +1,14 @@
 package app.omnileaf
 
-internal class MemoryPostedNotice : PostedNotice {
+internal class MemoryUpdateNotices : UpdateNotices {
     private var showing: ReleaseVersion? = null
     var withdrawals = 0
         private set
+    var isAllowed = true
 
-    fun post(release: PublishedRelease) {
+    override fun canShow(): Boolean = isAllowed
+
+    override fun post(release: PublishedRelease) {
         showing = release.version
     }
 
