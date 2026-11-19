@@ -15,6 +15,8 @@ type Answered<Data> =
 export interface UpdateAsks {
   readonly status: () => Promise<Answered<UpdateStatus>>;
   readonly check: () => Promise<Answered<CheckedForUpdates>>;
+  readonly checkIfDue: () => Promise<Answered<CheckedForUpdates>>;
+  readonly setAutomatic: (isOn: boolean) => Promise<Answered<UpdateStatus>>;
 }
 
 export type CheckPhase = "resting" | "checking" | "failed";
@@ -22,6 +24,8 @@ export type CheckPhase = "resting" | "checking" | "failed";
 const UPDATE_ASKS: UpdateAsks = {
   status: commands.updateStatus,
   check: commands.checkForUpdates,
+  checkIfDue: commands.checkForUpdatesIfDue,
+  setAutomatic: commands.setAutomaticUpdateCheck,
 };
 
 const FAILED_OUTCOMES: ReadonlySet<CheckOutcome> = new Set([
@@ -69,6 +73,10 @@ export class UpdateCheck {
     private readonly asks: UpdateAsks,
   ) {}
 
+  get isAutomatic(): boolean {
+    return this.status?.isAutomatic ?? false;
+  }
+
   get hint(): string | undefined {
     return checkHint(this.phase, this.status);
   }
@@ -95,6 +103,27 @@ export class UpdateCheck {
     }
     this.status = checked.data.status;
     this.phase = isFailure(checked.data.outcome) ? "failed" : "resting";
+  }
+
+  async checkIfDue(): Promise<void> {
+    const checked = await this.asks.checkIfDue();
+    if (checked.status === "error") {
+      this.#report(checked.error);
+      return;
+    }
+    this.status = checked.data.status;
+  }
+
+  async setAutomatic(isOn: boolean): Promise<void> {
+    const chosen = await this.asks.setAutomatic(isOn);
+    if (chosen.status === "error") {
+      this.#report(chosen.error);
+      return;
+    }
+    this.status = chosen.data;
+    if (isOn) {
+      await this.checkIfDue();
+    }
   }
 
   #report(error: IpcError): void {

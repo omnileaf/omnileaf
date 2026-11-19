@@ -71,6 +71,10 @@
   import { deviceWordOf } from "#lib/storage/device.ts";
   import LowSpaceNotice from "#lib/storage/LowSpaceNotice.svelte";
   import { type Shortcut, shortcut } from "#lib/shortcut.ts";
+  import {
+    offersUpdateCheck,
+    updateCheckForApp,
+  } from "#lib/updates/update-check.svelte.ts";
 
   import type { LayoutProps } from "./$types";
 
@@ -109,6 +113,7 @@
     }
   }
   const storage = setStorageCheck(new StorageCheck(commands, reportError));
+  const updateCheck = updateCheckForApp();
   const needsAttention = setNeedsAttention(
     new NeedsAttention(
       {
@@ -202,6 +207,18 @@
     }
   }
 
+  function checkForUpdatesIfDue(): void {
+    if (offersUpdateCheck(data.appInfo)) {
+      void updateCheck.checkIfDue();
+    }
+  }
+
+  function checkForUpdatesOnReturn(): void {
+    if (document.visibilityState === "visible") {
+      checkForUpdatesIfDue();
+    }
+  }
+
   onMount(() => {
     preloadCode(READER_ROUTE).catch(reportError);
     const arrival = takeHomeArrival(data.homeArrival);
@@ -210,11 +227,14 @@
     }
     void storage.check();
     void needsAttention.gather();
+    checkForUpdatesIfDue();
     return listenForLibraryChanges(() => {
       void needsAttention.gather();
     }, reportError);
   });
 </script>
+
+<svelte:document onvisibilitychange={checkForUpdatesOnReturn} />
 
 <svelte:window
   {@attach shortcut({

@@ -63,6 +63,12 @@ function asks(overrides: Partial<UpdateAsks> = {}): UpdateAsks {
   return {
     status: () => Promise.resolve({ status: "ok", data: UNCHECKED }),
     check: checked("upToDate"),
+    checkIfDue: checked("upToDate"),
+    setAutomatic: (isOn) =>
+      Promise.resolve({
+        status: "ok",
+        data: { ...UNCHECKED, isAutomatic: isOn },
+      }),
     ...overrides,
   };
 }
@@ -240,4 +246,120 @@ test("marks the check failed even when the failure handler throws", async () => 
   await check.check().catch(() => undefined);
 
   expect(check.phase).toBe("failed");
+});
+
+test("reads whether checks run on their own from the status", async () => {
+  const check = new UpdateCheck(
+    failures,
+    asks({
+      status: () =>
+        Promise.resolve({
+          status: "ok",
+          data: { ...NEWER, isAutomatic: true },
+        }),
+    }),
+  );
+  const before = check.isAutomatic;
+
+  await check.load();
+
+  expect([before, check.isAutomatic]).toEqual([false, true]);
+});
+
+test("follows the status a due check returns", async () => {
+  const check = new UpdateCheck(
+    failures,
+    asks({ checkIfDue: checked("available", NEWER) }),
+  );
+
+  await check.checkIfDue();
+
+  expect([check.phase, check.status]).toEqual(["resting", NEWER]);
+});
+
+test("stays quiet when a due check could not reach GitHub", async () => {
+  const check = new UpdateCheck(
+    failures,
+    asks({ checkIfDue: checked("offline", UP_TO_DATE) }),
+  );
+
+  await check.checkIfDue();
+
+  expect([check.phase, check.status]).toEqual(["resting", UP_TO_DATE]);
+});
+
+test("hands on the error when the app could not ask for a due check", async () => {
+  const onFailure = vi.fn();
+  const check = new UpdateCheck(
+    onFailure,
+    asks({
+      checkIfDue: () => Promise.resolve({ status: "error", error: BROKEN }),
+    }),
+  );
+
+  await check.checkIfDue();
+
+  expect([check.phase, onFailure.mock.calls]).toEqual(["resting", [[BROKEN]]]);
+});
+
+test("turns the automatic check on, then checks when due", async () => {
+  const asked: string[] = [];
+  const check = new UpdateCheck(
+    failures,
+    asks({
+      setAutomatic: (isOn) => {
+        asked.push(`automatic ${String(isOn)}`);
+        return Promise.resolve({
+          status: "ok",
+          data: { ...UNCHECKED, isAutomatic: isOn },
+        });
+      },
+      checkIfDue: () => {
+        asked.push("check if due");
+        return checked("upToDate", { ...UP_TO_DATE, isAutomatic: true })();
+      },
+    }),
+  );
+
+  await check.setAutomatic(true);
+
+  expect([asked, check.isAutomatic, check.status?.release.kind]).toEqual([
+    ["automatic true", "check if due"],
+    true,
+    "upToDate",
+  ]);
+});
+
+test("turns the automatic check off without checking", async () => {
+  const asked: string[] = [];
+  const check = new UpdateCheck(
+    failures,
+    asks({
+      checkIfDue: () => {
+        asked.push("check if due");
+        return checked("upToDate")();
+      },
+    }),
+  );
+
+  await check.setAutomatic(false);
+
+  expect([asked, check.isAutomatic]).toEqual([[], false]);
+});
+
+test("hands on the error when the automatic check could not be changed", async () => {
+  const onFailure = vi.fn();
+  const check = new UpdateCheck(
+    onFailure,
+    asks({
+      setAutomatic: () => Promise.resolve({ status: "error", error: BROKEN }),
+    }),
+  );
+
+  await check.setAutomatic(true);
+
+  expect([check.isAutomatic, onFailure.mock.calls]).toEqual([
+    false,
+    [[BROKEN]],
+  ]);
 });
