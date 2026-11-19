@@ -17,7 +17,7 @@ mod support;
 
 use books::write_book;
 use omnileaf_engine::{
-    BookNumber, BookSection, LibraryListing, SeriesBook, SeriesBookListing, SeriesId,
+    BookNumber, BookSection, LibraryListing, ReadMark, SeriesBook, SeriesBookListing, SeriesId,
 };
 use scanned::Scanned;
 use serde_json::{Value, json};
@@ -209,6 +209,38 @@ async fn sums_up_a_volume_by_its_chapters_cover_and_folder() {
         [json!(1.0), json!("Volume 01"), json!(2), json!(0)]
     );
     assert!(served.get("cover").is_some_and(|cover| !cover.is_null()));
+}
+
+#[tokio::test]
+async fn serves_a_volumes_page_count_and_the_chapter_up_next_inside_it() {
+    let sample = Sample::scan("volume-pages-and-up-next", SERIES_04_BOOKS).await;
+    let library = &sample.scanned.library;
+    let first_chapter = sample
+        .listed(None)
+        .await
+        .into_iter()
+        .find(|book| book.title == "Sample Series 04 c001")
+        .unwrap()
+        .id;
+    library
+        .mark_books(vec![first_chapter], ReadMark::Read)
+        .await
+        .unwrap();
+
+    let found = library
+        .series_volume(sample.series, volume(1.0))
+        .await
+        .unwrap()
+        .unwrap();
+
+    let served = serde_json::to_value(found).unwrap();
+    assert_eq!(
+        (
+            served.get("pageCount").cloned(),
+            served.pointer("/upNext/title").cloned()
+        ),
+        (Some(json!(4)), Some(json!("Sample Series 04 c002.5")))
+    );
 }
 
 #[tokio::test]
