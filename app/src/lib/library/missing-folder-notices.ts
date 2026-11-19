@@ -1,4 +1,4 @@
-import { FolderCheck } from "@lucide/svelte";
+import { FolderCheck, TriangleAlert } from "@lucide/svelte";
 
 import { assertNever } from "#lib/assert-never.ts";
 
@@ -6,6 +6,7 @@ import type { MissingFolder } from "#lib/ipc/bindings.ts";
 import type { Notices, ToastHandle } from "#lib/notices/notices.ts";
 import { m } from "#lib/paraglide/messages.js";
 
+import { wordingOf } from "./missing-folder-wording.ts";
 import MissingFolderToast from "./MissingFolderToast.svelte";
 
 export interface MissingFolderActions {
@@ -39,6 +40,29 @@ function placeOf({ folder, problem }: MissingFolder): string {
     default:
       return assertNever(problem);
   }
+}
+
+export function noticeFolderBack(
+  notices: Notices,
+  missing: MissingFolder,
+): void {
+  notices.show({
+    tone: "plain",
+    icon: FolderCheck,
+    title: m.missing_back_title({ name: missing.folder.name }),
+    body: m.missing_back_body({ share: placeOf(missing) }),
+  });
+}
+
+export function noticeFolderStillMissing(
+  notices: Notices,
+  missing: MissingFolder,
+): void {
+  notices.show({
+    tone: "warning",
+    icon: TriangleAlert,
+    ...wordingOf(missing, true),
+  });
 }
 
 /** One warning for each missing folder whose series are hidden, until it's fixed, or dismissed for as long as the app stays open. */
@@ -79,12 +103,7 @@ export class MissingFolderNotices {
 
   back(missing: MissingFolder): void {
     this.#withdraw(missing.folder.id);
-    this.notices.show({
-      tone: "plain",
-      icon: FolderCheck,
-      title: m.missing_back_title({ name: missing.folder.name }),
-      body: m.missing_back_body({ share: placeOf(missing) }),
-    });
+    noticeFolderBack(this.notices, missing);
   }
 
   withdrawAll(): void {

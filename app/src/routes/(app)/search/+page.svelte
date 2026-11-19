@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ArrowLeft } from "@lucide/svelte";
+  import { ArrowLeft, Unplug } from "@lucide/svelte";
+  import { Channel } from "@tauri-apps/api/core";
   import { onMount, type Snippet, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -17,6 +18,8 @@
     type ChapterHit,
     type ChapterHitPage,
     commands,
+    type IpcError,
+    type MissingFolder,
     type LibrarySearch,
     DEFAULT_LIBRARY_VIEW,
     type LibrarySeries,
@@ -25,6 +28,12 @@
     type SpellingSuggestion,
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
+  import FindFolderSheet from "#lib/library/FindFolderSheet.svelte";
+  import { FolderFinder } from "#lib/library/folder-finder.svelte.ts";
+  import {
+    noticeFolderBack,
+    noticeFolderStillMissing,
+  } from "#lib/library/missing-folder-notices.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import {
     type FilterCondition,
@@ -46,6 +55,7 @@
   import { backIcon } from "#lib/page/top-bar.ts";
   import { hasTopTabBar, phoneOf } from "#lib/page/platform.ts";
   import { GROUPED_GROUND } from "#lib/page/plates.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
   import { browserPreferenceStore } from "#lib/preferences/stored-preference.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -58,6 +68,7 @@
   import {
     ANDROID_SEARCH_VIEW,
     type FilterPlace,
+    searchLook,
   } from "#lib/search/search-look.ts";
   import { searchTextIn } from "#lib/search/search-route.ts";
   import SearchField from "#lib/search/SearchField.svelte";
@@ -142,6 +153,26 @@
   const isGroupedStart = $derived(isIPhone && !isLookingFor);
   const isAndroidPhone = $derived(
     phoneOf(data.appInfo.platform, width.current) === "android",
+  );
+  const marksNotConnected = $derived(
+    searchLook(
+      data.appInfo.platform,
+      phoneOf(data.appInfo.platform, width.current),
+    ).notConnected !== undefined,
+  );
+  const notices = getNotices();
+  const folderFinder = new FolderFinder(
+    ({ folder }) => commands.relocateLibraryFolder(folder.id, new Channel()),
+    {
+      onError: reportError,
+      onShareStillUnreachable: (missing) => {
+        noticeFolderStillMissing(notices, missing);
+      },
+      onShareBack: (missing) => {
+        noticeFolderBack(notices, missing);
+      },
+      onSettled: () => lookAgain(searchKey),
+    },
   );
   const listsChapterTitles = $derived(
     data.appInfo.platform === "macos" || isAndroidPhone,
@@ -238,8 +269,44 @@
   }
 
   function open(series: LibrarySeries): void {
+    if (marksNotConnected && !series.isConnected) {
+      sayNotConnected(series.title, () => {
+        findSeriesFolder(series);
+      });
+      return;
+    }
     rememberSearch();
     void goto(resolve("/(app)/series/[id]", { id: series.id }));
+  }
+
+  function sayNotConnected(title: string, find: () => void): void {
+    notices.show({
+      tone: "plain",
+      icon: Unplug,
+      title: m.search_not_connected_title({ title }),
+      body: m.search_not_connected_body(),
+      action: { label: m.missing_find_folder(), run: find },
+    });
+  }
+
+  function findSeriesFolder(series: LibrarySeries): void {
+    void findFolderFrom(commands.seriesMissingFolder(series.id));
+  }
+
+  async function findFolderFrom(
+    lookup: Promise<
+      | { status: "ok"; data: MissingFolder | null }
+      | { status: "error"; error: IpcError }
+    >,
+  ): Promise<void> {
+    const missing = await lookup;
+    if (missing.status === "error") {
+      reportError(missing.error);
+    } else if (missing.data === null) {
+      await lookAgain(searchKey);
+    } else {
+      folderFinder.find(missing.data);
+    }
   }
 
   function focusField(): void {
@@ -536,6 +603,7 @@
         activeKey={activeSeries?.id}
         onOpen={choose}
         onSelect={select}
+        onFind={findSeriesFolder}
         words={query.search.text}
         view={libraryView.reading.kind === "read"
           ? libraryView.reading.value
@@ -554,3 +622,5 @@
   {/if}
   <KeyHints platform={data.appInfo.platform} class="mbs-auto" />
 </div>
+
+<FindFolderSheet finder={folderFinder} platform={data.appInfo.platform} />

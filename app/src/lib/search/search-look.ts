@@ -15,6 +15,14 @@ import { ANDROID_SUBHEADING } from "#lib/library/filter-sheet-look.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { GROUP_PLATE } from "#lib/page/plates.ts";
 
+export interface NotConnectedResultLook {
+  readonly cover: string;
+  readonly title: string;
+  readonly line: string;
+  readonly tag: string;
+  readonly find: string;
+}
+
 export interface SearchLook {
   readonly heading: string;
   readonly title: string;
@@ -29,6 +37,7 @@ export interface SearchLook {
   readonly result: string;
   readonly selectedCover: string;
   readonly selectedTitle: string;
+  readonly notConnected: NotConnectedResultLook | undefined;
 }
 
 const TODAYS_MARK = "rounded-badge bg-chip text-foreground";
@@ -51,6 +60,7 @@ export const TODAYS_SEARCH_LOOK: SearchLook = {
     "flex cursor-default items-center gap-md rounded-card min-inline-none aria-selected:bg-accent-soft large:flex-col large:items-stretch large:gap-sm large:rounded-cover large:aria-selected:bg-transparent large:aria-selected:outline-2 large:aria-selected:outline-offset-4 large:aria-selected:outline-accent",
   selectedCover: "",
   selectedTitle: "",
+  notConnected: undefined,
 };
 
 export const NATIVE_SEARCH_LOOK: SearchLook = {
@@ -63,10 +73,19 @@ export const NATIVE_SEARCH_LOOK: SearchLook = {
   line: ROW_SUBTITLE_MUTED_TYPE,
 };
 
+const ANDROID_NOT_CONNECTED_RESULT: NotConnectedResultLook = {
+  cover: "opacity-45",
+  title: "text-muted",
+  line: "flex flex-wrap items-center gap-sm",
+  tag: "ms-auto",
+  find: "flex shrink-0 items-center justify-center rounded-full text-muted transition-control block-touch-target inline-touch-target hover:tint-hover active:tint-pressed",
+};
+
 export const ANDROID_SEARCH_LOOK: SearchLook = {
   ...NATIVE_SEARCH_LOOK,
   mark: ANDROID_MARK,
   heading: `pbs-md pbe-sm ${ANDROID_SUBHEADING}`,
+  notConnected: ANDROID_NOT_CONNECTED_RESULT,
 };
 
 export const MACOS_SEARCH_LOOK: SearchLook = {
