@@ -96,23 +96,31 @@ test("offers no New category row without a way to make one", async () => {
   ).toBeNull();
 });
 
-test("sets New category after the tabs, outside their list, and asks for a name when pressed", async () => {
-  let asked = 0;
+test("sets New category after the tabs, outside their list", async () => {
+  const screen = await render(LibraryTabsList, {
+    ...PROPS,
+    onNewCategory: () => undefined,
+  });
+
+  const add = screen.getByRole("button", { name: "New category" }).element();
+  const list = screen.getByRole("list").element();
+
+  expect(list.contains(add)).toBe(false);
+  expect(
+    list.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});
+
+test("calls onNewCategory when New category is pressed", async () => {
+  let presses = 0;
   const screen = await render(LibraryTabsList, {
     ...PROPS,
     onNewCategory: () => {
-      asked += 1;
+      presses += 1;
     },
   });
-  const add = screen.getByRole("button", { name: "New category" });
-  const list = screen.getByRole("list").element();
 
-  await add.click();
+  await screen.getByRole("button", { name: "New category" }).click();
 
-  expect(list.contains(add.element())).toBe(false);
-  expect(
-    list.compareDocumentPosition(add.element()) &
-      Node.DOCUMENT_POSITION_FOLLOWING,
-  ).toBeTruthy();
-  expect(asked).toBe(1);
+  expect(presses).toBe(1);
 });
