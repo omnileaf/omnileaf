@@ -1,6 +1,11 @@
 <script lang="ts">
   import { Channel } from "@tauri-apps/api/core";
-  import { CircleAlert, FolderOpen, RefreshCw } from "@lucide/svelte";
+  import {
+    CircleAlert,
+    FolderOpen,
+    RefreshCw,
+    TriangleAlert,
+  } from "@lucide/svelte";
   import { onMount, type Snippet, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -431,6 +436,16 @@
     selection.end();
   }
 
+  function sayFailed(error: unknown, title: string): void {
+    reportError(error);
+    notices.show({
+      tone: "warning",
+      icon: TriangleAlert,
+      title,
+      body: m.library_selection_failed_body(),
+    });
+  }
+
   function markPickedRead(): void {
     void markRead(selection.picked);
   }
@@ -818,7 +833,7 @@
     isRemoving = false;
     removing = undefined;
     if (removed.status !== "ok") {
-      reportError(removed.error);
+      sayFailed(removed.error, m.library_remove_failed());
       return;
     }
     selection.end();
@@ -833,7 +848,7 @@
   async function markRead(series: SeriesId[]): Promise<void> {
     const marked = await commands.markSeriesRead(series);
     if (marked.status !== "ok") {
-      reportError(marked.error);
+      sayFailed(marked.error, m.library_mark_read_failed());
       return;
     }
     selection.end();
@@ -1035,6 +1050,9 @@
     series={labelled}
     startsAtTags={labelsFrom === "tags"}
     onApplied={endSelecting}
+    onApplyFailed={(error: unknown) => {
+      sayFailed(error, m.library_labels_failed());
+    }}
     onError={reportFailure}
   />
 {:else}
@@ -1043,6 +1061,9 @@
     series={labelled}
     startsAtTags={labelsFrom === "tags"}
     onApplied={endSelecting}
+    onApplyFailed={(error: unknown) => {
+      sayFailed(error, m.library_labels_failed());
+    }}
     onError={reportFailure}
   />
 {/if}

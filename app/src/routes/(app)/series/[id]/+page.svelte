@@ -660,6 +660,7 @@
     bind:isOpen={isLabelling}
     series={[foundId]}
     startsAtTags={false}
+    onApplyFailed={reportFailure}
     onError={reportFailure}
   />
 {/if}

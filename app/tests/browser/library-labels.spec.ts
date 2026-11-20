@@ -223,13 +223,18 @@ test.describe("when the labels can't be saved", () => {
     } satisfies FakeBackend,
   });
 
-  test("keeps the dialog open and the series chosen", async ({ page }) => {
+  test("says so, keeping the dialog open and the series chosen", async ({
+    page,
+  }) => {
     await pickTwo(page);
     const dialog = await openLabels(page, "Categories");
     await dialog.getByRole("checkbox", { name: "Comics" }).click();
 
     await dialog.getByRole("button", { name: "Done" }).click();
 
+    await expect(
+      page.getByText("Couldn't change the categories and tags"),
+    ).toBeVisible();
     await expect(dialog).toBeVisible();
     await expect(selectionBar(page)).toBeVisible();
     await expect(
