@@ -31,6 +31,8 @@
 
   import { IosPhone } from "./ios-phone.svelte.ts";
   import { type ArrangedTab, tabKey } from "./library-tabs.ts";
+  import { RowDrag, type Slot } from "./row-drag.ts";
+  import { settleRow } from "./settle-row.ts";
   import { moved, shownAs } from "./tab-order.ts";
 
   const ICON_SIZE = 16;
@@ -41,7 +43,7 @@
 
   interface Drag {
     readonly key: string;
-    readonly order: readonly ArrangedTab[];
+    readonly rows: RowDrag;
   }
 
   let {
@@ -62,7 +64,6 @@
   let drag = $state<Drag | undefined>();
   let announcement = $state("");
   let quiet: ReturnType<typeof setTimeout> | undefined;
-  const listed = $derived(drag?.order ?? tabs);
 
   function announce(text: string): void {
     announcement = text;
@@ -89,6 +90,22 @@
     );
   }
 
+  function rowOf(key: string): HTMLElement | null {
+    return (
+      list?.querySelector<HTMLElement>(`[data-tab-row="${CSS.escape(key)}"]`) ??
+      null
+    );
+  }
+
+  function slotsOfRows(): Slot[] {
+    return [
+      ...(list?.querySelectorAll<HTMLElement>("[data-tab-row]") ?? []),
+    ].map((row) => {
+      const { top, height } = row.getBoundingClientRect();
+      return { top, height };
+    });
+  }
+
   async function move(from: number, to: number): Promise<void> {
     const tab = tabs[from];
     const next = moved(tabs, from, to);
@@ -110,46 +127,66 @@
     void move(at, at + step);
   }
 
-  function startDrag(event: PointerEvent, tab: ArrangedTab): void {
-    if (event.button !== 0) {
+  function startDrag(event: PointerEvent, at: number): void {
+    const tab = tabs[at];
+    if (event.button !== 0 || tab === undefined) {
       return;
     }
     event.preventDefault();
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    drag = { key: tabKey(tab.id), order: tabs };
-  }
-
-  function dragTo(event: PointerEvent): void {
-    if (drag === undefined || list === null) {
-      return;
-    }
-    const rows = [...list.querySelectorAll<HTMLElement>("[data-tab-row]")];
-    const over = rows.findIndex(
-      (row) => event.clientY < row.getBoundingClientRect().bottom,
-    );
-    const { key } = drag;
-    const from = drag.order.findIndex(({ id }) => tabKey(id) === key);
     drag = {
-      key,
-      order: moved(drag.order, from, over === -1 ? rows.length - 1 : over),
+      key: tabKey(tab.id),
+      rows: new RowDrag(at, slotsOfRows(), event.clientY),
     };
   }
 
-  function drop(): void {
+  function dragTo(event: PointerEvent): void {
     if (drag === undefined) {
       return;
     }
-    const { key, order } = drag;
+    drag = { ...drag, rows: drag.rows.to(event.clientY) };
+  }
+
+  async function endDrag(keepsGap: boolean): Promise<void> {
+    if (drag === undefined) {
+      return;
+    }
+    const { key, rows } = drag;
+    const liftedTop = rowOf(key)?.getBoundingClientRect().top;
     drag = undefined;
-    const from = tabs.findIndex(({ id }) => tabKey(id) === key);
-    const to = order.findIndex(({ id }) => tabKey(id) === key);
-    const tab = tabs[from];
-    if (tab !== undefined && from !== to) {
-      onArrange(order);
-      announceMove(tab, from, to);
+    const tab = tabs[rows.from];
+    if (
+      keepsGap &&
+      tab !== undefined &&
+      tabKey(tab.id) === key &&
+      rows.gap !== rows.from
+    ) {
+      onArrange(moved(tabs, rows.from, rows.gap));
+      announceMove(tab, rows.from, rows.gap);
+    }
+    await tick();
+    const row = rowOf(key);
+    if (row !== null && liftedTop !== undefined) {
+      settleRow(row, liftedTop);
+    }
+  }
+
+  function drop(): void {
+    void endDrag(true);
+  }
+
+  function cancelDrag(): void {
+    void endDrag(false);
+  }
+
+  function cancelDragWhenHidden(): void {
+    if (document.visibilityState === "hidden") {
+      cancelDrag();
     }
   }
 </script>
+
+<svelte:document onvisibilitychange={cancelDragWhenHidden} />
 
 <ul
   data-settings-group
@@ -161,10 +198,15 @@
       ? `flex flex-col divide-y divide-ios-separator overflow-hidden ${GROUP_PLATE}`
       : "flex flex-col divide-y divide-border rounded-card border border-border bg-card"}
 >
-  {#each listed as tab, at (tabKey(tab.id))}
+  {#each tabs as tab, at (tabKey(tab.id))}
     {@const key = tabKey(tab.id)}
+    {@const isLifted = drag?.key === key}
     <li
-      data-tab-row
+      data-tab-row={key}
+      style:top={isLifted ? `${String(drag?.rows.offset ?? 0)}px` : undefined}
+      style:translate={drag !== undefined && !isLifted
+        ? `0 ${String(drag.rows.shiftOf(at))}px`
+        : undefined}
       class={[
         "flex items-center",
         android.isOn
@@ -172,7 +214,10 @@
           : ios.isOn
             ? "gap-sm ps-lg pe-xs min-block-native-row"
             : "gap-sm py-sm ps-xs pe-sm",
-        drag?.key === key &&
+        drag !== undefined &&
+          !isLifted &&
+          "transition-transform duration-move ease-emphasized",
+        isLifted &&
           (android.isOn
             ? "relative z-drag-box -translate-y-native-drag-lift scale-102 rounded-native-segment bg-android-container-high shadow-dialog"
             : "relative z-drag-box rounded-card bg-card shadow-dialog"),
@@ -193,11 +238,12 @@
           moveWithKeys(event, at);
         }}
         onpointerdown={(event) => {
-          startDrag(event, tab);
+          startDrag(event, at);
         }}
         onpointermove={dragTo}
         onpointerup={drop}
-        onpointercancel={drop}
+        onlostpointercapture={drop}
+        onpointercancel={cancelDrag}
       >
         {#if ios.isOn}
           <Menu size={IOS_ICON_SIZE} aria-hidden="true" />
@@ -292,7 +338,7 @@
             {m.library_tabs_move_up()}
           </DropdownMenuItem>
           <DropdownMenuItem
-            disabled={at === listed.length - 1}
+            disabled={at === tabs.length - 1}
             onSelect={() => {
               void move(at, at + 1);
             }}
