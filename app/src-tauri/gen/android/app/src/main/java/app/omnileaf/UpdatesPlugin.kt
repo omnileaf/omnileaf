@@ -28,16 +28,20 @@ class AutomaticCheck {
 class UpdatesPlugin(
     activity: Activity,
 ) : Plugin(activity) {
+    private val context = activity.applicationContext
+    private val state = UpdateState(PreferencesUpdateStore(context))
+    private val clock = Clock.systemUTC()
+    private val installedRelease = PackageInstalledRelease(context)
+    private val automatic = AutomaticCheckSwitch(state, BackgroundUpdateCheck(SystemUpdateCheckJobs(context)))
+    private val choices = UpdateNoticeChoices(state, UpdateNotifications(context))
     private val runner: UpdateCheckRunner? =
-        ReleaseVersion.parse(BuildConfig.VERSION_NAME)?.let { installed ->
-            val checking =
-                UpdateChecking(
-                    UpdateState(PreferencesUpdateStore(activity.applicationContext)),
+        installedRelease.version()?.let { installed ->
+            val checks =
+                ReleaseChecks(
                     UpdateCheck(GitHubReleaseFeed(installed)),
-                    Clock.systemUTC(),
-                    installed,
+                    DailyUpdateCheck(state, installedRelease) { GitHubReleaseFeed(it) },
                 )
-            UpdateCheckRunner(checking, CHECKS)
+            UpdateCheckRunner(UpdateChecking(state, checks, clock, installed), CHECKS)
         }
 
     @Command
@@ -61,7 +65,7 @@ class UpdatesPlugin(
     @Command
     fun setAutomatic(invoke: Invoke) {
         val checking = runnerFor(invoke)?.checking ?: return
-        checking.isAutomatic = invoke.parseArgs(AutomaticCheck::class.java).automatic
+        automatic.turn(invoke.parseArgs(AutomaticCheck::class.java).automatic)
         invoke.resolve(checking.statusNow())
     }
 
@@ -69,7 +73,7 @@ class UpdatesPlugin(
     fun snooze(invoke: Invoke) {
         val checking = runnerFor(invoke)?.checking ?: return
         val version = chosenVersion(invoke) ?: return
-        checking.snooze(version)
+        choices.snooze(version, clock.instant())
         invoke.resolve(checking.statusNow())
     }
 
@@ -77,12 +81,12 @@ class UpdatesPlugin(
     fun skip(invoke: Invoke) {
         val checking = runnerFor(invoke)?.checking ?: return
         val version = chosenVersion(invoke) ?: return
-        checking.skip(version)
+        choices.skip(version)
         invoke.resolve(checking.statusNow())
     }
 
     private fun runnerFor(invoke: Invoke): UpdateCheckRunner? {
-        if (runner == null) invoke.reject("the installed version ${BuildConfig.VERSION_NAME} is not a release version")
+        if (runner == null) invoke.reject("the installed version is not a release version")
         return runner
     }
 

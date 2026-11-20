@@ -1,12 +1,6 @@
 package app.omnileaf
 
 import java.time.Clock
-import java.time.Duration
-import java.time.Instant
-
-private const val HOURS_BETWEEN_CHECKS = 24L
-
-private val CHECK_INTERVAL: Duration = Duration.ofHours(HOURS_BETWEEN_CHECKS)
 
 internal enum class Notice {
     SHOWN,
@@ -25,13 +19,18 @@ internal sealed interface UpdateStatus {
     ) : UpdateStatus
 }
 
+internal class ReleaseChecks(
+    val manual: UpdateCheck,
+    val daily: DailyUpdateCheck,
+)
+
 internal class UpdateChecking(
     private val state: UpdateState,
-    private val updateCheck: UpdateCheck,
+    private val checks: ReleaseChecks,
     private val clock: Clock,
     private val installed: ReleaseVersion,
 ) {
-    var isAutomatic: Boolean by state::isAutomatic
+    val isAutomatic: Boolean get() = state.isAutomatic
 
     fun status(): UpdateStatus {
         val newer = state.latest?.takeIf { it.version > installed }
@@ -42,19 +41,14 @@ internal class UpdateChecking(
         }
     }
 
-    fun check(): CheckResult = updateCheck.check(installed).also { state.record(it, clock.instant()) }
+    fun check(): CheckResult = checks.manual.check(installed).also { state.record(it, clock.instant()) }
 
-    fun checkIfDue(): CheckResult? = if (isDue(clock.instant())) check() else null
-
-    fun snooze(version: ReleaseVersion) = state.snooze(version, clock.instant())
-
-    fun skip(version: ReleaseVersion) = state.skip(version)
-
-    private fun isDue(now: Instant): Boolean {
-        if (!state.isAutomatic) return false
-        val attemptedAt = state.attemptedAt ?: return true
-        val isClockBeforeAttempt = now.isBefore(attemptedAt)
-        return isClockBeforeAttempt || !now.isBefore(attemptedAt + CHECK_INTERVAL)
+    fun checkIfDue(): CheckResult? {
+        if (!state.isAutomatic) return null
+        return when (val run = checks.daily.runIfDue(clock.instant())) {
+            is DailyRun.Checked -> run.result
+            DailyRun.NotDue, DailyRun.VersionUnreadable -> null
+        }
     }
 
     private fun noticeFor(newer: PublishedRelease): Notice {

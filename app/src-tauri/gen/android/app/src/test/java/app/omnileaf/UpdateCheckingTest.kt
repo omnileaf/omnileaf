@@ -16,11 +16,13 @@ private fun feedReplyFor(release: PublishedRelease) =
     FeedReply(200, null, """{"tag_name":"v${release.version}","draft":false,"prerelease":false,"body":"${release.headline}"}""")
 
 class UpdateCheckingTest {
-    private val store = InMemoryUpdateStore()
+    private val store = MemoryUpdateStore()
     private val state = UpdateState(store)
     private val feed = FakeReleaseFeed()
 
-    private fun checkingAt(now: Instant) = UpdateChecking(state, UpdateCheck(feed), Clock.fixed(now, ZoneOffset.UTC), INSTALLED)
+    private val checks = ReleaseChecks(UpdateCheck(feed), DailyUpdateCheck(state, { INSTALLED }, { feed }))
+
+    private fun checkingAt(now: Instant) = UpdateChecking(state, checks, Clock.fixed(now, ZoneOffset.UTC), INSTALLED)
 
     @Test
     fun `is unchecked before any check reaches github`() {
@@ -44,7 +46,7 @@ class UpdateCheckingTest {
     fun `is up to date when the release found is already installed`() {
         state.record(CheckResult.Available(NEWER), NOON)
 
-        val status = UpdateChecking(state, UpdateCheck(feed), Clock.fixed(NOON, ZoneOffset.UTC), NEWER.version).status()
+        val status = UpdateChecking(state, checks, Clock.fixed(NOON, ZoneOffset.UTC), NEWER.version).status()
 
         assertEquals(UpdateStatus.UpToDate, status)
     }
@@ -62,7 +64,7 @@ class UpdateCheckingTest {
     fun `keeps a snoozed release out of sight for seven days`() {
         state.record(CheckResult.Available(NEWER), NOON)
 
-        checkingAt(NOON).snooze(NEWER.version)
+        state.snooze(NEWER.version, NOON)
 
         val notices = listOf(Duration.ofDays(7).minusMillis(1), Duration.ofDays(7)).map { checkingAt(NOON + it).status() }
         assertEquals(listOf(UpdateStatus.Newer(NEWER, Notice.SNOOZED), UpdateStatus.Newer(NEWER, Notice.SHOWN)), notices)
@@ -72,7 +74,7 @@ class UpdateCheckingTest {
     fun `keeps a skipped release out of sight`() {
         state.record(CheckResult.Available(NEWER), NOON)
 
-        checkingAt(NOON).skip(NEWER.version)
+        state.skip(NEWER.version)
 
         assertEquals(UpdateStatus.Newer(NEWER, Notice.SKIPPED), checkingAt(NOON + Duration.ofDays(30)).status())
     }
@@ -80,8 +82,8 @@ class UpdateCheckingTest {
     @Test
     fun `shows a release newer than the one snoozed or skipped at once`() {
         state.record(CheckResult.Available(NEWER), NOON)
-        checkingAt(NOON).snooze(NEWER.version)
-        checkingAt(NOON).skip(NEWER.version)
+        state.snooze(NEWER.version, NOON)
+        state.skip(NEWER.version)
 
         state.record(CheckResult.Available(NEWEST), NOON)
 
@@ -107,12 +109,10 @@ class UpdateCheckingTest {
     }
 
     @Test
-    fun `remembers the automatic check being turned on and off`() {
-        val checking = checkingAt(NOON)
-
+    fun `tells whether the automatic check is on`() {
         val turns =
             listOf(true, false).map {
-                checking.isAutomatic = it
+                state.isAutomatic = it
                 checkingAt(NOON).isAutomatic
             }
 
@@ -128,7 +128,7 @@ class UpdateCheckingTest {
 
     @Test
     fun `checks by itself when automatic and never tried before`() {
-        checkingAt(NOON).isAutomatic = true
+        state.isAutomatic = true
 
         val result = checkingAt(NOON).checkIfDue()
 
@@ -136,22 +136,12 @@ class UpdateCheckingTest {
     }
 
     @Test
-    fun `checks by itself again only a full day after the last try`() {
-        checkingAt(NOON).isAutomatic = true
+    fun `leaves the daily check to say when it is due`() {
+        state.isAutomatic = true
         state.record(CheckResult.Offline, NOON)
 
-        val results = listOf(Duration.ofHours(24).minusMillis(1), Duration.ofHours(24)).map { checkingAt(NOON + it).checkIfDue() }
+        val results = listOf(LEAST_TIME_BETWEEN_CHECKS.minusMillis(1), LEAST_TIME_BETWEEN_CHECKS).map { checkingAt(NOON + it).checkIfDue() }
 
         assertEquals(listOf(null, CheckResult.UpToDate) to 1, results to feed.requests)
-    }
-
-    @Test
-    fun `checks by itself when the clock moved back before the last try`() {
-        checkingAt(NOON).isAutomatic = true
-        state.record(CheckResult.UpToDate, NOON)
-
-        val result = checkingAt(NOON - Duration.ofMinutes(1)).checkIfDue()
-
-        assertEquals(CheckResult.UpToDate to NOON - Duration.ofMinutes(1), result to state.attemptedAt)
     }
 }
