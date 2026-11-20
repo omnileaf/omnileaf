@@ -11,6 +11,7 @@
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import { Icon as MaterialIcon } from "#lib/components/ui/icon/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
+  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { DOCKED_BAR, DOCKED_ROW } from "#lib/navigation/tab-bar.ts";
   import SelectionToolbar from "#lib/page/SelectionToolbar.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -27,7 +28,7 @@
   const ANDROID_ICON_SIZE = 24;
   const ANDROID_MENU_ICON_SIZE = 20;
   const ANDROID_ACTION =
-    "flex flex-col items-center gap-xs rounded-native-selection-action px-md py-xs text-native-tab/native-tab font-native-tab tracking-native-tab whitespace-nowrap text-muted transition-control min-block-touch-target not-disabled:active:tint-pressed disabled:text-native-on-tab-disabled disabled:opacity-60";
+    "flex items-center justify-center rounded-full text-muted transition-control block-native-target inline-native-target not-disabled:active:tint-pressed disabled:text-native-on-tab-disabled disabled:opacity-60";
 
   let {
     count,
@@ -80,22 +81,31 @@
     <ul class="flex px-lg {rowSpacing} {DOCKED_ROW}">
       {#each keptActions as { name, iconName, label, act } (name)}
         <li class="flex min-inline-none">
-          <button
+          <Tooltip
+            {label}
             type="button"
+            aria-label={label}
             disabled={count === 0}
             class={ANDROID_ACTION}
             onclick={act}
           >
             <MaterialIcon name={iconName} size={ANDROID_ICON_SIZE} />
-            {label}
-          </button>
+          </Tooltip>
         </li>
       {/each}
       <li class="flex min-inline-none">
         <DropdownMenu>
-          <DropdownMenuTrigger disabled={count === 0} class={ANDROID_ACTION}>
-            <MaterialIcon name="ellipsis" size={ANDROID_ICON_SIZE} />
-            {m.library_selection_more()}
+          <DropdownMenuTrigger disabled={count === 0}>
+            {#snippet child({ props })}
+              <Tooltip
+                label={m.library_selection_more()}
+                {...props}
+                aria-label={m.library_selection_more()}
+                class={ANDROID_ACTION}
+              >
+                <MaterialIcon name="ellipsis" size={ANDROID_ICON_SIZE} />
+              </Tooltip>
+            {/snippet}
           </DropdownMenuTrigger>
           <DropdownMenuContent
             to="main"

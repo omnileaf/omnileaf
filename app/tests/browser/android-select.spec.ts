@@ -114,12 +114,10 @@ test.describe(
       await startSelecting(page);
       const bar = page.getByRole("group", { name: "Selected series" });
 
-      await expect(bar.getByRole("button")).toHaveText([
-        "Categories",
-        "Tags",
-        "Mark as read",
-        "More",
-      ]);
+      for (const name of ["Categories", "Tags", "Mark as read", "More"]) {
+        await expect(bar.getByRole("button", { name })).toHaveCount(1);
+      }
+      await expect(bar.getByRole("button")).toHaveCount(4);
       await expect(bar.getByRole("button", { name: "Delete" })).toHaveCount(0);
       const icon = bar
         .getByRole("button", { name: "More" })
@@ -160,17 +158,44 @@ test.describe(
       expect(await accessibilityViolations(page)).toEqual([]);
     });
 
-    test("fills an unchecked cover check box with the window colour inside a 2px outline", async ({
+    test("shows the bar's actions as 48px icons without words under them", async ({
       page,
     }) => {
       await startSelecting(page);
-      const box = seriesList(page)
-        .getByRole("listitem")
-        .first()
-        .locator('[data-slot="selection-mark"]');
+      const buttons = page
+        .getByRole("group", { name: "Selected series" })
+        .getByRole("button");
 
-      await expect(box).toHaveCSS("background-color", "rgb(247, 250, 245)");
-      await expect(box).toHaveCSS("border-top-width", "2px");
+      await expect(buttons).toHaveText(["", "", "", ""]);
+      for (const button of await buttons.all()) {
+        const box = await boxOf(button);
+        expect([box.width, box.height]).toEqual([48, 48]);
+      }
+    });
+
+    test("names a bar action in a tooltip when it is held", async ({
+      page,
+    }) => {
+      await startSelecting(page);
+      const tags = page
+        .getByRole("group", { name: "Selected series" })
+        .getByRole("button", { name: "Tags" });
+      const touch = { pointerType: "touch", pointerId: 5, isPrimary: true };
+
+      await tags.dispatchEvent("pointerdown", touch);
+
+      await expect(page.locator("[data-tooltip-content]")).toHaveText("Tags");
+      await tags.dispatchEvent("pointerup", touch);
+    });
+
+    test("draws no check boxes on the covers while choosing", async ({
+      page,
+    }) => {
+      await startSelecting(page);
+
+      await expect(
+        seriesList(page).locator('[data-slot="selection-mark"]'),
+      ).toHaveCount(0);
     });
 
     test("sets the count at title large, 22px on a 28px line in regular weight", async ({
