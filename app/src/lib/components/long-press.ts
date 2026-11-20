@@ -2,11 +2,15 @@ import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
 
 export class LongPress {
   #holding: ReturnType<typeof setTimeout> | undefined;
-  #isClickSwallowed = false;
+  #wasHeld = false;
 
   constructor(
     private readonly heldMs: () => number = () => touchChoices.longPressMs,
   ) {}
+
+  get wasHeld(): boolean {
+    return this.#wasHeld;
+  }
 
   pressed(event: PointerEvent, onHeld: () => void): void {
     if (event.pointerType === "mouse") {
@@ -15,7 +19,7 @@ export class LongPress {
     this.released();
     this.#holding = setTimeout(() => {
       this.#holding = undefined;
-      this.#isClickSwallowed = true;
+      this.#wasHeld = true;
       onHeld();
     }, this.heldMs());
   }
@@ -26,12 +30,12 @@ export class LongPress {
   }
 
   pointerWentDown(): void {
-    this.#isClickSwallowed = false;
+    this.#wasHeld = false;
   }
 
   clicked(event: MouseEvent): void {
-    if (this.#isClickSwallowed) {
-      this.#isClickSwallowed = false;
+    if (this.#wasHeld) {
+      this.#wasHeld = false;
       event.preventDefault();
       event.stopPropagation();
     }
