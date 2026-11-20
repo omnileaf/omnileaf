@@ -35,7 +35,7 @@ const ON_COVERS: OnCovers = {
   showsLanguage: true,
 };
 
-interface TileLook {
+interface BadgeLook {
   readonly cover: { readonly corner: string };
   readonly badge: {
     readonly height: number;
@@ -46,6 +46,9 @@ interface TileLook {
     readonly numerals: string;
   };
   readonly downloaded: { readonly size: number; readonly fill: string };
+}
+
+interface TileLook extends BadgeLook {
   readonly mark: {
     readonly size: number;
     readonly corner: string;
@@ -147,7 +150,10 @@ function downloadMarkOf(root: ParentNode): Element {
   return mark;
 }
 
-async function lookOn(platform: Platform, theme: string): Promise<TileLook> {
+async function badgeLookOn(
+  platform: Platform,
+  theme: string,
+): Promise<BadgeLook> {
   document.body.replaceChildren();
   document.documentElement.dataset.theme = theme;
   followCorePlatform(platform);
@@ -156,10 +162,6 @@ async function lookOn(platform: Platform, theme: string): Promise<TileLook> {
   await render(CoverBadges, { series, onCovers: ON_COVERS });
   const unread = page.getByRole("img", { name: "3 unread" }).last().element();
   const downloaded = downloadMarkOf(document.body);
-  const mark = styleOf(await markOf(series, { isOn: true, display: "grid" }));
-  const emptyMark = styleOf(
-    await markOf(series, { isOn: false, display: "grid" }),
-  );
 
   return {
     cover: { corner: styleOf(cover).borderTopLeftRadius },
@@ -175,6 +177,19 @@ async function lookOn(platform: Platform, theme: string): Promise<TileLook> {
       size: downloaded.getBoundingClientRect().height,
       fill: styleOf(downloaded).backgroundColor,
     },
+  };
+}
+
+async function lookOn(platform: Platform, theme: string): Promise<TileLook> {
+  const badges = await badgeLookOn(platform, theme);
+  const series = await oneSeries();
+  const mark = styleOf(await markOf(series, { isOn: true, display: "grid" }));
+  const emptyMark = styleOf(
+    await markOf(series, { isOn: false, display: "grid" }),
+  );
+
+  return {
+    ...badges,
     mark: {
       size: Number.parseFloat(mark.height),
       corner: mark.borderTopLeftRadius,
@@ -317,17 +332,6 @@ test("draws no outline round a picked cover on an iPhone, and keeps it on an iPa
   ]);
 });
 
-test("sets Android's check box 15px in from the cover's top end", async () => {
-  document.documentElement.dataset.theme = "light";
-  followCorePlatform("android");
-  const mark = await markOf(await oneSeries(), {
-    isOn: false,
-    display: "grid",
-  });
-
-  expect(gapsAround(mark)).toMatchObject({ top: 15, end: 15 });
-});
-
 test("lightens iOS's count badge to a pink with dark words in the dark theme", async () => {
   const look = await lookOn("ios", "dark");
 
@@ -344,8 +348,8 @@ test("lightens iOS's count badge to a pink with dark words in the dark theme", a
   ]);
 });
 
-test("draws Android's tile with a 16px red count pill, no download dot and a material check box", async () => {
-  const { badge, downloaded, ...look } = await lookOn("android", "light");
+test("draws Android's tile with a 16px red count pill and no download dot", async () => {
+  const { badge, downloaded, ...look } = await badgeLookOn("android", "light");
   const { corner, ...pill } = badge;
 
   expect(Number.parseFloat(corner)).toBeGreaterThanOrEqual(pill.height / 2);
@@ -359,35 +363,15 @@ test("draws Android's tile with a 16px red count pill, no download dot and a mat
       weight: "500",
       numerals: "normal",
     },
-    mark: {
-      size: 18,
-      corner: "2px",
-      fill: "rgb(50, 106, 77)",
-      tick: "rgb(230, 255, 237)",
-    },
-    emptyMark: {
-      edge: "2px rgb(115, 125, 117)",
-      ring: "none",
-      fill: "rgb(247, 250, 245)",
-    },
   });
 });
 
-test("tints Android's check box and badges for the dark theme", async () => {
-  const look = await lookOn("android", "dark");
+test("tints Android's badges for the dark theme", async () => {
+  const look = await badgeLookOn("android", "dark");
 
-  expect([
-    look.badge.fill,
-    look.badge.label,
-    look.mark.fill,
-    look.mark.tick,
-    look.emptyMark.edge,
-  ]).toEqual([
+  expect([look.badge.fill, look.badge.label]).toEqual([
     "rgb(250, 116, 111)",
     "rgb(73, 0, 6)",
-    "rgb(120, 217, 159)",
-    "rgb(0, 57, 29)",
-    "2px rgb(110, 120, 112)",
   ]);
 });
 
@@ -666,28 +650,6 @@ async function pickedOn(platform: Platform, picked: boolean) {
     tonal: getComputedStyle(tile, "::before"),
   };
 }
-
-test("insets Android's picked cover on a tonal tile instead of outlining it", async () => {
-  const { cover, tonal } = await pickedOn("android", true);
-
-  expect({
-    outline: cover.outlineWidth,
-    scale: cover.scale,
-    corner: cover.borderTopLeftRadius,
-    tile: tonal.backgroundColor,
-  }).toEqual({
-    outline: "0px",
-    scale: "0.88",
-    corner: "12px",
-    tile: "rgb(208, 232, 215)",
-  });
-});
-
-test("leaves Android's cover unpicked without a tonal tile", async () => {
-  const { cover, tonal } = await pickedOn("android", false);
-
-  expect([cover.scale, tonal.content]).toEqual(["none", "none"]);
-});
 
 test("keeps Android's picked cover and its tile as they were on a tablet", async () => {
   await page.viewport(TABLET.width, TABLET.height);

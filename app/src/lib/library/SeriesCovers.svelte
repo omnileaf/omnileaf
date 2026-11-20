@@ -133,7 +133,9 @@
   const canHover = new MediaQuery("(hover: hover)");
   const selection = seriesSelection();
   const isSelecting = $derived(selection?.isSelecting === true);
-  const marksPicks = $derived(isSelecting && platform !== "macos");
+  const marksPicks = $derived(
+    isSelecting && platform !== "macos" && !androidPhone.isOn,
+  );
   const isMacTable = $derived(platform === "macos" && view.display === "list");
   const rowNumbers = $derived(
     new Map(series.map((one, index) => [one.id, index])),
@@ -219,6 +221,10 @@
 
   function pickedTitle(one: LibrarySeries): ClassValue {
     return selection?.has(one.id) === true ? tile.pickedTitle : "";
+  }
+
+  function pickedMeta(one: LibrarySeries): ClassValue {
+    return selection?.has(one.id) === true ? tile.pickedMeta : "";
   }
 
   let reveal: Reveal | undefined;
@@ -416,6 +422,7 @@
             "flex flex-col gap-cover-caption min-inline-none medium:gap-sm",
             stack?.room,
             tile.link,
+            tile.captionedLink,
           ]}
         >
           <CoverSheets look={stack} bookCount={one.bookCount} />
@@ -475,6 +482,7 @@
                 (away && tile.notConnected?.books) || "text-muted",
                 look.bookCount,
                 tile.meta,
+                pickedMeta(one),
               ]}
             >
               {m.library_series_books({ count: one.bookCount })}
@@ -711,7 +719,7 @@
         order={seriesOrder}
         class={rowLook.link}
       >
-        {#if isSelecting && !away}
+        {#if marksPicks && !away}
           <span
             class="relative shrink-0 block-series-check inline-series-check"
           >
