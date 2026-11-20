@@ -1306,11 +1306,13 @@
             bind:this={pager}
             {@attach tabsShown &&
               !selection.isSelecting &&
-              swipesBetweenTabs(
-                swipeTab,
-                (step) => tabBeside(step) !== undefined,
-                () => pagesBesideChosen > 0 && animations.moves("navigation"),
-              )}
+              swipesBetweenTabs({
+                onSwipe: swipeTab,
+                canStep: (step) => tabBeside(step) !== undefined,
+                settlesSmoothly: () =>
+                  pagesBesideChosen > 0 && animations.moves("navigation"),
+                track: () => pager,
+              })}
             class="relative flex-1 touch-pan-y"
           >
             {#if groups.length > 0}
