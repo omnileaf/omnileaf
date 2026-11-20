@@ -23,6 +23,9 @@ const NOT_STARTED = { state: "notStarted" } as const;
 const EARLIER_VERSION = "1.2.2";
 const SAMPLE_SERIES = sampleSeriesId(21);
 const [FIRST_PACKAGE] = licensedPackages({ rust, javascript });
+if (FIRST_PACKAGE === undefined) {
+  throw new Error("no licensed package to guard");
+}
 const APP_ROUTES = fileURLToPath(
   new URL("../../src/routes/(app)", import.meta.url),
 );
@@ -74,7 +77,7 @@ const LIBRARY_SCREENS: readonly GuardedScreen[] = [
   },
   {
     route: "/settings/about/licences/[...package]",
-    path: `/settings/about/licences/${FIRST_PACKAGE?.key ?? ""}`,
+    path: `/settings/about/licences/${FIRST_PACKAGE.key}`,
   },
 ];
 
