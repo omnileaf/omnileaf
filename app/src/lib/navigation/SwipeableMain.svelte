@@ -13,6 +13,7 @@
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { watchScrolled } from "#lib/page/scrolled.ts";
 
   import { getBackGoesUp } from "./back-goes-up";
   import { backPreviewLook, previewBackGestures } from "./back-preview";
@@ -55,6 +56,7 @@
     goBack,
   });
 
+  let isScrolled = $state(false);
   let stopHoldingScroll: (() => void) | undefined;
   const screenShown = $derived(
     `${page.url.pathname} ${language.resolved} ${width.current}`,
@@ -128,6 +130,16 @@
     swiped.allowFor(screenShown, edgeIn);
   });
 
+  $effect(() => {
+    const main = swiped.element;
+    if (!isAndroid || main === undefined) {
+      return;
+    }
+    return watchScrolled(main, (scrolled) => {
+      isScrolled = scrolled;
+    });
+  });
+
   onMount(() => {
     if (isAndroid) {
       previewBackGestures((progress) => {
@@ -160,6 +172,17 @@
     swiped.look,
   ]}
 >
+  {#if isAndroid && !isFullScreen}
+    <div
+      aria-hidden="true"
+      data-status-bar-surface
+      class={[
+        "sticky -inset-bs-page-top z-series-bar -ms-gutter -me-page-end -mbs-page-top mbe-title-gap shrink-0 block-safe-top motion-safe:transition-colors motion-safe:duration-fade max-medium:-ms-page-start",
+        isScrolled ? "bg-background" : "bg-transparent",
+        "under-filled-bar:bg-native-top-bar-scrolled",
+      ]}
+    ></div>
+  {/if}
   <PageNoticeSlot />
   {@render children()}
 </main>

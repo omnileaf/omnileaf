@@ -78,6 +78,7 @@
 @custom-variant heading-crowded (&:where([data-crowded] *));
 @custom-variant more-contrast (&:where([data-contrast="more"] *));
 @custom-variant picked (&:where([data-picked] *));
+@custom-variant under-filled-bar (&:where(main:has(header[data-filled]) *));
 @custom-variant inactive (&:where([data-window-active="false"] *));
 @custom-variant drop-over (&:where([data-over="true"]));
 @custom-variant narrow-desktop {
