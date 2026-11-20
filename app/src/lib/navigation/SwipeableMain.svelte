@@ -15,11 +15,15 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
   import { getBackGoesUp } from "./back-goes-up";
+  import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
+
+  import AndroidBackLayers from "./AndroidBackLayers.svelte";
   import {
-    type BackGestureAt,
-    backPreviewFrame,
-    previewBackGestures,
-  } from "./back-preview";
+    ANDROID_BACK_MOTION,
+    AndroidBackPreview,
+    placedTransform,
+  } from "./android-back-preview.svelte";
+  import { previewBackGestures } from "./back-preview";
   import { wayBackFrom } from "./back-link";
   import { backSwipeEdge, directionOf } from "./back-swipe";
   import { holdScrollTop } from "./hold-scroll";
@@ -42,44 +46,12 @@
     children: Snippet;
   } = $props();
 
-  interface FollowedGesture {
-    readonly start: BackGestureAt;
-    readonly now: BackGestureAt;
-    readonly area: DOMRect;
-  }
-
-  let backGesture: FollowedGesture | undefined = $state();
-  const backPreview = $derived(
-    backGesture === undefined
-      ? undefined
-      : backPreviewFrame(
-          backGesture.start,
-          backGesture.now,
-          {
-            width: backGesture.area.width,
-            height: backGesture.area.height,
-            isDark: false,
-          },
-          prefersReducedMotion.current,
-        ).closing,
-  );
-  const backCornerPx = $derived(
-    backGesture === undefined || prefersReducedMotion.current
-      ? 0
-      : backGesture.now.cornerPx,
-  );
-
-  function followBackGesture(gesture: BackGestureAt | undefined): void {
-    if (gesture === undefined || swiped.element === undefined) {
-      backGesture = undefined;
-      return;
-    }
-    backGesture = {
-      start: backGesture?.start ?? gesture,
-      now: gesture,
-      area: backGesture?.area ?? swiped.element.getBoundingClientRect(),
-    };
-  }
+  const theme = getThemeSetting();
+  const androidBack = new AndroidBackPreview({
+    isDark: () => theme.resolved === "dark",
+    isMotionReduced: () => prefersReducedMotion.current,
+  });
+  let isEnteringSettled = $state(false);
 
   const language = getLanguageSetting();
   const backGoesUp = getBackGoesUp();
@@ -130,9 +102,43 @@
     };
   }
 
-  beforeNavigate(() => {
-    if (isIos && swiped.element !== undefined) {
+  beforeNavigate(({ type }) => {
+    if ((isIos || isAndroid) && swiped.element !== undefined) {
       previousScreens.keep(page.url.pathname, swiped.element);
+    }
+    const leavingCopy = previousScreens.of(page.url.pathname);
+    if (type === "popstate" && leavingCopy !== undefined) {
+      isEnteringSettled = false;
+      androidBack.leave(leavingCopy);
+    }
+  });
+
+  const androidMainTransform = $derived.by(() => {
+    switch (androidBack.phase) {
+      case "following":
+        return androidBack.frame === undefined
+          ? undefined
+          : placedTransform(androidBack.frame.closing);
+      case "cancelling":
+        return placedTransform({ scale: 1, x: 0, y: 0 });
+      case "committing":
+        return androidBack.enteringFrom === undefined || isEnteringSettled
+          ? placedTransform({ scale: 1, x: 0, y: 0 })
+          : placedTransform(androidBack.enteringFrom);
+      case "resting":
+        return undefined;
+    }
+  });
+  const androidMainTransition = $derived.by(() => {
+    switch (androidBack.phase) {
+      case "cancelling":
+        return `transform ${String(ANDROID_BACK_MOTION.cancelMs)}ms ease-out`;
+      case "committing":
+        return isEnteringSettled
+          ? `transform ${String(ANDROID_BACK_MOTION.commitMs)}ms var(--ease-emphasized)`
+          : undefined;
+      default:
+        return undefined;
     }
   });
 
@@ -152,7 +158,12 @@
         ? undefined
         : holdScrollTop(swiped.element, landedOn.scrollTop);
     swiped.arrived();
-    backGesture = undefined;
+    androidBack.arrived();
+    if (androidBack.phase === "committing") {
+      requestAnimationFrame(() => {
+        isEnteringSettled = true;
+      });
+    }
     previousScreens.forgetAllButAbove(page.url.pathname);
   });
 
@@ -167,7 +178,11 @@
   onMount(() => {
     const stopPreviewing = isAndroid
       ? previewBackGestures(
-          followBackGesture,
+          (gesture) => {
+            if (swiped.element !== undefined) {
+              androidBack.follow(gesture, swiped.element);
+            }
+          },
           () =>
             location.pathname === page.url.pathname &&
             location.search === page.url.search,
@@ -183,21 +198,30 @@
 {#if swiped.behind !== undefined}
   <ScreenBehindSwipe {...swiped.behind} />
 {/if}
+{#if isAndroid}
+  <AndroidBackLayers
+    preview={androidBack}
+    behind={androidBack.area === undefined || swiped.element === undefined
+      ? undefined
+      : previousScreens.of(backPathFrom(swiped.element) ?? "")}
+    cornerPx={androidBack.cornerPx}
+  />
+{/if}
 <main
   bind:this={swiped.element}
   {@attach forgetCopiesOnSettingChange}
-  style:transform={backPreview === undefined
-    ? swiped.transform
-    : `translate(${String(backPreview.x)}px, ${String(backPreview.y)}px) scale(${String(backPreview.scale)})`}
-  style:border-radius={backPreview === undefined
+  style:transform={androidMainTransform ?? swiped.transform}
+  style:border-radius={androidMainTransform === undefined
     ? undefined
-    : `${String(backCornerPx)}px`}
+    : `${String(androidBack.cornerPx)}px`}
+  style:transition={androidMainTransition}
   class={[
     "order-2 flex flex-1 flex-col overflow-y-auto has-data-macos-inspector:me-native-inspector desktop-shell:has-data-page-toolbar:scroll-pbs-toolbar",
     !isFullScreen &&
       "px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance",
     "windows:desktop-shell:rounded-ss-windows-layer windows:desktop-shell:border-s windows:desktop-shell:border-bs windows:desktop-shell:border-windows-stroke windows:desktop-shell:bg-background",
     swiped.look,
+    androidMainTransform !== undefined && "bg-background",
   ]}
 >
   <PageNoticeSlot />
