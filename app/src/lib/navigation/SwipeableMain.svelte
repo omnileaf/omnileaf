@@ -179,7 +179,7 @@
       class={[
         "sticky -inset-bs-page-top z-series-bar -ms-gutter -me-page-end -mbs-page-top mbe-title-gap shrink-0 block-safe-top motion-safe:transition-colors motion-safe:duration-fade max-medium:-ms-page-start",
         isScrolled ? "bg-background" : "bg-transparent",
-        "under-filled-bar:bg-native-top-bar-scrolled",
+        "over-hero:bg-transparent",
       ]}
     ></div>
   {/if}
