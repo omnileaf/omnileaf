@@ -13,6 +13,7 @@ import {
   test,
   testOnlyInItsWebview,
 } from "./fixtures.ts";
+import { ALL_SERIES } from "../../src/lib/library/library-tab.svelte.ts";
 import { goToStep } from "./first-launch-steps.ts";
 import { LONG_FOLDER_NAME, longFoldersOn } from "./long-folders.ts";
 import {
@@ -107,7 +108,8 @@ for (const platform of PLATFORMS) {
           }) => {
             await setTextScale(page, scale);
             await page.goto("/settings/library/tabs");
-            const handle = page.locator("[data-tab-handle]").first();
+            const handle = page.locator(`[data-tab-handle="${ALL_SERIES}"]`);
+            const row = page.locator("[data-tab-row]").filter({ has: handle });
             const box = await boxOf(handle);
             const middle = {
               x: box.x + box.width / 2,
@@ -117,6 +119,7 @@ for (const platform of PLATFORMS) {
             await page.mouse.move(middle.x, middle.y);
             await page.mouse.down();
             await page.mouse.move(middle.x, middle.y + DRAG_DISTANCE);
+            await expect(row).not.toHaveCSS("box-shadow", "none");
             const overflowing = await sidewaysOverflow(page);
             await page.mouse.up();
 
