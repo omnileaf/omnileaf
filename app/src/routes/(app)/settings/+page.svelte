@@ -22,7 +22,7 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
   import { cn } from "#lib/components/cn.ts";
-  import { watchMainScrolled } from "#lib/page/main-scrolled.ts";
+  import { watchScrolled } from "#lib/page/scrolled.ts";
   import PageHeading from "#lib/page/PageHeading.svelte";
   import { ANDROID_PINNED_BAR, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -68,10 +68,11 @@
   let isScrolled = $state(false);
 
   $effect(() => {
-    if (!android.isOn) {
+    const main = document.querySelector("main");
+    if (!android.isOn || main === null) {
       return;
     }
-    return watchMainScrolled((scrolled) => {
+    return watchScrolled(main, (scrolled) => {
       isScrolled = scrolled;
     });
   });
