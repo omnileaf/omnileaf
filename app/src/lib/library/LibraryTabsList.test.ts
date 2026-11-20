@@ -87,3 +87,40 @@ test("keeps the outlined Hidden badge and Lucide icons off Android", async () =>
   expect(getComputedStyle(badge).borderTopWidth).toBe("1px");
   expect(screen.container.querySelector("[data-icon]")).toBeNull();
 });
+
+test("offers no New category row without a way to make one", async () => {
+  const screen = await render(LibraryTabsList, PROPS);
+
+  expect(
+    screen.getByRole("button", { name: "New category" }).query(),
+  ).toBeNull();
+});
+
+test("sets New category after the tabs, outside their list", async () => {
+  const screen = await render(LibraryTabsList, {
+    ...PROPS,
+    onNewCategory: () => undefined,
+  });
+
+  const add = screen.getByRole("button", { name: "New category" }).element();
+  const list = screen.getByRole("list").element();
+
+  expect(list.contains(add)).toBe(false);
+  expect(
+    list.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});
+
+test("calls onNewCategory when New category is pressed", async () => {
+  let presses = 0;
+  const screen = await render(LibraryTabsList, {
+    ...PROPS,
+    onNewCategory: () => {
+      presses += 1;
+    },
+  });
+
+  await screen.getByRole("button", { name: "New category" }).click();
+
+  expect(presses).toBe(1);
+});

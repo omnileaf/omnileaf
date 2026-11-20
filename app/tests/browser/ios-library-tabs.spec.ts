@@ -17,6 +17,12 @@ test.use({
     ...DEFAULT_BACKEND,
     libraryCategories: () => [...CATEGORIES],
     categorySeriesCount: () => 6,
+    seriesLabels: () => ({
+      keepsLabels: true,
+      categories: [],
+      tags: [],
+      suggestedTags: [],
+    }),
   },
 });
 
@@ -29,15 +35,50 @@ test.describe("Library tabs on an iPhone", { tag: "@native" }, () => {
     ).toBeVisible();
   });
 
-  test("sets the tabs in one grouped card with no border of its own", async ({
+  test("sets the tabs and New category in one grouped card with no border of its own", async ({
     page,
   }) => {
-    const card = page.getByRole("list", { name: "Library tabs" });
+    const card = page
+      .locator("[data-settings-group]")
+      .filter({ has: page.getByRole("list", { name: "Library tabs" }) });
 
+    await expect(
+      card.getByRole("button", { name: "New category" }),
+    ).toBeVisible();
     await expect(card).toHaveCSS("border-top-width", "0px");
     await expect(card).toHaveCSS(
       "background-color",
       await tokenColour(page, "--native-color-group"),
+    );
+  });
+
+  test("sets New category as the card's last row, its plus where the handles sit", async ({
+    page,
+  }) => {
+    const add = page.getByRole("button", { name: "New category" });
+    const lastRow = page
+      .getByRole("list", { name: "Library tabs" })
+      .getByRole("listitem")
+      .last();
+    const name = lastRow.getByText("Manga", { exact: true });
+    const handle = lastRow.getByRole("button", { name: "Move Manga" });
+
+    const addBox = await boxOf(add);
+    const rowBox = await boxOf(lastRow);
+    const titleBox = await boxOf(add.getByText("New category"));
+    const plusBox = await boxOf(add.locator("svg"));
+    const nameBox = await boxOf(name);
+    const handleBox = await boxOf(handle);
+
+    expect(addBox.height).toBe(rowBox.height);
+    await expect(page.getByRole("list", { name: "Library tabs" })).toHaveCSS(
+      "border-bottom-width",
+      "1px",
+    );
+    expect(titleBox.x).toBe(nameBox.x);
+    expect(plusBox.x + plusBox.width / 2).toBeCloseTo(
+      handleBox.x + handleBox.width / 2,
+      0,
     );
   });
 
