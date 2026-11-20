@@ -8,10 +8,13 @@ import {
   test,
   viewportOf,
 } from "./fixtures.ts";
+import type { BackSwipe } from "../../src/lib/ipc/bindings.ts";
+import type { FakeChannel } from "./fake-backend.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
 const HELD_MS = 800;
 const LIBRARY = sampleSeries(9);
+let gestures: FakeChannel<BackSwipe> | undefined;
 
 test.use({
   backend: {
@@ -24,7 +27,15 @@ test.use({
     }),
     librarySeries: () => ({ series: LIBRARY, next: null }),
     librarySeriesCount: () => LIBRARY.length,
+    watchBackSwipes: (channel) => {
+      gestures = channel;
+      return null;
+    },
   },
+});
+
+test.beforeEach(() => {
+  gestures = undefined;
 });
 
 function seriesList(page: Page): Locator {
@@ -182,6 +193,46 @@ test.describe(
       await expect(count).toHaveCSS("font-size", "22px");
       await expect(count).toHaveCSS("line-height", "28px");
       await expect(count).toHaveCSS("font-weight", "400");
+    });
+  },
+);
+
+test.describe(
+  "the selection bars after a back gesture on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's back gesture");
+    });
+
+    test("run edge to edge again once a back gesture has closed the Categories sheet", async ({
+      page,
+    }) => {
+      await startSelecting(page);
+      const actions = page.getByRole("group", { name: "Selected series" });
+      await actions.getByRole("button", { name: "Categories" }).click();
+      const sheet = page.getByRole("dialog", { name: "Categories and tags" });
+      await expect(sheet).toBeVisible();
+      await expect.poll(() => gestures).toBeDefined();
+      await gestures?.send({ kind: "moved", progress: 0.4 });
+
+      await page.goBack();
+
+      await expect(sheet).toBeHidden();
+      await expect(page.getByRole("main")).toHaveCSS("transform", "none");
+      const screen = viewportOf(page);
+      const top = await boxOf(
+        page.locator("[data-page-toolbar]").filter({
+          has: page.getByRole("button", { name: "Cancel selecting" }),
+        }),
+      );
+      const bottom = await boxOf(actions);
+      expect([top.x, top.width, top.y]).toEqual([0, screen.width, 0]);
+      expect([bottom.x, bottom.width, bottom.y + bottom.height]).toEqual([
+        0,
+        screen.width,
+        screen.height,
+      ]);
     });
   },
 );
