@@ -1,59 +1,104 @@
+import { readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import type { Page } from "@playwright/test";
 
 import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
+import javascript from "../../src/lib/licences/javascript.json" with { type: "json" };
+import { licensedPackages } from "../../src/lib/licences/licences.ts";
+import rust from "../../src/lib/licences/rust.json" with { type: "json" };
 import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
-import { DEFAULT_BACKEND, expect, test, tokenColour } from "./fixtures.ts";
+import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { sampleLibraryOn } from "./screens.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
 
 const STATUS_BAR = 24;
-const FAR_DOWN = 400;
-const SCROLL_STEPS = [8, 24, 48, 96, 200, FAR_DOWN] as const;
+const SCROLL_STEPS = [8, 24, 48, 96, 200, 400] as const;
 const PHONE = { width: 412, height: 700 };
 const TABLET = { width: 820, height: 1180 };
-const SAMPLE_SERIES = sampleSeriesId(21);
-const SAMPLE_SCREENS = [
-  "/",
-  "/browse",
-  "/history",
-  `/series/${SAMPLE_SERIES}`,
-  `/series/${SAMPLE_SERIES}/volume/2`,
-] as const;
-const TABLET_SCREENS = ["/", "/history", "/settings/general"] as const;
-
-type Screen = typeof PHONE;
 const LIBRARY_SIZE = 40;
 const SHELF_SIZE = 30;
 const NOT_STARTED = { state: "notStarted" } as const;
+const EARLIER_VERSION = "1.2.2";
+const SAMPLE_SERIES = sampleSeriesId(21);
+const [FIRST_PACKAGE] = licensedPackages({ rust, javascript });
+const APP_ROUTES = fileURLToPath(
+  new URL("../../src/routes/(app)", import.meta.url),
+);
+const PAGE_FILE = "+page.svelte";
 
-const SCROLLING_SCREENS = [
-  "/",
-  "/browse",
-  "/history",
-  "/search",
-  `/series/${SERIES_ID}`,
-  "/creator/Sample%20Writer",
-  "/settings",
-  "/settings/general",
-  "/settings/general/language",
-  "/settings/appearance",
-  "/settings/accessibility",
-  "/settings/library",
-  "/settings/library/folders",
-  "/settings/library/tabs",
-  "/settings/library/tags",
-  "/settings/reading",
-  "/settings/privacy",
-  "/settings/privacy/permissions",
-  "/settings/storage",
-  "/settings/advanced",
-  "/settings/about",
-  "/settings/about/licences",
-  "/settings/about/report",
-  "/settings/about/reports",
-  "/settings/about/whats-new",
-] as const;
+type Screen = typeof PHONE;
+
+interface GuardedScreen {
+  readonly route: string;
+  readonly path: string;
+}
+
+const LIBRARY_SCREENS: readonly GuardedScreen[] = [
+  ...[
+    "/",
+    "/browse",
+    "/history",
+    "/search",
+    "/settings",
+    "/settings/general",
+    "/settings/general/language",
+    "/settings/general/opens-on",
+    "/settings/general/time-format",
+    "/settings/appearance",
+    "/settings/accessibility",
+    "/settings/library",
+    "/settings/library/adult-content",
+    "/settings/library/folders",
+    "/settings/library/tabs",
+    "/settings/library/tags",
+    "/settings/reading",
+    "/settings/privacy",
+    "/settings/privacy/app-lock",
+    "/settings/privacy/permissions",
+    "/settings/privacy/screenshot-mode",
+    "/settings/storage",
+    "/settings/advanced",
+    "/settings/advanced/animations",
+    "/settings/about",
+    "/settings/about/licences",
+    "/settings/about/report",
+    "/settings/about/reports",
+    "/settings/about/whats-new",
+  ].map((route) => ({ route, path: route })),
+  { route: "/creator/[name]", path: "/creator/Sample%20Writer" },
+  {
+    route: "/settings/about/whats-new/[version]",
+    path: `/settings/about/whats-new/${EARLIER_VERSION}`,
+  },
+  {
+    route: "/settings/about/licences/[...package]",
+    path: `/settings/about/licences/${FIRST_PACKAGE?.key ?? ""}`,
+  },
+];
+
+const SAMPLE_SCREENS: readonly GuardedScreen[] = [
+  { route: "/series/[id]", path: `/series/${SAMPLE_SERIES}` },
+  {
+    route: "/series/[id]/volume/[volume]",
+    path: `/series/${SAMPLE_SERIES}/volume/2`,
+  },
+];
+
+const TABLET_SCREENS = ["/", "/history", "/settings/general"] as const;
+
+const FULL_SCREEN_ROUTES = ["/series/[id]/edit"] as const;
+
+function appRoutes(): string[] {
+  return readdirSync(APP_ROUTES, { recursive: true, encoding: "utf8" })
+    .filter((file) => file.endsWith(PAGE_FILE))
+    .map(
+      (file) =>
+        `/${file.slice(0, -PAGE_FILE.length)}`.replace(/\/$/, "") || "/",
+    )
+    .toSorted();
+}
 
 async function openUnderStatusBar(
   page: Page,
@@ -137,6 +182,12 @@ async function contentInStatusBar(page: Page): Promise<string[]> {
         if (scrolling === null || !scrolling.contains(element)) {
           return undefined;
         }
+        if (element.closest("[data-series-band]") !== null) {
+          return undefined;
+        }
+        if (element.hasAttribute("data-ground")) {
+          continue;
+        }
         const pinned = pinnedSurfaceOf(element);
         if (pinned !== undefined) {
           if (coversStatusBar(element, pinned)) {
@@ -182,6 +233,16 @@ test.describe("the status bar on an Android phone", { tag: "@native" }, () => {
     test.skip(platform !== "android", "Android draws under the status bar");
   });
 
+  test("guards every page that scrolls in the app", () => {
+    const guarded = new Set([
+      ...LIBRARY_SCREENS.map(({ route }) => route),
+      ...SAMPLE_SCREENS.map(({ route }) => route),
+      ...FULL_SCREEN_ROUTES,
+    ]);
+
+    expect(appRoutes().filter((route) => !guarded.has(route))).toEqual([]);
+  });
+
   test.describe("over a library of series", () => {
     test.use({
       backend: {
@@ -192,14 +253,23 @@ test.describe("the status bar on an Android phone", { tag: "@native" }, () => {
           ...DEFAULT_LIBRARY_VIEW,
           showsItemCounts: true,
         }),
+        whatsNew: () => ({
+          installed: null,
+          earlier: [
+            {
+              version: EARLIER_VERSION,
+              entries: [{ kind: "fix", summary: "Covers no longer flicker" }],
+            },
+          ],
+        }),
       },
     });
 
-    for (const route of SCROLLING_SCREENS) {
+    for (const { route, path } of LIBRARY_SCREENS) {
       test(`keeps ${route} from showing through it once it scrolls`, async ({
         page,
       }) => {
-        await expectNothingUnderStatusBar(page, route);
+        await expectNothingUnderStatusBar(page, path);
       });
     }
   });
@@ -207,13 +277,26 @@ test.describe("the status bar on an Android phone", { tag: "@native" }, () => {
   test.describe("over the sample library", () => {
     test.use({ backend: sampleLibraryOn("android") });
 
-    for (const route of SAMPLE_SCREENS) {
+    for (const { route, path } of SAMPLE_SCREENS) {
       test(`keeps ${route} from showing through it once it scrolls`, async ({
         page,
       }) => {
-        await expectNothingUnderStatusBar(page, route);
+        await expectNothingUnderStatusBar(page, path);
       });
     }
+
+    test("leaves a series' cover band showing under the status bar until the top app bar fills", async ({
+      page,
+    }) => {
+      await openUnderStatusBar(page, `/series/${SAMPLE_SERIES}`, PHONE);
+      const surface = page.locator("[data-status-bar-surface]");
+      const bar = page.getByRole("main").locator("header").first();
+
+      await scrollTo(page, SCROLL_STEPS[0]);
+
+      await expect(surface).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      await expect(bar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    });
   });
 
   test.describe("on an Android tablet", () => {
@@ -237,25 +320,6 @@ test.describe("the status bar on an Android phone", { tag: "@native" }, () => {
       page,
     }) => {
       await expectNothingUnderStatusBar(page, `/series/${SERIES_ID}`);
-    });
-
-    test("fills behind the status bar in the top app bar's colour once the bar fills", async ({
-      page,
-    }) => {
-      await openUnderStatusBar(page, `/series/${SERIES_ID}`, PHONE);
-      await makeRoomToScroll(page);
-
-      await scrollTo(page, FAR_DOWN);
-
-      const filled = await tokenColour(page, "--native-color-top-bar-scrolled");
-      await expect(page.getByRole("main").locator("header").first()).toHaveCSS(
-        "background-color",
-        filled,
-      );
-      await expect(page.locator("[data-status-bar-surface]")).toHaveCSS(
-        "background-color",
-        filled,
-      );
     });
   });
 });
