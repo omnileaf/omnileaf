@@ -8,12 +8,15 @@ use std::{
 
 use omnileaf_db::{
     catalog::{
-        BookFile, NewSeries, RootId, RootKind, ScannedBook, SeriesFolder, record_scanned_books,
+        BookDetails, BookFile, NewSeries, RootId, RootKind, ScannedBook, SeriesFolder,
+        record_scanned_books,
     },
     store::Store,
 };
-use omnileaf_formats::{Book, Details, FormatError, Limits, Storage, open_book_in};
-use omnileaf_sync_proto::{KeyError, SeriesId};
+use omnileaf_formats::{
+    Book, Details, FormatError, Limits, RecognisedBook, Storage, open_book_in, recognise_book_in,
+};
+use omnileaf_sync_proto::{Fingerprint, KeyError, SeriesId};
 use serde::Serialize;
 use specta::Type;
 use tokio::{sync::watch, task::spawn_blocking};
@@ -23,6 +26,7 @@ use crate::{
     book_details::read_details,
     book_numbering::FileNumbers,
     clock::stored_ms,
+    decode_permits::DecodePermits,
     file_type::{FileType, HiddenFileTypes},
     library_layout::{FoundBook, Layout, find_books, folder_name},
     library_removal::bring_back_marked,
@@ -33,6 +37,8 @@ use crate::{
 };
 
 pub(crate) const BOOKS_PER_BATCH: usize = 32;
+/// One archive at a time, since a phone's OS ends an app holding too much memory while an archive's index and comic details are decoded.
+const ARCHIVES_PARSED_AT_ONCE: usize = 1;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(tag = "stage", rename_all = "camelCase")]
@@ -168,17 +174,9 @@ pub(crate) async fn scan(
     let total = saturating_u32(layout.books.len());
     let mut tally = Tally::default();
     on_progress(ScanProgress::Reading { scanned: 0, total });
+    let reader = BookReader::new(target.clone());
     for batch in layout.books.chunks(BOOKS_PER_BATCH) {
-        let batch = batch.to_vec();
-        let reading = target.clone();
-        let read = spawn_blocking(move || {
-            batch
-                .iter()
-                .map(|book| read_book(book, &reading))
-                .collect::<Vec<_>>()
-        })
-        .await?;
-        let found = tally.count(read);
+        let found = tally.count(reader.read(batch.to_vec()).await?);
         bring_back_marked(store, &found).await?;
         let filed_in = store
             .database()
@@ -222,14 +220,123 @@ pub(crate) fn saturating_u32(items: usize) -> u32 {
     u32::try_from(items).unwrap_or(u32::MAX)
 }
 
-pub(crate) fn read_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
-    let read = read_found_book(found, target);
-    if let Err(error) = &read
-        && !error.is_hidden()
-    {
-        warn_unreadable(found, error);
+#[derive(Clone)]
+pub(crate) struct BookReader {
+    target: Target,
+    decodes: Arc<DecodePermits>,
+}
+
+impl BookReader {
+    pub(crate) fn new(target: Target) -> Self {
+        Self::sharing(
+            target,
+            Arc::new(DecodePermits::new(ARCHIVES_PARSED_AT_ONCE)),
+        )
     }
-    read
+
+    fn sharing(target: Target, decodes: Arc<DecodePermits>) -> Self {
+        Self { target, decodes }
+    }
+
+    pub(crate) async fn read(
+        &self,
+        batch: Vec<FoundBook>,
+    ) -> Result<Vec<Result<ScannedBook, UnreadableBook>>, LibraryError> {
+        let reader = self.clone();
+        Ok(spawn_blocking(move || reader.read_each(&batch)).await?)
+    }
+
+    fn read_each(&self, batch: &[FoundBook]) -> Vec<Result<ScannedBook, UnreadableBook>> {
+        batch.iter().map(|found| self.read_book(found)).collect()
+    }
+
+    fn read_book(&self, found: &FoundBook) -> Result<ScannedBook, UnreadableBook> {
+        let read = self.read_found_book(found);
+        if let Err(error) = &read
+            && !error.is_hidden()
+        {
+            warn_unreadable(found, error);
+        }
+        read
+    }
+
+    fn read_found_book(&self, found: &FoundBook) -> Result<ScannedBook, UnreadableBook> {
+        let target = &self.target;
+        let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
+        let linked_folder = folder_name(&target.folder);
+        let unopened = |source| UnreadableBook::opening(&location, &target.hidden, source);
+        let recognised = recognise_book_in(&target.storage, &found.path).map_err(unopened)?;
+        let ParsedBook {
+            fingerprint,
+            page_count,
+            page_bytes,
+            details,
+        } = self.parse(recognised, unopened)?;
+        let Placement {
+            series,
+            title,
+            numbering,
+            language,
+        } = place_book(&location, &linked_folder, FileNumbers::of(&details));
+        let stamp = FileStamp::of(target.storage.details(&found.path)?, || Ok(page_bytes))?;
+        Ok(ScannedBook {
+            named_series: series_named_in_files(&details, target.added_at_ms)?,
+            series: NewSeries::folder(
+                SeriesFolder {
+                    linked_folder: &linked_folder,
+                    location: &series.location,
+                },
+                series.naming,
+                target.added_at_ms,
+            )?,
+            fingerprint,
+            title,
+            added_at_ms: target.added_at_ms,
+            page_count,
+            details,
+            file: BookFile {
+                root: target.root,
+                location,
+                size_bytes: stamp.size_bytes,
+                modified_at_ms: stamp.modified_at_ms,
+            },
+            numbering: Some(numbering),
+            name_language: language,
+        })
+    }
+
+    fn parse(
+        &self,
+        recognised: RecognisedBook,
+        unopened: impl FnOnce(FormatError) -> UnreadableBook,
+    ) -> Result<ParsedBook, UnreadableBook> {
+        let _permit = recognised.is_archive().then(|| self.decodes.hold());
+        let path = recognised.path().to_path_buf();
+        let mut book = recognised.open(&Limits::default()).map_err(unopened)?;
+        ParsedBook::of(&mut book, &path)
+    }
+}
+
+struct ParsedBook {
+    fingerprint: Fingerprint,
+    page_count: u32,
+    page_bytes: u64,
+    details: BookDetails,
+}
+
+impl ParsedBook {
+    fn of(book: &mut Book, path: &Path) -> Result<Self, UnreadableBook> {
+        Ok(Self {
+            fingerprint: book.fingerprint()?,
+            page_count: saturating_u32(book.pages().len()),
+            page_bytes: page_bytes(book),
+            details: read_details(book, path),
+        })
+    }
+}
+
+fn page_bytes(book: &Book) -> u64 {
+    book.pages().iter().map(|page| page.size).sum()
 }
 
 pub(crate) fn warn_unreadable(found: &FoundBook, error: &UnreadableBook) {
@@ -240,62 +347,22 @@ pub(crate) fn warn_unreadable(found: &FoundBook, error: &UnreadableBook) {
     );
 }
 
-fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
-    let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
-    let linked_folder = folder_name(&target.folder);
-    let mut book = open_book_in(Arc::clone(&target.storage), &found.path, &Limits::default())
-        .map_err(|source| UnreadableBook::opening(&location, &target.hidden, source))?;
-    let fingerprint = book.fingerprint()?;
-    let page_count = saturating_u32(book.pages().len());
-    let details = read_details(&mut book, &found.path);
-    let Placement {
-        series,
-        title,
-        numbering,
-        language,
-    } = place_book(&location, &linked_folder, FileNumbers::of(&details));
-    let stamp = FileStamp::of(target.storage.details(&found.path)?, || Ok(book))?;
-    Ok(ScannedBook {
-        named_series: series_named_in_files(&details, target.added_at_ms)?,
-        series: NewSeries::folder(
-            SeriesFolder {
-                linked_folder: &linked_folder,
-                location: &series.location,
-            },
-            series.naming,
-            target.added_at_ms,
-        )?,
-        fingerprint,
-        title,
-        added_at_ms: target.added_at_ms,
-        page_count,
-        details,
-        file: BookFile {
-            root: target.root,
-            location,
-            size_bytes: stamp.size_bytes,
-            modified_at_ms: stamp.modified_at_ms,
-        },
-        numbering: Some(numbering),
-        name_language: language,
-    })
-}
-
 impl FileStamp {
     pub(crate) fn read(storage: &Arc<dyn Storage>, path: &Path) -> Result<Self, UnreadableBook> {
         Self::of(storage.details(path)?, || {
             open_book_in(Arc::clone(storage), path, &Limits::default())
+                .map(|book| page_bytes(&book))
         })
     }
 
     fn of(
         details: Details,
-        open: impl FnOnce() -> Result<Book, FormatError>,
+        folder_page_bytes: impl FnOnce() -> Result<u64, FormatError>,
     ) -> Result<Self, UnreadableBook> {
         let (Details::Folder { modified } | Details::File { modified, .. }) = details;
         let modified = modified.ok_or_else(|| io::Error::from(io::ErrorKind::Unsupported))?;
         let size_bytes = match details {
-            Details::Folder { .. } => open()?.pages().iter().map(|page| page.size).sum(),
+            Details::Folder { .. } => folder_page_bytes()?,
             Details::File { size, .. } => size,
         };
         Ok(Self {
@@ -307,11 +374,149 @@ impl FileStamp {
 
 #[cfg(test)]
 mod tests {
-    use std::time::{Duration, SystemTime};
+    use std::{
+        fs::{self, File},
+        sync::{
+            atomic::{AtomicUsize, Ordering},
+            mpsc,
+        },
+        thread,
+        time::{Duration, Instant, SystemTime},
+    };
 
-    use omnileaf_formats::LocalStorage;
+    use omnileaf_formats::{Entry, LocalStorage};
+    use omnileaf_testkit::{
+        GENERATED_LIBRARY_NAME, GeneratedLibrary, PageShape, ScratchFolder, page_png,
+        write_generated_library,
+    };
 
     use super::*;
+
+    const ONE_ARCHIVE: GeneratedLibrary = GeneratedLibrary {
+        series: 1,
+        books_per_series: 1,
+        pages_per_book: 1,
+    };
+    const PAGE_SEED: u64 = 7;
+    const LONGEST_WAIT: Duration = Duration::from_secs(5);
+    const LONG_ENOUGH_TO_PARSE: Duration = Duration::from_millis(300);
+
+    #[derive(Debug)]
+    struct WatchedStorage {
+        root: PathBuf,
+        opens: AtomicUsize,
+    }
+
+    impl WatchedStorage {
+        fn rooted_in(scratch: &ScratchFolder) -> Arc<Self> {
+            Arc::new(Self {
+                root: scratch.path().to_path_buf(),
+                opens: AtomicUsize::new(0),
+            })
+        }
+
+        fn has_opened(&self) -> bool {
+            self.opens.load(Ordering::SeqCst) > 0
+        }
+    }
+
+    impl Storage for WatchedStorage {
+        fn entries(&self, folder: &Path) -> io::Result<Vec<Entry>> {
+            LocalStorage.entries(&self.root.join(folder))
+        }
+
+        fn details(&self, path: &Path) -> io::Result<Details> {
+            LocalStorage.details(&self.root.join(path))
+        }
+
+        fn open(&self, file: &Path) -> io::Result<File> {
+            self.opens.fetch_add(1, Ordering::SeqCst);
+            LocalStorage.open(&self.root.join(file))
+        }
+    }
+
+    fn target_over(storage: Arc<dyn Storage>) -> Target {
+        Target {
+            root: "1".parse().unwrap(),
+            kind: RootKind::Linked,
+            storage,
+            folder: PathBuf::from(GENERATED_LIBRARY_NAME),
+            hidden: HiddenFileTypes::default(),
+            added_at_ms: 0,
+        }
+    }
+
+    fn one_archive(scratch: &ScratchFolder) -> FoundBook {
+        let written = write_generated_library(scratch.path(), ONE_ARCHIVE).unwrap();
+        FoundBook {
+            path: written.into_iter().next().unwrap(),
+        }
+    }
+
+    fn image_folder(scratch: &ScratchFolder, chapter: usize) -> FoundBook {
+        let book = Path::new(GENERATED_LIBRARY_NAME)
+            .join("Sample Series 001")
+            .join(format!("Chapter {chapter:02}"));
+        let page = page_png(PAGE_SEED, 0, PageShape::Portrait).unwrap();
+        fs::create_dir_all(scratch.path().join(&book)).unwrap();
+        fs::write(scratch.path().join(&book).join("001.png"), page).unwrap();
+        FoundBook { path: book }
+    }
+
+    fn wait_until(is_done: impl Fn() -> bool) -> bool {
+        let deadline = Instant::now() + LONGEST_WAIT;
+        while !is_done() && Instant::now() < deadline {
+            thread::yield_now();
+        }
+        is_done()
+    }
+
+    #[test]
+    fn reads_a_folder_of_images_while_every_decode_permit_is_held() {
+        let scratch = ScratchFolder::new("scan-folder-without-permit");
+        let book = image_folder(&scratch, 1);
+        let decodes = Arc::new(DecodePermits::new(1));
+        let reader = BookReader::sharing(
+            target_over(WatchedStorage::rooted_in(&scratch)),
+            Arc::clone(&decodes),
+        );
+        let held = decodes.hold();
+        let (done, finished) = mpsc::channel();
+
+        thread::scope(|scope| {
+            scope.spawn(|| done.send(reader.read_each(&[book])).unwrap());
+
+            let read_while_held = finished.recv_timeout(LONGEST_WAIT).ok();
+            drop(held);
+
+            let read = read_while_held.unwrap_or_else(|| panic!("waited on a decode permit"));
+            assert!(read.iter().all(Result::is_ok), "{read:?}");
+        });
+    }
+
+    #[test]
+    fn opens_an_archive_before_its_decode_permit_and_parses_it_while_holding_one() {
+        let scratch = ScratchFolder::new("scan-archive-permit-scope");
+        let book = one_archive(&scratch);
+        let storage = WatchedStorage::rooted_in(&scratch);
+        let decodes = Arc::new(DecodePermits::new(1));
+        let reader = BookReader::sharing(target_over(storage.clone()), Arc::clone(&decodes));
+        let held = decodes.hold();
+        let (done, finished) = mpsc::channel();
+
+        thread::scope(|scope| {
+            scope.spawn(|| done.send(reader.read_each(&[book])).unwrap());
+
+            let has_opened = wait_until(|| storage.has_opened());
+            let read_while_held = finished.recv_timeout(LONG_ENOUGH_TO_PARSE).ok();
+            drop(held);
+
+            assert!(has_opened);
+            assert!(read_while_held.is_none(), "{read_while_held:?}");
+            let read = finished.recv_timeout(LONGEST_WAIT).unwrap();
+            assert!(read.iter().all(Result::is_ok), "{read:?}");
+        });
+    }
 
     #[test]
     fn refuses_a_book_found_outside_the_folder_it_scans() {
@@ -327,7 +532,7 @@ mod tests {
             path: PathBuf::from("/media/Elsewhere/v01.cbz"),
         };
 
-        let read = read_found_book(&found, &target);
+        let read = BookReader::new(target).read_found_book(&found);
 
         assert!(matches!(read, Err(UnreadableBook::OutsideFolder(_))));
     }
