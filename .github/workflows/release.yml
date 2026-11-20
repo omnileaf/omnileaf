@@ -279,6 +279,8 @@ jobs:
 
       - name: Build the signed APK
         if: steps.keystore.outputs.configured == 'true'
+        env:
+          OMNILEAF_UPDATE_CHECK: "on"
         run: pnpm --dir app tauri android build --apk --target aarch64 armv7 --features update-check
 
       - name: Name the APK

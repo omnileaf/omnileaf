@@ -31,7 +31,7 @@ class UpdateNoticesPlugin(
     private val switch =
         UpdateNoticeSwitch(
             state,
-            BackgroundUpdateCheck(SystemUpdateCheckJobs(context)),
+            BackgroundUpdateCheck(SystemUpdateCheckJobs(context), UpdateCheckBuild.CURRENT),
             notices,
             PackageInstalledRelease(context),
         )

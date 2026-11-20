@@ -10,8 +10,9 @@ class UpdateCheckJob : JobService() {
 
     override fun onStartJob(params: JobParameters): Boolean {
         val state = UpdateState(PreferencesUpdateStore(this))
-        if (!state.checksInBackground) {
-            BackgroundUpdateCheck(SystemUpdateCheckJobs(this)).sync(state)
+        val background = BackgroundUpdateCheck(SystemUpdateCheckJobs(this), UpdateCheckBuild.CURRENT)
+        if (!background.isWanted(state)) {
+            background.sync(state)
             return false
         }
         val check = NotifyingUpdateCheck(state, PackageInstalledRelease(this), UpdateNotifications(this))

@@ -7,7 +7,7 @@ import java.time.Duration
 class AutomaticCheckSwitchTest {
     private val state = UpdateState(MemoryUpdateStore())
     private val jobs = FakeUpdateCheckJobs()
-    private val switch = AutomaticCheckSwitch(state, BackgroundUpdateCheck(jobs))
+    private val switch = AutomaticCheckSwitch(state, BackgroundUpdateCheck(jobs, UpdateCheckBuild.WITH_CHECK))
 
     @Test
     fun `remembers the automatic check being turned on and off`() {
