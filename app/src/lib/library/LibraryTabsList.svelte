@@ -321,11 +321,4 @@
     </li>
   {/each}
 </ul>
-<p
-  role="status"
-  class={announcement === ""
-    ? "sr-only"
-    : "fixed inset-e-lg inset-be-lg z-notice rounded-control border border-border bg-card px-md py-sm text-small shadow-dialog"}
->
-  {announcement}
-</p>
+<p role="status" class="sr-only">{announcement}</p>
