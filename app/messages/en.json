@@ -1399,6 +1399,8 @@
   "permissions_folders_picked_android": "{folders}, picked with Android’s folder picker.",
   "permissions_folders_picked": "Picked with the system’s folder picker.",
   "permissions_notifications": "Notifications",
+  "permissions_notifications_updates_help": "For update notifications and finished downloads. Asked when you turn on Notify me about updates.",
+  "permissions_not_allowed": "Not allowed",
   "permissions_notifications_help": "For finished downloads. Asked when downloads arrive.",
   "permissions_local_network": "Local network",
   "permissions_local_network_help": "To find your own server. Asked when you add one.",

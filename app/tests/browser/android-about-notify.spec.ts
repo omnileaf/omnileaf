@@ -39,7 +39,7 @@ const BUILD_WITH_THE_CHECK: FakeBackend = {
     status = { ...status, isAutomatic };
     return status;
   },
-  updateNotices: () => ({ isOn, canShow: true }),
+  updateNotices: () => ({ isOn, canShow: true, access: "allowed" as const }),
   rememberUpdateNoticeWords: (words) => {
     handedWords.push(words);
     return null;

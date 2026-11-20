@@ -5,6 +5,7 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import {
   foldersDescription,
   foldersState,
+  notificationsRow,
   permissionsSummary,
   systemSettingsLabel,
 } from "./permissions";
@@ -74,5 +75,32 @@ describe("the way to the system's settings", () => {
 
   test("is left out on Linux, which has no one settings app", () => {
     expect(systemSettingsLabel("linux")).toBeUndefined();
+  });
+});
+
+describe("the notifications row", () => {
+  test("is for finished downloads and not asked in a build without the update check", () => {
+    expect(notificationsRow(false, "allowed")).toEqual({
+      description: "For finished downloads. Asked when downloads arrive.",
+      state: "notAsked",
+    });
+  });
+
+  test("mentions updates and shows how Android stands in a build with the check", () => {
+    const states = (["allowed", "notAsked", "notAllowed"] as const).map(
+      (access) => notificationsRow(true, access),
+    );
+
+    expect(states).toEqual(
+      ["allowed", "notAsked", "notAllowed"].map((state) => ({
+        description:
+          "For update notifications and finished downloads. Asked when you turn on Notify me about updates.",
+        state,
+      })),
+    );
+  });
+
+  test("shows no state while Android hasn't answered", () => {
+    expect(notificationsRow(true, undefined).state).toBeUndefined();
   });
 });

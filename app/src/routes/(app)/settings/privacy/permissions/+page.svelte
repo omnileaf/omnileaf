@@ -7,6 +7,7 @@
     Settings,
     Wifi,
   } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Badge } from "#lib/components/ui/badge/index.ts";
@@ -20,12 +21,15 @@
   import {
     foldersDescription,
     foldersState,
+    notificationsRow,
     type PermissionState,
     systemSettingsLabel,
   } from "#lib/permissions/permissions.ts";
   import { FLUSH_LIST, FLUSH_NOTE } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import { openSettingsOrWarn } from "#lib/settings/open-settings.ts";
+  import { offersUpdateCheck } from "#lib/updates/update-check.svelte.ts";
+  import { updateNoticesForApp } from "#lib/updates/update-notices.svelte.ts";
 
   import type { PageProps } from "./$types";
 
@@ -41,6 +45,7 @@
   const STATE_LABELS = {
     allowed: m.permissions_allowed,
     notAsked: m.permissions_not_asked,
+    notAllowed: m.permissions_not_allowed,
   } satisfies Record<PermissionState, () => string>;
   const ROW =
     "flex flex-wrap items-center gap-md py-sm ps-lg pe-md min-block-phone-row touch:medium:ps-list-row desktop:ps-list-row desktop:min-block-settings-row";
@@ -56,6 +61,13 @@
 
   const android = new AndroidPhone();
   const notices = getNotices();
+  const updateNotices = updateNoticesForApp();
+
+  onMount(() => {
+    if (offersUpdateCheck(data.appInfo)) {
+      void updateNotices.load();
+    }
+  });
   const settingsLabel = $derived(systemSettingsLabel(data.appInfo.platform));
   const rows: readonly PermissionRow[] = $derived([
     {
@@ -72,8 +84,10 @@
       icon: Bell,
       iconName: "bell",
       label: m.permissions_notifications(),
-      description: m.permissions_notifications_help(),
-      state: "notAsked",
+      ...notificationsRow(
+        offersUpdateCheck(data.appInfo),
+        updateNotices.access,
+      ),
     },
     {
       icon: Wifi,

@@ -2,6 +2,7 @@ import { m } from "#lib/paraglide/messages.js";
 import {
   commands,
   type IpcError,
+  type NotificationAccess,
   type UpdateNoticeTurning,
   type UpdateNoticeWords,
   type UpdateNotices,
@@ -38,6 +39,7 @@ export function noticeWords(): UpdateNoticeWords {
 
 export class UpdateNoticeSetting {
   isOn = $state(false);
+  access: NotificationAccess | undefined = $state();
   isBlocked = $state(false);
   isAsking = $state(false);
 
@@ -52,6 +54,7 @@ export class UpdateNoticeSetting {
       this.#report(read.error);
       return;
     }
+    this.access = read.data.access;
     this.isOn = read.data.isOn && read.data.canShow;
     this.isBlocked = read.data.isOn && !read.data.canShow;
   }

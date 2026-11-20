@@ -42,8 +42,13 @@ class UpdateNoticesPlugin(
 
     @Command
     fun read(invoke: Invoke) {
-        invoke.resolve(JSObject().put("isOn", switch.isOn).put("canShow", notices.canShow()))
+        val canShow = notices.canShow()
+        val access = notificationAccess(canShow, askablePermission(), state.hasRefusedNotices)
+        invoke.resolve(JSObject().put("isOn", switch.isOn).put("canShow", canShow).put("access", access.id))
     }
+
+    private fun askablePermission(): NotificationPermission? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) notificationPermission() else null
 
     @Command
     fun turnOn(invoke: Invoke) {

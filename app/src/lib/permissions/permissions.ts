@@ -1,9 +1,18 @@
-import { commands, type Platform } from "#lib/ipc/bindings.ts";
+import {
+  commands,
+  type NotificationAccess,
+  type Platform,
+} from "#lib/ipc/bindings.ts";
 import { readFolderList } from "#lib/library/library-folders.svelte.ts";
 import { m } from "#lib/paraglide/messages.js";
 import { getLocale } from "#lib/paraglide/runtime.js";
 
-export type PermissionState = "allowed" | "notAsked";
+export type PermissionState = "allowed" | "notAsked" | "notAllowed";
+
+export interface PermissionRowWords {
+  readonly description: string;
+  readonly state: PermissionState | undefined;
+}
 
 export type LinkedFolders = readonly string[] | undefined;
 
@@ -55,4 +64,20 @@ export function foldersDescription(
 
 export function systemSettingsLabel(platform: Platform): string | undefined {
   return SYSTEM_SETTINGS_LABELS[platform]?.();
+}
+
+export function notificationsRow(
+  checksForUpdates: boolean,
+  access: NotificationAccess | undefined,
+): PermissionRowWords {
+  if (!checksForUpdates) {
+    return {
+      description: m.permissions_notifications_help(),
+      state: "notAsked",
+    };
+  }
+  return {
+    description: m.permissions_notifications_updates_help(),
+    state: access,
+  };
 }

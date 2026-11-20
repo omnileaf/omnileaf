@@ -42,7 +42,11 @@ const BUILD_WITH_THE_CHECK = {
   ...DEFAULT_BACKEND,
   appInfo: () => ({ ...fakeAppInfo("android"), checksForUpdates: true }),
   updateStatus: () => status,
-  updateNotices: () => ({ isOn: false, canShow: true }),
+  updateNotices: () => ({
+    isOn: false,
+    canShow: true,
+    access: "allowed" as const,
+  }),
   rememberUpdateNoticeWords: () => null,
   checkForUpdatesIfDue: () => ({ outcome: null, status }),
   checkForUpdates: () => {
