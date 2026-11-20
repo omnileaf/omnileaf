@@ -442,8 +442,12 @@
       tone: "warning",
       icon: TriangleAlert,
       title,
-      body: m.library_selection_failed_body(),
+      body: m.library_action_failed_body(),
     });
+  }
+
+  function sayLabelsFailed(error: unknown): void {
+    sayFailed(error, m.library_labels_failed());
   }
 
   function markPickedRead(): void {
@@ -1050,9 +1054,7 @@
     series={labelled}
     startsAtTags={labelsFrom === "tags"}
     onApplied={endSelecting}
-    onApplyFailed={(error: unknown) => {
-      sayFailed(error, m.library_labels_failed());
-    }}
+    onApplyFailed={sayLabelsFailed}
     onError={reportFailure}
   />
 {:else}
@@ -1061,9 +1063,7 @@
     series={labelled}
     startsAtTags={labelsFrom === "tags"}
     onApplied={endSelecting}
-    onApplyFailed={(error: unknown) => {
-      sayFailed(error, m.library_labels_failed());
-    }}
+    onApplyFailed={sayLabelsFailed}
     onError={reportFailure}
   />
 {/if}

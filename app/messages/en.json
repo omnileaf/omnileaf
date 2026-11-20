@@ -458,7 +458,7 @@
   "library_mark_read_failed": "Couldn't mark the series as read",
   "library_labels_failed": "Couldn't change the categories and tags",
   "library_remove_failed": "Couldn't remove the series",
-  "library_selection_failed_body": "Nothing in your library changed, and your series are still selected. Try again in a moment.",
+  "library_action_failed_body": "Nothing in your library changed. Try again in a moment.",
   "library_selection_toolbar": "Selected series",
   "library_selection_more": "More",
   "library_tags": "Tags",
