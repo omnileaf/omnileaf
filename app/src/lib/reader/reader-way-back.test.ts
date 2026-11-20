@@ -24,12 +24,16 @@ test("keeps the page the reader was opened from when it moves on to another book
   expect(originAfter(HISTORY, { kind: "fromReader" })).toBe(HISTORY);
 });
 
+test("keeps the page the reader was opened from when back returns to the reader", () => {
+  expect(originAfter(HISTORY, { kind: "returned" })).toBe(HISTORY);
+});
+
 test("has no page to return to when the app opens straight into the reader", () => {
   expect(originAfter(HISTORY, { kind: "enter" })).toBeUndefined();
 });
 
 test("goes back to the series page it was opened from, named by its series", () => {
-  expect(readerWayBack("/series/a1", true, SERIES)).toEqual({
+  expect(readerWayBack("/series/a1", SERIES)).toEqual({
     kind: "history",
     path: "/series/a1",
     label: "Back to Sample Series 04",
@@ -37,7 +41,7 @@ test("goes back to the series page it was opened from, named by its series", () 
 });
 
 test("goes back to the library it was opened from", () => {
-  expect(readerWayBack("/", true, SERIES)).toEqual({
+  expect(readerWayBack("/", SERIES)).toEqual({
     kind: "history",
     path: "/",
     label: "Back to the library",
@@ -45,7 +49,7 @@ test("goes back to the library it was opened from", () => {
 });
 
 test("goes back to History it was opened from", () => {
-  expect(readerWayBack("/history", true, SERIES)).toEqual({
+  expect(readerWayBack("/history", SERIES)).toEqual({
     kind: "history",
     path: "/history",
     label: "Back to History",
@@ -53,7 +57,7 @@ test("goes back to History it was opened from", () => {
 });
 
 test("says only Back for a page it has no name for", () => {
-  expect(readerWayBack("/search", true, SERIES)).toEqual({
+  expect(readerWayBack("/search", SERIES)).toEqual({
     kind: "history",
     path: "/search",
     label: "Back",
@@ -61,7 +65,7 @@ test("says only Back for a page it has no name for", () => {
 });
 
 test("puts the series page in its place when there is nothing to go back to", () => {
-  expect(readerWayBack(undefined, false, SERIES)).toEqual({
+  expect(readerWayBack(undefined, SERIES)).toEqual({
     kind: "replace",
     path: "/series/a1",
     label: "Back to Sample Series 04",
@@ -70,18 +74,10 @@ test("puts the series page in its place when there is nothing to go back to", ()
 
 test("puts the library in its place for a book outside the library", () => {
   expect(
-    readerWayBack(undefined, false, {
+    readerWayBack(undefined, {
       href: "/",
       title: "",
       isInLibrary: false,
     }),
   ).toEqual({ kind: "replace", path: "/", label: "Back to the library" });
-});
-
-test("puts the series page in its place when the page it came from is gone from history", () => {
-  expect(readerWayBack("/history", false, SERIES)).toEqual({
-    kind: "replace",
-    path: "/series/a1",
-    label: "Back to Sample Series 04",
-  });
 });

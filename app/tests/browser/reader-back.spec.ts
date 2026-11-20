@@ -153,6 +153,24 @@ test.describe(
       await expectBackAndGestureAgree(page, HISTORY, "Back to History");
     });
 
+    test("still goes back to History after a visit to the series page and back", async ({
+      page,
+    }) => {
+      await openLibrary(page);
+      await followInApp(page, HISTORY);
+      await page
+        .locator(`a[href="${READER}"]`)
+        .filter({ visible: true })
+        .first()
+        .click();
+      await expect(page).toHaveURL(READER);
+      await followInApp(page, SERIES_PAGE);
+      await page.goBack();
+      await expect(page).toHaveURL(READER);
+
+      await expectBackAndGestureAgree(page, HISTORY, "Back to History");
+    });
+
     test("takes Back and the gesture to the page Quick open was opened over", async ({
       page,
     }) => {

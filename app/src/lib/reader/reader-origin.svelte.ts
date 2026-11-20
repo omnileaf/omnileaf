@@ -20,9 +20,13 @@ class ReaderOrigin {
 
 export const readerOrigin = new ReaderOrigin();
 
-function arrivalOf({ from }: OnNavigate): ReaderArrival {
+function arrivalOf(navigation: OnNavigate): ReaderArrival {
+  const { from } = navigation;
   if (from === null) {
     return { kind: "enter" };
+  }
+  if (navigation.type === "popstate" && navigation.delta < 0) {
+    return { kind: "returned" };
   }
   return from.route.id === READER_ROUTE
     ? { kind: "fromReader" }

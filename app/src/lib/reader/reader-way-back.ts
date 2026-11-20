@@ -10,6 +10,7 @@ export interface OriginPage {
 export type ReaderArrival =
   | { readonly kind: "enter" }
   | { readonly kind: "fromReader" }
+  | { readonly kind: "returned" }
   | { readonly kind: "fromPage"; readonly page: OriginPage };
 
 export interface ReaderSeries {
@@ -35,6 +36,7 @@ export function originAfter(
     case "enter":
       return undefined;
     case "fromReader":
+    case "returned":
       return previous;
     case "fromPage":
       return arrival.page;
@@ -54,21 +56,11 @@ function originLabel(origin: string, series: ReaderSeries): string {
   return (NAMED_ORIGINS[origin] ?? m.reader_back)();
 }
 
-export function readerBackLabel(
-  origin: string | undefined,
-  series: ReaderSeries,
-): string {
-  return origin === undefined
-    ? seriesLabel(series)
-    : originLabel(origin, series);
-}
-
 export function readerWayBack(
   origin: string | undefined,
-  canGoBack: boolean,
   series: ReaderSeries,
 ): ReaderWayBack {
-  if (origin === undefined || !canGoBack) {
+  if (origin === undefined) {
     return { kind: "replace", path: series.href, label: seriesLabel(series) };
   }
   return { kind: "history", path: origin, label: originLabel(origin, series) };

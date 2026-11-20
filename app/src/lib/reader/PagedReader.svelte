@@ -21,7 +21,6 @@
     type Platform,
     type SwipeEdge,
   } from "#lib/ipc/bindings.ts";
-  import { depth } from "#lib/navigation/android-back.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import ReaderBackSwipe, {
     type ReaderBackSwipeState,
@@ -107,10 +106,7 @@
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { followVolumeKeys, hasVolumeKeys } from "#lib/reader/volume-keys.ts";
   import { readerOrigin } from "#lib/reader/reader-origin.svelte.ts";
-  import {
-    readerBackLabel,
-    readerWayBack,
-  } from "#lib/reader/reader-way-back.ts";
+  import { readerWayBack } from "#lib/reader/reader-way-back.ts";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
   import UpNext from "#lib/up-next/UpNext.svelte";
 
@@ -363,21 +359,14 @@
     title: named.seriesTitle,
     isInLibrary: book.isInLibrary,
   });
+  const wayBack = $derived(
+    readerWayBack(readerOrigin.page?.pathname, readerSeries),
+  );
   const backHref = $derived(readerOrigin.page?.href ?? seriesHref);
-  const backLabel = $derived(
-    readerBackLabel(readerOrigin.page?.pathname, readerSeries),
-  );
-  const isBackToSeries = $derived(
-    (readerOrigin.page?.pathname ?? seriesHref) === seriesHref,
-  );
+  const isBackToSeries = $derived(wayBack.path === seriesHref);
   let leftReader: (() => void) | undefined;
 
   function leaveReader(): Promise<void> {
-    const wayBack = readerWayBack(
-      readerOrigin.page?.pathname,
-      depth.canGoBack,
-      readerSeries,
-    );
     if (wayBack.kind === "replace") {
       return goto(seriesHref, { replaceState: true });
     }
@@ -1317,7 +1306,7 @@
         <ReaderTopBar
           {seriesHref}
           {backHref}
-          {backLabel}
+          backLabel={wayBack.label}
           {isBackToSeries}
           onBack={() => {
             void leaveReader();
