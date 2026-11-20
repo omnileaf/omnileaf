@@ -60,6 +60,7 @@ mod tls_provider;
 mod tray;
 #[cfg(target_os = "android")]
 mod tree_storage;
+mod update_notices;
 mod version_details;
 mod volume_keys;
 mod wallpaper_colours;
@@ -208,6 +209,7 @@ fn with_android_plugins(app: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri
         .plugin(restored_route::plugin());
     if cfg!(feature = "update-check") {
         app.plugin(app_updates::plugin())
+            .plugin(update_notices::plugin())
     } else {
         app
     }
