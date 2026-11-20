@@ -2,18 +2,25 @@ import type { SeriesLabels } from "#lib/ipc/bindings.ts";
 
 import type { LabelsFrom } from "./series-selection";
 
-export type LabelField = "category" | "tag";
+export type LabelFields = Readonly<Record<LabelsFrom, HTMLInputElement | null>>;
 
-function hasTagsToPick(labels: SeriesLabels): boolean {
-  return labels.tags.length > 0 || labels.suggestedTags.length > 0;
-}
-
-export function fieldToFocus(
+export function hasNothingToPick(
   labels: SeriesLabels,
   from: LabelsFrom,
-): LabelField | undefined {
-  if (from === "tags") {
-    return hasTagsToPick(labels) ? undefined : "tag";
+): boolean {
+  return from === "tags"
+    ? labels.tags.length === 0 && labels.suggestedTags.length === 0
+    : labels.categories.length === 0;
+}
+
+export function focusFieldWhenNothingToPick(
+  labels: SeriesLabels,
+  from: LabelsFrom,
+  fields: () => LabelFields,
+): void {
+  if (hasNothingToPick(labels, from)) {
+    requestAnimationFrame(() => {
+      fields()[from]?.focus();
+    });
   }
-  return labels.categories.length > 0 ? undefined : "category";
 }

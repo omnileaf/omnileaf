@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { LibraryCategory, SeriesLabels } from "#lib/ipc/bindings.ts";
 
-import { fieldToFocus } from "./label-focus.ts";
+import { hasNothingToPick } from "./label-focus.ts";
 
 const NOTHING_KEPT: SeriesLabels = {
   keepsLabels: true,
@@ -16,30 +16,38 @@ const READING = {
   holding: 1,
 };
 
-test("leaves the new category field alone while there are categories to tick", () => {
+const SEA = { tag: "Sea", holding: 1 };
+
+test("has categories to tick once one exists", () => {
   const labels = { ...NOTHING_KEPT, categories: [READING] };
 
-  expect(fieldToFocus(labels, "categories")).toBeUndefined();
+  expect(hasNothingToPick(labels, "categories")).toBe(false);
 });
 
-test("focuses the new category field when there is no category yet", () => {
-  expect(fieldToFocus(NOTHING_KEPT, "categories")).toBe("category");
+test("has nothing to pick from Categories when there is no category yet", () => {
+  expect(hasNothingToPick(NOTHING_KEPT, "categories")).toBe(true);
 });
 
-test("leaves the tag field alone while the series hold tags", () => {
-  const labels = { ...NOTHING_KEPT, tags: [{ tag: "Sea", holding: 1 }] };
+test("has nothing to pick from Categories even when the series hold tags", () => {
+  const labels = { ...NOTHING_KEPT, tags: [SEA], suggestedTags: ["Letters"] };
 
-  expect(fieldToFocus(labels, "tags")).toBeUndefined();
+  expect(hasNothingToPick(labels, "categories")).toBe(true);
 });
 
-test("leaves the tag field alone while there are suggested tags", () => {
+test("has tags to pick while the series hold tags", () => {
+  const labels = { ...NOTHING_KEPT, tags: [SEA] };
+
+  expect(hasNothingToPick(labels, "tags")).toBe(false);
+});
+
+test("has tags to pick while there are suggested tags", () => {
   const labels = { ...NOTHING_KEPT, suggestedTags: ["Letters"] };
 
-  expect(fieldToFocus(labels, "tags")).toBeUndefined();
+  expect(hasNothingToPick(labels, "tags")).toBe(false);
 });
 
-test("focuses the tag field when there is no tag to pick", () => {
+test("has nothing to pick from Tags when there is no tag, even with categories", () => {
   const labels = { ...NOTHING_KEPT, categories: [READING] };
 
-  expect(fieldToFocus(labels, "tags")).toBe("tag");
+  expect(hasNothingToPick(labels, "tags")).toBe(true);
 });

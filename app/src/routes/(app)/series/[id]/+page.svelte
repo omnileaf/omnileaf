@@ -659,7 +659,7 @@
   <LabelSeriesDialog
     bind:isOpen={isLabelling}
     series={[foundId]}
-    startsAtTags={false}
+    from="categories"
     onError={reportFailure}
   />
 {/if}

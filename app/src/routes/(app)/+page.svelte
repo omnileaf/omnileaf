@@ -1029,14 +1029,14 @@
   <IosLabelSeriesSheet
     bind:isOpen={isLabelling}
     series={labelled}
-    startsAtTags={labelsFrom === "tags"}
+    from={labelsFrom}
     onError={reportFailure}
   />
 {:else}
   <LabelSeriesDialog
     bind:isOpen={isLabelling}
     series={labelled}
-    startsAtTags={labelsFrom === "tags"}
+    from={labelsFrom}
     onError={reportFailure}
   />
 {/if}

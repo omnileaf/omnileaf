@@ -8,13 +8,14 @@
   import { SheetBar } from "#lib/components/ui/drawer/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
-  import { commands, type SeriesLabels } from "#lib/ipc/bindings.ts";
+  import { commands } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import type { SeriesId } from "#lib/series/series-id.ts";
 
   import { GROUPED_GROUP_LOOK } from "./group-look";
   import { LabelDraft } from "./label-draft.svelte";
-  import { fieldToFocus } from "./label-focus";
+  import { focusFieldWhenNothingToPick } from "./label-focus";
+  import type { LabelsFrom } from "./series-selection";
 
   const ICON_SIZE = 20;
   const REMOVE_ICON_SIZE = 12;
@@ -22,12 +23,12 @@
   let {
     isOpen = $bindable(false),
     series,
-    startsAtTags,
+    from,
     onError,
   }: {
     isOpen?: boolean;
     series: readonly SeriesId[];
-    startsAtTags: boolean;
+    from: LabelsFrom;
     onError: (error: unknown) => void;
   } = $props();
 
@@ -54,17 +55,10 @@
       return;
     }
     draft.load(loaded.data);
-    focusFieldIfNothingToPick(loaded.data);
-  }
-
-  function focusFieldIfNothingToPick(labels: SeriesLabels): void {
-    const field = fieldToFocus(labels, startsAtTags ? "tags" : "categories");
-    if (field === undefined) {
-      return;
-    }
-    requestAnimationFrame(() => {
-      (field === "tag" ? tagField : categoryField)?.focus();
-    });
+    focusFieldWhenNothingToPick(loaded.data, from, () => ({
+      categories: categoryField,
+      tags: tagField,
+    }));
   }
 
   function focusSheet(event: Event): void {
