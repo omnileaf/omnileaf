@@ -176,6 +176,17 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
     });
   });
 
+  test("opens with no field focused while there are categories to tick", async ({
+    page,
+  }) => {
+    await openLabels(page);
+
+    await expect(
+      sheet(page).getByRole("checkbox", { name: "Reading" }),
+    ).toBeVisible();
+    await expect(sheet(page).locator("input:focus")).toHaveCount(0);
+  });
+
   test("closes with Close and applies nothing", async ({ page }) => {
     await openLabels(page);
 

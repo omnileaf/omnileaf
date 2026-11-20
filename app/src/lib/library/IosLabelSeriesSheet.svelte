@@ -8,12 +8,13 @@
   import { SheetBar } from "#lib/components/ui/drawer/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
-  import { commands } from "#lib/ipc/bindings.ts";
+  import { commands, type SeriesLabels } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import type { SeriesId } from "#lib/series/series-id.ts";
 
   import { GROUPED_GROUP_LOOK } from "./group-look";
   import { LabelDraft } from "./label-draft.svelte";
+  import { fieldToFocus } from "./label-focus";
 
   const ICON_SIZE = 20;
   const REMOVE_ICON_SIZE = 12;
@@ -35,6 +36,8 @@
   let newCategory = $state("");
   let newTag = $state("");
   let tagField = $state<HTMLInputElement | null>(null);
+  let categoryField = $state<HTMLInputElement | null>(null);
+  let sheet = $state<HTMLElement | null>(null);
 
   $effect(() => {
     if (isOpen) {
@@ -51,11 +54,22 @@
       return;
     }
     draft.load(loaded.data);
-    if (startsAtTags) {
-      requestAnimationFrame(() => {
-        tagField?.focus();
-      });
+    focusFieldIfNothingToPick(loaded.data);
+  }
+
+  function focusFieldIfNothingToPick(labels: SeriesLabels): void {
+    const field = fieldToFocus(labels, startsAtTags ? "tags" : "categories");
+    if (field === undefined) {
+      return;
     }
+    requestAnimationFrame(() => {
+      (field === "tag" ? tagField : categoryField)?.focus();
+    });
+  }
+
+  function focusSheet(event: Event): void {
+    event.preventDefault();
+    sheet?.focus();
   }
 
   async function apply(): Promise<void> {
@@ -74,6 +88,8 @@
 
 <Dialog.Root bind:open={isOpen}>
   <ModalContent
+    bind:ref={sheet}
+    onOpenAutoFocus={focusSheet}
     phoneClass=""
     phoneHeight="large"
     phoneGround="grouped"
@@ -161,6 +177,7 @@
           <div class="flex items-center gap-md text-muted block-native-target">
             <Plus size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
             <Input
+              bind:ref={categoryField}
               value={newCategory}
               oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
                 newCategory = event.currentTarget.value;
