@@ -63,6 +63,7 @@
 
   const android = new AndroidPhone();
   const ios = new IosPhone();
+  const isDesktopLook = $derived(!android.isOn && !ios.isOn);
   const isMac = currentPlatform() === "macos";
   const rowLook = $derived(
     android.isOn
@@ -81,7 +82,7 @@
     android.isOn && "text-body tracking-native-row-title",
     ios.isOn &&
       "text-native-row-title/native-row-title tracking-native-row-title",
-    !android.isOn && !ios.isOn && "font-medium",
+    isDesktopLook && "font-medium",
   ]);
   const IOS_ICON_SIZE = 20;
   let list = $state<HTMLElement | null>(null);
@@ -191,7 +192,7 @@
     class={[
       "flex flex-col",
       ios.isOn && "divide-y divide-ios-separator",
-      !android.isOn && !ios.isOn && "divide-y divide-border",
+      isDesktopLook && "divide-y divide-border",
     ]}
   >
     {#each listed as tab, at (tabKey(tab.id))}
@@ -348,7 +349,7 @@
         rowLook,
         TINTED,
         ROW_FOCUS_RING,
-        !android.isOn && !ios.isOn && "rounded-ee-card rounded-es-card",
+        isDesktopLook && "rounded-ee-card rounded-es-card",
       ]}
       onclick={onNewCategory}
     >
