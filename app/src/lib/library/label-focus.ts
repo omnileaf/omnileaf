@@ -2,7 +2,7 @@ import type { SeriesLabels } from "#lib/ipc/bindings.ts";
 
 import type { LabelsFrom } from "./series-selection";
 
-export type LabelFields = Readonly<Record<LabelsFrom, HTMLInputElement | null>>;
+type LabelFields = Readonly<Record<LabelsFrom, HTMLInputElement | null>>;
 
 export function hasNothingToPick(
   labels: SeriesLabels,
