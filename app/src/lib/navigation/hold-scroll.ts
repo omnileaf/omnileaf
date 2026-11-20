@@ -2,9 +2,25 @@ import { on } from "svelte/events";
 
 const USER_INPUTS = ["pointerdown", "wheel", "keydown"] as const;
 const SCROLL_SLACK_PX = 1;
+const ANCHOR = "a[href]";
 
-export function holdScrollTop(screen: HTMLElement, top: number): () => void {
-  const observer = new ResizeObserver(reach);
+export interface ScrollAnchor {
+  readonly href: string;
+  readonly offset: number;
+}
+
+export interface ScrollPlace {
+  readonly top: number;
+  readonly anchor: ScrollAnchor | undefined;
+}
+
+function holdWhileContentResizes(
+  screen: HTMLElement,
+  reach: (stop: () => void) => void,
+): () => void {
+  const observer = new ResizeObserver(() => {
+    reach(stop);
+  });
   const stopListening = USER_INPUTS.map((input) => on(screen, input, stop));
 
   function stop(): void {
@@ -14,16 +30,106 @@ export function holdScrollTop(screen: HTMLElement, top: number): () => void {
     }
   }
 
-  function reach(): void {
+  for (const content of screen.children) {
+    observer.observe(content);
+  }
+  reach(stop);
+  return stop;
+}
+
+export function holdScrollTop(screen: HTMLElement, top: number): () => void {
+  return holdWhileContentResizes(screen, (stop) => {
     screen.scrollTop = top;
     if (screen.scrollTop >= top - SCROLL_SLACK_PX) {
       stop();
     }
-  }
+  });
+}
 
-  for (const content of screen.children) {
-    observer.observe(content);
+function isShown(link: HTMLAnchorElement): boolean {
+  return link.getBoundingClientRect().height > 0;
+}
+
+function isPinned(link: HTMLAnchorElement, screen: HTMLElement): boolean {
+  for (
+    let at: HTMLElement | null = link;
+    at !== null && at !== screen;
+    at = at.parentElement
+  ) {
+    if (["sticky", "fixed"].includes(getComputedStyle(at).position)) {
+      return true;
+    }
   }
-  reach();
-  return stop;
+  return false;
+}
+
+function anchorIn(
+  screen: HTMLElement,
+  leavingFor: URL | undefined,
+): HTMLAnchorElement | null {
+  const box = screen.getBoundingClientRect();
+  const inView = [...screen.querySelectorAll<HTMLAnchorElement>(ANCHOR)].filter(
+    (link) => {
+      const shown = link.getBoundingClientRect();
+      return (
+        isShown(link) &&
+        shown.top >= box.top &&
+        shown.bottom <= box.bottom &&
+        !isPinned(link, screen)
+      );
+    },
+  );
+  return (
+    inView.find((link) => link.pathname === leavingFor?.pathname) ??
+    inView.at(0) ??
+    null
+  );
+}
+
+export function placeOf(
+  screen: HTMLElement,
+  leavingFor: URL | undefined,
+): ScrollPlace {
+  const shownTop = screen.getBoundingClientRect().top;
+  const anchor = anchorIn(screen, leavingFor);
+  return {
+    top: screen.scrollTop,
+    anchor:
+      anchor === null
+        ? undefined
+        : {
+            href: anchor.getAttribute("href") ?? "",
+            offset: anchor.getBoundingClientRect().top - shownTop,
+          },
+  };
+}
+
+function anchorOf(
+  screen: HTMLElement,
+  anchor: ScrollAnchor,
+): HTMLAnchorElement | null {
+  return (
+    [
+      ...screen.querySelectorAll<HTMLAnchorElement>(
+        `${ANCHOR}[href="${CSS.escape(anchor.href)}"]`,
+      ),
+    ].find(isShown) ?? null
+  );
+}
+
+export function holdScrollPlace(
+  screen: HTMLElement,
+  place: ScrollPlace,
+): () => void {
+  return holdWhileContentResizes(screen, () => {
+    const anchored =
+      place.anchor === undefined ? null : anchorOf(screen, place.anchor);
+    if (place.anchor === undefined || anchored === null) {
+      screen.scrollTop = place.top;
+      return;
+    }
+    const shownTop = screen.getBoundingClientRect().top;
+    screen.scrollTop +=
+      anchored.getBoundingClientRect().top - shownTop - place.anchor.offset;
+  });
 }
