@@ -30,6 +30,7 @@
   import { commands } from "#lib/ipc/bindings.ts";
   import { followHistoryForBack } from "#lib/navigation/android-back.ts";
   import { showOpeningPage } from "#lib/navigation/restored-route.ts";
+  import { followReaderOrigin } from "#lib/reader/reader-origin.svelte.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
     languageSettingForDocument,
@@ -161,6 +162,7 @@
   const bookPresence = setBookPresence(new BookPresence());
   setPreviousScreens(new PreviousScreens());
   followHistoryForBack(() => data.appInfo.platform);
+  followReaderOrigin();
   afterNavigate(({ type }) => {
     if (type === "enter") {
       void showOpeningPage(data.pageToRestore, data.appInfo.platform);

@@ -106,6 +106,11 @@
   import { Swipe } from "#lib/reader/swipe.ts";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { followVolumeKeys, hasVolumeKeys } from "#lib/reader/volume-keys.ts";
+  import { readerOrigin } from "#lib/reader/reader-origin.svelte.ts";
+  import {
+    readerBackLabel,
+    readerWayBack,
+  } from "#lib/reader/reader-way-back.ts";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
   import UpNext from "#lib/up-next/UpNext.svelte";
 
@@ -353,10 +358,27 @@
       ? resolve("/(app)/series/[id]", { id: book.series })
       : resolve("/(app)"),
   );
+  const readerSeries = $derived({
+    href: seriesHref,
+    title: named.seriesTitle,
+    isInLibrary: book.isInLibrary,
+  });
+  const backHref = $derived(readerOrigin.page?.href ?? seriesHref);
+  const backLabel = $derived(
+    readerBackLabel(readerOrigin.page?.pathname, readerSeries),
+  );
+  const isBackToSeries = $derived(
+    (readerOrigin.page?.pathname ?? seriesHref) === seriesHref,
+  );
   let leftReader: (() => void) | undefined;
 
   function leaveReader(): Promise<void> {
-    if (!depth.canGoBack) {
+    const wayBack = readerWayBack(
+      readerOrigin.page?.pathname,
+      depth.canGoBack,
+      readerSeries,
+    );
+    if (wayBack.kind === "replace") {
       return goto(seriesHref, { replaceState: true });
     }
     return new Promise((left) => {
@@ -1172,7 +1194,7 @@
 <ReaderBackSwipe
   swipeState={backSwipe}
   takenEdge={nextPageDragEdge}
-  backPath={seriesHref}
+  backPath={backHref}
   onBack={leaveReader}
 >
   <main
@@ -1294,6 +1316,9 @@
       >
         <ReaderTopBar
           {seriesHref}
+          {backHref}
+          {backLabel}
+          {isBackToSeries}
           onBack={() => {
             void leaveReader();
           }}

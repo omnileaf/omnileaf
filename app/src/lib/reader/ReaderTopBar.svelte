@@ -47,6 +47,9 @@
 
   let {
     seriesHref,
+    backHref,
+    backLabel,
+    isBackToSeries,
     onBack,
     isInLibrary,
     platform,
@@ -67,6 +70,9 @@
     onFullScreen,
   }: {
     seriesHref: ResolvedPathname;
+    backHref: ResolvedPathname;
+    backLabel: string;
+    isBackToSeries: boolean;
     onBack: () => void;
     isInLibrary: boolean;
     platform: Platform;
@@ -87,11 +93,6 @@
     onFullScreen: () => void;
   } = $props();
 
-  const backLabel = $derived(
-    isInLibrary
-      ? m.reader_back_to_series({ series: seriesTitle })
-      : m.reader_back_label(),
-  );
   const JUMP_ICON_SIZE = 12;
 
   const chrome = getReaderChrome();
@@ -149,7 +150,7 @@
             onBack();
           },
         })}
-        href={seriesHref}
+        href={backHref}
         aria-label={backLabel}
         aria-keyshortcuts={isWindows ? WINDOWS_BACK_KEYS : undefined}
         class={cn(
@@ -160,7 +161,7 @@
         )}
       >
         <ReaderBackArrow {platform} {isOnPhone} />
-        {#if !isOnPhone && isInLibrary}
+        {#if !isOnPhone && isInLibrary && isBackToSeries}
           <span
             class="hidden truncate text-small text-accent max-inline-reader-crumb-book ios:max-expanded:inline"
           >

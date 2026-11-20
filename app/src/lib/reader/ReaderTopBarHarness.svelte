@@ -76,6 +76,9 @@
 <main>
   <ReaderTopBar
     seriesHref={resolve("/(app)")}
+    backHref={resolve("/(app)")}
+    backLabel="Back to Sample Series"
+    isBackToSeries={true}
     onBack={nothing}
     isInLibrary={true}
     {platform}
