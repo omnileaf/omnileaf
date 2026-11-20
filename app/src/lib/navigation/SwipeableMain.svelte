@@ -15,7 +15,11 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
   import { getBackGoesUp } from "./back-goes-up";
-  import { backPreviewLook, previewBackGestures } from "./back-preview";
+  import {
+    type BackGestureAt,
+    backPreviewFrame,
+    previewBackGestures,
+  } from "./back-preview";
   import { wayBackFrom } from "./back-link";
   import { backSwipeEdge, directionOf } from "./back-swipe";
   import { holdScrollTop } from "./hold-scroll";
@@ -38,12 +42,44 @@
     children: Snippet;
   } = $props();
 
-  let backProgress: number | undefined = $state();
+  interface FollowedGesture {
+    readonly start: BackGestureAt;
+    readonly now: BackGestureAt;
+    readonly area: DOMRect;
+  }
+
+  let backGesture: FollowedGesture | undefined = $state();
   const backPreview = $derived(
-    backProgress === undefined
+    backGesture === undefined
       ? undefined
-      : backPreviewLook(backProgress, prefersReducedMotion.current),
+      : backPreviewFrame(
+          backGesture.start,
+          backGesture.now,
+          {
+            width: backGesture.area.width,
+            height: backGesture.area.height,
+            isDark: false,
+          },
+          prefersReducedMotion.current,
+        ).closing,
   );
+  const backCornerPx = $derived(
+    backGesture === undefined || prefersReducedMotion.current
+      ? 0
+      : backGesture.now.cornerPx,
+  );
+
+  function followBackGesture(gesture: BackGestureAt | undefined): void {
+    if (gesture === undefined || swiped.element === undefined) {
+      backGesture = undefined;
+      return;
+    }
+    backGesture = {
+      start: backGesture?.start ?? gesture,
+      now: gesture,
+      area: backGesture?.area ?? swiped.element.getBoundingClientRect(),
+    };
+  }
 
   const language = getLanguageSetting();
   const backGoesUp = getBackGoesUp();
@@ -116,7 +152,7 @@
         ? undefined
         : holdScrollTop(swiped.element, landedOn.scrollTop);
     swiped.arrived();
-    backProgress = undefined;
+    backGesture = undefined;
     previousScreens.forgetAllButAbove(page.url.pathname);
   });
 
@@ -131,9 +167,7 @@
   onMount(() => {
     const stopPreviewing = isAndroid
       ? previewBackGestures(
-          (progress) => {
-            backProgress = progress;
-          },
+          followBackGesture,
           () =>
             location.pathname === page.url.pathname &&
             location.search === page.url.search,
@@ -154,10 +188,10 @@
   {@attach forgetCopiesOnSettingChange}
   style:transform={backPreview === undefined
     ? swiped.transform
-    : `scale(${String(backPreview.scale)})`}
+    : `translate(${String(backPreview.x)}px, ${String(backPreview.y)}px) scale(${String(backPreview.scale)})`}
   style:border-radius={backPreview === undefined
     ? undefined
-    : `${String(backPreview.cornerPx)}px`}
+    : `${String(backCornerPx)}px`}
   class={[
     "order-2 flex flex-1 flex-col overflow-y-auto has-data-macos-inspector:me-native-inspector desktop-shell:has-data-page-toolbar:scroll-pbs-toolbar",
     !isFullScreen &&
