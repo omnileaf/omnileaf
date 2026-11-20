@@ -17,6 +17,12 @@ test.use({
     ...DEFAULT_BACKEND,
     libraryCategories: () => [...CATEGORIES],
     categorySeriesCount: () => 6,
+    seriesLabels: () => ({
+      keepsLabels: true,
+      categories: [],
+      tags: [],
+      suggestedTags: [],
+    }),
   },
 });
 
@@ -29,11 +35,16 @@ test.describe("Library tabs on an iPhone", { tag: "@native" }, () => {
     ).toBeVisible();
   });
 
-  test("sets the tabs in one grouped card with no border of its own", async ({
+  test("sets the tabs and New category in one grouped card with no border of its own", async ({
     page,
   }) => {
-    const card = page.getByRole("list", { name: "Library tabs" });
+    const card = page
+      .locator("[data-settings-group]")
+      .filter({ has: page.getByRole("list", { name: "Library tabs" }) });
 
+    await expect(
+      card.getByRole("button", { name: "New category" }),
+    ).toBeVisible();
     await expect(card).toHaveCSS("border-top-width", "0px");
     await expect(card).toHaveCSS(
       "background-color",

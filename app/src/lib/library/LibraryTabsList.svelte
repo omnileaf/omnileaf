@@ -7,6 +7,7 @@
     EyeOff,
     GripVertical,
     Menu,
+    Plus,
   } from "@lucide/svelte";
   import { tick } from "svelte";
 
@@ -20,11 +21,15 @@
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
-  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
+  import {
+    ROW_FOCUS_RING,
+    ROW_SUBTITLE_TYPE,
+  } from "#lib/components/ui/item/looks.ts";
   import { NOTICE_WINDOW_MS } from "#lib/notices/notices.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
+  import { TINTED } from "#lib/settings/setting-row-look.ts";
 
   import { AndroidPhone } from "./android-phone.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -48,16 +53,37 @@
     tabs,
     detailOf,
     onArrange,
+    onNewCategory,
   }: {
     tabs: readonly ArrangedTab[];
     detailOf: (tab: ArrangedTab) => string;
     onArrange: (tabs: readonly ArrangedTab[]) => void;
+    onNewCategory?: (() => void) | undefined;
   } = $props();
 
   const android = new AndroidPhone();
-  const isMac = currentPlatform() === "macos";
-  const IOS_ICON_SIZE = 20;
   const ios = new IosPhone();
+  const isMac = currentPlatform() === "macos";
+  const rowLook = $derived(
+    android.isOn
+      ? "gap-xs ps-xs pe-md min-block-native-row-two"
+      : ios.isOn
+        ? "gap-sm ps-lg pe-xs min-block-native-row"
+        : "gap-sm py-sm ps-xs pe-sm",
+  );
+  const leadingSlotLook = $derived(
+    android.isOn
+      ? "native-target block-native-button inline-native-button"
+      : "block-pointer-button inline-pointer-button touch:block-touch-target touch:inline-touch-target",
+  );
+  const nameLook = $derived([
+    "truncate",
+    android.isOn && "text-body tracking-native-row-title",
+    ios.isOn &&
+      "text-native-row-title/native-row-title tracking-native-row-title",
+    !android.isOn && !ios.isOn && "font-medium",
+  ]);
+  const IOS_ICON_SIZE = 20;
   let list = $state<HTMLElement | null>(null);
   let drag = $state<Drag | undefined>();
   let announcement = $state("");
@@ -151,176 +177,203 @@
   }
 </script>
 
-<ul
+<div
   data-settings-group
-  bind:this={list}
-  aria-label={isMac ? m.library_tabs_title_mac() : m.library_tabs_title()}
   class={android.isOn
     ? FLUSH_LIST
     : ios.isOn
       ? `flex flex-col divide-y divide-ios-separator overflow-hidden ${GROUP_PLATE}`
-      : "flex flex-col divide-y divide-border rounded-card border border-border bg-card"}
+      : "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card"}
 >
-  {#each listed as tab, at (tabKey(tab.id))}
-    {@const key = tabKey(tab.id)}
-    <li
-      data-tab-row
-      class={[
-        "flex items-center",
-        android.isOn
-          ? "gap-xs ps-xs pe-md min-block-native-row-two"
-          : ios.isOn
-            ? "gap-sm ps-lg pe-xs min-block-native-row"
-            : "gap-sm py-sm ps-xs pe-sm",
-        drag?.key === key &&
-          (android.isOn
-            ? "relative z-drag-box -translate-y-native-drag-lift scale-102 rounded-native-segment bg-android-container-high shadow-dialog"
-            : "relative z-drag-box rounded-card bg-card shadow-dialog"),
-      ]}
-    >
-      <button
-        type="button"
-        data-tab-handle={key}
-        aria-label={m.library_tabs_move({ tab: tab.name })}
+  <ul
+    bind:this={list}
+    aria-label={isMac ? m.library_tabs_title_mac() : m.library_tabs_title()}
+    class={[
+      "flex flex-col",
+      ios.isOn && "divide-y divide-ios-separator",
+      !android.isOn && !ios.isOn && "divide-y divide-border",
+    ]}
+  >
+    {#each listed as tab, at (tabKey(tab.id))}
+      {@const key = tabKey(tab.id)}
+      <li
+        data-tab-row
         class={[
-          "flex shrink-0 cursor-grab touch-none items-center justify-center rounded-control text-muted focus-visible:outline-2 focus-visible:outline-accent",
-          android.isOn
-            ? "native-target block-native-button inline-native-button"
-            : "block-pointer-button inline-pointer-button touch:block-touch-target touch:inline-touch-target",
-          ios.isOn && "order-last",
-        ]}
-        onkeydown={(event) => {
-          moveWithKeys(event, at);
-        }}
-        onpointerdown={(event) => {
-          startDrag(event, tab);
-        }}
-        onpointermove={dragTo}
-        onpointerup={drop}
-        onpointercancel={drop}
-      >
-        {#if ios.isOn}
-          <Menu size={IOS_ICON_SIZE} aria-hidden="true" />
-        {:else if android.isOn}
-          <Icon name="grip-vertical" />
-        {:else}
-          <GripVertical size={ICON_SIZE} aria-hidden="true" />
-        {/if}
-      </button>
-      <span
-        class={[
-          "flex flex-1 flex-col min-inline-none",
-          android.isOn ? "ps-xs" : "gap-2xs",
+          "flex items-center",
+          rowLook,
+          drag?.key === key &&
+            (android.isOn
+              ? "relative z-drag-box -translate-y-native-drag-lift scale-102 rounded-native-segment bg-android-container-high shadow-dialog"
+              : "relative z-drag-box rounded-card bg-card shadow-dialog"),
         ]}
       >
-        <span
+        <button
+          type="button"
+          data-tab-handle={key}
+          aria-label={m.library_tabs_move({ tab: tab.name })}
           class={[
-            "truncate",
-            android.isOn && "text-body tracking-native-row-title",
-            ios.isOn &&
-              "text-native-row-title/native-row-title tracking-native-row-title",
-            !android.isOn && !ios.isOn && "font-medium",
-          ]}>{tab.name}</span
+            "flex shrink-0 cursor-grab touch-none items-center justify-center rounded-control text-muted focus-visible:outline-2 focus-visible:outline-accent",
+            leadingSlotLook,
+            ios.isOn && "order-last",
+          ]}
+          onkeydown={(event) => {
+            moveWithKeys(event, at);
+          }}
+          onpointerdown={(event) => {
+            startDrag(event, tab);
+          }}
+          onpointermove={dragTo}
+          onpointerup={drop}
+          onpointercancel={drop}
         >
+          {#if ios.isOn}
+            <Menu size={IOS_ICON_SIZE} aria-hidden="true" />
+          {:else if android.isOn}
+            <Icon name="grip-vertical" />
+          {:else}
+            <GripVertical size={ICON_SIZE} aria-hidden="true" />
+          {/if}
+        </button>
         <span
           class={[
-            "text-muted",
-            android.isOn || ios.isOn ? ROW_SUBTITLE_TYPE : "text-detail",
-          ]}>{detailOf(tab)}</span
-        >
-      </span>
-      {#if tab.isHidden}
-        <span
-          data-tab-badge
-          class={[
-            "flex shrink-0 items-center text-muted",
-            android.isOn
-              ? ANDROID_BADGE
-              : [
-                  "gap-2xs text-detail",
-                  !ios.isOn && "rounded-full border border-border px-sm",
-                ],
+            "flex flex-1 flex-col min-inline-none",
+            android.isOn ? "ps-xs" : "gap-2xs",
           ]}
         >
-          {#if android.isOn}
-            <Icon name="eye-off" size={ANDROID_BADGE_ICON_SIZE} />
-          {:else if !ios.isOn}
-            <EyeOff size={BADGE_ICON_SIZE} aria-hidden="true" />
-          {/if}
-          {m.library_tabs_hidden()}
+          <span class={nameLook}>{tab.name}</span>
+          <span
+            class={[
+              "text-muted",
+              android.isOn || ios.isOn ? ROW_SUBTITLE_TYPE : "text-detail",
+            ]}>{detailOf(tab)}</span
+          >
         </span>
-      {/if}
-      <DropdownMenu>
-        <DropdownMenuTrigger>
-          {#snippet child({ props: menuProps })}
-            <Tooltip
-              label={m.library_tabs_more({ tab: tab.name })}
-              {...menuProps}
-            >
-              {#snippet child({ props })}
-                <Button
-                  {...props}
-                  look="icon"
-                  class={[
-                    android.isOn &&
-                      "native-target block-native-button inline-native-button",
-                    ios.isOn && "block-native-button inline-native-button",
-                  ]}
-                  aria-label={m.library_tabs_more({ tab: tab.name })}
-                >
-                  {#if android.isOn}
-                    <Icon name="ellipsis" />
-                  {:else}
-                    <Ellipsis
-                      size={ios.isOn ? IOS_ICON_SIZE : ICON_SIZE}
-                      aria-hidden="true"
-                    />
-                  {/if}
-                </Button>
-              {/snippet}
-            </Tooltip>
-          {/snippet}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            disabled={at === 0}
-            onSelect={() => {
-              void move(at, at - 1);
-            }}
+        {#if tab.isHidden}
+          <span
+            data-tab-badge
+            class={[
+              "flex shrink-0 items-center text-muted",
+              android.isOn
+                ? ANDROID_BADGE
+                : [
+                    "gap-2xs text-detail",
+                    !ios.isOn && "rounded-full border border-border px-sm",
+                  ],
+            ]}
           >
-            <ArrowUp size={ICON_SIZE} aria-hidden="true" />
-            {m.library_tabs_move_up()}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={at === listed.length - 1}
-            onSelect={() => {
-              void move(at, at + 1);
-            }}
-          >
-            <ArrowDown size={ICON_SIZE} aria-hidden="true" />
-            {m.library_tabs_move_down()}
-          </DropdownMenuItem>
-          {#if tab.id.kind !== "all"}
-            <DropdownMenuSeparator />
+            {#if android.isOn}
+              <Icon name="eye-off" size={ANDROID_BADGE_ICON_SIZE} />
+            {:else if !ios.isOn}
+              <EyeOff size={BADGE_ICON_SIZE} aria-hidden="true" />
+            {/if}
+            {m.library_tabs_hidden()}
+          </span>
+        {/if}
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            {#snippet child({ props: menuProps })}
+              <Tooltip
+                label={m.library_tabs_more({ tab: tab.name })}
+                {...menuProps}
+              >
+                {#snippet child({ props })}
+                  <Button
+                    {...props}
+                    look="icon"
+                    class={[
+                      android.isOn &&
+                        "native-target block-native-button inline-native-button",
+                      ios.isOn && "block-native-button inline-native-button",
+                    ]}
+                    aria-label={m.library_tabs_more({ tab: tab.name })}
+                  >
+                    {#if android.isOn}
+                      <Icon name="ellipsis" />
+                    {:else}
+                      <Ellipsis
+                        size={ios.isOn ? IOS_ICON_SIZE : ICON_SIZE}
+                        aria-hidden="true"
+                      />
+                    {/if}
+                  </Button>
+                {/snippet}
+              </Tooltip>
+            {/snippet}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
             <DropdownMenuItem
+              disabled={at === 0}
               onSelect={() => {
-                onArrange(shownAs(tabs, at, tab.isHidden));
+                void move(at, at - 1);
               }}
             >
-              {#if tab.isHidden}
-                <Eye size={ICON_SIZE} aria-hidden="true" />
-                {isMac ? m.library_tabs_show_mac() : m.library_tabs_show()}
-              {:else}
-                <EyeOff size={ICON_SIZE} aria-hidden="true" />
-                {isMac ? m.library_tabs_hide_mac() : m.library_tabs_hide()}
-              {/if}
+              <ArrowUp size={ICON_SIZE} aria-hidden="true" />
+              {m.library_tabs_move_up()}
             </DropdownMenuItem>
-          {/if}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </li>
-  {/each}
-</ul>
+            <DropdownMenuItem
+              disabled={at === listed.length - 1}
+              onSelect={() => {
+                void move(at, at + 1);
+              }}
+            >
+              <ArrowDown size={ICON_SIZE} aria-hidden="true" />
+              {m.library_tabs_move_down()}
+            </DropdownMenuItem>
+            {#if tab.id.kind !== "all"}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => {
+                  onArrange(shownAs(tabs, at, tab.isHidden));
+                }}
+              >
+                {#if tab.isHidden}
+                  <Eye size={ICON_SIZE} aria-hidden="true" />
+                  {isMac ? m.library_tabs_show_mac() : m.library_tabs_show()}
+                {:else}
+                  <EyeOff size={ICON_SIZE} aria-hidden="true" />
+                  {isMac ? m.library_tabs_hide_mac() : m.library_tabs_hide()}
+                {/if}
+              </DropdownMenuItem>
+            {/if}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </li>
+    {/each}
+  </ul>
+  {#if onNewCategory !== undefined}
+    <button
+      type="button"
+      class={[
+        "flex items-center text-start inline-full",
+        rowLook,
+        TINTED,
+        ROW_FOCUS_RING,
+      ]}
+      onclick={onNewCategory}
+    >
+      <span
+        class={[
+          "flex shrink-0 items-center justify-center text-muted",
+          leadingSlotLook,
+        ]}
+      >
+        {#if android.isOn}
+          <Icon name="plus" />
+        {:else}
+          <Plus
+            size={ios.isOn ? IOS_ICON_SIZE : ICON_SIZE}
+            aria-hidden="true"
+          />
+        {/if}
+      </span>
+      <span class={["flex-1", android.isOn && "ps-xs", nameLook]}>
+        {isMac
+          ? m.library_tabs_new_category_mac()
+          : m.library_tabs_new_category()}
+      </span>
+    </button>
+  {/if}
+</div>
 <p
   role="status"
   class={announcement === ""

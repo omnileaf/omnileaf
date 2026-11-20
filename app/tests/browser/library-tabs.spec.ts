@@ -209,6 +209,22 @@ test.describe("in a library that keeps labels", () => {
     );
   });
 
+  test("sets New category as a row at the end of the tabs, as wide as them", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+    const add = page.getByRole("button", { name: /^New category/ });
+    const lastRow = tabList(page).getByRole("listitem").last();
+
+    const addBox = await boxOf(add);
+    const rowBox = await boxOf(lastRow);
+
+    expect(addBox.x).toBe(rowBox.x);
+    expect(addBox.width).toBe(rowBox.width);
+    expect(addBox.y).toBeGreaterThanOrEqual(rowBox.y + rowBox.height);
+    expect(addBox.y).toBeLessThanOrEqual(rowBox.y + rowBox.height + 1);
+  });
+
   test("has no accessibility violations", async ({ page }) => {
     await page.goto("/settings/library/tabs");
     await expect(tabList(page)).toBeVisible();
