@@ -14,7 +14,6 @@
     type AdultContent,
     type AdultTreatment,
     commands,
-    DEFAULT_LIBRARY_VIEW,
     type LibraryCategory,
     type LibraryFilterChoices,
     type LibraryFolder,
@@ -48,7 +47,7 @@
   import ContinueRow from "#lib/library/ContinueRow.svelte";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
-  import { viewDrawn } from "#lib/library/library-view.ts";
+  import { defaultLibraryView, viewDrawn } from "#lib/library/library-view.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { FolderCardsPhone } from "#lib/library/folder-cards-phone.svelte.ts";
   import { FolderFinder } from "#lib/library/folder-finder.svelte.ts";
@@ -182,7 +181,7 @@
     {
       read: () => commands.libraryView(),
       store: (chosen: LibraryView) => commands.setLibraryView(chosen),
-      fallback: DEFAULT_LIBRARY_VIEW,
+      fallback: defaultLibraryView(untrack(() => data.appInfo.platform)),
     },
     (error) => {
       reportError(error);
@@ -462,7 +461,7 @@
   );
   const looks = $derived<CoversLook>({
     coverUrl,
-    view: libraryView ?? DEFAULT_LIBRARY_VIEW,
+    view: libraryView ?? defaultLibraryView(data.appInfo.platform),
     usesStandIns: screenshotMode.isOn,
     adultTreatment:
       adultContent.reading.kind === "read"

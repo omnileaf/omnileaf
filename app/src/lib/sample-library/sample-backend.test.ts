@@ -2844,3 +2844,16 @@ test("finds only the series holding manga by text for the Manga format, whatever
     { titles: [], count: 0 },
   ]);
 });
+
+test("keeps the sample library's covers flat on android and stacks them elsewhere, as a new library does", async () => {
+  const platforms = ["android", "ios", "macos", "windows", "linux"] as const;
+
+  const stacked = await Promise.all(
+    platforms.map(async (platform) => {
+      const { backend } = backendFor(`platform=${platform}`);
+      return (await backend.libraryView()).stacksSeriesCovers;
+    }),
+  );
+
+  expect(stacked).toEqual([false, true, true, true, true]);
+});
