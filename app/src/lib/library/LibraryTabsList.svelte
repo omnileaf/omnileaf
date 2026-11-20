@@ -69,7 +69,7 @@
       ? "gap-xs ps-xs pe-md min-block-native-row-two"
       : ios.isOn
         ? "gap-sm ps-lg pe-xs min-block-native-row"
-        : "gap-sm py-sm ps-xs pe-sm",
+        : "gap-sm py-sm ps-xs pe-sm min-block-row",
   );
   const leadingSlotLook = $derived(
     android.isOn
@@ -183,7 +183,7 @@
     ? FLUSH_LIST
     : ios.isOn
       ? `flex flex-col divide-y divide-ios-separator overflow-hidden ${GROUP_PLATE}`
-      : "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card"}
+      : "flex flex-col divide-y divide-border rounded-card border border-border bg-card"}
 >
   <ul
     bind:this={list}
@@ -344,10 +344,11 @@
     <button
       type="button"
       class={[
-        "flex items-center text-start inline-full",
+        "flex items-center text-start transition-control inline-full",
         rowLook,
         TINTED,
         ROW_FOCUS_RING,
+        !android.isOn && !ios.isOn && "rounded-ee-card rounded-es-card",
       ]}
       onclick={onNewCategory}
     >
@@ -355,6 +356,7 @@
         class={[
           "flex shrink-0 items-center justify-center text-muted",
           leadingSlotLook,
+          ios.isOn && "order-last",
         ]}
       >
         {#if android.isOn}

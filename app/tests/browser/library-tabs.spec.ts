@@ -221,8 +221,9 @@ test.describe("in a library that keeps labels", () => {
 
     expect(addBox.x).toBe(rowBox.x);
     expect(addBox.width).toBe(rowBox.width);
-    expect(addBox.y).toBeGreaterThanOrEqual(rowBox.y + rowBox.height);
-    expect(addBox.y).toBeLessThanOrEqual(rowBox.y + rowBox.height + 1);
+    expect(addBox.height).toBe(rowBox.height);
+    expect(addBox.y).toBe(rowBox.y + rowBox.height + 1);
+    await expect(tabList(page)).toHaveCSS("border-bottom-width", "1px");
   });
 
   test("has no accessibility violations", async ({ page }) => {

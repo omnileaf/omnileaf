@@ -52,6 +52,36 @@ test.describe("Library tabs on an iPhone", { tag: "@native" }, () => {
     );
   });
 
+  test("sets New category as the card's last row, its plus where the handles sit", async ({
+    page,
+  }) => {
+    const add = page.getByRole("button", { name: "New category" });
+    const lastRow = page
+      .getByRole("list", { name: "Library tabs" })
+      .getByRole("listitem")
+      .last();
+    const name = lastRow.getByText("Manga", { exact: true });
+    const handle = lastRow.getByRole("button", { name: "Move Manga" });
+
+    const addBox = await boxOf(add);
+    const rowBox = await boxOf(lastRow);
+    const titleBox = await boxOf(add.getByText("New category"));
+    const plusBox = await boxOf(add.locator("svg"));
+    const nameBox = await boxOf(name);
+    const handleBox = await boxOf(handle);
+
+    expect(addBox.height).toBe(rowBox.height);
+    await expect(page.getByRole("list", { name: "Library tabs" })).toHaveCSS(
+      "border-bottom-width",
+      "1px",
+    );
+    expect(titleBox.x).toBe(nameBox.x);
+    expect(plusBox.x + plusBox.width / 2).toBeCloseTo(
+      handleBox.x + handleBox.width / 2,
+      0,
+    );
+  });
+
   test("puts the reorder handle at the end of the row, after the more button", async ({
     page,
   }) => {
