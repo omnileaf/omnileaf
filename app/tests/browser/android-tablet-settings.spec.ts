@@ -142,6 +142,27 @@ test.describe(
       expect(onLine.rgba).toEqual(belowLine.rgba);
     });
 
+    test("lists Accessibility in the index on a single pane", async ({
+      page,
+    }) => {
+      await openOnTablet(page, "/settings");
+
+      await expect(
+        page.getByRole("main").getByRole("link", { name: /^Accessibility/ }),
+      ).toBeVisible();
+    });
+
+    test("leaves Tap the open tab again out, since only phones' tab bars take it", async ({
+      page,
+    }) => {
+      await openOnTablet(page, "/settings/advanced");
+
+      await expect(page.getByRole("heading", { name: "Undo" })).toBeVisible();
+      await expect(
+        page.getByText("Tap the open tab again", { exact: true }),
+      ).toHaveCount(0);
+    });
+
     test("lists Accessibility beside the open page, as the index does on one pane", async ({
       page,
     }) => {
