@@ -22,6 +22,7 @@ const FINISHED_BOOK = 5;
 const FIRST_BOOK_PAGE = 14;
 const FIRST_BOOK_PAGES = 192;
 const TOP_BAR_HEIGHT = 64;
+const STATUS_BAR_HEIGHT = 24;
 const BAR_START = 12;
 const BAR_END_INSET = 8;
 const MENU_REACH = 80;
@@ -56,6 +57,17 @@ test.use({
     readingHistory: () => ({ entries: [...BOOKS], next: null }),
   },
 });
+
+async function underStatusBar(page: Page): Promise<void> {
+  await page.addInitScript((top) => {
+    document.addEventListener("DOMContentLoaded", () => {
+      document.documentElement.style.setProperty(
+        "--system-inset-top",
+        `${String(top)}px`,
+      );
+    });
+  }, STATUS_BAR_HEIGHT);
+}
 
 async function openHistory(page: Page, screen = PHONE): Promise<void> {
   await page.setViewportSize(screen);
@@ -283,6 +295,7 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
   test("opens the search in place of the title, in the same bar, with nothing behind the field", async ({
     page,
   }) => {
+    await underStatusBar(page);
     await openHistory(page);
     const title = await boxOf(
       page.getByRole("heading", { level: 1, name: "History" }),
@@ -297,6 +310,7 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
     const group = field.locator("xpath=ancestor::div[1]");
     const bar = await boxOf(field.locator("xpath=ancestor::div[2]"));
     await expect(group).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    expect(title.y).toBeGreaterThanOrEqual(STATUS_BAR_HEIGHT);
     expect([bar.y, bar.height]).toEqual([title.y, title.height]);
     expect((await boxOf(firstEntry)).y).toBe(entryBefore.y);
   });
@@ -304,6 +318,7 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
   test("puts the title back without moving the list when the search closes", async ({
     page,
   }) => {
+    await underStatusBar(page);
     await openHistory(page);
     const firstEntry = page.getByRole("main").getByRole("listitem").first();
     const entryBefore = await boxOf(firstEntry);
