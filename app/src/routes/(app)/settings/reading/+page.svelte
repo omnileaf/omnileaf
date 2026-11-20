@@ -83,6 +83,8 @@
     READING_MODE_CHOICES.map((choice) => ({
       value: choice,
       label: READING_MODE_NAMES[choice](),
+      hint:
+        choice === "automatic" ? m.reading_mode_automatic_hint() : undefined,
     })),
   );
 
@@ -94,7 +96,6 @@
 {#snippet tapGuideRows()}
   <SettingSwitch
     label={m.reading_tap_guide()}
-    description={m.reading_tap_guide_help()}
     isOn={hints.showsTapGuide}
     onToggle={() => {
       hints.turnTapGuide(!hints.showsTapGuide);
@@ -104,7 +105,6 @@
   />
   <SettingActionRow
     label={m.reading_guide_again()}
-    description={m.reading_guide_again_help()}
     onPress={() => {
       hints.armReplay();
       notices.show({
@@ -122,7 +122,6 @@
   {#if hasVolumeKeys(currentPlatform())}
     <SettingSwitch
       label={m.reader_volume_keys()}
-      description={m.reader_volume_keys_help()}
       isOn={defaults.look.turnsPagesWithVolumeKeys}
       onToggle={() => {
         defaults.change(
@@ -135,8 +134,7 @@
     />
   {/if}
   <SettingSwitch
-    label={m.reader_keep_screen_on()}
-    description={m.reading_keep_screen_on_help()}
+    label={m.reading_keep_screen_on()}
     isOn={defaults.look.keepsScreenOn}
     onToggle={() => {
       defaults.change("keepsScreenOn", !defaults.look.keepsScreenOn);
@@ -186,7 +184,6 @@
       <SettingChoiceRow
         title={m.reading_mode_new_series()}
         value={READING_MODE_NAMES[newSeries.choice]()}
-        help={m.reading_mode_new_series_help()}
         choices={newSeriesChoices}
         chosen={newSeries.choice}
         onChoose={chooseNewSeriesMode}
@@ -197,7 +194,6 @@
           bleed=""
           title={m.reading_mode_new_series()}
           value={READING_MODE_NAMES[newSeries.choice]()}
-          help={m.reading_mode_new_series_help()}
           choices={newSeriesChoices}
           chosen={newSeries.choice}
           onChoose={chooseNewSeriesMode}
@@ -220,7 +216,7 @@
           onChoose={chooseNewSeriesMode}
         />
         <p id="{modeId}-help" class="col-span-full text-footnote text-muted">
-          {m.reading_mode_new_series_help()}
+          {m.reading_mode_automatic_hint()}
         </p>
       </section>
     {/if}

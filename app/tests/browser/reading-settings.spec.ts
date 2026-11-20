@@ -8,7 +8,7 @@ const INTRO_GAP_PX = 8;
 function cards(page: Page): Locator[] {
   return [
     page
-      .getByRole("combobox", { name: "Reading mode for new series" })
+      .getByRole("combobox", { name: "Reading mode", exact: true })
       .locator("xpath=ancestor::section[1]"),
     page.getByRole("region", { name: "Tap zones" }),
     page.getByRole("region", { name: "End of a book" }),
@@ -56,7 +56,7 @@ test("sets its cards 24px apart, the first 8px under the intro", async ({
 }) => {
   await page.goto("/settings/reading");
   const intro = await boxOf(
-    page.getByText("Defaults for every series without its own."),
+    page.getByText("Used for every series, unless you change it"),
   );
   const boxes = await Promise.all(cards(page).map((card) => boxOf(card)));
 

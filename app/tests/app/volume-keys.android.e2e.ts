@@ -32,7 +32,7 @@ const READER_SETTINGS_LINK = xpath("//main//a[@href='/settings/reading']");
 const NO_NOTICE_SHOWN =
   "return document.querySelector('[data-sonner-toast]') === null;";
 const VOLUME_KEYS_SWITCH =
-  "//main//*[@role='switch'][.//*[normalize-space()='Turn pages with the volume keys']]";
+  "//main//*[@role='switch'][.//*[normalize-space()='Volume keys turn pages']]";
 const SERIES_HEADING = xpath(
   "//main//h1[normalize-space()='Sample Series 01']",
 );

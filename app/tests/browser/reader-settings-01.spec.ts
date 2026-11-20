@@ -50,7 +50,7 @@ test.describe("Reading settings", () => {
     const endOfBook = page.getByRole("region", { name: "End of a book" });
     const skip = endOfBook.getByRole("switch", { name: "Skip Up next" });
     await expect(skip).toHaveAccessibleDescription(
-      "Go straight to the next book; Up next doesn’t show. Also on Up next.",
+      "Go straight to the next book.",
     );
 
     await skip.click();
@@ -113,7 +113,7 @@ test.describe("Settings > Reader", () => {
   }) => {
     await page.goto("/settings/reading");
     await page
-      .getByRole("combobox", { name: "Reading mode for new series" })
+      .getByRole("combobox", { name: "Reading mode", exact: true })
       .selectOption({ label: "Long strip" });
 
     await servePages(page);
@@ -135,9 +135,7 @@ test.describe("Settings > Reader", () => {
       page
         .getByRole("region", { name: "End of a book" })
         .getByRole("switch", { name: "Skip Up next" }),
-    ).toHaveAccessibleDescription(
-      "Go straight to the next book; Up next doesn’t show. Also on Up next.",
-    );
+    ).toHaveAccessibleDescription("Go straight to the next book.");
   });
 
   test("offers Choose the reading mode for each series among the smart features", async ({
