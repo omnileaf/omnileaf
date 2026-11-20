@@ -9,7 +9,7 @@
   import { CrashTests } from "#lib/crash-tests/crash-tests.ts";
   import CrashTestList from "#lib/crash-tests/CrashTestList.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import TapOpenTabChoice from "#lib/navigation/TapOpenTabChoice.svelte";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -50,7 +50,7 @@
   });
   const undoHeadingId = $props.id();
   const navigationHeadingId = `${undoHeadingId}-navigation`;
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const isCheckingFolders = $derived(
     scheduledRescans.isOnFor(data.appInfo.platform),
   );

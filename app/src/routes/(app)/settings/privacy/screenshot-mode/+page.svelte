@@ -3,7 +3,7 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -47,7 +47,7 @@
       : m.screenshot_mode_tray(),
   );
   const quicklyId = $props.id();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const androidHeading = radiosLook(true).heading;
 
   let isChangingShortcut = $state(false);

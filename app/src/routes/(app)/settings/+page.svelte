@@ -10,7 +10,7 @@
   import { librarySummaryOf } from "#lib/settings/library-summary.ts";
   import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import {
     READING_MODE_NAMES,
     TAP_ZONE_NAMES,
@@ -61,7 +61,7 @@
   const screenshotMode = getScreenshotMode();
   const needsAttention = getNeedsAttention();
   const storage = getStorageCheck();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const readerLook = readerDefaults();
   const newSeriesMode = newSeriesReadingMode();
   let librarySummary = $state<string | undefined>();

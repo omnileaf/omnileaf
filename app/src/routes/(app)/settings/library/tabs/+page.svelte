@@ -11,7 +11,7 @@
     type LibraryCategory,
     type LibraryTab,
   } from "#lib/ipc/bindings.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import {
@@ -44,7 +44,7 @@
   const NEW_CATEGORY_ICON_SIZE = 20;
   const ANDROID_NEW_CATEGORY =
     "native-target my-sm gap-sm self-start rounded-full px-lg text-native-row-subtitle/native-row-subtitle font-medium text-muted block-native-button";
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const ios = new IosPhone();
 
   let keptTabs = $state<readonly LibraryTab[]>(NEW_LIBRARY_TABS);
