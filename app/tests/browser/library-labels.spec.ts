@@ -187,7 +187,7 @@ for (const from of ["Categories", "Tags"] as const) {
     await expect(
       dialog.getByRole("button", { name: "Add Letters" }),
     ).toBeVisible();
-    await expect(dialog.locator("input:focus")).toHaveCount(0);
+    await expect(dialog).toBeFocused();
   });
 }
 
