@@ -173,20 +173,25 @@ test.describe(
       }
     });
 
-    test("names a bar action in a tooltip when it is held", async ({
-      page,
-    }) => {
-      await startSelecting(page);
-      const tags = page
-        .getByRole("group", { name: "Selected series" })
-        .getByRole("button", { name: "Tags" });
-      const touch = { pointerType: "touch", pointerId: 5, isPrimary: true };
+    for (const name of ["Tags", "More"]) {
+      test(`names ${name} in a tooltip when it is held, without acting on the lift`, async ({
+        page,
+      }) => {
+        await startSelecting(page);
+        const action = page
+          .getByRole("group", { name: "Selected series" })
+          .getByRole("button", { name });
+        const touch = { pointerType: "touch", pointerId: 5, isPrimary: true };
 
-      await tags.dispatchEvent("pointerdown", touch);
+        await action.dispatchEvent("pointerdown", touch);
+        await expect(page.locator("[data-tooltip-content]")).toHaveText(name);
+        await action.dispatchEvent("pointerup", touch);
+        await action.dispatchEvent("click");
 
-      await expect(page.locator("[data-tooltip-content]")).toHaveText("Tags");
-      await tags.dispatchEvent("pointerup", touch);
-    });
+        await expect(page.getByRole("dialog")).toHaveCount(0);
+        await expect(page.getByRole("menu")).toHaveCount(0);
+      });
+    }
 
     test("draws no check boxes on the covers while choosing", async ({
       page,
