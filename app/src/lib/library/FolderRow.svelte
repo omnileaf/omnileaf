@@ -15,7 +15,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { folderTitle, type ShownFolder } from "./folder-title";
-  import { AndroidPhone } from "./android-phone.svelte";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { ICON_SIZE } from "./icon-size";
 
   const SEPARATOR = " · ";
@@ -58,7 +58,7 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const look = $derived(
     android.isOn ? LOOKS.android : isNative ? LOOKS.ios : LOOKS.standard,
   );

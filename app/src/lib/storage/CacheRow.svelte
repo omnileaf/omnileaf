@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "#lib/components/ui/button/index.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   let {
@@ -15,7 +15,7 @@
     onClear: () => void;
   } = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
 </script>
 
 <div class="flex items-center gap-md px-lg py-md">
