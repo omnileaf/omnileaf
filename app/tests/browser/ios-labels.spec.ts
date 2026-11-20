@@ -1,6 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { boxOf, DEFAULT_BACKEND, expect, settle, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  framesOrAMomentPassed,
+  settle,
+  test,
+} from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(9);
@@ -8,9 +15,15 @@ const PICKED = 3;
 
 let applied: unknown;
 
+const LIBRARY_BACKEND = {
+  ...DEFAULT_BACKEND,
+  librarySeries: () => ({ series: LIBRARY, next: null }),
+  librarySeriesCount: () => LIBRARY.length,
+};
+
 test.use({
   backend: {
-    ...DEFAULT_BACKEND,
+    ...LIBRARY_BACKEND,
     seriesLabels: () => ({
       keepsLabels: true,
       categories: [
@@ -28,8 +41,6 @@ test.use({
       applied = changes;
       return null;
     },
-    librarySeries: () => ({ series: LIBRARY, next: null }),
-    librarySeriesCount: () => LIBRARY.length,
   },
 });
 
@@ -188,6 +199,7 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
       await expect(
         sheet(page).getByRole("checkbox", { name: "Reading" }),
       ).toBeVisible();
+      await framesOrAMomentPassed(page);
       await expect(sheet(page)).toBeFocused();
     });
   }
@@ -208,15 +220,13 @@ test.describe(
   () => {
     test.use({
       backend: {
-        ...DEFAULT_BACKEND,
+        ...LIBRARY_BACKEND,
         seriesLabels: () => ({
           keepsLabels: true,
           categories: [],
           tags: [],
           suggestedTags: [],
         }),
-        librarySeries: () => ({ series: LIBRARY, next: null }),
-        librarySeriesCount: () => LIBRARY.length,
       },
     });
 

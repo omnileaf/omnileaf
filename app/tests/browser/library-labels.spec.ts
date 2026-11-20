@@ -9,6 +9,7 @@ import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  framesOrAMomentPassed,
   test,
 } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
@@ -187,6 +188,7 @@ for (const from of ["Categories", "Tags"] as const) {
     await expect(
       dialog.getByRole("button", { name: "Add Letters" }),
     ).toBeVisible();
+    await framesOrAMomentPassed(page);
     await expect(dialog).toBeFocused();
   });
 }
