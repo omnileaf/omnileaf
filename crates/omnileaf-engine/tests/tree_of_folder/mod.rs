@@ -13,7 +13,10 @@ use std::{
 
 use omnileaf_engine::OpenTree;
 use omnileaf_formats::{Details, Entry, LocalStorage, Storage};
-use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
+use omnileaf_testkit::{
+    GENERATED_LIBRARY_NAME, GeneratedLibrary, SAMPLE_LIBRARY_NAME, write_generated_library,
+    write_sample_library,
+};
 
 use crate::support::ScratchFolder;
 
@@ -37,6 +40,7 @@ struct WrittenLibrary {
 #[derive(Clone, Copy)]
 pub(crate) enum Opening {
     Immediately,
+    After(Duration),
     InCompanyWithin(Duration),
     TimingOutInCompanyWithin(Duration),
 }
@@ -51,6 +55,15 @@ impl TreeOfFolder {
         let library = WrittenLibrary {
             name: SAMPLE_LIBRARY_NAME,
             files: write_sample_library(scratch.path()).unwrap(),
+        };
+        Self::holding(scratch, library, opening)
+    }
+
+    pub(crate) fn generated(name: &str, library: GeneratedLibrary, opening: Opening) -> Arc<Self> {
+        let scratch = ScratchFolder::new(name);
+        let library = WrittenLibrary {
+            name: GENERATED_LIBRARY_NAME,
+            files: write_generated_library(scratch.path(), library).unwrap(),
         };
         Self::holding(scratch, library, opening)
     }
@@ -128,6 +141,10 @@ impl TreeOfFolder {
     fn wait_to_open(&self) -> io::Result<()> {
         match self.opening {
             Opening::Immediately => Ok(()),
+            Opening::After(latency) => {
+                thread::sleep(latency);
+                Ok(())
+            }
             Opening::InCompanyWithin(longest) => {
                 Self::wait_until(longest, || self.has_opened_two_at_once());
                 Ok(())

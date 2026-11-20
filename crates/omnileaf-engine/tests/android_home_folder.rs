@@ -6,7 +6,7 @@
 mod support;
 #[expect(
     dead_code,
-    reason = "these tests never count, pace, time out or change the files opened"
+    reason = "these tests never count, pace, time out or change the files opened, nor read a generated library"
 )]
 mod tree_of_folder;
 
