@@ -30,7 +30,8 @@ pub(crate) struct TitlePlace {
 
 macro_rules! summary_columns {
     () => {
-        "SELECT series.id AS id, series.title, series.title_key, series.book_count, series.added_at_ms,
+        "SELECT series.id AS id, series.title, series.title_key, series.book_count,
+            series.volume_books, series.chapter_books, series.added_at_ms,
             series.last_read_at_ms, series.updated_at_ms, series.time_left_key,
             cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
             series.unread_count, series.language, series.adult_rated_books - series.marked_adult > 0 AS is_rated_adult,
@@ -260,6 +261,8 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
         id: stored_id(row, "id")?,
         title: row.get("title")?,
         book_count: row.get("book_count")?,
+        volume_count: row.get("volume_books")?,
+        chapter_count: row.get("chapter_books")?,
         unread_count: row.get("unread_count")?,
         added_at_ms: row.get("added_at_ms")?,
         cover: stored_cover(row)?,
