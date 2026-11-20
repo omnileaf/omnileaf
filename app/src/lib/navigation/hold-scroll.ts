@@ -121,15 +121,32 @@ export function holdScrollPlace(
   screen: HTMLElement,
   place: ScrollPlace,
 ): () => void {
-  return holdWhileContentResizes(screen, () => {
+  let placedAt = screen.scrollTop;
+  const anchoring = screen.style.overflowAnchor;
+  screen.style.overflowAnchor = "none";
+  const stopHolding = holdWhileContentResizes(screen, () => {
     const anchored =
       place.anchor === undefined ? null : anchorOf(screen, place.anchor);
     if (place.anchor === undefined || anchored === null) {
       screen.scrollTop = place.top;
-      return;
+    } else {
+      const shownTop = screen.getBoundingClientRect().top;
+      screen.scrollTop +=
+        anchored.getBoundingClientRect().top - shownTop - place.anchor.offset;
     }
-    const shownTop = screen.getBoundingClientRect().top;
-    screen.scrollTop +=
-      anchored.getBoundingClientRect().top - shownTop - place.anchor.offset;
+    placedAt = screen.scrollTop;
   });
+  const stopWatching = on(screen, "scroll", () => {
+    if (Math.abs(screen.scrollTop - placedAt) > SCROLL_SLACK_PX) {
+      stop();
+    }
+  });
+
+  function stop(): void {
+    stopHolding();
+    stopWatching();
+    screen.style.overflowAnchor = anchoring;
+  }
+
+  return stop;
 }

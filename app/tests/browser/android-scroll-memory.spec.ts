@@ -13,6 +13,7 @@ const TABLET_LIBRARY_DOWN = 300;
 const TABLET = { width: 820, height: 1180 };
 const SERIES_DOWN = 250;
 const SLACK_PX = 2;
+const SETTLE_MS = 1000;
 const VOLUMES_SERIES = sampleSeriesId(21);
 const VOLUME_COUNT = 30;
 const CHAPTER_COUNT = 120;
@@ -113,6 +114,28 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
           .toBeLessThanOrEqual(SLACK_PX);
       });
     }
+
+    test("lets go of the Library's place once the app scrolls it elsewhere", async ({
+      page,
+    }) => {
+      await page.setViewportSize(PHONE);
+      await page.goto("/");
+      await scrollMainTo(page, LIBRARY_DOWN);
+      const opened = await seriesLinkInView(page);
+      const card = main(page).locator(`a[href='${opened}']`).first();
+      await tapWhereItIs(card);
+      await expect(page).toHaveURL(opened);
+      await page.goBack();
+      await expect(card).toBeInViewport();
+
+      await main(page).evaluate((scroller) => {
+        scroller.scrollTo({ top: 0 });
+      });
+
+      await expectScrolledTo(page, 0);
+      await page.waitForTimeout(SETTLE_MS);
+      expect(await scrollTopOf(page)).toBe(0);
+    });
 
     test("lands where a series page was after opening a volume and going back", async ({
       page,
