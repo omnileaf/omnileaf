@@ -260,9 +260,7 @@
       />
     </div>
   {:else}
-    <section
-      class="mbs-lg flex flex-col gap-sm rounded-card border border-border bg-card p-md"
-    >
+    <section class="mbs-lg rounded-card border border-border bg-card p-md">
       <div
         class="flex flex-col gap-sm desktop:medium:grid desktop:medium:grid-cols-setting-grid desktop:medium:items-center desktop:medium:gap-x-md"
       >
