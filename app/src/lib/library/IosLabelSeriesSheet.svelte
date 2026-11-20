@@ -22,11 +22,13 @@
     isOpen = $bindable(false),
     series,
     startsAtTags,
+    onApplied,
     onError,
   }: {
     isOpen?: boolean;
     series: readonly SeriesId[];
     startsAtTags: boolean;
+    onApplied?: () => void;
     onError: (error: unknown) => void;
   } = $props();
 
@@ -65,6 +67,7 @@
       return;
     }
     isOpen = false;
+    onApplied?.();
   }
 
   function close(): void {

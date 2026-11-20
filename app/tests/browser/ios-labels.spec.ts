@@ -176,6 +176,17 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
     });
   });
 
+  test("stops choosing once Done has applied the labels", async ({ page }) => {
+    await openLabels(page);
+
+    await tap(sheet(page).getByRole("button", { name: "Done", exact: true }));
+
+    await expect(sheet(page)).toBeHidden();
+    await expect(
+      page.getByRole("group", { name: "Selected series" }),
+    ).toBeHidden();
+  });
+
   test("closes with Close and applies nothing", async ({ page }) => {
     await openLabels(page);
 
@@ -183,5 +194,6 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
 
     await expect(sheet(page)).toBeHidden();
     expect(applied).toBeUndefined();
+    await expect(page.getByText("3 selected").first()).toBeVisible();
   });
 });

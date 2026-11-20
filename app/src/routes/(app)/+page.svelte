@@ -427,6 +427,10 @@
     label(selection.picked, from);
   }
 
+  function endSelecting(): void {
+    selection.end();
+  }
+
   function markPickedRead(): void {
     void markRead(selection.picked);
   }
@@ -1030,6 +1034,7 @@
     bind:isOpen={isLabelling}
     series={labelled}
     startsAtTags={labelsFrom === "tags"}
+    onApplied={endSelecting}
     onError={reportFailure}
   />
 {:else}
@@ -1037,6 +1042,7 @@
     bind:isOpen={isLabelling}
     series={labelled}
     startsAtTags={labelsFrom === "tags"}
+    onApplied={endSelecting}
     onError={reportFailure}
   />
 {/if}
