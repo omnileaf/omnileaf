@@ -19,7 +19,21 @@ private class PageHistory : WebHistory {
     }
 }
 
-private fun swipedTo(progress: Float) = BackEventCompat(0f, 0f, progress, BackEventCompat.EDGE_LEFT)
+private const val SCREEN_HEIGHT_PX = 2000f
+
+private fun swipedTo(
+    progress: Float,
+    touchYPx: Float = 500f,
+    edge: Int = BackEventCompat.EDGE_LEFT,
+) = BackEventCompat(0f, touchYPx, progress, edge)
+
+private const val SCREEN_CORNER_DP = 32f
+
+private fun movedTo(
+    progress: Float,
+    touchY: Float = 0.25f,
+    edge: SwipeSide = SwipeSide.LEFT,
+) = BackGesture.Moved(progress, edge, touchY, SCREEN_CORNER_DP)
 
 class BackNavigationTest {
     private val history = PageHistory()
@@ -27,7 +41,10 @@ class BackNavigationTest {
 
     private var leftTheApp = 0
 
-    private val back = BackNavigation(history) { leftTheApp += 1 }
+    private val back =
+        BackNavigation(history, ScreenShape(heightPx = { SCREEN_HEIGHT_PX }, cornerDp = { SCREEN_CORNER_DP })) {
+            leftTheApp += 1
+        }
 
     private fun watched(): BackNavigation =
         back.apply {
@@ -89,7 +106,16 @@ class BackNavigationTest {
         watching.handleOnBackStarted(swipedTo(0f))
         watching.handleOnBackProgressed(swipedTo(0.4f))
 
-        assertEquals(listOf(BackGesture.Moved(0f), BackGesture.Moved(0.4f)), gestures)
+        assertEquals(listOf(movedTo(0f), movedTo(0.4f)), gestures)
+    }
+
+    @Test
+    fun `reports the edge a gesture started from and where the finger is down the screen`() {
+        val watching = watched()
+
+        watching.handleOnBackStarted(swipedTo(0f, touchYPx = 1500f, edge = BackEventCompat.EDGE_RIGHT))
+
+        assertEquals(listOf(movedTo(0f, touchY = 0.75f, edge = SwipeSide.RIGHT)), gestures)
     }
 
     @Test
@@ -99,7 +125,7 @@ class BackNavigationTest {
 
         watching.handleOnBackCancelled()
 
-        assertEquals(listOf(BackGesture.Moved(0f), BackGesture.Cancelled), gestures)
+        assertEquals(listOf(movedTo(0f), BackGesture.Cancelled), gestures)
     }
 
     @Test
@@ -109,7 +135,7 @@ class BackNavigationTest {
 
         watching.handleOnBackPressed()
 
-        assertEquals(1 to listOf(BackGesture.Moved(0f)), history.stepsBack to gestures)
+        assertEquals(1 to listOf(movedTo(0f)), history.stepsBack to gestures)
     }
 
     @Test
