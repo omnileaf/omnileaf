@@ -45,6 +45,8 @@ const BUILD_WITH_THE_CHECK: FakeBackend = {
   librarySeries: pagedSeries(() => SERIES),
   librarySeriesCount: () => SERIES.length,
   updateStatus: () => status,
+  updateNotices: () => ({ isOn: false, canShow: true }),
+  rememberUpdateNoticeWords: () => null,
   checkForUpdatesIfDue: () => ({ outcome: null, status }),
   snoozeUpdate: (version) => {
     asked.push(`snooze ${version}`);

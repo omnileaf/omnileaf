@@ -78,6 +78,10 @@
     offersUpdateCheck,
     updateCheckForApp,
   } from "#lib/updates/update-check.svelte.ts";
+  import {
+    noticeWords,
+    updateNoticesForApp,
+  } from "#lib/updates/update-notices.svelte.ts";
 
   import type { LayoutProps } from "./$types";
 
@@ -234,6 +238,9 @@
     void storage.check();
     void needsAttention.gather();
     checkForUpdatesIfDue();
+    if (offersUpdateCheck(data.appInfo)) {
+      void updateNoticesForApp().keepWords(noticeWords());
+    }
     return listenForLibraryChanges(() => {
       void needsAttention.gather();
     }, reportFailure);
