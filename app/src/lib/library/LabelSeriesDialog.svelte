@@ -25,6 +25,7 @@
   import {
     ANDROID_FILTER_HEADING,
     ANDROID_FILTER_SHEET,
+    FILTER_SETTING_LABEL_TYPE,
   } from "./filter-sheet-look";
 
   type Choice = "all" | "some" | "none";
@@ -375,24 +376,37 @@
             </ul>
           {/if}
           {#if suggested.length > 0}
-            <div class="flex flex-wrap items-center gap-sm">
-              <span class="text-detail text-muted">
+            {@const isAndroidSheet = android.isOn && view !== "wide"}
+            <div
+              class={isAndroidSheet
+                ? "flex flex-col gap-sm px-lg"
+                : "flex flex-wrap items-center gap-sm"}
+            >
+              <span
+                class={isAndroidSheet
+                  ? `${FILTER_SETTING_LABEL_TYPE} text-muted`
+                  : "text-detail text-muted"}
+              >
                 {m.library_suggested_tags()}
               </span>
-              {#each suggested as tag (tag)}
-                <Button
-                  type="button"
-                  look="outline"
-                  aria-label={m.library_add_named_tag({ tag })}
-                  class="flex items-center gap-xs rounded-control px-sm text-small font-medium block-search-chip touch:touch-target-around"
-                  onclick={() => {
-                    addTag(tag);
-                  }}
-                >
-                  <Plus size={REMOVE_ICON_SIZE} aria-hidden="true" />
-                  {tag}
-                </Button>
-              {/each}
+              <div
+                class={isAndroidSheet ? "flex flex-wrap gap-sm" : "contents"}
+              >
+                {#each suggested as tag (tag)}
+                  <Button
+                    type="button"
+                    look="outline"
+                    aria-label={m.library_add_named_tag({ tag })}
+                    class="flex items-center gap-xs rounded-control px-sm text-small font-medium block-search-chip touch:touch-target-around"
+                    onclick={() => {
+                      addTag(tag);
+                    }}
+                  >
+                    <Plus size={REMOVE_ICON_SIZE} aria-hidden="true" />
+                    {tag}
+                  </Button>
+                {/each}
+              </div>
             </div>
           {/if}
         </section>

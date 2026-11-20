@@ -9,12 +9,23 @@ import {
   DEFAULT_BACKEND,
   expect,
   settle,
+  sidewaysOverflow,
   test,
   tokenColour,
 } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
 const HELD_MS = 800;
+const CHIP_GAP_PX = 8;
+const MANY_SUGGESTIONS = [
+  "Action",
+  "Dark Fantasy",
+  "Fantasy",
+  "Steampunk",
+  "Superhero",
+  "Psychological thriller",
+  "Slice of life",
+];
 const LIBRARY = sampleSeries(6);
 const CATEGORIES = [
   { id: "reading", name: "Reading" },
@@ -191,6 +202,67 @@ test.describe(
         16,
         0,
       );
+    });
+
+    test.describe("with many suggested tags", () => {
+      test.use({
+        backend: {
+          ...DEFAULT_BACKEND,
+          librarySeries: () => ({ series: LIBRARY, next: null }),
+          librarySeriesCount: () => LIBRARY.length,
+          seriesLabels: (series) => ({
+            ...labelsFor(series),
+            suggestedTags: MANY_SUGGESTIONS,
+          }),
+        },
+      });
+
+      test("lines the suggestions up with Add a tag, under a Suggested label of their own", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+        const field = await boxOf(
+          sheet.getByRole("textbox", { name: "Add a tag" }).locator("xpath=.."),
+        );
+        const label = await boxOf(
+          sheet.getByText("Suggested", { exact: true }),
+        );
+        const chips = await Promise.all(
+          MANY_SUGGESTIONS.map((tag) =>
+            boxOf(sheet.getByRole("button", { name: `Add ${tag}` })),
+          ),
+        );
+        const lines = [...new Set(chips.map(({ y }) => y))];
+
+        expect(label.x).toBeCloseTo(field.x, 0);
+        expect(label.y + label.height).toBeLessThanOrEqual(Math.min(...lines));
+        expect(Math.min(...chips.map(({ x }) => x))).toBeCloseTo(field.x, 0);
+        expect(
+          Math.max(...chips.map(({ x, width }) => x + width)),
+        ).toBeLessThanOrEqual(field.x + field.width);
+        expect(lines.length).toBeGreaterThan(1);
+        expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+      });
+
+      test("spaces the suggestions 8px apart in a row and between rows", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+        const chips = await Promise.all(
+          MANY_SUGGESTIONS.map((tag) =>
+            boxOf(sheet.getByRole("button", { name: `Add ${tag}` })),
+          ),
+        );
+        const [first, second] = chips;
+        const nextLine = chips.find(({ y }) => y > (first?.y ?? 0));
+
+        expect(
+          (second?.x ?? 0) - ((first?.x ?? 0) + (first?.width ?? 0)),
+        ).toBeCloseTo(CHIP_GAP_PX, 0);
+        expect(
+          (nextLine?.y ?? 0) - ((first?.y ?? 0) + (first?.height ?? 0)),
+        ).toBeCloseTo(CHIP_GAP_PX, 0);
+      });
     });
   },
 );
