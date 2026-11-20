@@ -17,6 +17,7 @@ export interface ScrollPlace {
 function holdWhileContentResizes(
   screen: HTMLElement,
   reach: (stop: () => void) => void,
+  onStop: () => void = () => undefined,
 ): () => void {
   const observer = new ResizeObserver(() => {
     reach(stop);
@@ -28,6 +29,7 @@ function holdWhileContentResizes(
     for (const stopInput of stopListening) {
       stopInput();
     }
+    onStop();
   }
 
   for (const content of screen.children) {
@@ -124,29 +126,29 @@ export function holdScrollPlace(
   let placedAt = screen.scrollTop;
   const anchoring = screen.style.overflowAnchor;
   screen.style.overflowAnchor = "none";
-  const stopHolding = holdWhileContentResizes(screen, () => {
-    const anchored =
-      place.anchor === undefined ? null : anchorOf(screen, place.anchor);
-    if (place.anchor === undefined || anchored === null) {
-      screen.scrollTop = place.top;
-    } else {
-      const shownTop = screen.getBoundingClientRect().top;
-      screen.scrollTop +=
-        anchored.getBoundingClientRect().top - shownTop - place.anchor.offset;
-    }
-    placedAt = screen.scrollTop;
-  });
   const stopWatching = on(screen, "scroll", () => {
     if (Math.abs(screen.scrollTop - placedAt) > SCROLL_SLACK_PX) {
       stop();
     }
   });
-
-  function stop(): void {
-    stopHolding();
-    stopWatching();
-    screen.style.overflowAnchor = anchoring;
-  }
-
+  const stop = holdWhileContentResizes(
+    screen,
+    () => {
+      const anchored =
+        place.anchor === undefined ? null : anchorOf(screen, place.anchor);
+      if (place.anchor === undefined || anchored === null) {
+        screen.scrollTop = place.top;
+      } else {
+        const shownTop = screen.getBoundingClientRect().top;
+        screen.scrollTop +=
+          anchored.getBoundingClientRect().top - shownTop - place.anchor.offset;
+      }
+      placedAt = screen.scrollTop;
+    },
+    () => {
+      stopWatching();
+      screen.style.overflowAnchor = anchoring;
+    },
+  );
   return stop;
 }

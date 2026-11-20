@@ -137,6 +137,24 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
       expect(await scrollTopOf(page)).toBe(0);
     });
 
+    test("gives the Library its scroll anchoring back once a finger touches it", async ({
+      page,
+    }) => {
+      await page.setViewportSize(PHONE);
+      await page.goto("/");
+      await scrollMainTo(page, LIBRARY_DOWN);
+      const opened = await seriesLinkInView(page);
+      const card = main(page).locator(`a[href='${opened}']`).first();
+      await tapWhereItIs(card);
+      await expect(page).toHaveURL(opened);
+      await page.goBack();
+      await expect(card).toBeInViewport();
+
+      await main(page).dispatchEvent("pointerdown");
+
+      await expect(main(page)).toHaveCSS("overflow-anchor", "auto");
+    });
+
     test("lands where a series page was after opening a volume and going back", async ({
       page,
     }) => {
