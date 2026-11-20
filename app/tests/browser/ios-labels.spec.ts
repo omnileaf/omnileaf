@@ -185,6 +185,9 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
     await expect(
       page.getByRole("group", { name: "Selected series" }),
     ).toBeHidden();
+    await expect(
+      page.getByRole("list", { name: "Series" }).getByRole("checkbox"),
+    ).toHaveCount(0);
   });
 
   test("closes with Close and applies nothing", async ({ page }) => {
