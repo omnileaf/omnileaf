@@ -266,6 +266,7 @@ impl BookReader {
         let linked_folder = folder_name(&target.folder);
         let unopened = |source| UnreadableBook::opening(&location, &target.hidden, source);
         let recognised = recognise_book_in(&target.storage, &found.path).map_err(unopened)?;
+        let recognised_details = recognised.details();
         let ParsedBook {
             fingerprint,
             page_count,
@@ -278,7 +279,7 @@ impl BookReader {
             numbering,
             language,
         } = place_book(&location, &linked_folder, FileNumbers::of(&details));
-        let stamp = FileStamp::of(target.storage.details(&found.path)?, || Ok(page_bytes))?;
+        let stamp = FileStamp::of(recognised_details, || Ok(page_bytes))?;
         Ok(ScannedBook {
             named_series: series_named_in_files(&details, target.added_at_ms)?,
             series: NewSeries::folder(
@@ -400,6 +401,36 @@ mod tests {
     const PAGE_SEED: u64 = 7;
     const LONGEST_WAIT: Duration = Duration::from_secs(5);
     const LONG_ENOUGH_TO_PARSE: Duration = Duration::from_millis(300);
+    const BYTES_ADDED_SINCE_RECOGNISED: u64 = 1;
+
+    #[derive(Debug)]
+    struct ChangingSinceRecognised {
+        root: PathBuf,
+        lookups: AtomicUsize,
+    }
+
+    impl Storage for ChangingSinceRecognised {
+        fn entries(&self, folder: &Path) -> io::Result<Vec<Entry>> {
+            LocalStorage.entries(&self.root.join(folder))
+        }
+
+        fn details(&self, path: &Path) -> io::Result<Details> {
+            let details = LocalStorage.details(&self.root.join(path))?;
+            Ok(
+                match (self.lookups.fetch_add(1, Ordering::SeqCst), details) {
+                    (0, details) | (_, details @ Details::Folder { .. }) => details,
+                    (_, Details::File { size, modified }) => Details::File {
+                        size: size + BYTES_ADDED_SINCE_RECOGNISED,
+                        modified,
+                    },
+                },
+            )
+        }
+
+        fn open(&self, file: &Path) -> io::Result<File> {
+            LocalStorage.open(&self.root.join(file))
+        }
+    }
 
     #[derive(Debug)]
     struct WatchedStorage {
@@ -469,6 +500,24 @@ mod tests {
             thread::yield_now();
         }
         is_done()
+    }
+
+    #[test]
+    fn stamps_a_book_with_the_size_its_storage_gave_when_the_book_was_recognised() {
+        let scratch = ScratchFolder::new("scan-stamp-at-recognition");
+        let book = one_archive(&scratch);
+        let size = fs::metadata(scratch.path().join(&book.path)).unwrap().len();
+        let reader = BookReader::new(target_over(Arc::new(ChangingSinceRecognised {
+            root: scratch.path().to_path_buf(),
+            lookups: AtomicUsize::new(0),
+        })));
+
+        let read = reader.read_each(&[book]);
+
+        let [Ok(scanned)] = read.as_slice() else {
+            panic!("{read:?}");
+        };
+        assert_eq!(scanned.file.size_bytes, size);
     }
 
     #[test]
