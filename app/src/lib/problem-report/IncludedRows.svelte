@@ -3,14 +3,17 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import type { ProblemReportPreview } from "#lib/ipc/bindings.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
 
   import IncludedRow from "./IncludedRow.svelte";
 
   let { report }: { report: ProblemReportPreview } = $props();
 
   const logId = $props.id();
+  const android = new AndroidPhone();
   let isLogShown = $state(false);
 
   const version = $derived(
@@ -28,21 +31,27 @@
   );
 </script>
 
-<section
-  data-settings-group
-  aria-label={m.report_included()}
-  class={[
-    "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card",
-    GROUP_PLATE,
-  ]}
->
-  <IncludedRow
-    icon={Info}
-    label={m.report_version_and_device()}
-    hint={version}
-  />
-  <div class="flex flex-col">
-    <IncludedRow icon={ScrollText} label={m.report_log()} hint={logHint}>
+<section data-settings-group aria-label={m.report_included()}>
+  <ul
+    class={android.isOn
+      ? FLUSH_LIST
+      : [
+          "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card",
+          GROUP_PLATE,
+        ]}
+  >
+    <IncludedRow
+      icon={Info}
+      iconName="info"
+      label={m.report_version_and_device()}
+      hint={version}
+    />
+    <IncludedRow
+      icon={ScrollText}
+      iconName="scroll-text"
+      label={m.report_log()}
+      hint={logHint}
+    >
       {#snippet action()}
         {#if report.log.length > 0}
           <Button
@@ -58,15 +67,15 @@
           </Button>
         {/if}
       {/snippet}
+      {#if isLogShown}
+        <pre
+          id={logId}
+          role="region"
+          aria-label={m.report_log()}
+          class="mx-lg mbe-md rounded-card bg-well px-list-row py-md font-mono text-code wrap-anywhere whitespace-pre-wrap select-text">{report.log.join(
+            "\n",
+          )}</pre>
+      {/if}
     </IncludedRow>
-    {#if isLogShown}
-      <pre
-        id={logId}
-        role="region"
-        aria-label={m.report_log()}
-        class="mx-lg mbe-md rounded-card bg-well px-list-row py-md font-mono text-code wrap-anywhere whitespace-pre-wrap select-text">{report.log.join(
-          "\n",
-        )}</pre>
-    {/if}
-  </div>
+  </ul>
 </section>
