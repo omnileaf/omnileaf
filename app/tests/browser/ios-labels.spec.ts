@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
+import { CommandFailure } from "./fake-backend.ts";
 import { boxOf, DEFAULT_BACKEND, expect, settle, test } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
@@ -176,6 +177,20 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
     });
   });
 
+  test("stops choosing once Done has applied the labels", async ({ page }) => {
+    await openLabels(page);
+
+    await tap(sheet(page).getByRole("button", { name: "Done", exact: true }));
+
+    await expect(sheet(page)).toBeHidden();
+    await expect(
+      page.getByRole("group", { name: "Selected series" }),
+    ).toBeHidden();
+    await expect(
+      page.getByRole("list", { name: "Series" }).getByRole("checkbox"),
+    ).toHaveCount(0);
+  });
+
   test("closes with Close and applies nothing", async ({ page }) => {
     await openLabels(page);
 
@@ -183,5 +198,51 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
 
     await expect(sheet(page)).toBeHidden();
     expect(applied).toBeUndefined();
+    await expect(page.getByText("3 selected").first()).toBeVisible();
   });
 });
+
+test.describe(
+  "labelling series on an iPhone when the labels can't be saved",
+  { tag: "@native" },
+  () => {
+    test.use({
+      backend: {
+        ...DEFAULT_BACKEND,
+        seriesLabels: () => ({
+          keepsLabels: true,
+          categories: [{ category: { id: "c3", name: "Comics" }, holding: 0 }],
+          tags: [],
+          suggestedTags: [],
+        }),
+        labelSeries: () => {
+          throw new CommandFailure({
+            code: "internal",
+            message: "the catalog couldn't be written",
+          });
+        },
+        librarySeries: () => ({ series: LIBRARY, next: null }),
+        librarySeriesCount: () => LIBRARY.length,
+      },
+    });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "ios", "iOS's sheet");
+    });
+
+    test("says so, keeping the sheet open and the series chosen", async ({
+      page,
+    }) => {
+      await openLabels(page);
+
+      await tap(sheet(page).getByRole("checkbox", { name: "Comics" }));
+      await tap(sheet(page).getByRole("button", { name: "Done", exact: true }));
+
+      await expect(
+        page.getByText("Couldn't change the categories and tags"),
+      ).toBeVisible();
+      await expect(sheet(page)).toBeVisible();
+      await expect(page.getByText("3 selected").first()).toBeVisible();
+    });
+  },
+);
