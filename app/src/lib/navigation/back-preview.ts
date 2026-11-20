@@ -28,13 +28,16 @@ export function backPreviewLook(
 
 export function previewBackGestures(
   show: (progress: number | undefined) => void,
+  isScreenKept: () => boolean,
 ): () => void {
   const gestures = new Channel<BackSwipe>((gesture) => {
     show(gesture.kind === "moved" ? (gesture.progress ?? 0) : undefined);
   });
   watchBackSwipes(gestures);
   const endPreview = () => {
-    show(undefined);
+    if (isScreenKept()) {
+      show(undefined);
+    }
   };
   addEventListener("popstate", endPreview);
   return () => {
