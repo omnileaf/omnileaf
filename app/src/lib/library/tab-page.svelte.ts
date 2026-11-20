@@ -29,7 +29,10 @@ function seriesOf(tab: LibraryTabId, listing: LibraryListing): ListSeries {
   }
 }
 
-function countOf(tab: LibraryTabId, listing: LibraryListing): CountSeries {
+export function countOf(
+  tab: LibraryTabId,
+  listing: LibraryListing,
+): CountSeries {
   switch (tab.kind) {
     case "newChapters":
       return () => Promise.resolve(NONE_NEW);
