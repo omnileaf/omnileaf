@@ -302,14 +302,14 @@ for (const { platform, gap } of [
       { path: "/settings/appearance", region: "Light or dark" },
     ] as const) {
       test(`spaces ${path} under its title`, async ({ page }) => {
-        const expectedGap =
-          platform === "android" && viewportOf(page).width < MEDIUM_MIN_WIDTH
-            ? ANDROID_PHONE_GAP
-            : gap;
+        const isAndroidPhone =
+          platform === "android" && viewportOf(page).width < MEDIUM_MIN_WIDTH;
+        const expectedGap = isAndroidPhone ? ANDROID_PHONE_GAP : gap;
         await page.goto(path);
 
+        const title = page.getByRole("heading", { level: 1 });
         const header = await boxOf(
-          page.getByRole("heading", { level: 1 }).locator(".."),
+          isAndroidPhone ? title : title.locator(".."),
         );
         const content = await boxOf(page.getByRole("region", { name: region }));
 
