@@ -8,6 +8,10 @@ export class LongPress {
     private readonly heldMs: () => number = () => touchChoices.longPressMs,
   ) {}
 
+  get wasHeld(): boolean {
+    return this.#isClickSwallowed;
+  }
+
   pressed(event: PointerEvent, onHeld: () => void): void {
     if (event.pointerType === "mouse") {
       return;
