@@ -51,6 +51,9 @@
   import FolderNotice from "#lib/library/FolderNotice.svelte";
   import ContinueRow from "#lib/library/ContinueRow.svelte";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
+  import { emptyCause } from "#lib/library/empty-cause.ts";
+  import EmptyTab from "#lib/library/EmptyTab.svelte";
+  import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { defaultLibraryView, viewDrawn } from "#lib/library/library-view.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
@@ -80,12 +83,13 @@
     showsCategoryTabs,
   } from "#lib/library/library-tab.svelte.ts";
   import {
+    type ArrangedTab,
     arrangedTabs,
     NEW_LIBRARY_TABS,
     showsTabs,
     tabKey,
   } from "#lib/library/library-tabs.ts";
-  import type { TabPage } from "#lib/library/tab-page.svelte.ts";
+  import { countOf, type TabPage } from "#lib/library/tab-page.svelte.ts";
   import { TabPages } from "#lib/library/tab-pages.svelte.ts";
   import FastScroll from "#lib/library/FastScroll.svelte";
   import NoMatches from "#lib/library/NoMatches.svelte";
@@ -112,6 +116,7 @@
   import { endsOnBack } from "#lib/page/selection-back.svelte.ts";
   import type { SeriesId } from "#lib/series/series-id.ts";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
+  import type { ListState } from "#lib/paging/paged-list.svelte.ts";
   import { holdScrollTop } from "#lib/navigation/hold-scroll.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -226,11 +231,12 @@
       showsTabs(shownTabs) &&
       (view.reading.kind !== "read" || view.reading.value.showsCategoryTabs),
   );
-  const chosenTab = $derived(
+  const chosenArrangedTab = $derived(
     tabsShown
-      ? shownTabs.find(({ id }) => tabKey(id) === tab.chosen)?.id
+      ? shownTabs.find(({ id }) => tabKey(id) === tab.chosen)
       : undefined,
   );
+  const chosenTab = $derived(chosenArrangedTab?.id);
   const chosenTabKey = $derived(
     chosenTab === undefined ? ALL_SERIES : tabKey(chosenTab),
   );
@@ -481,13 +487,36 @@
   const chosenListing = $derived(
     listing.reading.kind === "read" ? listing.reading.value : undefined,
   );
-  let isListFiltered = $state(false);
+  let listedTab = $state.raw<ArrangedTab | undefined>();
+  let isFilterOn = $state(false);
+  const listedTabKey = $derived(
+    listedTab === undefined ? ALL_SERIES : tabKey(listedTab.id),
+  );
+  const isListFiltered = $derived(
+    (listedTab !== undefined && listedTab.id.kind !== "all") || isFilterOn,
+  );
 
   const listsNothing = $derived(
     library.list.kind === "loaded" && library.list.items.length === 0,
   );
   let holdsNoSeries = $state(false);
-  const isEmpty = $derived(listsNothing && (!isListFiltered || holdsNoSeries));
+  const listedTabCount = new LibrarySeriesCount(
+    () => countOf(listedTab?.id ?? ALL_TAB, NEW_LIBRARY_LISTING)(),
+    (error) => {
+      reportError(error);
+    },
+  );
+  const emptyReason = $derived(
+    listsNothing
+      ? emptyCause({
+          listedTab,
+          isFilterOn,
+          isLibraryEmpty: holdsNoSeries,
+          listedTabCount: listedTabCount.count,
+        })
+      : undefined,
+  );
+  const isEmpty = $derived(emptyReason?.kind === "library");
   const libraryView = $derived(
     view.reading.kind === "read" ? view.reading.value : undefined,
   );
@@ -549,7 +578,8 @@
   );
   const hasBooks = $derived(
     loaded !== undefined &&
-      (loaded.series.items.length > 0 || (isListFiltered && !holdsNoSeries)),
+      (loaded.series.items.length > 0 ||
+        (emptyReason !== undefined && emptyReason.kind !== "library")),
   );
   const offersTabs = $derived(hasBooks && tabsShown && !selection.isSelecting);
   const showsLibraryTools = $derived(
@@ -586,14 +616,19 @@
     document.querySelector("main")?.scrollTo({ top: 0 });
   }
 
+  let describedList: ListState<LibrarySeries> | undefined;
+
   $effect.pre(() => {
-    if (library.list.kind === "loaded") {
-      isListFiltered = untrack(
-        () =>
-          (chosenTab !== undefined && chosenTab.kind !== "all") ||
-          (chosenListing !== undefined && filtersOn(chosenListing.filter) > 0),
-      );
+    const shown = library.list;
+    if (shown.kind !== "loaded" || shown === describedList) {
+      return;
     }
+    describedList = shown;
+    untrack(() => {
+      listedTab = chosenArrangedTab;
+      isFilterOn =
+        chosenListing !== undefined && filtersOn(chosenListing.filter) > 0;
+    });
   });
 
   $effect(() => {
@@ -606,6 +641,18 @@
       .then((result) => {
         holdsNoSeries = result.status === "ok" && result.data === 0;
       });
+  });
+
+  $effect(() => {
+    const asksTabCount =
+      listsNothing && isFilterOn && listedTabKey !== ALL_SERIES;
+    untrack(() => {
+      if (asksTabCount) {
+        void listedTabCount.load();
+      } else {
+        listedTabCount.clear();
+      }
+    });
   });
 
   const listingShown = $derived(
@@ -963,20 +1010,22 @@
     }
   }
 
-  let offeredAddFolder = false;
+  let offeredEmptyAction = false;
 
-  function keepFocusOnPageOnceAddFolderGoes(): void {
+  function keepFocusOnPageOnceEmptyActionGoes(): void {
+    const offersEmptyAction =
+      emptyReason !== undefined && emptyReason.kind !== "counting";
     if (
-      offeredAddFolder &&
-      !isEmpty &&
+      offeredEmptyAction &&
+      !offersEmptyAction &&
       document.activeElement === document.body
     ) {
       focusPageHeading();
     }
-    offeredAddFolder = isEmpty;
+    offeredEmptyAction = offersEmptyAction;
   }
 
-  $effect(keepFocusOnPageOnceAddFolderGoes);
+  $effect(keepFocusOnPageOnceEmptyActionGoes);
 </script>
 
 {#snippet pageCovers(page: TabPage, props: CoversLook)}
@@ -1332,15 +1381,21 @@
         usesStandIns={screenshotMode.isOn}
         onDismissed={returnFocusFromNotice}
       />
-      {#if listsNothing && chosenListing !== undefined}
+      {#if emptyReason?.kind === "tab"}
+        <EmptyTab
+          tab={emptyReason.tab}
+          onGoToAll={() => {
+            chooseTab(ALL_SERIES);
+          }}
+        />
+      {:else if emptyReason?.kind === "filters" && chosenListing !== undefined}
         <NoMatches
           filter={chosenListing.filter}
           onClear={() => {
-            chooseTab(ALL_SERIES);
             chooseListing(withoutFilters(chosenListing));
           }}
         />
-      {:else if loaded !== undefined}
+      {:else if loaded !== undefined && emptyReason?.kind !== "counting"}
         {#if loaded.view.showsContinueRow}
           <div class="mbs-lg medium:mbs-xl">
             <ContinueRow usesStandIns={screenshotMode.isOn} />
