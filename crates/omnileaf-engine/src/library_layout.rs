@@ -11,6 +11,7 @@ use crate::file_type::FileType;
 #[derive(Clone, Debug)]
 pub(crate) struct FoundBook {
     pub(crate) path: PathBuf,
+    pub(crate) listed_bytes: u64,
 }
 
 #[derive(Debug, Default)]
@@ -22,7 +23,7 @@ pub(crate) struct Layout {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum EntryKind {
     Folder,
-    Comic,
+    Comic { size: u64 },
     Page,
     Unreadable,
     Other,
@@ -74,10 +75,11 @@ impl Layout {
             }
             match EntryKind::of(&entry) {
                 EntryKind::Folder => pending.push((folder.join(&entry.name), Place::Inside)),
-                EntryKind::Comic => {
+                EntryKind::Comic { size } => {
                     holds_comics = true;
                     self.books.push(FoundBook {
                         path: folder.join(&entry.name),
+                        listed_bytes: size,
                     });
                 }
                 EntryKind::Page => holds_pages = true,
@@ -89,6 +91,7 @@ impl Layout {
         if is_book_of_images {
             self.books.push(FoundBook {
                 path: folder.to_path_buf(),
+                listed_bytes: 0,
             });
         }
     }
@@ -105,7 +108,7 @@ impl EntryKind {
         match entry.kind {
             formats::EntryKind::Unreadable(_) => Self::Unreadable,
             formats::EntryKind::Folder => Self::Folder,
-            formats::EntryKind::File { .. } if is_comic(&entry.name) => Self::Comic,
+            formats::EntryKind::File { size } if is_comic(&entry.name) => Self::Comic { size },
             formats::EntryKind::File { .. } if is_page_image(&entry.name.to_string_lossy()) => {
                 Self::Page
             }

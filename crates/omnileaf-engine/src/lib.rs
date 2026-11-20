@@ -7,6 +7,7 @@ mod book_numbering;
 mod book_numbers;
 mod bookmark_access;
 mod books_removal;
+mod byte_budget;
 mod chapter_volumes;
 mod clock;
 mod cover_path;

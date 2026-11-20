@@ -25,8 +25,10 @@ use crate::{
     LibraryError,
     book_details::read_details,
     book_numbering::FileNumbers,
+    byte_budget::ByteBudget,
     clock::stored_ms,
     decode_permits::DecodePermits,
+    device_class::IS_MOBILE,
     file_type::{FileType, HiddenFileTypes},
     library_layout::{FoundBook, Layout, find_books, folder_name},
     library_removal::bring_back_marked,
@@ -37,6 +39,9 @@ use crate::{
 };
 
 pub(crate) const BOOKS_PER_BATCH: usize = 32;
+/// Android copies a document its provider can only stream into the cache before it is read, so a phone keeps at most this many listed bytes of books open at once.
+const BOOK_BYTES_OPEN_AT_ONCE: u64 = if IS_MOBILE { GIBIBYTE } else { 64 * GIBIBYTE };
+const GIBIBYTE: u64 = 1 << 30;
 /// One archive at a time, since a phone's OS ends an app holding too much memory while an archive's index and comic details are decoded.
 const ARCHIVES_PARSED_AT_ONCE: usize = 1;
 
@@ -224,6 +229,7 @@ pub(crate) fn saturating_u32(items: usize) -> u32 {
 pub(crate) struct BookReader {
     target: Target,
     decodes: Arc<DecodePermits>,
+    bytes: Arc<ByteBudget>,
 }
 
 impl BookReader {
@@ -231,11 +237,16 @@ impl BookReader {
         Self::sharing(
             target,
             Arc::new(DecodePermits::new(ARCHIVES_PARSED_AT_ONCE)),
+            Arc::new(ByteBudget::new(BOOK_BYTES_OPEN_AT_ONCE)),
         )
     }
 
-    fn sharing(target: Target, decodes: Arc<DecodePermits>) -> Self {
-        Self { target, decodes }
+    fn sharing(target: Target, decodes: Arc<DecodePermits>, bytes: Arc<ByteBudget>) -> Self {
+        Self {
+            target,
+            decodes,
+            bytes,
+        }
     }
 
     pub(crate) async fn read(
@@ -265,14 +276,13 @@ impl BookReader {
         let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
         let linked_folder = folder_name(&target.folder);
         let unopened = |source| UnreadableBook::opening(&location, &target.hidden, source);
-        let recognised = recognise_book_in(&target.storage, &found.path).map_err(unopened)?;
-        let recognised_details = recognised.details();
         let ParsedBook {
+            recognised_details,
             fingerprint,
             page_count,
             page_bytes,
             details,
-        } = self.parse(recognised, unopened)?;
+        } = self.recognise_and_parse(found, unopened)?;
         let Placement {
             series,
             title,
@@ -306,6 +316,16 @@ impl BookReader {
         })
     }
 
+    fn recognise_and_parse(
+        &self,
+        found: &FoundBook,
+        unopened: impl Fn(FormatError) -> UnreadableBook + Copy,
+    ) -> Result<ParsedBook, UnreadableBook> {
+        let _bytes = self.bytes.hold(found.listed_bytes);
+        let recognised = recognise_book_in(&self.target.storage, &found.path).map_err(unopened)?;
+        self.parse(recognised, unopened)
+    }
+
     fn parse(
         &self,
         recognised: RecognisedBook,
@@ -313,12 +333,14 @@ impl BookReader {
     ) -> Result<ParsedBook, UnreadableBook> {
         let _permit = recognised.is_archive().then(|| self.decodes.hold());
         let path = recognised.path().to_path_buf();
+        let recognised_details = recognised.details();
         let mut book = recognised.open(&Limits::default()).map_err(unopened)?;
-        ParsedBook::of(&mut book, &path)
+        ParsedBook::of(&mut book, &path, recognised_details)
     }
 }
 
 struct ParsedBook {
+    recognised_details: Details,
     fingerprint: Fingerprint,
     page_count: u32,
     page_bytes: u64,
@@ -326,8 +348,13 @@ struct ParsedBook {
 }
 
 impl ParsedBook {
-    fn of(book: &mut Book, path: &Path) -> Result<Self, UnreadableBook> {
+    fn of(
+        book: &mut Book,
+        path: &Path,
+        recognised_details: Details,
+    ) -> Result<Self, UnreadableBook> {
         Ok(Self {
+            recognised_details,
             fingerprint: book.fingerprint()?,
             page_count: saturating_u32(book.pages().len()),
             page_bytes: page_bytes(book),
@@ -402,6 +429,7 @@ mod tests {
     const LONGEST_WAIT: Duration = Duration::from_secs(5);
     const LONG_ENOUGH_TO_PARSE: Duration = Duration::from_millis(300);
     const BYTES_ADDED_SINCE_RECOGNISED: u64 = 1;
+    const TEST_BYTE_BUDGET: u64 = 1 << 20;
 
     #[derive(Debug)]
     struct ChangingSinceRecognised {
@@ -479,9 +507,9 @@ mod tests {
 
     fn one_archive(scratch: &ScratchFolder) -> FoundBook {
         let written = write_generated_library(scratch.path(), ONE_ARCHIVE).unwrap();
-        FoundBook {
-            path: written.into_iter().next().unwrap(),
-        }
+        let path = written.into_iter().next().unwrap();
+        let listed_bytes = fs::metadata(scratch.path().join(&path)).unwrap().len();
+        FoundBook { path, listed_bytes }
     }
 
     fn image_folder(scratch: &ScratchFolder, chapter: usize) -> FoundBook {
@@ -491,15 +519,63 @@ mod tests {
         let page = page_png(PAGE_SEED, 0, PageShape::Portrait).unwrap();
         fs::create_dir_all(scratch.path().join(&book)).unwrap();
         fs::write(scratch.path().join(&book).join("001.png"), page).unwrap();
-        FoundBook { path: book }
+        FoundBook {
+            path: book,
+            listed_bytes: 0,
+        }
     }
 
     fn wait_until(is_done: impl Fn() -> bool) -> bool {
-        let deadline = Instant::now() + LONGEST_WAIT;
+        wait_until_within(LONGEST_WAIT, is_done)
+    }
+
+    fn wait_until_within(longest: Duration, is_done: impl Fn() -> bool) -> bool {
+        let deadline = Instant::now() + longest;
         while !is_done() && Instant::now() < deadline {
             thread::yield_now();
         }
         is_done()
+    }
+
+    fn budgeted_reader(storage: Arc<dyn Storage>, bytes: &Arc<ByteBudget>) -> BookReader {
+        BookReader::sharing(
+            target_over(storage),
+            Arc::new(DecodePermits::new(ARCHIVES_PARSED_AT_ONCE)),
+            Arc::clone(bytes),
+        )
+    }
+
+    #[test]
+    fn takes_a_book_s_listed_bytes_from_the_budget_before_opening_it() {
+        let scratch = ScratchFolder::new("scan-bytes-before-open");
+        let book = one_archive(&scratch);
+        let storage = WatchedStorage::rooted_in(&scratch);
+        let bytes = Arc::new(ByteBudget::new(book.listed_bytes));
+        let reader = budgeted_reader(storage.clone(), &bytes);
+        let held = bytes.hold(book.listed_bytes);
+        let (done, finished) = mpsc::channel();
+
+        thread::spawn(move || done.send(reader.read_each(&[book])).unwrap());
+
+        let opened_while_held = wait_until_within(LONG_ENOUGH_TO_PARSE, || storage.has_opened());
+        drop(held);
+        let read = finished.recv_timeout(LONGEST_WAIT).unwrap();
+        assert!(!opened_while_held);
+        assert!(read.iter().all(Result::is_ok), "{read:?}");
+    }
+
+    #[test]
+    fn reads_a_book_listed_larger_than_the_whole_byte_budget() {
+        let scratch = ScratchFolder::new("scan-bytes-oversized");
+        let book = one_archive(&scratch);
+        let bytes = Arc::new(ByteBudget::new(book.listed_bytes - 1));
+        let reader = budgeted_reader(WatchedStorage::rooted_in(&scratch), &bytes);
+        let (done, finished) = mpsc::channel();
+
+        thread::spawn(move || done.send(reader.read_each(&[book])).unwrap());
+
+        let read = finished.recv_timeout(LONGEST_WAIT).unwrap();
+        assert!(read.iter().all(Result::is_ok), "{read:?}");
     }
 
     #[test]
@@ -528,6 +604,7 @@ mod tests {
         let reader = BookReader::sharing(
             target_over(WatchedStorage::rooted_in(&scratch)),
             Arc::clone(&decodes),
+            Arc::new(ByteBudget::new(TEST_BYTE_BUDGET)),
         );
         let held = decodes.hold();
         let (done, finished) = mpsc::channel();
@@ -549,7 +626,11 @@ mod tests {
         let book = one_archive(&scratch);
         let storage = WatchedStorage::rooted_in(&scratch);
         let decodes = Arc::new(DecodePermits::new(1));
-        let reader = BookReader::sharing(target_over(storage.clone()), Arc::clone(&decodes));
+        let reader = BookReader::sharing(
+            target_over(storage.clone()),
+            Arc::clone(&decodes),
+            Arc::new(ByteBudget::new(TEST_BYTE_BUDGET)),
+        );
         let held = decodes.hold();
         let (done, finished) = mpsc::channel();
 
@@ -579,6 +660,7 @@ mod tests {
         };
         let found = FoundBook {
             path: PathBuf::from("/media/Elsewhere/v01.cbz"),
+            listed_bytes: 0,
         };
 
         let read = BookReader::new(target).read_found_book(&found);
