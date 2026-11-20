@@ -1,5 +1,7 @@
 package app.omnileaf
 
+import android.view.RoundedCorner
+import android.view.View
 import android.webkit.WebView
 import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
@@ -12,6 +14,8 @@ internal interface WebHistory {
 
 /** A page takes a frame or two to step back, so Android waits this long before deciding it did not. */
 private const val STEP_BACK_ALLOWANCE_MS = 400L
+
+private const val SCREEN_MIDDLE = 0.5f
 
 internal class WebViewHistory(
     private val webView: WebView,
@@ -33,9 +37,19 @@ internal class WebViewHistory(
     }
 }
 
+internal enum class SwipeSide(
+    val id: String,
+) {
+    LEFT("left"),
+    RIGHT("right"),
+}
+
 internal sealed interface BackGesture {
     data class Moved(
         val progress: Float,
+        val edge: SwipeSide,
+        val touchY: Float,
+        val cornerDp: Float,
     ) : BackGesture
 
     data object Cancelled : BackGesture
@@ -45,8 +59,19 @@ internal fun interface BackGestures {
     fun report(gesture: BackGesture)
 }
 
+internal fun View.screenCornerDp(): Float {
+    val corner = rootWindowInsets?.getRoundedCorner(RoundedCorner.POSITION_TOP_LEFT) ?: return 0f
+    return corner.radius / resources.displayMetrics.density
+}
+
+internal class ScreenShape(
+    val heightPx: () -> Float,
+    val cornerDp: () -> Float,
+)
+
 internal class BackNavigation(
     private val history: WebHistory,
+    private val screen: ScreenShape,
     private val leaveTheApp: () -> Unit = {},
 ) : OnBackPressedCallback(false) {
     private var gestures: BackGestures? = null
@@ -73,12 +98,20 @@ internal class BackNavigation(
     }
 
     override fun handleOnBackStarted(backEvent: BackEventCompat) {
-        gestures?.report(BackGesture.Moved(backEvent.progress))
+        gestures?.report(moved(backEvent))
     }
 
     override fun handleOnBackProgressed(backEvent: BackEventCompat) {
-        gestures?.report(BackGesture.Moved(backEvent.progress))
+        gestures?.report(moved(backEvent))
     }
+
+    private fun moved(backEvent: BackEventCompat): BackGesture.Moved =
+        BackGesture.Moved(
+            progress = backEvent.progress,
+            edge = if (backEvent.swipeEdge == BackEventCompat.EDGE_RIGHT) SwipeSide.RIGHT else SwipeSide.LEFT,
+            touchY = screen.heightPx().takeIf { it > 0f }?.let { backEvent.touchY / it } ?: SCREEN_MIDDLE,
+            cornerDp = screen.cornerDp(),
+        )
 
     override fun handleOnBackCancelled() {
         gestures?.report(BackGesture.Cancelled)
