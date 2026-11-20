@@ -43,7 +43,13 @@
 
   interface Drag {
     readonly key: string;
+    readonly pointerId: number;
     readonly rows: RowDrag;
+  }
+
+  interface Settling {
+    readonly key: string;
+    readonly easesNeighbours: boolean;
   }
 
   let {
@@ -62,6 +68,7 @@
   const ios = new IosPhone();
   let list = $state<HTMLElement | null>(null);
   let drag = $state<Drag | undefined>();
+  let settling = $state<Settling | undefined>();
   let announcement = $state("");
   let quiet: ReturnType<typeof setTimeout> | undefined;
 
@@ -97,13 +104,29 @@
     );
   }
 
+  function listTop(): number {
+    return list?.getBoundingClientRect().top ?? 0;
+  }
+
   function slotsOfRows(): Slot[] {
+    const origin = listTop();
     return [
       ...(list?.querySelectorAll<HTMLElement>("[data-tab-row]") ?? []),
     ].map((row) => {
       const { top, height } = row.getBoundingClientRect();
-      return { top, height };
+      return { top: top - origin, height };
     });
+  }
+
+  function finishSettling(): void {
+    for (const animation of list?.getAnimations({ subtree: true }) ?? []) {
+      animation.finish();
+    }
+    settling = undefined;
+  }
+
+  function isDragPointer(event: PointerEvent): boolean {
+    return drag?.pointerId === event.pointerId;
   }
 
   async function move(from: number, to: number): Promise<void> {
@@ -129,22 +152,24 @@
 
   function startDrag(event: PointerEvent, at: number): void {
     const tab = tabs[at];
-    if (event.button !== 0 || tab === undefined) {
+    if (event.button !== 0 || tab === undefined || drag !== undefined) {
       return;
     }
     event.preventDefault();
+    finishSettling();
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     drag = {
       key: tabKey(tab.id),
-      rows: new RowDrag(at, slotsOfRows(), event.clientY),
+      pointerId: event.pointerId,
+      rows: new RowDrag(at, slotsOfRows(), event.clientY - listTop()),
     };
   }
 
   function dragTo(event: PointerEvent): void {
-    if (drag === undefined) {
+    if (drag === undefined || !isDragPointer(event)) {
       return;
     }
-    drag = { ...drag, rows: drag.rows.to(event.clientY) };
+    drag = { ...drag, rows: drag.rows.to(event.clientY - listTop()) };
   }
 
   async function endDrag(keepsGap: boolean): Promise<void> {
@@ -152,36 +177,53 @@
       return;
     }
     const { key, rows } = drag;
-    const liftedTop = rowOf(key)?.getBoundingClientRect().top;
-    drag = undefined;
     const tab = tabs[rows.from];
-    if (
+    const isMoved =
       keepsGap &&
       tab !== undefined &&
       tabKey(tab.id) === key &&
-      rows.gap !== rows.from
-    ) {
+      rows.gap !== rows.from;
+    const liftedTop = rowOf(key)?.getBoundingClientRect().top;
+    settling = { key, easesNeighbours: !isMoved };
+    drag = undefined;
+    if (isMoved) {
       onArrange(moved(tabs, rows.from, rows.gap));
       announceMove(tab, rows.from, rows.gap);
     }
     await tick();
     const row = rowOf(key);
-    if (row !== null && liftedTop !== undefined) {
-      settleRow(row, liftedTop);
+    const settle =
+      row === null || liftedTop === undefined
+        ? undefined
+        : settleRow(row, liftedTop);
+    await settle?.finished.then(
+      () => undefined,
+      () => undefined,
+    );
+    stopSettling(key);
+  }
+
+  function stopSettling(key: string): void {
+    if (settling?.key === key) {
+      settling = undefined;
     }
   }
 
-  function drop(): void {
-    void endDrag(true);
+  function drop(event: PointerEvent): void {
+    if (isDragPointer(event)) {
+      void endDrag(true);
+    }
   }
 
-  function cancelDrag(): void {
-    void endDrag(false);
+  function cancelDrag(event: PointerEvent): void {
+    if (isDragPointer(event)) {
+      void endDrag(false);
+    }
   }
 
   function cancelDragWhenHidden(): void {
     if (document.visibilityState === "hidden") {
-      cancelDrag();
+      void endDrag(false);
     }
   }
 </script>
@@ -201,6 +243,7 @@
   {#each tabs as tab, at (tabKey(tab.id))}
     {@const key = tabKey(tab.id)}
     {@const isLifted = drag?.key === key}
+    {@const isRaised = isLifted || settling?.key === key}
     <li
       data-tab-row={key}
       style:top={isLifted ? `${String(drag?.rows.offset ?? 0)}px` : undefined}
@@ -214,10 +257,10 @@
           : ios.isOn
             ? "gap-sm ps-lg pe-xs min-block-native-row"
             : "gap-sm py-sm ps-xs pe-sm",
-        drag !== undefined &&
-          !isLifted &&
+        !isRaised &&
+          (drag !== undefined || settling?.easesNeighbours === true) &&
           "transition-transform duration-move ease-emphasized",
-        isLifted &&
+        isRaised &&
           (android.isOn
             ? "relative z-drag-box -translate-y-native-drag-lift scale-102 rounded-native-segment bg-android-container-high shadow-dialog"
             : "relative z-drag-box rounded-card bg-card shadow-dialog"),

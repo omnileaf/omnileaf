@@ -22,7 +22,7 @@ test("stops the row at either end of the list however far the pointer goes", () 
   expect(drag.to(START - 1000).offset).toBe(-ROW);
 });
 
-test("leaves the gap where the row started until its middle passes another row's", () => {
+test("leaves the gap where the row started until its leading edge passes another row's middle", () => {
   const drag = new RowDrag(1, SLOTS, START);
 
   expect(drag.to(START + ROW / 2 - 1).gap).toBe(1);
