@@ -540,6 +540,21 @@ export async function selectByLongPress(
   await picked.dispatchEvent("click");
 }
 
+export async function lengthOf(
+  page: Page,
+  token: `--${string}`,
+): Promise<number> {
+  return page.evaluate((name) => {
+    const probe = document.createElement("div");
+    probe.style.blockSize = `var(${name})`;
+    probe.style.position = "absolute";
+    document.body.append(probe);
+    const length = probe.getBoundingClientRect().height;
+    probe.remove();
+    return length;
+  }, token);
+}
+
 export function targetOf(
   locator: Locator,
 ): Promise<{ width: number; height: number }> {
