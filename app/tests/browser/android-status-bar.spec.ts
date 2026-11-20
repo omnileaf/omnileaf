@@ -1,7 +1,9 @@
 import type { Page } from "@playwright/test";
 
 import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
+import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
 import { DEFAULT_BACKEND, expect, test, tokenColour } from "./fixtures.ts";
+import { sampleLibraryOn } from "./screens.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
 
@@ -10,6 +12,14 @@ const FAR_DOWN = 400;
 const SCROLL_STEPS = [8, 24, 48, 96, 200, FAR_DOWN] as const;
 const PHONE = { width: 412, height: 700 };
 const TABLET = { width: 820, height: 1180 };
+const SAMPLE_SERIES = sampleSeriesId(21);
+const SAMPLE_SCREENS = [
+  "/",
+  "/browse",
+  "/history",
+  `/series/${SAMPLE_SERIES}`,
+  `/series/${SAMPLE_SERIES}/volume/2`,
+] as const;
 const TABLET_SCREENS = ["/", "/history", "/settings/general"] as const;
 
 type Screen = typeof PHONE;
@@ -186,6 +196,18 @@ test.describe("the status bar on an Android phone", { tag: "@native" }, () => {
     });
 
     for (const route of SCROLLING_SCREENS) {
+      test(`keeps ${route} from showing through it once it scrolls`, async ({
+        page,
+      }) => {
+        await expectNothingUnderStatusBar(page, route);
+      });
+    }
+  });
+
+  test.describe("over the sample library", () => {
+    test.use({ backend: sampleLibraryOn("android") });
+
+    for (const route of SAMPLE_SCREENS) {
       test(`keeps ${route} from showing through it once it scrolls`, async ({
         page,
       }) => {
