@@ -223,10 +223,6 @@
     return selection?.has(one.id) === true ? tile.pickedTitle : "";
   }
 
-  function pickedMeta(one: LibrarySeries): ClassValue {
-    return selection?.has(one.id) === true ? tile.pickedMeta : "";
-  }
-
   let reveal: Reveal | undefined;
 
   async function moveAmongCovers(event: KeyboardEvent): Promise<void> {
@@ -482,7 +478,6 @@
                 (away && tile.notConnected?.books) || "text-muted",
                 look.bookCount,
                 tile.meta,
-                pickedMeta(one),
               ]}
             >
               {m.library_series_books({ count: one.bookCount })}

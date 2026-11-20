@@ -27,6 +27,7 @@ const LIGHT_ON_ACCENT = "rgb(230, 255, 237)";
 const DARK_ACCENT = "rgb(120, 217, 159)";
 const CLEAR = "rgba(0, 0, 0, 0)";
 const FRAME_INSET_PX = 4;
+const FRAME_CORNER = "12px";
 
 async function twoSeries(): Promise<readonly LibrarySeries[]> {
   mockIPC(() => ({
@@ -117,6 +118,7 @@ test("fills a chosen Android tile behind its cover and title with the accent", a
   const coverBox = coverOf(tile).getBoundingClientRect();
 
   expect(frame.backgroundColor).toBe(LIGHT_ACCENT);
+  expect(frame.borderTopLeftRadius).toBe(FRAME_CORNER);
   expect(Number.parseFloat(frame.height)).toBeGreaterThan(tileBox.height);
   expect(coverBox.left - tileBox.left).toBeGreaterThanOrEqual(FRAME_INSET_PX);
   expect(tileBox.right - coverBox.right).toBeGreaterThanOrEqual(FRAME_INSET_PX);
