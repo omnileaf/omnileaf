@@ -11,7 +11,7 @@
   import { on } from "svelte/events";
   import { SvelteSet } from "svelte/reactivity";
 
-  import { goto } from "$app/navigation";
+  import { goto, onNavigate } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
   import { reportFailure } from "#lib/errors/report-failure.ts";
@@ -21,6 +21,7 @@
     type Platform,
     type SwipeEdge,
   } from "#lib/ipc/bindings.ts";
+  import { depth } from "#lib/navigation/android-back.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import ReaderBackSwipe, {
     type ReaderBackSwipeState,
@@ -352,6 +353,26 @@
       ? resolve("/(app)/series/[id]", { id: book.series })
       : resolve("/(app)"),
   );
+  let leftReader: (() => void) | undefined;
+
+  function leaveReader(): Promise<void> {
+    if (!depth.canGoBack) {
+      return goto(seriesHref, { replaceState: true });
+    }
+    return new Promise((left) => {
+      leftReader = left;
+      history.back();
+    });
+  }
+
+  onNavigate((navigation) => {
+    const left = leftReader;
+    leftReader = undefined;
+    if (left !== undefined) {
+      void navigation.complete.then(left, left);
+    }
+  });
+
   const nextHref = $derived(
     book.next === null
       ? undefined
@@ -552,7 +573,7 @@
         zoomTo(1);
         return;
       case "back":
-        void goto(seriesHref);
+        void leaveReader();
         return;
       case "jump":
         openJump(!isJumpOpen);
@@ -823,7 +844,7 @@
     if (left.status === "ok" && left.data) {
       return;
     }
-    await goto(seriesHref);
+    await leaveReader();
   }
 
   function isAtRevealEdge(event: PointerEvent): boolean {
@@ -1152,7 +1173,7 @@
   swipeState={backSwipe}
   takenEdge={nextPageDragEdge}
   backPath={seriesHref}
-  onBack={() => goto(seriesHref)}
+  onBack={leaveReader}
 >
   <main
     {@attach zoomsOnWheel}
@@ -1273,6 +1294,9 @@
       >
         <ReaderTopBar
           {seriesHref}
+          onBack={() => {
+            void leaveReader();
+          }}
           isInLibrary={book.isInLibrary}
           {platform}
           seriesTitle={named.seriesTitle}

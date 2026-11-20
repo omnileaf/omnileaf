@@ -6,6 +6,7 @@
     Maximize,
     SlidersHorizontal,
   } from "@lucide/svelte";
+  import { mergeProps } from "bits-ui";
   import type { Snippet } from "svelte";
 
   import type { ResolvedPathname } from "$app/types";
@@ -46,6 +47,7 @@
 
   let {
     seriesHref,
+    onBack,
     isInLibrary,
     platform,
     seriesTitle,
@@ -65,6 +67,7 @@
     onFullScreen,
   }: {
     seriesHref: ResolvedPathname;
+    onBack: () => void;
     isInLibrary: boolean;
     platform: Platform;
     seriesTitle: string;
@@ -140,7 +143,12 @@
   >
     {#snippet child({ props })}
       <a
-        {...props}
+        {...mergeProps(props, {
+          onclick: (event: MouseEvent) => {
+            event.preventDefault();
+            onBack();
+          },
+        })}
         href={seriesHref}
         aria-label={backLabel}
         aria-keyshortcuts={isWindows ? WINDOWS_BACK_KEYS : undefined}
