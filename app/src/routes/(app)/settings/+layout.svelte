@@ -1,7 +1,6 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { drawAndroidListsWith } from "#lib/settings/android-list-look.svelte.ts";
@@ -19,8 +18,8 @@
   const ICON_SIZE = 18;
 
   const look = pagesListLook(currentPlatform());
-  const android = new AndroidPhone();
-  drawAndroidListsWith({ isOn: currentPlatform() === "android" });
+  const androidLists = { isOn: currentPlatform() === "android" };
+  drawAndroidListsWith(androidLists);
 </script>
 
 <div
@@ -34,7 +33,7 @@
     {/if}
     <nav aria-label={m.settings_sections_label()} class={look.nav}>
       <ul class={look.list}>
-        {#each sectionsShown(SETTINGS_SECTIONS, android.isOn) as section (section.route)}
+        {#each sectionsShown(SETTINGS_SECTIONS, androidLists.isOn) as section (section.route)}
           {@const current = sectionCurrent(
             page.url.pathname,
             resolve(section.route),

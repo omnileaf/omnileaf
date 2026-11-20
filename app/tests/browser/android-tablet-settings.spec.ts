@@ -142,6 +142,19 @@ test.describe(
       expect(onLine.rgba).toEqual(belowLine.rgba);
     });
 
+    test("lists Accessibility beside the open page, as the index does on one pane", async ({
+      page,
+    }) => {
+      await page.setViewportSize(TWO_PANES);
+      await page.goto("/settings/general");
+
+      await expect(
+        page
+          .getByRole("navigation", { name: "Settings sections" })
+          .getByRole("link", { name: "Accessibility" }),
+      ).toBeVisible();
+    });
+
     for (const { route, heading } of LIST_HEADINGS) {
       test(`heads ${heading} on ${route} as a list header in the accent`, async ({
         page,
