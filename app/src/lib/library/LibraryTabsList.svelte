@@ -8,7 +8,7 @@
     GripVertical,
     Menu,
   } from "@lucide/svelte";
-  import { tick } from "svelte";
+  import { flushSync, tick } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
@@ -69,6 +69,7 @@
   let list = $state<HTMLElement | null>(null);
   let drag = $state<Drag | undefined>();
   let settling = $state<Settling | undefined>();
+  let settle: Animation | undefined;
   let announcement = $state("");
   let quiet: ReturnType<typeof setTimeout> | undefined;
 
@@ -119,10 +120,11 @@
   }
 
   function finishSettling(): void {
-    for (const animation of list?.getAnimations({ subtree: true }) ?? []) {
-      animation.finish();
-    }
-    settling = undefined;
+    settle?.finish();
+    settle = undefined;
+    flushSync(() => {
+      settling = undefined;
+    });
   }
 
   function isDragPointer(event: PointerEvent): boolean {
@@ -192,7 +194,7 @@
     }
     await tick();
     const row = rowOf(key);
-    const settle =
+    settle =
       row === null || liftedTop === undefined
         ? undefined
         : settleRow(row, liftedTop);

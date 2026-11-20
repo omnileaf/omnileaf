@@ -22,6 +22,10 @@ export function settleRow(
   }
   return row.animate(
     [{ translate: `0 ${String(distance)}px` }, { translate: "0 0" }],
-    { duration, easing: style.getPropertyValue(MOVE_EASING).trim() },
+    {
+      duration,
+      easing: style.getPropertyValue(MOVE_EASING).trim(),
+      composite: "add",
+    },
   );
 }
