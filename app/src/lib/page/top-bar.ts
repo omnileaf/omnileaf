@@ -21,8 +21,10 @@ export const NATIVE_TOP_BAR = {
   lift: "-mbs-native-top-bar-lift",
 };
 
-export const ANDROID_PINNED_BAR =
-  "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center box-content pbs-safe-top min-block-native-top-bar motion-safe:transition-colors motion-safe:duration-fade";
+export const ANDROID_TOP_APP_BAR =
+  "box-content pbs-safe-top min-block-native-top-bar";
+
+export const ANDROID_PINNED_BAR = `sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center ${ANDROID_TOP_APP_BAR} motion-safe:transition-colors motion-safe:duration-fade`;
 
 const BACK_ICON = {
   android: "arrow-left",
