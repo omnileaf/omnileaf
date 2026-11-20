@@ -2550,6 +2550,21 @@
       }
     }
   ],
+  "reading_long_strip_speed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ļöñĝ šţŕíþ: {formattedCount} šçŕééñ á ɱíñûţé··················⟧",
+        "countPlural=other": "⟦Ļöñĝ šţŕíþ: {formattedCount} šçŕééñš á ɱíñûţé··················⟧"
+      }
+    }
+  ],
+  "reading_long_strip_speed_help": "⟦Ţĥé šþééð éṽéŕý ļöñĝ šţŕíþ šţáŕţš áţ, ƒŕöɱ {slowest} ţö {fastest} šçŕééñš á ɱíñûţé. Çĥáñĝé íţ ŵĥíļé ŕéáðíñĝ áñð ţĥáţ šéŕíéš ķééþš íţš öŵñ.························································⟧",
   "reader_auto_scroll_rate": "⟦Šçŕééñš á ɱíñûţé·······⟧",
   "reader_auto_scroll_rate_value": "⟦Šçŕééñš á ɱíñûţé: {count}··········⟧",
   "reader_save_speed_for": "⟦Šáṽé ţĥé šþééð ƒöŕ········⟧",

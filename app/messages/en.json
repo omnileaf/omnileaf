@@ -2551,6 +2551,21 @@
       }
     }
   ],
+  "reading_long_strip_speed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Long strip: {formattedCount} screen a minute",
+        "countPlural=other": "Long strip: {formattedCount} screens a minute"
+      }
+    }
+  ],
+  "reading_long_strip_speed_help": "The speed every long strip starts at, from {slowest} to {fastest} screens a minute. Change it while reading and that series keeps its own.",
   "reader_auto_scroll_rate": "Screens a minute",
   "reader_auto_scroll_rate_value": "Screens a minute: {count}",
   "reader_save_speed_for": "Save the speed for",
