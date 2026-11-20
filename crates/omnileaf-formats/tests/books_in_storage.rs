@@ -11,7 +11,7 @@ use std::{
     io,
     path::{Path, PathBuf},
     sync::{
-        Arc,
+        Arc, Mutex,
         atomic::{AtomicUsize, Ordering},
     },
 };
@@ -25,6 +25,8 @@ use support::{ScratchFolder, entry};
 
 const SEED: u64 = 11;
 const START_LENGTH: u64 = 64;
+const COMIC_INFO: &str = "ComicInfo.xml";
+const HUGE_COMIC_INFO_BYTES: u64 = 4 << 30;
 
 fn page(index: u32) -> Vec<u8> {
     page_png(SEED, index, PageShape::Portrait).unwrap()
@@ -79,6 +81,35 @@ impl Storage for CountingStorage {
 
     fn open(&self, file: &Path) -> io::Result<File> {
         self.opens.fetch_add(1, Ordering::Relaxed);
+        LocalStorage.open(&self.root.join(file))
+    }
+}
+
+#[derive(Debug)]
+struct ListingAHugeComicInfo {
+    root: PathBuf,
+    opened: Mutex<Vec<PathBuf>>,
+}
+
+impl Storage for ListingAHugeComicInfo {
+    fn entries(&self, folder: &Path) -> io::Result<Vec<Entry>> {
+        let mut entries = LocalStorage.entries(&self.root.join(folder))?;
+        for entry in &mut entries {
+            if entry.name == COMIC_INFO {
+                entry.kind = EntryKind::File {
+                    size: HUGE_COMIC_INFO_BYTES,
+                };
+            }
+        }
+        Ok(entries)
+    }
+
+    fn details(&self, path: &Path) -> io::Result<Details> {
+        LocalStorage.details(&self.root.join(path))
+    }
+
+    fn open(&self, file: &Path) -> io::Result<File> {
+        self.opened.lock().unwrap().push(file.to_owned());
         LocalStorage.open(&self.root.join(file))
     }
 }
@@ -238,6 +269,33 @@ fn reads_a_folder_book_from_one_listing() {
             lookups: 1,
             opens: 3,
         }
+    );
+}
+
+#[test]
+fn refuses_a_folder_s_comic_info_listed_over_the_limit_without_opening_it() {
+    let scratch = ScratchFolder::new("storage-huge-comic-info");
+    scratch.write("Chapter/1.png", &page(0));
+    scratch.write(&format!("Chapter/{COMIC_INFO}"), b"<ComicInfo/>");
+    let storage = Arc::new(ListingAHugeComicInfo {
+        root: scratch.path().to_owned(),
+        opened: Mutex::new(Vec::new()),
+    });
+    let mut book = open_book_in(storage.clone(), Path::new("Chapter"), &Limits::default()).unwrap();
+
+    let read = book.comic_info();
+
+    assert!(
+        matches!(read, Err(FormatError::ComicInfoTooLarge { .. })),
+        "{read:?}"
+    );
+    assert!(
+        !storage
+            .opened
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|file| file.ends_with(COMIC_INFO))
     );
 }
 
