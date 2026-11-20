@@ -11,7 +11,7 @@
     TableHeader,
     TableRow,
   } from "#lib/components/ui/table/index.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import {
@@ -39,7 +39,7 @@
 
   let { class: className }: { class?: ClassValue } = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const exampleId = $props.id();
   const rulesId = `${exampleId}-rules`;
   const look = $derived(android.isOn ? ANDROID_LOOK : TABLE_LOOK);
