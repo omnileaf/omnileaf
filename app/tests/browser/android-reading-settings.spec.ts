@@ -122,6 +122,42 @@ test.describe(
         ROW_START,
       );
     });
+
+    test("sets the speed every long strip starts at under Auto scroll, between the screen switches and End of a book", async ({
+      page,
+    }) => {
+      await page.goto("/settings/reading");
+      const heading = page.getByRole("heading", { name: "Auto scroll" });
+      const slider = page.getByRole("slider", {
+        name: "Long strip: 3 screens a minute",
+      });
+
+      await expect(heading).toHaveCSS("font-size", "14px");
+      await expect(
+        page.getByText(
+          "The speed every long strip starts at, from 1 to 12 screens a minute. Change it while reading and that series keeps its own.",
+        ),
+      ).toBeVisible();
+      const above = await boxOf(
+        page.getByRole("switch", { name: "Keep the screen on" }),
+      );
+      const below = await boxOf(
+        page.getByRole("heading", { name: "End of a book" }),
+      );
+      expect((await boxOf(heading)).y).toBeGreaterThan(above.y);
+      expect((await boxOf(slider)).y).toBeLessThan(below.y);
+
+      await slider.focus();
+      await page.keyboard.press("ArrowRight");
+
+      await expect(
+        page.getByRole("slider", { name: "Long strip: 4 screens a minute" }),
+      ).toBeVisible();
+      const stored = await page.evaluate(() =>
+        localStorage.getItem("omnileaf.readerSettings.all"),
+      );
+      expect(JSON.parse(stored ?? "{}")).toMatchObject({ screensPerMinute: 4 });
+    });
   },
 );
 
