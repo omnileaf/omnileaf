@@ -1,6 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { boxOf, DEFAULT_BACKEND, expect, settle, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  framesPassed,
+  settle,
+  test,
+} from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(9);
@@ -8,9 +15,15 @@ const PICKED = 3;
 
 let applied: unknown;
 
+const LIBRARY_BACKEND = {
+  ...DEFAULT_BACKEND,
+  librarySeries: () => ({ series: LIBRARY, next: null }),
+  librarySeriesCount: () => LIBRARY.length,
+};
+
 test.use({
   backend: {
-    ...DEFAULT_BACKEND,
+    ...LIBRARY_BACKEND,
     seriesLabels: () => ({
       keepsLabels: true,
       categories: [
@@ -28,8 +41,6 @@ test.use({
       applied = changes;
       return null;
     },
-    librarySeries: () => ({ series: LIBRARY, next: null }),
-    librarySeriesCount: () => LIBRARY.length,
   },
 });
 
@@ -48,7 +59,10 @@ function sheet(page: Page): Locator {
   return page.getByRole("dialog", { name: "Categories and tags" });
 }
 
-async function openLabels(page: Page): Promise<void> {
+async function openLabels(
+  page: Page,
+  from: "Categories" | "Tags" = "Categories",
+): Promise<void> {
   await page.goto("/");
   const list = page.getByRole("list", { name: "Series" });
   await expect(list.getByRole("listitem")).toHaveCount(LIBRARY.length);
@@ -60,7 +74,7 @@ async function openLabels(page: Page): Promise<void> {
   }
   await expect(page.getByText("3 selected").first()).toBeVisible();
   await settle(page.getByRole("group", { name: "Selected series" }));
-  await tap(page.getByRole("button", { name: "Categories" }));
+  await tap(page.getByRole("button", { name: from }));
   await expect(sheet(page)).toBeVisible();
 }
 
@@ -176,6 +190,20 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
     });
   });
 
+  for (const from of ["Categories", "Tags"] as const) {
+    test(`opens from ${from} on the sheet, with no field focused, while there is something to pick`, async ({
+      page,
+    }) => {
+      await openLabels(page, from);
+
+      await expect(
+        sheet(page).getByRole("checkbox", { name: "Reading" }),
+      ).toBeVisible();
+      await framesPassed(page);
+      await expect(sheet(page)).toBeFocused();
+    });
+  }
+
   test("closes with Close and applies nothing", async ({ page }) => {
     await openLabels(page);
 
@@ -185,3 +213,43 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
     expect(applied).toBeUndefined();
   });
 });
+
+test.describe(
+  "labelling series on an iPhone with no category or tag yet",
+  { tag: "@native" },
+  () => {
+    test.use({
+      backend: {
+        ...LIBRARY_BACKEND,
+        seriesLabels: () => ({
+          keepsLabels: true,
+          categories: [],
+          tags: [],
+          suggestedTags: [],
+        }),
+      },
+    });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "ios", "iOS's sheet");
+    });
+
+    test("focuses New category when opened from Categories", async ({
+      page,
+    }) => {
+      await openLabels(page, "Categories");
+
+      await expect(
+        sheet(page).getByRole("textbox", { name: "New category" }),
+      ).toBeFocused();
+    });
+
+    test("focuses Add a tag when opened from Tags", async ({ page }) => {
+      await openLabels(page, "Tags");
+
+      await expect(
+        sheet(page).getByRole("textbox", { name: "Add a tag" }),
+      ).toBeFocused();
+    });
+  },
+);
