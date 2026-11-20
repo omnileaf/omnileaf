@@ -194,14 +194,19 @@
       isTitleUnderBar ? NATIVE_TOP_BAR.scrolled : "border-transparent",
     )}
   >
-    <a
-      href={resolve(parent.route)}
-      data-back-link
-      aria-label={backLabel}
-      class="native-target ms-xs flex shrink-0 items-center justify-center rounded-full text-native-on-top-bar block-native-button inline-native-button hover:bg-hover active:bg-pressed"
-    >
-      <Icon name="arrow-left" size={ARROW_SIZE} class="rtl:-scale-x-100" />
-    </a>
+    <Tooltip label={backLabel}>
+      {#snippet child({ props })}
+        <a
+          {...props}
+          href={resolve(parent.route)}
+          data-back-link
+          aria-label={backLabel}
+          class="native-target ms-xs flex shrink-0 items-center justify-center rounded-full text-native-on-top-bar block-native-button inline-native-button hover:bg-hover active:bg-pressed"
+        >
+          <Icon name="arrow-left" size={ARROW_SIZE} class="rtl:-scale-x-100" />
+        </a>
+      {/snippet}
+    </Tooltip>
     <span
       aria-hidden="true"
       class={[
