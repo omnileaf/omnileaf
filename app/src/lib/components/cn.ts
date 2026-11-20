@@ -645,6 +645,7 @@ export const TOKEN_THEME = {
     "page-problem",
     "page-start",
     "page-top",
+    "pager-gap",
     "pane",
     "pane-app-icon",
     "pane-gap",
