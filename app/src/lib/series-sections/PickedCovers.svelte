@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick } from "svelte";
 
+  import { beforeNavigate } from "$app/navigation";
   import type { ResolvedPathname } from "$app/types";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import DragBox from "#lib/library/DragBox.svelte";
@@ -123,6 +124,17 @@
       void end();
     },
   );
+
+  beforeNavigate((navigation) => {
+    if (
+      navigation.type === "popstate" &&
+      navigation.delta < 0 &&
+      selection.isSelecting
+    ) {
+      navigation.cancel();
+      void end();
+    }
+  });
 
   async function mark(read: ReadMark): Promise<void> {
     if (

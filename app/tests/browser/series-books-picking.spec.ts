@@ -421,6 +421,7 @@ test.describe(
 
         await expect(bookCheckbox(page, 1)).toHaveCount(0);
         await expect(navigation(page)).toBeVisible();
+        await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`, "u"));
       });
     }
 

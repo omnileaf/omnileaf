@@ -4,6 +4,7 @@
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
+  import { beforeNavigate } from "$app/navigation";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
@@ -425,6 +426,13 @@
       void end();
     },
   );
+
+  beforeNavigate((navigation) => {
+    if (navigation.type === "popstate" && navigation.delta < 0 && isPicking) {
+      navigation.cancel();
+      void end();
+    }
+  });
 
   function announced(shown: Outcome): string {
     switch (shown.kind) {
