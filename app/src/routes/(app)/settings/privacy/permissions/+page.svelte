@@ -55,7 +55,7 @@
   const ANDROID_LINE =
     "text-native-row-subtitle/native-row-subtitle text-muted";
   const TILE =
-    "flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile android:max-medium:border-0 android:max-medium:bg-transparent android:max-medium:text-muted";
+    "flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile android:border-0 android:bg-transparent android:text-muted";
 
   let { data }: PageProps = $props();
 
@@ -128,13 +128,11 @@
         <Settings size={ICON_SIZE} />
       </span>
       <span class="flex grow basis-permission-reason flex-col gap-2xs">
-        <span
-          class="font-semibold android:max-medium:font-regular desktop:text-callout"
-        >
+        <span class="font-semibold android:font-regular desktop:text-callout">
           {label}
         </span>
         <span
-          class="text-detail text-muted android:max-medium:text-native-row-subtitle/native-row-subtitle"
+          class="text-detail text-muted android:text-native-row-subtitle/native-row-subtitle"
         >
           {m.permissions_open_help()}
         </span>
@@ -153,7 +151,7 @@
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
 />
 <div
-  class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none android:max-medium:gap-none"
+  class="mbs-pane-gap flex flex-col gap-sm android:mbs-none android:gap-none"
 >
   <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
     {m.permissions_intro()}

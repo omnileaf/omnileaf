@@ -20,7 +20,7 @@
 
   const look = pagesListLook(currentPlatform());
   const android = new AndroidPhone();
-  drawAndroidListsWith(android);
+  drawAndroidListsWith({ isOn: currentPlatform() === "android" });
 </script>
 
 <div
@@ -61,7 +61,7 @@
     </nav>
   </div>
   <div
-    class="flex flex-1 flex-col min-inline-none two-pane:px-pane two-pane:pbs-page-top two-pane:pbe-xl"
+    class="flex flex-1 flex-col min-inline-none android:two-pane:overflow-x-clip two-pane:px-pane two-pane:pbs-page-top two-pane:pbe-xl"
   >
     <div class={["flex flex-1 flex-col", look.page]}>
       {@render children()}

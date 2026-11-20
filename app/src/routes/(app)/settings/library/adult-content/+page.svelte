@@ -51,7 +51,7 @@
   {#if content.reading.kind === "read"}
     {@const chosen = content.reading.value}
     <div
-      class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none android:max-medium:gap-none macos:gap-lg"
+      class="mbs-pane-gap flex flex-col gap-pane-gap android:mbs-none android:gap-none macos:gap-lg"
     >
       <div class="flex flex-col gap-sm macos:gap-lg">
         <p

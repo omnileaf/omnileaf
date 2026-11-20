@@ -58,7 +58,7 @@
 
 <SectionHeading title={m.advanced_title()} />
 <div
-  class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none android:max-medium:gap-none"
+  class="mbs-pane-gap flex flex-col gap-pane-gap android:mbs-none android:gap-none"
 >
   <SettingsEntries
     entries={[
@@ -87,7 +87,7 @@
     data-settings-group
     aria-labelledby={undoHeadingId}
     class={[
-      "flex flex-col rounded-card border border-border bg-card android:max-medium:border-0",
+      "flex flex-col rounded-card border border-border bg-card android:border-0",
       !android.isOn && "divide-y divide-border overflow-hidden",
       GROUP_PLATE,
     ]}
@@ -158,7 +158,7 @@
     />
   {/if}
   {#if data.appInfo.isDevelopmentBuild}
-    <div class="flex flex-col gap-pane-gap android:max-medium:mbs-pane-gap">
+    <div class="flex flex-col gap-pane-gap android:mbs-pane-gap">
       <div
         role="note"
         class="flex items-start gap-md rounded-card border border-border bg-card py-md ps-md pe-list-row touch:max-medium:ps-list-row"

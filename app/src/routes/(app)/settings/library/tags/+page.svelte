@@ -101,7 +101,7 @@
   />
   <div
     class={[
-      "mbs-pane-gap flex flex-col android:max-medium:mbs-none",
+      "mbs-pane-gap flex flex-col android:mbs-none",
       android.isOn ? "gap-none" : "gap-sm",
     ]}
   >

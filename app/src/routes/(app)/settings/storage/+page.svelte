@@ -44,7 +44,7 @@
 <SectionHeading title={m.storage_title()} />
 {#if storage.use !== undefined}
   <div
-    class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none android:max-medium:gap-none"
+    class="mbs-pane-gap flex flex-col gap-pane-gap android:mbs-none android:gap-none"
   >
     <section
       data-settings-end

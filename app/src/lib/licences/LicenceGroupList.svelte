@@ -87,7 +87,7 @@
           </span>
           <ChevronRight
             size={ROW_ICON_SIZES[look]}
-            class="shrink-0 text-muted rtl:-scale-x-100 android:max-medium:hidden"
+            class="shrink-0 text-muted rtl:-scale-x-100 android:hidden"
           />
         </a>
       </li>

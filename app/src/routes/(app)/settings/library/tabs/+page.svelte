@@ -182,7 +182,7 @@
     parent={{ route: "/(app)/settings/library", title: m.library_title() }}
   />
   <div
-    class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none android:max-medium:gap-none"
+    class="mbs-pane-gap flex flex-col gap-sm android:mbs-none android:gap-none"
   >
     <p class={android.isOn ? FLUSH_NOTE : "text-footnote text-muted"}>
       {#if isMac}
