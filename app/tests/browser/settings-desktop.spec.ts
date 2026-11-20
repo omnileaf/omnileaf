@@ -29,7 +29,7 @@ const NARROW_BACK_LINK_HEIGHT = 32;
 const TOUCH_TARGET = 48;
 const TAB_BAR_HEIGHT = 44;
 const GLASS_CIRCLE = 44;
-const STATUS_BAR_GAP = 8;
+const BACK_IN_TOP_APP_BAR = 12;
 const SECTIONS_TITLE_TEXT = "12px";
 const SEMIBOLD = "600";
 
@@ -214,7 +214,7 @@ for (const platform of ["android", "ios"] as const) {
       ).toBeVisible();
     });
 
-    test("leads a section back to settings with a 48px arrow on a tablet, or a glass circle beside the tab bar on an iPad", async ({
+    test("leads a section back to settings with a 48px arrow in the top app bar on a tablet, or a glass circle beside the tab bar on an iPad", async ({
       page,
     }) => {
       const { width } = viewportOf(page);
@@ -239,7 +239,7 @@ for (const platform of ["android", "ios"] as const) {
           width: TOUCH_TARGET,
           height: TOUCH_TARGET,
         });
-        expect(back.y).toBe(STATUS_BAR_GAP);
+        expect(back.y).toBe(BACK_IN_TOP_APP_BAR);
       }
       expect(title.y).toBeGreaterThanOrEqual(back.y + back.height);
     });
@@ -287,7 +287,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
   });
 }
 
-const ANDROID_PHONE_GAP = 0;
+const ANDROID_LIST_GAP = 0;
 
 for (const { platform, gap } of [
   { platform: "linux", gap: 20 },
@@ -302,15 +302,12 @@ for (const { platform, gap } of [
       { path: "/settings/appearance", region: "Light or dark" },
     ] as const) {
       test(`spaces ${path} under its title`, async ({ page }) => {
-        const isAndroidPhone =
-          platform === "android" && viewportOf(page).width < MEDIUM_MIN_WIDTH;
-        const expectedGap = isAndroidPhone ? ANDROID_PHONE_GAP : gap;
+        const isAndroid = platform === "android";
+        const expectedGap = isAndroid ? ANDROID_LIST_GAP : gap;
         await page.goto(path);
 
         const title = page.getByRole("heading", { level: 1 });
-        const header = await boxOf(
-          isAndroidPhone ? title : title.locator(".."),
-        );
+        const header = await boxOf(isAndroid ? title : title.locator(".."));
         const content = await boxOf(page.getByRole("region", { name: region }));
 
         expect(content.y - (header.y + header.height)).toBe(expectedGap);

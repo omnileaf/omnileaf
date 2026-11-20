@@ -40,10 +40,7 @@
 </script>
 
 <section data-settings-group aria-labelledby="{id}-title" class={look.section}>
-  <h2
-    id="{id}-title"
-    class={[look.heading, startsPage && "android:max-medium:pbs-none"]}
-  >
+  <h2 id="{id}-title" class={[look.heading, startsPage && "android:pbs-none"]}>
     {title}
   </h2>
   <RadioGroup

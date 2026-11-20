@@ -19,7 +19,6 @@
     currentPlatform,
     hasTopTabBar,
     isPhone,
-    phoneOf,
   } from "#lib/page/platform.ts";
   import { watchTitleUnderBar } from "#lib/page/title-under-bar.ts";
   import {
@@ -68,14 +67,14 @@
   const isIosPhone = $derived(
     platform === "ios" && isPhone(platform, width.current),
   );
-  const isAndroidPhone = $derived(
-    phoneOf(platform, width.current) === "android",
+  const hasAndroidTopBar = $derived(
+    platform === "android" && !showsSectionsBeside(width.current),
   );
   let barHeight = $state(0);
   let isTitleUnderBar = $state(false);
 
   $effect(() => {
-    if (!isAndroidPhone || barHeight === 0) {
+    if (!hasAndroidTopBar || barHeight === 0) {
       return;
     }
     return watchTitleUnderBar(barHeight, (isUnder) => {
@@ -184,7 +183,7 @@
       {title}
     </h1>
   </header>
-{:else if isAndroidPhone}
+{:else if hasAndroidTopBar}
   <header
     bind:clientHeight={barHeight}
     data-title-bar

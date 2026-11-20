@@ -1,13 +1,8 @@
 import type { Locator, Page } from "@playwright/test";
 
-import {
-  boxOf,
-  DEFAULT_BACKEND,
-  expect,
-  test,
-  viewportOf,
-} from "./fixtures.ts";
+import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
+import { ANDROID_SCREENS } from "./android-screens.ts";
 
 const LIBRARY = sampleSeries(6);
 const TARGET_PX = 48;
@@ -63,97 +58,106 @@ async function holdSecondSeries(page: Page, heldMs: number): Promise<void> {
   await pressed.dispatchEvent("pointerup", touch);
 }
 
-test.describe(
-  "the Touch settings on an Android phone",
-  { tag: "@native" },
-  () => {
-    test.beforeEach(async ({ page, platform }) => {
-      test.skip(platform !== "android", "Android's settings");
-      await page.clock.install();
-    });
+for (const { name, viewport } of ANDROID_SCREENS) {
+  test.describe(
+    `the Touch settings on an Android ${name}`,
+    { tag: "@native" },
+    () => {
+      if (viewport !== undefined) {
+        test.use({ viewport });
+      }
+      test.beforeEach(async ({ page, platform }) => {
+        test.skip(platform !== "android", "Android's settings");
+        await page.clock.install();
+      });
 
-    test("lists Larger tap targets, off, and Long press takes, Medium, under Touch", async ({
-      page,
-    }) => {
-      await openAccessibility(page);
-      const section = page.getByRole("region", { name: "Touch" });
+      test("lists Larger tap targets, off, and Long press takes, Medium, under Touch", async ({
+        page,
+      }) => {
+        await openAccessibility(page);
+        const section = page.getByRole("region", { name: "Touch" });
 
-      await expect(
-        section.getByRole("switch", { name: "Larger tap targets" }),
-      ).not.toBeChecked();
-      await expect(
-        section
+        await expect(
+          section.getByRole("switch", { name: "Larger tap targets" }),
+        ).not.toBeChecked();
+        await expect(
+          section
+            .getByRole("radiogroup", { name: "Long press takes" })
+            .getByRole("radio", { name: "Medium" }),
+        ).toBeChecked();
+      });
+
+      test("lines Long press takes up with the switch rows above it, with even edges", async ({
+        page,
+      }) => {
+        await openAccessibility(page);
+        const section = page.getByRole("region", { name: "Touch" });
+
+        const switchLabel = await boxOf(
+          section.getByText("Larger tap targets"),
+        );
+        const choiceLabel = await boxOf(section.getByText("Long press takes"));
+        const lengths = await boxOf(
+          section.getByRole("radiogroup", { name: "Long press takes" }),
+        );
+        const main = await boxOf(page.getByRole("main"));
+
+        expect(choiceLabel.x).toBe(switchLabel.x);
+        expect(lengths.x).toBe(switchLabel.x);
+        expect(main.x + main.width - (lengths.x + lengths.width)).toBe(
+          lengths.x - main.x,
+        );
+      });
+
+      test("grows the tap targets from 48px to 56px once Larger tap targets is on, and keeps them after a reload", async ({
+        page,
+      }) => {
+        await openAccessibility(page);
+        expect(await targetSizes(page)).toEqual([TARGET_PX, TARGET_PX]);
+
+        await page.getByRole("switch", { name: "Larger tap targets" }).click();
+        expect(await targetSizes(page)).toEqual([
+          LARGER_TARGET_PX,
+          LARGER_TARGET_PX,
+        ]);
+        await page.reload();
+
+        await expect(
+          page.getByRole("switch", { name: "Larger tap targets" }),
+        ).toBeChecked();
+        expect(await targetSizes(page)).toEqual([
+          LARGER_TARGET_PX,
+          LARGER_TARGET_PX,
+        ]);
+      });
+
+      test("starts choosing series after a short hold once Short is chosen", async ({
+        page,
+      }) => {
+        await openAccessibility(page);
+        await page
           .getByRole("radiogroup", { name: "Long press takes" })
-          .getByRole("radio", { name: "Medium" }),
-      ).toBeChecked();
-    });
+          .getByRole("radio", { name: "Short" })
+          .click();
 
-    test("lines Long press takes up with the switch rows above it, with even edges", async ({
-      page,
-    }) => {
-      await openAccessibility(page);
-      const section = page.getByRole("region", { name: "Touch" });
+        await holdSecondSeries(page, SHORT_HOLD_MS);
 
-      const switchLabel = await boxOf(section.getByText("Larger tap targets"));
-      const choiceLabel = await boxOf(section.getByText("Long press takes"));
-      const lengths = await boxOf(
-        section.getByRole("radiogroup", { name: "Long press takes" }),
-      );
-      const pageWidth = viewportOf(page).width;
+        await expect(page.getByText("1 selected").first()).toBeVisible();
+      });
 
-      expect(choiceLabel.x).toBe(switchLabel.x);
-      expect(lengths.x).toBe(switchLabel.x);
-      expect(pageWidth - (lengths.x + lengths.width)).toBe(lengths.x);
-    });
+      test("waits out a longer hold before choosing once Long is chosen", async ({
+        page,
+      }) => {
+        await openAccessibility(page);
+        await page
+          .getByRole("radiogroup", { name: "Long press takes" })
+          .getByRole("radio", { name: "Long" })
+          .click();
 
-    test("grows the tap targets from 48px to 56px once Larger tap targets is on, and keeps them after a reload", async ({
-      page,
-    }) => {
-      await openAccessibility(page);
-      expect(await targetSizes(page)).toEqual([TARGET_PX, TARGET_PX]);
+        await holdSecondSeries(page, SHORTER_THAN_LONG_MS);
 
-      await page.getByRole("switch", { name: "Larger tap targets" }).click();
-      expect(await targetSizes(page)).toEqual([
-        LARGER_TARGET_PX,
-        LARGER_TARGET_PX,
-      ]);
-      await page.reload();
-
-      await expect(
-        page.getByRole("switch", { name: "Larger tap targets" }),
-      ).toBeChecked();
-      expect(await targetSizes(page)).toEqual([
-        LARGER_TARGET_PX,
-        LARGER_TARGET_PX,
-      ]);
-    });
-
-    test("starts choosing series after a short hold once Short is chosen", async ({
-      page,
-    }) => {
-      await openAccessibility(page);
-      await page
-        .getByRole("radiogroup", { name: "Long press takes" })
-        .getByRole("radio", { name: "Short" })
-        .click();
-
-      await holdSecondSeries(page, SHORT_HOLD_MS);
-
-      await expect(page.getByText("1 selected").first()).toBeVisible();
-    });
-
-    test("waits out a longer hold before choosing once Long is chosen", async ({
-      page,
-    }) => {
-      await openAccessibility(page);
-      await page
-        .getByRole("radiogroup", { name: "Long press takes" })
-        .getByRole("radio", { name: "Long" })
-        .click();
-
-      await holdSecondSeries(page, SHORTER_THAN_LONG_MS);
-
-      await expect(page.getByText("1 selected")).toHaveCount(0);
-    });
-  },
-);
+        await expect(page.getByText("1 selected")).toHaveCount(0);
+      });
+    },
+  );
+}

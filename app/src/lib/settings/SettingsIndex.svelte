@@ -108,7 +108,7 @@
                     class="ios:flex-row ios:flex-wrap ios:items-center ios:gap-x-sm"
                   >
                     <ItemTitle
-                      class="text-body ios:font-regular ios:min-inline-none android:max-medium:font-regular desktop:text-callout desktop:font-medium"
+                      class="text-body ios:font-regular ios:min-inline-none android:font-regular desktop:text-callout desktop:font-medium"
                     >
                       {section.label()}
                     </ItemTitle>
@@ -122,7 +122,7 @@
                   </ItemContent>
                   <ChevronRight
                     size={CHEVRON_SIZE}
-                    class="shrink-0 text-muted rtl:-scale-x-100 android:max-medium:hidden"
+                    class="shrink-0 text-muted rtl:-scale-x-100 android:hidden"
                   />
                 </a>
               {/snippet}

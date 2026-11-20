@@ -428,20 +428,25 @@ test.describe("App lock on an Android tablet", { tag: "@native" }, () => {
     failingCode = null;
   });
 
-  test("puts the lock switch in one card, with Start app lock in its own card below", async ({
+  test("draws the lock switch and Start app lock as on a phone", async ({
     page,
   }) => {
+    await openAppLock(page);
+    const onPhone = [
+      await cardLookOf(switchCard(page)),
+      await cardLookOf(timesCard(page)),
+    ];
+
     await page.setViewportSize(TABLET);
     await openAppLock(page);
 
     const lockToggle = await boxOf(lockSwitch(page));
     const times = await boxOf(startAppLock(page));
-    const card = switchCard(page);
-
-    await expect(card).toHaveCount(1);
-    await expect(card.filter({ has: startAppLock(page) })).toHaveCount(0);
     expect(times.y).toBeGreaterThan(lockToggle.y + lockToggle.height);
-    expect(await cardLookOf(timesCard(page))).toEqual(await cardLookOf(card));
+    expect([
+      await cardLookOf(switchCard(page)),
+      await cardLookOf(timesCard(page)),
+    ]).toEqual(onPhone);
   });
 
   test("hides Start app lock on a tablet while the lock is off", async ({
