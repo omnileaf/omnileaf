@@ -4,7 +4,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
-  framesOrAMomentPassed,
+  framesPassed,
   settle,
   test,
 } from "./fixtures.ts";
@@ -199,7 +199,7 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
       await expect(
         sheet(page).getByRole("checkbox", { name: "Reading" }),
       ).toBeVisible();
-      await framesOrAMomentPassed(page);
+      await framesPassed(page);
       await expect(sheet(page)).toBeFocused();
     });
   }
