@@ -734,6 +734,8 @@ export type LibrarySeries = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
 	bookCount: number,
+	volumeCount: number,
+	chapterCount: number,
 	unreadCount: number,
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	language: string | null,
