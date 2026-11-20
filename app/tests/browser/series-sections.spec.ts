@@ -487,6 +487,79 @@ test.describe(
   },
 );
 
+const ONE_KIND_SERIES = [
+  { kind: "Volumes", books: volumes(1, 2), heading: "2 volumes" },
+  { kind: "Specials", books: [SUMMER_SHORT], heading: "1 special" },
+] as const;
+
+for (const { kind, books, heading } of ONE_KIND_SERIES) {
+  test.describe(
+    `a series of ${kind.toLowerCase()} only on an Android phone`,
+    { tag: "@native" },
+    () => {
+      const shelf = new SectionShelf(books);
+      test.use({
+        platform: "android",
+        backend: shelf.backend(),
+        viewport: PHONE_IN_PORTRAIT,
+      });
+
+      test("heads its covers with the count, Find a book and Sort and filter, without tabs", async ({
+        page,
+      }) => {
+        await openSeries(page);
+
+        const [title, find, sort, firstCover] = await Promise.all([
+          boxOf(page.getByRole("heading", { level: 2, name: heading })),
+          boxOf(page.getByRole("button", { name: "Find a book" })),
+          boxOf(page.getByRole("button", { name: "Sort and filter" })),
+          boxOf(covers(page, kind).first()),
+        ]);
+        expect(
+          [title, find, sort].every(
+            (part) => part.y + part.height <= firstCover.y,
+          ),
+        ).toBe(true);
+        await expect(kinds(page)).toHaveCount(0);
+        await expect(page.getByRole("button", { name: /^Sort:/ })).toHaveCount(
+          0,
+        );
+        await expect(
+          page.getByRole("searchbox", { name: "Find a book" }),
+        ).toHaveCount(0);
+      });
+
+      test("opens the search field under the heading from Find a book", async ({
+        page,
+      }) => {
+        await openSeries(page);
+        const find = page.getByRole("button", { name: "Find a book" });
+
+        await find.click();
+
+        const field = page.getByRole("searchbox", { name: "Find a book" });
+        await expect(field).toBeFocused();
+        await expect(find).toHaveAttribute("aria-expanded", "true");
+        const [title, search] = await Promise.all([
+          boxOf(page.getByRole("heading", { level: 2, name: heading })),
+          boxOf(field),
+        ]);
+        expect(search.y).toBeGreaterThanOrEqual(title.y + title.height);
+      });
+
+      test("opens Sort and filter as a sheet", async ({ page }) => {
+        await openSeries(page);
+
+        await page.getByRole("button", { name: "Sort and filter" }).click();
+
+        await expect(
+          page.getByRole("dialog", { name: "Sort and filter" }),
+        ).toBeVisible();
+      });
+    },
+  );
+}
+
 test.describe(
   "a series' tabs with read books on an Android phone",
   { tag: "@native" },

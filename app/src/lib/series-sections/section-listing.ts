@@ -109,17 +109,30 @@ export function sectionListing(
 ): SeriesBookListing {
   const chosen = chosenSection(listing, sectionTabs(sections, screen));
   return sectionView(chosen, sections, screen) === "covers" &&
-    !hasHeadingOverTabs(sections, screen)
+    !hasSectionHeading(sections, screen)
     ? { ...chosen, shown: "all" }
     : chosen;
 }
 
-export function hasHeadingOverTabs(
-  sections: readonly unknown[],
+export function hasSectionHeading(
+  sections: readonly BookSection[],
   screen: SectionScreen,
 ): boolean {
   return (
     sectionTabsLook(screen.platform, screen.width).controls === "heading" &&
-    sectionTabs(sections, screen).length > 0
+    (sectionTabs(sections, screen).length > 0 ||
+      isOneKindOfCovers(sections, screen))
+  );
+}
+
+function isOneKindOfCovers(
+  sections: readonly BookSection[],
+  screen: SectionScreen,
+): boolean {
+  const [only, ...others] = sections;
+  return (
+    only !== undefined &&
+    others.length === 0 &&
+    sectionViews(screen)?.[only] === "covers"
   );
 }
