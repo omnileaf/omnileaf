@@ -5,6 +5,7 @@ import type {
   LibraryTab,
 } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
+import { heldAnimations, holdScriptedAnimations } from "./held-animations.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -27,7 +28,10 @@ const FIRST_TABS: readonly LibraryTab[] = [
 const DRAG_STEPS = 8;
 const MOVE_MS = 300;
 const SECOND_POINTER = 7;
-const SHORT_WINDOW = 420;
+const SHORT_WINDOW = { width: 800, height: 420 };
+const POINTER_NUDGE = 2;
+const INSIDE_THE_ROW = 2;
+const SECOND_POINTER_TRAVEL = 100;
 const SCROLLED = 40;
 const STARTING_ORDER = [/All/, /New chapters/, /Reading/, /Manga/, /Comics/];
 const DRAGGED_PAST_THE_LIST = 80;
@@ -85,16 +89,7 @@ async function openMenuOf(page: Page, name: string): Promise<Locator> {
 
 async function bottomOfRow(page: Page, name: string): Promise<number> {
   const row = await boxOf(rowOf(page, name));
-  return row.y + row.height - 2;
-}
-
-function settlingTimes(row: Locator): Promise<number[]> {
-  return row.evaluate((element) =>
-    element
-      .getAnimations()
-      .filter((animation) => !(animation instanceof CSSTransition))
-      .map((animation) => Number(animation.effect?.getTiming().duration)),
-  );
+  return row.y + row.height - INSIDE_THE_ROW;
 }
 
 function savedOrder(): string[] | undefined {
@@ -281,7 +276,7 @@ test.describe("in a library that keeps labels", () => {
 
     await page.mouse.move(x, start.y + start.height / 2);
     await page.mouse.down();
-    await page.mouse.move(x, mangaAtRest.y + mangaAtRest.height - 2, {
+    await page.mouse.move(x, await bottomOfRow(page, "Manga"), {
       steps: DRAG_STEPS,
     });
 
@@ -356,6 +351,7 @@ test.describe("in a library that keeps labels", () => {
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
+    await holdScriptedAnimations(page);
     await page.goto("/settings/library/tabs");
     const handle = rowOf(page, "Reading").getByRole("button", {
       name: "Move Reading",
@@ -365,16 +361,21 @@ test.describe("in a library that keeps labels", () => {
 
     await page.mouse.move(x, start.y + start.height / 2);
     await page.mouse.down();
-    await page.mouse.move(x, start.y + start.height, { steps: DRAG_STEPS });
+    await page.mouse.move(x, await bottomOfRow(page, "Manga"), {
+      steps: DRAG_STEPS,
+    });
 
     await expect(rowOf(page, "Manga")).toHaveCSS("transition-duration", "0s");
     await page.mouse.up();
-    expect(await settlingTimes(rowOf(page, "Reading"))).toEqual([]);
+    await expect.poll(savedOrder).toBeDefined();
+
+    expect(await heldAnimations(page)).toEqual([]);
   });
 
   test("eases a dropped tab into its gap over the kit's move time", async ({
     page,
   }) => {
+    await holdScriptedAnimations(page);
     await page.goto("/settings/library/tabs");
     const handle = rowOf(page, "Reading").getByRole("button", {
       name: "Move Reading",
@@ -389,10 +390,17 @@ test.describe("in a library that keeps labels", () => {
     });
     await page.mouse.up();
 
-    expect(await settlingTimes(rowOf(page, "Reading"))).toEqual([MOVE_MS]);
+    await expect
+      .poll(async () =>
+        (await heldAnimations(page)).map(({ duration }) => duration),
+      )
+      .toEqual([MOVE_MS]);
   });
 
   test("leaves a drag to the pointer that started it", async ({ page }) => {
+    await page.addInitScript(() => {
+      Element.prototype.setPointerCapture = () => undefined;
+    });
     await page.goto("/settings/library/tabs");
     const reading = rowOf(page, "Reading").getByRole("button", {
       name: "Move Reading",
@@ -413,8 +421,16 @@ test.describe("in a library that keeps labels", () => {
     await page.mouse.move(x, await bottomOfRow(page, "Manga"), {
       steps: DRAG_STEPS,
     });
+    const lifted = await boxOf(rowOf(page, "Reading"));
+    await comics.dispatchEvent("pointermove", {
+      pointerId: SECOND_POINTER,
+      clientY: start.y - SECOND_POINTER_TRAVEL,
+    });
     await comics.dispatchEvent("pointerup", { pointerId: SECOND_POINTER });
+
     await expect(rowOf(page, "Reading")).not.toHaveCSS("box-shadow", "none");
+    await expect(rowOf(page, "Comics")).toHaveCSS("box-shadow", "none");
+    expect((await boxOf(rowOf(page, "Reading"))).y).toBe(lifted.y);
     await page.mouse.up();
 
     await expect
@@ -425,7 +441,7 @@ test.describe("in a library that keeps labels", () => {
   test("keeps the lifted row under the pointer when the page scrolls mid-drag", async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 800, height: SHORT_WINDOW });
+    await page.setViewportSize(SHORT_WINDOW);
     await page.goto("/settings/library/tabs");
     const row = rowOf(page, "Reading");
     const start = await boxOf(
@@ -436,16 +452,18 @@ test.describe("in a library that keeps labels", () => {
 
     await page.mouse.move(x, y);
     await page.mouse.down();
-    await page.mouse.move(x, y + 2, { steps: DRAG_STEPS });
+    await page.mouse.move(x, y + POINTER_NUDGE, { steps: DRAG_STEPS });
     const before = await boxOf(row);
-    await page.getByRole("main").evaluate((main, by) => {
+    const scrolled = await page.getByRole("main").evaluate((main, by) => {
       main.scrollBy(0, by);
+      return main.scrollTop;
     }, SCROLLED);
-    await page.mouse.move(x, y + 1, { steps: DRAG_STEPS });
+    await page.mouse.move(x, y, { steps: DRAG_STEPS });
     const after = await boxOf(row);
     await page.mouse.up();
 
-    expect(after.y).toBeCloseTo(before.y - 1, 0);
+    expect(scrolled).toBe(SCROLLED);
+    expect(after.y).toBeCloseTo(before.y - POINTER_NUDGE, 0);
   });
 
   test("makes a new category, which joins the tabs at the end", async ({
