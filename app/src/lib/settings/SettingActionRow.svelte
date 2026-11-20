@@ -2,7 +2,7 @@
   import type { ClassValue } from "svelte/elements";
 
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
 
   import { FLUSH_BLEED } from "./android-flush-look.ts";
   import { ANDROID_ROW, ROW, TINTED } from "./setting-row-look.ts";
@@ -25,7 +25,7 @@
   }: Props = $props();
 
   const id = $props.id();
-  const android = new AndroidPhone();
+  const android = androidListLook();
 </script>
 
 <button

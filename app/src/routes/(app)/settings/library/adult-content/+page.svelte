@@ -9,7 +9,7 @@
   import AdultContentChoice from "#lib/library/AdultContentChoice.svelte";
   import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { currentPlatform, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { FLUSH_FOOTER } from "#lib/settings/android-flush-look.ts";
@@ -32,7 +32,7 @@
       reportError(error);
     },
   );
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const isMacos = currentPlatform() === "macos";
   const CARD = "rounded-card border border-border bg-card";
   const plate = $derived(android.isOn ? "" : isMacos ? LIST_PLATE : CARD);

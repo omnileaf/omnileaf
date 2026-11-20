@@ -14,7 +14,7 @@
   } from "#lib/language/language.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPhone } from "#lib/page/platform.ts";
   import { radiosLook } from "#lib/settings/radios-look.ts";
@@ -34,7 +34,7 @@
   const width = new WindowWidth();
   const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const look = $derived(radiosLook(android.isOn));
   const system = systemLanguage();
   const systemName = languageName(system);

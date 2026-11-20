@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { StorageUse } from "#lib/ipc/bindings.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { formatBytes } from "./bytes";
@@ -13,7 +13,7 @@
     return used.totalBytes === 0 ? 0 : (bytes / used.totalBytes) * WHOLE;
   }
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
 
   const othersBytes = $derived(
     Math.max(0, used.totalBytes - used.freeBytes - used.omnileafBytes),

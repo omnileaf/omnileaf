@@ -13,7 +13,7 @@
   import { Badge } from "#lib/components/ui/badge/index.ts";
   import type { IconName } from "#lib/icons/names.ts";
   import { commands } from "#lib/ipc/bindings.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
@@ -59,7 +59,7 @@
 
   let { data }: PageProps = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const notices = getNotices();
   const updateNotices = updateNoticesForApp();
 

@@ -10,7 +10,7 @@
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { AndroidPhone } from "./android-phone.svelte";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import type { FolderAdding } from "./folder-adding.svelte";
 
   type Placement =
@@ -57,7 +57,7 @@
     element?: HTMLElement | null;
   } = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const isInHeading = $derived(placement === "page-heading");
   const platform = currentPlatform();
   const width = new WindowWidth();

@@ -26,7 +26,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
 
-  import { AndroidPhone } from "./android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
   import { IosPhone } from "./ios-phone.svelte.ts";
@@ -54,7 +54,7 @@
     onArrange: (tabs: readonly ArrangedTab[]) => void;
   } = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const isMac = currentPlatform() === "macos";
   const IOS_ICON_SIZE = 20;
   const ios = new IosPhone();
