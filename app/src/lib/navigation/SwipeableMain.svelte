@@ -6,6 +6,7 @@
   import {
     afterNavigate,
     beforeNavigate,
+    type AfterNavigate,
     type NavigationType,
   } from "$app/navigation";
   import { page } from "$app/state";
@@ -18,7 +19,13 @@
   import { backPreviewLook, previewBackGestures } from "./back-preview";
   import { wayBackFrom } from "./back-link";
   import { backSwipeEdge, directionOf } from "./back-swipe";
-  import { holdScrollTop } from "./hold-scroll";
+  import {
+    holdScrollPlace,
+    holdScrollTop,
+    placeOf,
+    type ScrollPlace,
+  } from "./hold-scroll";
+  import { ScrollMemory } from "./scroll-memory";
   import { focusArrival } from "./page-heading";
   import { getPreviousScreens } from "./previous-screens";
   import ScreenBehindSwipe from "./ScreenBehindSwipe.svelte";
@@ -56,6 +63,7 @@
   });
 
   let stopHoldingScroll: (() => void) | undefined;
+  const scrollMemory = new ScrollMemory();
   const screenShown = $derived(
     `${page.url.pathname} ${language.resolved} ${width.current}`,
   );
@@ -94,8 +102,14 @@
     };
   }
 
-  beforeNavigate(() => {
-    if (isIos && swiped.element !== undefined) {
+  beforeNavigate(({ from, to }) => {
+    if (swiped.element === undefined) {
+      return;
+    }
+    if (from !== null) {
+      scrollMemory.leave(from.url, placeOf(swiped.element, to?.url));
+    }
+    if (isIos) {
       previousScreens.keep(page.url.pathname, swiped.element);
     }
   });
@@ -105,16 +119,41 @@
     return (type !== "enter" && !backGoesUp.isPassingThrough) || isProblem;
   }
 
-  afterNavigate(({ type }) => {
-    const landedOn = previousScreens.landedOn(page.url.pathname);
-    if (isArrival(type)) {
-      focusArrival({ preventScroll: landedOn !== undefined });
-    }
+  function isNewScreen({ from, to }: AfterNavigate): boolean {
+    return from?.url.pathname !== to?.url.pathname;
+  }
+
+  function placeScroll(
+    navigation: AfterNavigate,
+    landedOn: number | undefined,
+    restored: ScrollPlace | undefined,
+  ): void {
     stopHoldingScroll?.();
-    stopHoldingScroll =
-      landedOn === undefined || swiped.element === undefined
-        ? undefined
-        : holdScrollTop(swiped.element, landedOn.scrollTop);
+    stopHoldingScroll = undefined;
+    const main = swiped.element;
+    if (main === undefined) {
+      return;
+    }
+    if (landedOn !== undefined) {
+      stopHoldingScroll = holdScrollTop(main, landedOn);
+    } else if (restored !== undefined) {
+      stopHoldingScroll = holdScrollPlace(main, restored);
+    } else if (isNewScreen(navigation)) {
+      main.scrollTop = 0;
+    }
+  }
+
+  afterNavigate((navigation) => {
+    const { type, to } = navigation;
+    const landedOn = previousScreens.landedOn(page.url.pathname)?.scrollTop;
+    const restored =
+      to === null ? undefined : scrollMemory.placeToRestore(type, to.url);
+    if (isArrival(type)) {
+      focusArrival({
+        preventScroll: landedOn !== undefined || restored !== undefined,
+      });
+    }
+    placeScroll(navigation, landedOn, restored);
     swiped.arrived();
     backProgress = undefined;
     previousScreens.forgetAllButAbove(page.url.pathname);
