@@ -32,3 +32,12 @@ test("has nothing to restore for a screen it never left", () => {
 
   expect(memory.placeToRestore("popstate", SERIES)).toBeUndefined();
 });
+
+test("hands a place back once, so a later visit to the same page keeps its own", () => {
+  const memory = new ScrollMemory();
+  memory.leave(LIBRARY, LEFT_AT);
+
+  memory.placeToRestore("popstate", LIBRARY);
+
+  expect(memory.placeToRestore("popstate", LIBRARY)).toBeUndefined();
+});

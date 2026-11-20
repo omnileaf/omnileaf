@@ -10,6 +10,11 @@ export class ScrollMemory {
   }
 
   placeToRestore(type: NavigationType, url: URL): ScrollPlace | undefined {
-    return type === "popstate" ? this.#places.get(url.href) : undefined;
+    if (type !== "popstate") {
+      return undefined;
+    }
+    const place = this.#places.get(url.href);
+    this.#places.delete(url.href);
+    return place;
   }
 }
