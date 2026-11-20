@@ -39,6 +39,8 @@ const SERIES: readonly WireSeries[] = [
   id,
   title: `${REAL_TITLE} ${String(index + 1)}`,
   bookCount: index + 2,
+  volumeCount: 0,
+  chapterCount: 0,
   unreadCount: index + 1,
   cover: `thumb/v1/${id}/1/1`,
   language: null,
