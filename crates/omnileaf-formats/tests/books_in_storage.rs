@@ -18,6 +18,7 @@ use std::{
 
 use omnileaf_formats::{
     Book, Details, Entry, EntryKind, FormatError, Limits, LocalStorage, Storage, open_book_in,
+    recognise_book_in,
 };
 use omnileaf_testkit::{Compression, PageShape, cbz, page_png};
 use support::{ScratchFolder, entry};
@@ -126,6 +127,71 @@ fn opens_an_archive_through_a_storage_with_one_open() {
 
     assert_eq!(names_of(&book), ["1.png", "2.png"]);
     assert_eq!(storage.calls().opens, 1);
+}
+
+#[test]
+fn recognises_an_archive_with_one_lookup_and_one_open_and_opens_it_with_no_more() {
+    let scratch = ScratchFolder::new("storage-found-archive");
+    let entries = [entry("2.png", page(1)), entry("1.png", page(0))];
+    scratch.write("book.cbz", &cbz(&entries, Compression::Deflated).unwrap());
+    let storage = CountingStorage::serving(scratch.path());
+    let shared: Arc<dyn Storage> = storage.clone();
+
+    let recognised = recognise_book_in(&shared, Path::new("book.cbz")).unwrap();
+    let after_recognising = storage.calls();
+    let is_archive = recognised.is_archive();
+    let book = recognised.open(&Limits::default()).unwrap();
+
+    assert!(is_archive);
+    assert_eq!(
+        after_recognising,
+        Calls {
+            listings: 0,
+            lookups: 1,
+            opens: 1,
+        }
+    );
+    assert_eq!(storage.calls(), after_recognising);
+    assert_eq!(names_of(&book), ["1.png", "2.png"]);
+}
+
+#[test]
+fn recognises_a_folder_of_images_without_opening_a_file() {
+    let scratch = ScratchFolder::new("storage-found-folder");
+    scratch.write("Chapter/1.png", &page(0));
+    let storage = CountingStorage::serving(scratch.path());
+    let shared: Arc<dyn Storage> = storage.clone();
+
+    let recognised = recognise_book_in(&shared, Path::new("Chapter")).unwrap();
+
+    assert!(matches!(recognised.details(), Details::Folder { .. }));
+    assert!(!recognised.is_archive());
+    assert_eq!(recognised.path(), Path::new("Chapter"));
+    assert_eq!(storage.calls().opens, 0);
+}
+
+#[test]
+fn opens_a_recognised_book_as_opening_it_in_one_step_does() {
+    let scratch = ScratchFolder::new("storage-found-like-opened");
+    let entries = [entry("2.png", page(1)), entry("1.png", page(0))];
+    scratch.write("book.cbz", &cbz(&entries, Compression::Deflated).unwrap());
+    scratch.write("Chapter/2.png", &page(1));
+    scratch.write("Chapter/1.png", &page(0));
+    let storage: Arc<dyn Storage> = CountingStorage::serving(scratch.path());
+
+    for path in [Path::new("book.cbz"), Path::new("Chapter")] {
+        let recognised = recognise_book_in(&storage, path).unwrap();
+        let details = recognised.details();
+        let mut found_book = recognised.open(&Limits::default()).unwrap();
+        let mut opened = open_book_in(Arc::clone(&storage), path, &Limits::default()).unwrap();
+
+        assert_eq!(details, storage.details(path).unwrap());
+        assert_eq!(found_book.pages(), opened.pages());
+        assert_eq!(
+            found_book.fingerprint().unwrap(),
+            opened.fingerprint().unwrap()
+        );
+    }
 }
 
 #[test]
