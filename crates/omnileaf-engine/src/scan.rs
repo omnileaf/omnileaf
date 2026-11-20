@@ -1,9 +1,13 @@
 use std::{
     collections::BTreeSet,
     error::Error,
-    io,
+    io, iter,
+    num::NonZeroUsize,
     path::{Path, PathBuf, StripPrefixError},
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 use omnileaf_db::{
@@ -32,6 +36,7 @@ use crate::{
     file_type::{FileType, HiddenFileTypes},
     library_layout::{FoundBook, Layout, find_books, folder_name},
     library_removal::bring_back_marked,
+    overlapped_reads::read_at_most,
     placement::{Placement, place_book},
     series_naming::series_named_in_files,
     skipped_types::{SkippedFile, SkippedType},
@@ -39,6 +44,8 @@ use crate::{
 };
 
 pub(crate) const BOOKS_PER_BATCH: usize = 32;
+/// Each open through Android's storage access framework waits on a round trip to the documents provider, so a scan reads this many books at once to overlap those waits.
+const BOOKS_READ_AT_ONCE: NonZeroUsize = NonZeroUsize::MIN.saturating_add(7);
 /// Android copies a document its provider can only stream into the cache before it is read, so a phone keeps at most this many listed bytes of books open at once.
 const BOOK_BYTES_OPEN_AT_ONCE: u64 = if IS_MOBILE { GIBIBYTE } else { 64 * GIBIBYTE };
 const GIBIBYTE: u64 = 1 << 30;
@@ -108,6 +115,14 @@ impl UnreadableBook {
 
     pub(crate) fn is_hidden(&self) -> bool {
         matches!(self, Self::HiddenType(_))
+    }
+
+    fn has_timed_out(&self) -> bool {
+        iter::successors(Some(self as &(dyn Error + 'static)), |&error| {
+            error.source()
+        })
+        .filter_map(|error| error.downcast_ref::<io::Error>())
+        .any(|error| error.kind() == io::ErrorKind::TimedOut)
     }
 }
 
@@ -230,6 +245,7 @@ pub(crate) struct BookReader {
     target: Target,
     decodes: Arc<DecodePermits>,
     bytes: Arc<ByteBudget>,
+    has_timed_out: Arc<AtomicBool>,
 }
 
 impl BookReader {
@@ -246,6 +262,7 @@ impl BookReader {
             target,
             decodes,
             bytes,
+            has_timed_out: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -258,17 +275,40 @@ impl BookReader {
     }
 
     fn read_each(&self, batch: &[FoundBook]) -> Vec<Result<ScannedBook, UnreadableBook>> {
-        batch.iter().map(|found| self.read_book(found)).collect()
-    }
-
-    fn read_book(&self, found: &FoundBook) -> Result<ScannedBook, UnreadableBook> {
-        let read = self.read_found_book(found);
-        if let Err(error) = &read
-            && !error.is_hidden()
-        {
-            warn_unreadable(found, error);
+        let mut read = read_at_most(batch, self.books_read_at_once(), |found| {
+            self.read_found_book(found)
+        });
+        self.read_again_what_timed_out(batch, &mut read);
+        for (found, book) in batch.iter().zip(&read) {
+            if let Err(error) = book
+                && !error.is_hidden()
+            {
+                warn_unreadable(found, error);
+            }
         }
         read
+    }
+
+    fn books_read_at_once(&self) -> NonZeroUsize {
+        if self.has_timed_out.load(Ordering::Relaxed) {
+            NonZeroUsize::MIN
+        } else {
+            BOOKS_READ_AT_ONCE
+        }
+    }
+
+    /// Android gives up on each open after a set time, so a documents provider that serves one open at a time times out the others it was asked for at once.
+    fn read_again_what_timed_out(
+        &self,
+        batch: &[FoundBook],
+        read: &mut [Result<ScannedBook, UnreadableBook>],
+    ) {
+        for (found, book) in batch.iter().zip(read) {
+            if book.as_ref().is_err_and(UnreadableBook::has_timed_out) {
+                self.has_timed_out.store(true, Ordering::Relaxed);
+                *book = self.read_found_book(found);
+            }
+        }
     }
 
     fn read_found_book(&self, found: &FoundBook) -> Result<ScannedBook, UnreadableBook> {
@@ -430,6 +470,71 @@ mod tests {
     const LONG_ENOUGH_TO_PARSE: Duration = Duration::from_millis(300);
     const BYTES_ADDED_SINCE_RECOGNISED: u64 = 1;
     const TEST_BYTE_BUDGET: u64 = 1 << 20;
+    const ARCHIVES: GeneratedLibrary = GeneratedLibrary {
+        series: 1,
+        books_per_series: 8,
+        pages_per_book: 1,
+    };
+    const IMAGE_FOLDER_BOOKS: usize = 8;
+    const LISTED_BYTES: u64 = 100;
+    const BOOKS_THE_BUDGET_HOLDS: u64 = 2;
+    const WAIT_FOR_COMPANY: Duration = Duration::from_secs(2);
+    const WAIT_FOR_A_THIRD_OPEN: Duration = Duration::from_millis(300);
+
+    #[derive(Debug)]
+    struct OpensInCompany {
+        root: PathBuf,
+        company: usize,
+        longest: Duration,
+        open_now: AtomicUsize,
+        most_open_at_once: AtomicUsize,
+    }
+
+    impl OpensInCompany {
+        fn waiting_for(scratch: &ScratchFolder, company: usize, longest: Duration) -> Arc<Self> {
+            Arc::new(Self {
+                root: scratch.path().to_path_buf(),
+                company,
+                longest,
+                open_now: AtomicUsize::new(0),
+                most_open_at_once: AtomicUsize::new(0),
+            })
+        }
+
+        fn most_open_at_once(&self) -> usize {
+            self.most_open_at_once.load(Ordering::SeqCst)
+        }
+    }
+
+    impl Storage for OpensInCompany {
+        fn entries(&self, folder: &Path) -> io::Result<Vec<Entry>> {
+            LocalStorage.entries(&self.root.join(folder))
+        }
+
+        fn details(&self, path: &Path) -> io::Result<Details> {
+            LocalStorage.details(&self.root.join(path))
+        }
+
+        fn open(&self, file: &Path) -> io::Result<File> {
+            let now = self.open_now.fetch_add(1, Ordering::SeqCst) + 1;
+            self.most_open_at_once.fetch_max(now, Ordering::SeqCst);
+            wait_until_within(self.longest, || self.most_open_at_once() >= self.company);
+            let opened = LocalStorage.open(&self.root.join(file));
+            self.open_now.fetch_sub(1, Ordering::SeqCst);
+            opened
+        }
+    }
+
+    fn archives(scratch: &ScratchFolder) -> Vec<FoundBook> {
+        write_generated_library(scratch.path(), ARCHIVES)
+            .unwrap()
+            .into_iter()
+            .map(|path| {
+                let listed_bytes = fs::metadata(scratch.path().join(&path)).unwrap().len();
+                FoundBook { path, listed_bytes }
+            })
+            .collect()
+    }
 
     #[derive(Debug)]
     struct ChangingSinceRecognised {
@@ -576,6 +681,67 @@ mod tests {
 
         let read = finished.recv_timeout(LONGEST_WAIT).unwrap();
         assert!(read.iter().all(Result::is_ok), "{read:?}");
+    }
+
+    #[test]
+    fn opens_archives_at_once_on_one_permit() {
+        let scratch = ScratchFolder::new("scan-archives-in-company");
+        let books = archives(&scratch);
+        let storage = OpensInCompany::waiting_for(&scratch, 2, WAIT_FOR_COMPANY);
+        let reader = BookReader::sharing(
+            target_over(storage.clone()),
+            Arc::new(DecodePermits::new(1)),
+            Arc::new(ByteBudget::new(TEST_BYTE_BUDGET)),
+        );
+
+        let read = reader.read_each(&books);
+
+        assert!(read.iter().all(Result::is_ok), "{read:?}");
+        assert!(storage.most_open_at_once() > 1);
+    }
+
+    #[test]
+    fn opens_folders_of_images_at_once_on_one_permit() {
+        let scratch = ScratchFolder::new("scan-folders-in-company");
+        let books: Vec<FoundBook> = (1..=IMAGE_FOLDER_BOOKS)
+            .map(|chapter| image_folder(&scratch, chapter))
+            .collect();
+        let storage = OpensInCompany::waiting_for(&scratch, 2, WAIT_FOR_COMPANY);
+        let reader = BookReader::sharing(
+            target_over(storage.clone()),
+            Arc::new(DecodePermits::new(1)),
+            Arc::new(ByteBudget::new(TEST_BYTE_BUDGET)),
+        );
+
+        let read = reader.read_each(&books);
+
+        assert!(read.iter().all(Result::is_ok), "{read:?}");
+        assert!(storage.most_open_at_once() > 1);
+    }
+
+    #[test]
+    fn opens_no_more_listed_bytes_at_once_than_its_budget_holds() {
+        let scratch = ScratchFolder::new("scan-bytes-in-company");
+        let books: Vec<FoundBook> = archives(&scratch)
+            .into_iter()
+            .map(|book| FoundBook {
+                listed_bytes: LISTED_BYTES,
+                ..book
+            })
+            .collect();
+        let storage = OpensInCompany::waiting_for(&scratch, 3, WAIT_FOR_A_THIRD_OPEN);
+        let reader = budgeted_reader(
+            storage.clone(),
+            &Arc::new(ByteBudget::new(LISTED_BYTES * BOOKS_THE_BUDGET_HOLDS)),
+        );
+
+        let read = reader.read_each(&books);
+
+        assert!(read.iter().all(Result::is_ok), "{read:?}");
+        assert_eq!(
+            storage.most_open_at_once(),
+            usize::try_from(BOOKS_THE_BUDGET_HOLDS).unwrap()
+        );
     }
 
     #[test]

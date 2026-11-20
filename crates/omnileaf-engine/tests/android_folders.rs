@@ -12,6 +12,7 @@ use std::{
     future::ready,
     path::{Path, PathBuf},
     sync::Arc,
+    time::{Duration, SystemTime},
 };
 
 use omnileaf_engine::{
@@ -23,7 +24,7 @@ use omnileaf_engine::{
 use omnileaf_testkit::SAMPLE_LIBRARY_NAME;
 use stepped_clock::SteppedClock;
 use support::{FixedClock, ScratchFolder};
-use tree_of_folder::TreeOfFolder;
+use tree_of_folder::{Opening, TreeOfFolder};
 
 const EMPTIED_SERIES: &str = "Sample Series 01";
 const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
@@ -32,6 +33,9 @@ const SAMPLE_BOOKS: u32 = 7;
 const ARCHIVE_BOOKS: usize = 5;
 const IMAGE_FOLDER_BOOKS: usize = 2;
 const IMAGES_OPENED_PER_IMAGE_FOLDER: usize = 2;
+const WAIT_FOR_A_SECOND_OPEN: Duration = Duration::from_secs(2);
+const ARCHIVES_CHANGED_AT: Duration = Duration::from_hours(500_000);
+const TIMED_OUT_AFTER: Duration = Duration::from_millis(200);
 
 struct LocalDevice;
 
@@ -149,6 +153,82 @@ async fn opens_no_file_twice_when_scanning_an_android_folder() {
             ARCHIVE_BOOKS + IMAGE_FOLDER_BOOKS * IMAGES_OPENED_PER_IMAGE_FOLDER,
             opens
         )
+    );
+}
+
+#[tokio::test]
+async fn opens_several_books_at_once_when_scanning_an_android_folder() {
+    let home = ScratchFolder::new("tree-overlap-home");
+    let tree = TreeOfFolder::opening(
+        "tree-overlap-comics",
+        Opening::InCompanyWithin(WAIT_FOR_A_SECOND_OPEN),
+    );
+    let library = open_reading(home.path(), &tree).await;
+
+    let scan = library.add_folder(sample_tree(), |_| {}).await.unwrap();
+
+    assert_eq!(scan.books, SAMPLE_BOOKS);
+    assert!(tree.take_most_open_at_once() > 1);
+}
+
+#[tokio::test]
+async fn opens_several_changed_books_at_once_when_rescanning_an_android_folder() {
+    let home = ScratchFolder::new("tree-overlap-rescan-home");
+    let tree = TreeOfFolder::opening(
+        "tree-overlap-rescan-comics",
+        Opening::InCompanyWithin(WAIT_FOR_A_SECOND_OPEN),
+    );
+    let library = open_reading(home.path(), &tree).await;
+    library.add_folder(sample_tree(), |_| {}).await.unwrap();
+    tree.change_every_archive(SystemTime::UNIX_EPOCH + ARCHIVES_CHANGED_AT);
+    tree.take_most_open_at_once();
+
+    let outcome = rescan_linked(&library).await;
+
+    assert_eq!(
+        outcome,
+        RescanOutcome::Rescanned(FileChanges {
+            updated: u32::try_from(ARCHIVE_BOOKS).unwrap(),
+            ..FileChanges::default()
+        })
+    );
+    assert!(tree.take_most_open_at_once() > 1);
+}
+
+#[tokio::test]
+async fn reads_every_book_of_an_android_folder_whose_provider_times_out_opens_in_company() {
+    let home = ScratchFolder::new("tree-timeouts-home");
+    let tree = TreeOfFolder::opening(
+        "tree-timeouts-comics",
+        Opening::TimingOutInCompanyWithin(TIMED_OUT_AFTER),
+    );
+    let library = open_reading(home.path(), &tree).await;
+
+    let scan = library.add_folder(sample_tree(), |_| {}).await.unwrap();
+
+    assert_eq!((scan.books, scan.unreadable_books), (SAMPLE_BOOKS, 0));
+}
+
+#[tokio::test]
+async fn rescans_every_changed_book_of_an_android_folder_whose_provider_times_out_opens_in_company()
+{
+    let home = ScratchFolder::new("tree-timeouts-rescan-home");
+    let tree = TreeOfFolder::opening(
+        "tree-timeouts-rescan-comics",
+        Opening::TimingOutInCompanyWithin(TIMED_OUT_AFTER),
+    );
+    let library = open_reading(home.path(), &tree).await;
+    library.add_folder(sample_tree(), |_| {}).await.unwrap();
+    tree.change_every_archive(SystemTime::UNIX_EPOCH + ARCHIVES_CHANGED_AT);
+
+    let outcome = rescan_linked(&library).await;
+
+    assert_eq!(
+        outcome,
+        RescanOutcome::Rescanned(FileChanges {
+            updated: u32::try_from(ARCHIVE_BOOKS).unwrap(),
+            ..FileChanges::default()
+        })
     );
 }
 

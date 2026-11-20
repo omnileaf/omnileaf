@@ -4,7 +4,10 @@
 )]
 
 mod support;
-#[expect(dead_code, reason = "these tests never count the files opened")]
+#[expect(
+    dead_code,
+    reason = "these tests never count, pace, time out or change the files opened"
+)]
 mod tree_of_folder;
 
 use std::{fs, path::Path, sync::Arc};
