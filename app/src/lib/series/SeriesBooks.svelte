@@ -4,7 +4,6 @@
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
-  import { beforeNavigate } from "$app/navigation";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
@@ -48,6 +47,7 @@
   import type { SeriesBookCommands } from "./series-book-commands";
   import BookTable from "./BookTable.svelte";
   import { Selection } from "#lib/page/selection.svelte.ts";
+  import { endsOnBack } from "#lib/page/selection-back.svelte.ts";
   import BarControls from "./BarControls.svelte";
   import SelectionBar from "./SelectionBar.svelte";
   import WindowsSelectionBar from "./WindowsSelectionBar.svelte";
@@ -419,12 +419,12 @@
     });
   });
 
-  beforeNavigate((navigation) => {
-    if (navigation.type === "popstate" && navigation.delta < 0 && isPicking) {
-      navigation.cancel();
+  endsOnBack(
+    () => isPicking,
+    () => {
       void end();
-    }
-  });
+    },
+  );
 
   function announced(shown: Outcome): string {
     switch (shown.kind) {

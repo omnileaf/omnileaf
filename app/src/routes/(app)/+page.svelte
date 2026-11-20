@@ -104,6 +104,7 @@
     setSeriesSelection,
   } from "#lib/library/series-selection.ts";
   import { Selection } from "#lib/page/selection.svelte.ts";
+  import { endsOnBack } from "#lib/page/selection-back.svelte.ts";
   import type { SeriesId } from "#lib/series/series-id.ts";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import { holdScrollTop } from "#lib/navigation/hold-scroll.ts";
@@ -365,6 +366,12 @@
     await loadMissingFolders();
   }
   const selection = new Selection<SeriesId>();
+  endsOnBack(
+    () => selection.isSelecting,
+    () => {
+      selection.end();
+    },
+  );
   const updateCheck = updateCheckForApp();
   setSeriesSelection(selection);
   let keepsLabels = $state(false);

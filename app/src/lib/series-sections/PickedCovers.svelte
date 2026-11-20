@@ -1,13 +1,13 @@
 <script lang="ts">
   import { tick } from "svelte";
 
-  import { beforeNavigate } from "$app/navigation";
   import type { ResolvedPathname } from "$app/types";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import DragBox from "#lib/library/DragBox.svelte";
   import { DragSelect } from "#lib/library/drag-select.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { Selection } from "#lib/page/selection.svelte.ts";
+  import { endsOnBack } from "#lib/page/selection-back.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SelectionBar from "#lib/series/SelectionBar.svelte";
   import { shortcut } from "#lib/shortcut.ts";
@@ -117,16 +117,12 @@
     outcome = { kind: "pickedAll", count: pickedBooks.length };
   }
 
-  beforeNavigate((navigation) => {
-    if (
-      navigation.type === "popstate" &&
-      navigation.delta < 0 &&
-      selection.isSelecting
-    ) {
-      navigation.cancel();
+  endsOnBack(
+    () => selection.isSelecting,
+    () => {
       void end();
-    }
-  });
+    },
+  );
 
   async function mark(read: ReadMark): Promise<void> {
     if (
