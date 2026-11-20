@@ -47,7 +47,10 @@
                 current !== undefined ? look.rowOpen : look.rowIdle,
               ]}
             >
-              <section.icon size={ICON_SIZE} class={look.icon} />
+              <section.icon
+                size={ICON_SIZE}
+                class={[look.icon, current === undefined && look.iconIdle]}
+              />
               <span
                 data-label={section.label()}
                 class="room-for-bold-label min-inline-none"

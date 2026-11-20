@@ -268,7 +268,7 @@
     </Tooltip>
     <h1
       tabindex="-1"
-      class={["mbs-xs wrap-anywhere two-pane:mbs-none", titleLook]}
+      class={["mbs-xs wrap-anywhere two-pane:mbs-none android:pbe-md android:font-regular android:tracking-normal", titleLook]}
     >
       {title}
     </h1>
