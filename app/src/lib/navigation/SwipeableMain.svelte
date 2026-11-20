@@ -15,7 +15,15 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
   import { getBackGoesUp } from "./back-goes-up";
-  import { backPreviewLook, previewBackGestures } from "./back-preview";
+  import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
+
+  import AndroidBackLayers from "./AndroidBackLayers.svelte";
+  import {
+    ANDROID_BACK_MOTION,
+    AndroidBackPreview,
+    placedTransform,
+  } from "./android-back-preview.svelte";
+  import { previewBackGestures } from "./back-preview";
   import { wayBackFrom } from "./back-link";
   import { backSwipeEdge, directionOf } from "./back-swipe";
   import { holdScrollTop } from "./hold-scroll";
@@ -38,12 +46,12 @@
     children: Snippet;
   } = $props();
 
-  let backProgress: number | undefined = $state();
-  const backPreview = $derived(
-    backProgress === undefined
-      ? undefined
-      : backPreviewLook(backProgress, prefersReducedMotion.current),
-  );
+  const theme = getThemeSetting();
+  const androidBack = new AndroidBackPreview({
+    isDark: () => theme.resolved === "dark",
+    isMotionReduced: () => prefersReducedMotion.current,
+  });
+  let isEnteringSettled = $state(false);
 
   const language = getLanguageSetting();
   const backGoesUp = getBackGoesUp();
@@ -94,9 +102,43 @@
     };
   }
 
-  beforeNavigate(() => {
-    if (isIos && swiped.element !== undefined) {
+  beforeNavigate(({ type }) => {
+    if ((isIos || isAndroid) && swiped.element !== undefined) {
       previousScreens.keep(page.url.pathname, swiped.element);
+    }
+    const leavingCopy = previousScreens.of(page.url.pathname);
+    if (type === "popstate" && leavingCopy !== undefined) {
+      isEnteringSettled = false;
+      androidBack.leave(leavingCopy);
+    }
+  });
+
+  const androidMainTransform = $derived.by(() => {
+    switch (androidBack.phase) {
+      case "following":
+        return androidBack.frame === undefined
+          ? undefined
+          : placedTransform(androidBack.frame.closing);
+      case "cancelling":
+        return placedTransform({ scale: 1, x: 0, y: 0 });
+      case "committing":
+        return androidBack.enteringFrom === undefined || isEnteringSettled
+          ? placedTransform({ scale: 1, x: 0, y: 0 })
+          : placedTransform(androidBack.enteringFrom);
+      case "resting":
+        return undefined;
+    }
+  });
+  const androidMainTransition = $derived.by(() => {
+    switch (androidBack.phase) {
+      case "cancelling":
+        return `transform ${String(ANDROID_BACK_MOTION.cancelMs)}ms ease-out`;
+      case "committing":
+        return isEnteringSettled
+          ? `transform ${String(ANDROID_BACK_MOTION.commitMs)}ms var(--ease-emphasized)`
+          : undefined;
+      default:
+        return undefined;
     }
   });
 
@@ -116,7 +158,12 @@
         ? undefined
         : holdScrollTop(swiped.element, landedOn.scrollTop);
     swiped.arrived();
-    backProgress = undefined;
+    androidBack.arrived();
+    if (androidBack.phase === "committing") {
+      requestAnimationFrame(() => {
+        isEnteringSettled = true;
+      });
+    }
     previousScreens.forgetAllButAbove(page.url.pathname);
   });
 
@@ -130,8 +177,10 @@
 
   onMount(() => {
     if (isAndroid) {
-      previewBackGestures((progress) => {
-        backProgress = progress;
+      previewBackGestures((gesture) => {
+        if (swiped.element !== undefined) {
+          androidBack.follow(gesture, swiped.element);
+        }
       });
     }
     return () => {
@@ -143,21 +192,30 @@
 {#if swiped.behind !== undefined}
   <ScreenBehindSwipe {...swiped.behind} />
 {/if}
+{#if isAndroid}
+  <AndroidBackLayers
+    preview={androidBack}
+    behind={androidBack.area === undefined || swiped.element === undefined
+      ? undefined
+      : previousScreens.of(backPathFrom(swiped.element) ?? "")}
+    cornerPx={androidBack.cornerPx}
+  />
+{/if}
 <main
   bind:this={swiped.element}
   {@attach forgetCopiesOnSettingChange}
-  style:transform={backPreview === undefined
-    ? swiped.transform
-    : `scale(${String(backPreview.scale)})`}
-  style:border-radius={backPreview === undefined
+  style:transform={androidMainTransform ?? swiped.transform}
+  style:border-radius={androidMainTransform === undefined
     ? undefined
-    : `${String(backPreview.cornerPx)}px`}
+    : `${String(androidBack.cornerPx)}px`}
+  style:transition={androidMainTransition}
   class={[
     "order-2 flex flex-1 flex-col overflow-y-auto has-data-macos-inspector:me-native-inspector desktop-shell:has-data-page-toolbar:scroll-pbs-toolbar",
     !isFullScreen &&
       "px-gutter py-xl pe-page-end pbs-page-top max-medium:ps-page-start medium:pbe-page-bottom ios:max-medium:pbe-floating-clearance",
     "windows:desktop-shell:rounded-ss-windows-layer windows:desktop-shell:border-s windows:desktop-shell:border-bs windows:desktop-shell:border-windows-stroke windows:desktop-shell:bg-background",
     swiped.look,
+    androidMainTransform !== undefined && "bg-background",
   ]}
 >
   <PageNoticeSlot />
