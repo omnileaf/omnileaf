@@ -48,14 +48,13 @@ test.describe(
     }) => {
       await page.goto("/settings/reading");
       await page.getByRole("button", { name: /^Reading mode/ }).click();
+      const automatic = page
+        .getByRole("dialog", { name: "Reading mode" })
+        .getByRole("radio", { name: "Automatic" });
+      const hint = "Automatic picks paged or long strip for each series.";
 
-      await expect(
-        page
-          .getByRole("dialog", { name: "Reading mode" })
-          .getByRole("radio", { name: "Automatic" }),
-      ).toHaveAccessibleDescription(
-        "Automatic picks paged or long strip for each series.",
-      );
+      await expect(automatic.getByText(hint)).toBeVisible();
+      await expect(automatic).toHaveAccessibleDescription(hint);
     });
 
     test("draws no card around any section and heads End of a book in the accent at 14px", async ({
