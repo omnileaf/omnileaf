@@ -1,26 +1,23 @@
 <script lang="ts">
   import { CircleAlert, Copy, ExternalLink, Globe, Save } from "@lucide/svelte";
 
+  import AboutButtonRow from "#lib/about/AboutButtonRow.svelte";
   import { Alert, AlertTitle } from "#lib/components/ui/alert/index.ts";
-  import RowText from "#lib/about/RowText.svelte";
-  import { ROW_ICON_SIZES } from "#lib/about/look.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
-  import { Item } from "#lib/components/ui/item/index.ts";
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { IconName } from "#lib/icons/names.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
-  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import {
-    FLUSH_LIST,
-    FLUSH_LIST_HEADING,
-  } from "#lib/settings/android-flush-look.ts";
 
+  import {
+    CurrentReportRowsLook,
+    ICON_TILE,
+    REPORT_HEADINGS,
+    REPORT_LISTS,
+    TILE_ICON_SIZE,
+  } from "./report-rows-look.ts";
   import type { ReportSharing, ShareWay } from "./report-sharing.svelte";
   import { failureMessage } from "./share-failure";
-
-  const ICON_SIZE = 16;
 
   interface Way {
     readonly way: ShareWay;
@@ -63,7 +60,11 @@
   );
 
   const headingId = $props.id();
-  const android = new AndroidPhone();
+  const rowsLook = new CurrentReportRowsLook();
+
+  function shareBy(way: ShareWay): void {
+    void sharing.share(way);
+  }
 </script>
 
 <section
@@ -71,53 +72,24 @@
   aria-labelledby={headingId}
   class="mbs-lg flex flex-col"
 >
-  <h2
-    id={headingId}
-    class={android.isOn
-      ? FLUSH_LIST_HEADING
-      : "mbe-ways-heading-gap text-small font-semibold"}
-  >
+  <h2 id={headingId} class={REPORT_HEADINGS[rowsLook.current]}>
     {m.report_other_ways_to_send()}
   </h2>
-  <ul
-    class={android.isOn
-      ? FLUSH_LIST
-      : [
-          "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card",
-          GROUP_PLATE,
-        ]}
-  >
+  <ul class={REPORT_LISTS[rowsLook.current]}>
     {#each ways as { way, icon: Icon, iconName, label, opensBrowser } (way)}
       <li>
-        {#if android.isOn}
-          <Item look="row">
-            {#snippet child({ props })}
-              <Button
-                {...props}
-                type="button"
-                look="row"
-                onclick={() => {
-                  void sharing.share(way);
-                }}
-              >
-                <RowText
-                  icon={Icon}
-                  {iconName}
-                  label={label()}
-                  hint={undefined}
-                  look="android"
-                />
-                {#if opensBrowser}
-                  <ExternalLink
-                    role="img"
-                    aria-label={m.about_opens_in_browser()}
-                    size={ROW_ICON_SIZES.android}
-                    class="shrink-0 text-muted"
-                  />
-                {/if}
-              </Button>
-            {/snippet}
-          </Item>
+        {#if rowsLook.current === "flush"}
+          <AboutButtonRow
+            icon={Icon}
+            {iconName}
+            label={label()}
+            hint={undefined}
+            look="android"
+            {opensBrowser}
+            onPress={() => {
+              shareBy(way);
+            }}
+          />
         {:else}
           <Button
             type="button"
@@ -127,14 +99,11 @@
               ROW_FOCUS_RING,
             ]}
             onclick={() => {
-              void sharing.share(way);
+              shareBy(way);
             }}
           >
-            <span
-              aria-hidden="true"
-              class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile"
-            >
-              <Icon size={ICON_SIZE} />
+            <span aria-hidden="true" class={ICON_TILE}>
+              <Icon size={TILE_ICON_SIZE} />
             </span>
             <span class="flex-1 font-medium expanded:font-semibold"
               >{label()}</span
@@ -143,7 +112,7 @@
               <ExternalLink
                 role="img"
                 aria-label={m.about_opens_in_browser()}
-                size={ICON_SIZE}
+                size={TILE_ICON_SIZE}
                 class="shrink-0 text-muted"
               />
             {/if}

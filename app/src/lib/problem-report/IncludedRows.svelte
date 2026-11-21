@@ -3,17 +3,15 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import type { ProblemReportPreview } from "#lib/ipc/bindings.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
-  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
 
   import IncludedRow from "./IncludedRow.svelte";
+  import { CurrentReportRowsLook, REPORT_LISTS } from "./report-rows-look.ts";
 
   let { report }: { report: ProblemReportPreview } = $props();
 
   const logId = $props.id();
-  const android = new AndroidPhone();
+  const rowsLook = new CurrentReportRowsLook();
   let isLogShown = $state(false);
 
   const version = $derived(
@@ -32,14 +30,7 @@
 </script>
 
 <section data-settings-group aria-label={m.report_included()}>
-  <ul
-    class={android.isOn
-      ? FLUSH_LIST
-      : [
-          "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card",
-          GROUP_PLATE,
-        ]}
-  >
+  <ul class={REPORT_LISTS[rowsLook.current]}>
     <IncludedRow
       icon={Info}
       iconName="info"
