@@ -8,6 +8,8 @@ import {
 
 test.use({ backend: { ...DEFAULT_BACKEND } });
 
+const SETTINGS_RULE_WIDTH = 1;
+
 const ROWS = [
   { name: "Version and device", icon: "info" },
   { name: "Log", icon: "scroll-text" },
@@ -63,10 +65,10 @@ test.describe(
           .filter({ has: page.getByText(name, { exact: true }) });
         const label = row.getByText(name, { exact: true });
 
-        expect((await boxOf(row.locator(`[data-icon=${icon}]`))).x).toBe(16);
-        expect((await boxOf(row.locator(`[data-icon=${icon}]`))).width).toBe(
-          24,
-        );
+        const glyph = await boxOf(row.locator(`[data-icon=${icon}]`));
+
+        expect(glyph.x).toBe(16);
+        expect(glyph.width).toBe(24);
         expect((await boxOf(label)).x).toBe(56);
         expect((await boxOf(row)).x).toBe(0);
         await expect(label).toHaveCSS("font-size", "16px");
@@ -103,7 +105,10 @@ test.describe(
 
       const headingBox = await boxOf(heading);
 
-      expect(headingBox.y - (await boxOf(group)).y).toBeCloseTo(1, 0);
+      expect(headingBox.y - (await boxOf(group)).y).toBeCloseTo(
+        SETTINGS_RULE_WIDTH,
+        0,
+      );
       expect((await boxOf(firstRow)).y).toBeCloseTo(
         headingBox.y + headingBox.height,
         0,
