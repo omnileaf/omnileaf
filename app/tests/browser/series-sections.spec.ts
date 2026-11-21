@@ -29,6 +29,7 @@ const NARROW_WIDTH = EXPANDED_MIN_WIDTH - 40;
 const PHONE_IN_LANDSCAPE = { width: 700, height: 360 };
 const PHONE_IN_PORTRAIT = { width: 360, height: 800 };
 const LIBRARY_CHANGED = "library-changed";
+const KEYBOARD_HEIGHT = 336;
 
 function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
@@ -484,6 +485,131 @@ test.describe(
         expect(await accessibilityViolations(page)).toEqual([]);
       });
     }
+  },
+);
+
+test.describe(
+  "Find a book under an Android phone's tabs",
+  { tag: "@native" },
+  () => {
+    const shelf = new SectionShelf(EVERY_KIND);
+    test.use({
+      platform: "android",
+      backend: shelf.backend(),
+      viewport: PHONE_IN_PORTRAIT,
+    });
+
+    function findButton(page: Page) {
+      return page.getByRole("button", { name: "Find a book" });
+    }
+
+    function findField(page: Page) {
+      return page.getByRole("searchbox", { name: "Find a book" });
+    }
+
+    function countHeading(page: Page) {
+      return page.getByRole("heading", { level: 2, name: "2 volumes" });
+    }
+
+    async function openFinding(page: Page): Promise<void> {
+      await openSeries(page);
+      await countHeading(page).scrollIntoViewIfNeeded();
+      await findButton(page).click();
+      await expect(findField(page)).toBeFocused();
+    }
+
+    test("opens the field across the tabs' width at a full touch height", async ({
+      page,
+    }) => {
+      await openFinding(page);
+
+      const [tabs, group] = await Promise.all([
+        boxOf(kinds(page)),
+        boxOf(
+          page.locator("[data-slot=input-group]", { has: findField(page) }),
+        ),
+      ]);
+      expect(group.x).toBeCloseTo(tabs.x, 0);
+      expect(group.width).toBeCloseTo(tabs.width, 0);
+      expect(group.height).toBeGreaterThanOrEqual(48);
+    });
+
+    test("opens without moving the heading or the tabs", async ({ page }) => {
+      await openSeries(page);
+      await countHeading(page).scrollIntoViewIfNeeded();
+      const [headingBefore, tabsBefore] = await Promise.all([
+        boxOf(countHeading(page)),
+        boxOf(kinds(page)),
+      ]);
+
+      await findButton(page).click();
+
+      await expect(findField(page)).toBeFocused();
+      const [headingAfter, tabsAfter] = await Promise.all([
+        boxOf(countHeading(page)),
+        boxOf(kinds(page)),
+      ]);
+      expect([headingAfter.y, tabsAfter.y]).toEqual([
+        headingBefore.y,
+        tabsBefore.y,
+      ]);
+    });
+
+    test("closes from Close the search, clearing it and going back to Find a book", async ({
+      page,
+    }) => {
+      await openFinding(page);
+      await findField(page).fill("Summer");
+
+      await page.getByRole("button", { name: "Close the search" }).click();
+
+      await expect(findField(page)).toHaveCount(0);
+      await expect(findButton(page)).toBeFocused();
+      await expect(findButton(page)).toHaveAttribute("aria-expanded", "false");
+      await expect(covers(page, "Volumes")).toHaveCount(2);
+    });
+
+    test("lists only the matching covers while a search is typed", async ({
+      page,
+    }) => {
+      await openFinding(page);
+
+      await findField(page).fill("2");
+
+      await expect(covers(page, "Volumes")).toHaveCount(1);
+      await expect(findField(page)).toHaveValue("2");
+    });
+
+    test("says when no book matches and keeps the field open", async ({
+      page,
+    }) => {
+      await openFinding(page);
+
+      await findField(page).fill("Nothing like it");
+
+      await expect(
+        page.getByText("No book in this series matches “Nothing like it”."),
+      ).toBeVisible();
+      await expect(findField(page)).toBeFocused();
+    });
+
+    test("keeps the field in view and its search once the keyboard opens", async ({
+      page,
+    }) => {
+      await openFinding(page);
+      await findField(page).fill("2");
+      const { width, height } = viewportOf(page);
+
+      await page.setViewportSize({ width, height: height - KEYBOARD_HEIGHT });
+      await page.evaluate(() => {
+        document.documentElement.toggleAttribute("data-keyboard-shown", true);
+      });
+
+      await expect(findField(page)).toBeInViewport();
+      await expect(findField(page)).toBeFocused();
+      await expect(findField(page)).toHaveValue("2");
+      await expect(covers(page, "Volumes")).toHaveCount(1);
+    });
   },
 );
 
