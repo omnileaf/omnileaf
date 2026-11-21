@@ -15,8 +15,15 @@ export type ListingChange = Partial<
   Pick<SeriesBookListing, "section" | "direction" | "shown">
 >;
 
+function onlySection(
+  sections: readonly BookSection[],
+): BookSection | undefined {
+  const [only, ...others] = sections;
+  return others.length === 0 ? only : undefined;
+}
+
 export function isChaptersOnly(sections: readonly BookSection[]): boolean {
-  return sections.length === 1 && sections[0] === "chapters";
+  return onlySection(sections) === "chapters";
 }
 
 export function firstDirection(
@@ -71,8 +78,7 @@ export function shownSection(
   listing: SeriesBookListing,
   sections: readonly BookSection[],
 ): BookSection | undefined {
-  const [only, ...others] = sections;
-  return listing.section ?? (others.length === 0 ? only : undefined);
+  return listing.section ?? onlySection(sections);
 }
 
 export function sectionView(
@@ -129,10 +135,6 @@ function isOneKindOfCovers(
   sections: readonly BookSection[],
   screen: SectionScreen,
 ): boolean {
-  const [only, ...others] = sections;
-  return (
-    only !== undefined &&
-    others.length === 0 &&
-    sectionViews(screen)?.[only] === "covers"
-  );
+  const only = onlySection(sections);
+  return only !== undefined && sectionViews(screen)?.[only] === "covers";
 }
