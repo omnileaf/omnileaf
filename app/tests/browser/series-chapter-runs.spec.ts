@@ -395,7 +395,13 @@ test.describe(
     test("lists the volumes in order", async ({ page }) => {
       await openSeries(page);
 
-      await expect(sort(page)).toHaveAccessibleName("Sort: In order");
+      await page.getByRole("button", { name: "Sort and filter" }).click();
+
+      await expect(
+        page
+          .getByRole("dialog", { name: "Sort and filter" })
+          .getByRole("radio", { name: "In order", exact: true }),
+      ).toBeChecked();
     });
   },
 );

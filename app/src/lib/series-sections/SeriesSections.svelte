@@ -26,7 +26,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import {
-    hasHeadingOverTabs,
+    hasSectionHeading,
     type ListingChange,
     type SectionView,
     sectionTabs,
@@ -77,7 +77,7 @@
     width: width.current,
   });
   const tabsLook = $derived(sectionTabsLook(screen.platform, screen.width));
-  const hasHeading = $derived(hasHeadingOverTabs(sections, screen));
+  const hasHeading = $derived(hasSectionHeading(kinds, screen));
   const headingId = $props.id();
   const tabs = $derived(sectionTabs(sections, screen));
   const section = $derived(shownSection(listing, kinds));
@@ -86,7 +86,9 @@
   let isFinding = $state(false);
   let isSorting = $state(false);
   let findField = $state<HTMLInputElement | null>(null);
-  const chosenTab = $derived(tabs.find((tab) => tab.section === section));
+  const headedSection = $derived(
+    sections.find((shown) => shown.section === section),
+  );
   let staleList = $state<ListState<SeriesBook>>();
   let readFor: string | undefined;
 
@@ -192,6 +194,29 @@
   {@render children(booksControls)}
 {/snippet}
 
+{#snippet sectionHeading(headed: SeriesSection)}
+  <SectionHeading
+    id={headingId}
+    heading={sectionCount(headed)}
+    {isFinding}
+    {isSorting}
+    onFind={() => {
+      void toggleFinding();
+    }}
+    onSortAndFilter={() => {
+      isSorting = true;
+    }}
+  />
+{/snippet}
+
+{#snippet findingField()}
+  <BookSearchField
+    bind:field={findField}
+    search={choices.search}
+    onSearch={choices.onSearch}
+  />
+{/snippet}
+
 {#if tabs.length > 0 && section !== undefined}
   <Tabs
     value={section}
@@ -209,19 +234,8 @@
     class="flex flex-col gap-lg"
   >
     <div class={tabsLook.row}>
-      {#if hasHeading && chosenTab !== undefined}
-        <SectionHeading
-          id={headingId}
-          heading={sectionCount(chosenTab)}
-          {isFinding}
-          {isSorting}
-          onFind={() => {
-            void toggleFinding();
-          }}
-          onSortAndFilter={() => {
-            isSorting = true;
-          }}
-        />
+      {#if hasHeading && headedSection !== undefined}
+        {@render sectionHeading(headedSection)}
       {:else if tabsLook.controls === "choicesFirst" && view === "covers"}
         <SectionListingChoices {...choices} />
       {/if}
@@ -240,30 +254,36 @@
       {#if tabsLook.controls === "choicesAfter" && view === "covers"}
         <SectionListingChoices {...choices} />
       {:else if hasHeading && isFinding}
-        <BookSearchField
-          bind:field={findField}
-          search={choices.search}
-          onSearch={choices.onSearch}
-        />
+        {@render findingField()}
       {/if}
     </div>
     <TabsContent value={section} class="flex flex-col gap-lg">
       <SectionPanel {...panel} />
     </TabsContent>
   </Tabs>
-  {#if hasHeading}
-    <SeriesSortSheet
-      {listing}
-      isOpen={isSorting}
-      onChoose={onListing}
-      onClose={() => {
-        isSorting = false;
-      }}
-    />
-  {/if}
+{:else if hasHeading && headedSection !== undefined}
+  <div class="flex flex-col gap-lg">
+    <div class={tabsLook.row}>
+      {@render sectionHeading(headedSection)}
+      {#if isFinding}
+        {@render findingField()}
+      {/if}
+    </div>
+    <SectionPanel {...panel} />
+  </div>
 {:else}
   {#if view === "covers"}
     <SectionListingChoices {...choices} />
   {/if}
   <SectionPanel {...panel} />
+{/if}
+{#if hasHeading}
+  <SeriesSortSheet
+    {listing}
+    isOpen={isSorting}
+    onChoose={onListing}
+    onClose={() => {
+      isSorting = false;
+    }}
+  />
 {/if}
