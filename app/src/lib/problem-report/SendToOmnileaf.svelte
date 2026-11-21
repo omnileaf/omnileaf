@@ -4,11 +4,11 @@
   import { Alert, AlertTitle } from "#lib/components/ui/alert/index.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
-  import { CARD_PLATE } from "#lib/page/plates.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { reportLook } from "./report-look.ts";
+  import { CurrentReportRowsLook, REPORT_CARDS } from "./report-rows-look.ts";
   import type { ReportSharing } from "./report-sharing.svelte";
   import { failureMessage } from "./share-failure";
 
@@ -17,6 +17,7 @@
   let { sharing }: { sharing: ReportSharing } = $props();
 
   const look = reportLook(currentPlatform());
+  const rowsLook = new CurrentReportRowsLook();
   const fieldId = $props.id();
   const hintId = `${fieldId}-hint`;
   const refusalId = `${fieldId}-refusal`;
@@ -29,7 +30,7 @@
 </script>
 
 <div class="mbs-lg mbe-xs flex flex-col android:max-medium:mbe-none">
-  <div class={["flex flex-col gap-sm", look.card, look.isPlated && CARD_PLATE]}>
+  <div class={["flex flex-col gap-sm", REPORT_CARDS[rowsLook.current]]}>
     <label for={fieldId} class="text-label font-medium">
       {m.report_reply_email()}
     </label>
