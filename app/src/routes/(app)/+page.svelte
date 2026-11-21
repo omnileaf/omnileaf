@@ -51,7 +51,11 @@
   import FolderNotice from "#lib/library/FolderNotice.svelte";
   import ContinueRow from "#lib/library/ContinueRow.svelte";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
-  import { emptyCause } from "#lib/library/empty-cause.ts";
+  import {
+    type EmptyCause,
+    emptyCauseOf,
+    tabCountOf,
+  } from "#lib/library/empty-cause.ts";
   import EmptyTab from "#lib/library/EmptyTab.svelte";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
@@ -506,17 +510,17 @@
       reportError(error);
     },
   );
-  const emptyReason = $derived(
+  const emptyCause = $derived(
     listsNothing
-      ? emptyCause({
+      ? emptyCauseOf({
           listedTab,
           isFilterOn,
           isLibraryEmpty: holdsNoSeries,
-          listedTabCount: listedTabCount.count,
+          listedTabCount: tabCountOf(listedTabCount),
         })
       : undefined,
   );
-  const isEmpty = $derived(emptyReason?.kind === "library");
+  const isEmpty = $derived(emptyCause?.kind === "library");
   const libraryView = $derived(
     view.reading.kind === "read" ? view.reading.value : undefined,
   );
@@ -579,7 +583,7 @@
   const hasBooks = $derived(
     loaded !== undefined &&
       (loaded.series.items.length > 0 ||
-        (emptyReason !== undefined && emptyReason.kind !== "library")),
+        (emptyCause !== undefined && emptyCause.kind !== "library")),
   );
   const offersTabs = $derived(hasBooks && tabsShown && !selection.isSelecting);
   const showsLibraryTools = $derived(
@@ -643,9 +647,8 @@
       });
   });
 
-  $effect(() => {
-    const asksTabCount =
-      listsNothing && isFilterOn && listedTabKey !== ALL_SERIES;
+  $effect.pre(() => {
+    const asksTabCount = listsNothing && listedTabKey !== ALL_SERIES;
     untrack(() => {
       if (asksTabCount) {
         void listedTabCount.load();
@@ -994,6 +997,9 @@
       if (countsSeries) {
         void seriesCount.load();
       }
+      if (listedTabCount.count !== undefined || listedTabCount.hasFailed) {
+        void listedTabCount.refresh();
+      }
       pages.refreshBeside();
     }, reportFailure);
     return () => {
@@ -1010,22 +1016,22 @@
     }
   }
 
-  let offeredEmptyAction = false;
+  let offeredEmptyAction: EmptyCause["kind"] | undefined;
 
-  function keepFocusOnPageOnceEmptyActionGoes(): void {
-    const offersEmptyAction =
-      emptyReason !== undefined && emptyReason.kind !== "counting";
+  function keepFocusOnPageOnceEmptyActionChanges(): void {
+    const offered =
+      emptyCause?.kind === "counting" ? offeredEmptyAction : emptyCause?.kind;
     if (
-      offeredEmptyAction &&
-      !offersEmptyAction &&
+      offeredEmptyAction !== undefined &&
+      offered !== offeredEmptyAction &&
       document.activeElement === document.body
     ) {
       focusPageHeading();
     }
-    offeredEmptyAction = offersEmptyAction;
+    offeredEmptyAction = offered;
   }
 
-  $effect(keepFocusOnPageOnceEmptyActionGoes);
+  $effect(keepFocusOnPageOnceEmptyActionChanges);
 </script>
 
 {#snippet pageCovers(page: TabPage, props: CoversLook)}
@@ -1381,21 +1387,21 @@
         usesStandIns={screenshotMode.isOn}
         onDismissed={returnFocusFromNotice}
       />
-      {#if emptyReason?.kind === "tab"}
+      {#if emptyCause?.kind === "tab"}
         <EmptyTab
-          tab={emptyReason.tab}
+          tab={emptyCause.tab}
           onGoToAll={() => {
             chooseTab(ALL_SERIES);
           }}
         />
-      {:else if emptyReason?.kind === "filters" && chosenListing !== undefined}
+      {:else if emptyCause?.kind === "filters" && chosenListing !== undefined}
         <NoMatches
           filter={chosenListing.filter}
           onClear={() => {
             chooseListing(withoutFilters(chosenListing));
           }}
         />
-      {:else if loaded !== undefined && emptyReason?.kind !== "counting"}
+      {:else if loaded !== undefined && emptyCause?.kind !== "counting"}
         {#if loaded.view.showsContinueRow}
           <div class="mbs-lg medium:mbs-xl">
             <ContinueRow usesStandIns={screenshotMode.isOn} />

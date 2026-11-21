@@ -12,43 +12,72 @@ export type EmptyCause =
   | { readonly kind: "filters" }
   | { readonly kind: "counting" };
 
+export type TabCount =
+  | { readonly kind: "counting" }
+  | { readonly kind: "counted"; readonly count: number }
+  | { readonly kind: "failed" };
+
 export interface EmptyList {
   readonly listedTab: ArrangedTab | undefined;
   readonly isFilterOn: boolean;
   readonly isLibraryEmpty: boolean;
-  readonly listedTabCount: number | undefined;
+  readonly listedTabCount: TabCount;
+}
+
+interface CountReading {
+  readonly count: number | undefined;
+  readonly hasFailed: boolean;
 }
 
 const EMPTY_LIBRARY: EmptyCause = { kind: "library" };
 const FILTERED_OUT: EmptyCause = { kind: "filters" };
 const COUNTING: EmptyCause = { kind: "counting" };
 
-function wholeLibraryCause(isFilterOn: boolean): EmptyCause {
-  return isFilterOn ? FILTERED_OUT : EMPTY_LIBRARY;
+export function tabCountOf({ count, hasFailed }: CountReading): TabCount {
+  if (hasFailed) {
+    return { kind: "failed" };
+  }
+  return count === undefined
+    ? { kind: "counting" }
+    : { kind: "counted", count };
 }
 
-function tabCause(tab: EmptyTab, list: EmptyList): EmptyCause {
-  if (!list.isFilterOn || list.listedTabCount === 0) {
+function wholeLibraryCauseOf(list: EmptyList): EmptyCause {
+  return list.isFilterOn ? FILTERED_OUT : EMPTY_LIBRARY;
+}
+
+function tabCauseOf(tab: EmptyTab, list: EmptyList): EmptyCause {
+  if (!list.isFilterOn) {
     return { kind: "tab", tab };
   }
-  return list.listedTabCount === undefined ? COUNTING : FILTERED_OUT;
+  const counted = list.listedTabCount;
+  switch (counted.kind) {
+    case "counting":
+      return COUNTING;
+    case "counted":
+      return counted.count === 0 ? { kind: "tab", tab } : FILTERED_OUT;
+    case "failed":
+      return FILTERED_OUT;
+    default:
+      return assertNever(counted);
+  }
 }
 
-export function emptyCause(list: EmptyList): EmptyCause {
+export function emptyCauseOf(list: EmptyList): EmptyCause {
   const { listedTab } = list;
   if (list.isLibraryEmpty) {
     return EMPTY_LIBRARY;
   }
   if (listedTab === undefined) {
-    return wholeLibraryCause(list.isFilterOn);
+    return wholeLibraryCauseOf(list);
   }
   switch (listedTab.id.kind) {
     case "all":
-      return wholeLibraryCause(list.isFilterOn);
+      return wholeLibraryCauseOf(list);
     case "newChapters":
-      return tabCause({ kind: "newChapters" }, list);
+      return tabCauseOf({ kind: "newChapters" }, list);
     case "category":
-      return tabCause({ kind: "category", name: listedTab.name }, list);
+      return tabCauseOf({ kind: "category", name: listedTab.name }, list);
     default:
       return assertNever(listedTab.id);
   }
