@@ -42,7 +42,7 @@
 <EmptyState icon={wording.icon} title={wording.title} body={wording.body}>
   <EmptyAction
     icon={LibraryBig}
-    label={m.library_go_to_all({ tab: m.library_category_all() })}
+    label={m.library_go_to_all()}
     onclick={onGoToAll}
   />
 </EmptyState>

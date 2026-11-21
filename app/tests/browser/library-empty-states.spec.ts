@@ -11,6 +11,7 @@ import {
   NEW_LIBRARY_LISTING,
 } from "../../src/lib/library/library-listing.ts";
 import {
+  CommandFailure,
   commandsAsked,
   emitFakeEvent,
   type FakeBackend,
@@ -21,6 +22,7 @@ import {
   expect,
   test,
 } from "./fixtures.ts";
+import { openSortAndFilter } from "./library-controls.ts";
 import {
   pagedSeries,
   sampleSeries,
@@ -38,10 +40,7 @@ const UNREAD_ONLY: LibraryListing = {
   filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
 };
 
-const GO_TO_ALL = english.library_go_to_all.replace(
-  "{tab}",
-  english.library_category_all,
-);
+const GO_TO_ALL = english.library_go_to_all;
 
 let storedListing: LibraryListing = NEW_LIBRARY_LISTING;
 
@@ -118,6 +117,10 @@ function libraryEmptyShown(page: Page): Promise<number> {
   );
 }
 
+function nothingNew(page: Page) {
+  return page.getByRole("region", { name: english.library_new_chapters_empty });
+}
+
 function emptyCategory(page: Page, name: string) {
   return page.getByRole("region", {
     name: english.library_category_empty.replace("{name}", name),
@@ -158,15 +161,23 @@ test.describe("the library's empty states", { tag: "@native" }, () => {
   test.describe("with series in the library", () => {
     test.use({ backend: backendHolding(LIBRARY) });
 
-    test("says an empty category has nothing in it yet and how to fill it, and goes to All on asking", async ({
+    test("says an empty category has nothing in it yet and how to fill it", async ({
       page,
     }) => {
       await openOn(page, "Test");
-      const empty = emptyCategory(page, "Test");
 
-      await expect(empty).toContainText(english.library_category_empty_body);
+      await expect(emptyCategory(page, "Test")).toContainText(
+        english.library_category_empty_body,
+      );
       await expect(noMatches(page)).toHaveCount(0);
-      await empty.getByRole("button", { name: GO_TO_ALL }).click();
+    });
+
+    test("goes to All from an empty category on asking", async ({ page }) => {
+      await openOn(page, "Test");
+
+      await emptyCategory(page, "Test")
+        .getByRole("button", { name: GO_TO_ALL })
+        .click();
 
       await expect(
         tabs(page).getByRole("tab", { name: "All" }),
@@ -184,19 +195,19 @@ test.describe("the library's empty states", { tag: "@native" }, () => {
       await expect(noMatches(page)).toHaveCount(0);
     });
 
-    test("says nothing is new under New chapters, and goes to All on asking", async ({
-      page,
-    }) => {
+    test("says nothing is new under New chapters", async ({ page }) => {
       await openOn(page, "New chapters");
-      const empty = page.getByRole("region", {
-        name: english.library_new_chapters_empty,
-      });
 
-      await expect(empty).toContainText(
+      await expect(nothingNew(page)).toContainText(
         english.library_new_chapters_empty_body,
       );
       await expect(noMatches(page)).toHaveCount(0);
-      await empty.getByRole("button", { name: GO_TO_ALL }).click();
+    });
+
+    test("goes to All from New chapters on asking", async ({ page }) => {
+      await openOn(page, "New chapters");
+
+      await nothingNew(page).getByRole("button", { name: GO_TO_ALL }).click();
 
       await expect(
         tabs(page).getByRole("tab", { name: "All" }),
@@ -243,6 +254,21 @@ test.describe("the library's empty states", { tag: "@native" }, () => {
 
       await page.keyboard.press("Enter");
 
+      await expect(libraryHeading(page)).toBeFocused();
+    });
+
+    test("puts focus on the library's heading once the filters' empty state takes the empty category's place", async ({
+      page,
+    }) => {
+      storedListing = UNREAD_ONLY;
+      await openOn(page, "Test");
+      await emptyCategory(page, "Test")
+        .getByRole("button", { name: GO_TO_ALL })
+        .focus();
+
+      await page.keyboard.press("Enter");
+
+      await expect(noMatches(page)).toBeVisible();
       await expect(libraryHeading(page)).toBeFocused();
     });
 
@@ -304,10 +330,18 @@ test.describe(
   () => {
     let releases: (() => void)[] = [];
     let isAsked = false;
+    let filteredReads = 0;
+    const holding = backendHolding(LIBRARY);
 
     test.use({
       backend: {
-        ...backendHolding(LIBRARY),
+        ...holding,
+        categorySeries: (category, after, listing) => {
+          if (category === "test" && filtersOn(listing.filter) > 0) {
+            filteredReads += 1;
+          }
+          return holding.categorySeries(category, after, listing);
+        },
         categorySeriesCount: async (category, filter) => {
           if (category === "test" && filtersOn(filter) === 0) {
             isAsked = true;
@@ -323,7 +357,14 @@ test.describe(
     test.beforeEach(() => {
       releases = [];
       isAsked = false;
+      filteredReads = 0;
     });
+
+    function releaseEveryCount(): void {
+      for (const release of releases.splice(0)) {
+        release();
+      }
+    }
 
     test("says nothing of filters until it knows the category holds nothing, then says so", async ({
       page,
@@ -333,6 +374,7 @@ test.describe(
       await expect.poll(() => isAsked).toBe(true);
 
       await expect(noMatches(page)).toHaveCount(0);
+      await expect(emptyCategory(page, "Test")).toHaveCount(0);
       for (const release of releases) {
         release();
       }
@@ -340,5 +382,70 @@ test.describe(
       await expect(emptyCategory(page, "Test")).toBeVisible();
       await expect(noMatches(page)).toHaveCount(0);
     });
+
+    test("keeps an empty category's state on screen while a filter is turned on", async ({
+      page,
+    }) => {
+      await openOn(page, "Test");
+      const goToAll = emptyCategory(page, "Test").getByRole("button", {
+        name: GO_TO_ALL,
+      });
+      await expect(goToAll).toBeVisible();
+      releaseEveryCount();
+      await waitForAnswers(page);
+      await goToAll.evaluate((button) => {
+        Object.assign(window, { goToAllShown: button });
+      });
+
+      await openSortAndFilter(page);
+      await page.getByRole("radio", { name: "Unread", exact: true }).click();
+      await expect.poll(() => filteredReads).toBeGreaterThan(0);
+      await page.evaluate(
+        () =>
+          new Promise((drawn) => {
+            requestAnimationFrame(() => requestAnimationFrame(drawn));
+          }),
+      );
+
+      expect(
+        await page.evaluate(
+          () =>
+            (window as Window & { goToAllShown?: HTMLElement }).goToAllShown
+              ?.isConnected,
+        ),
+      ).toBe(true);
+      releaseEveryCount();
+    });
   },
 );
+
+test.describe("when counting a category fails", { tag: "@native" }, () => {
+  test.use({
+    backend: {
+      ...backendHolding(LIBRARY),
+      categorySeriesCount: (category, filter) => {
+        if (category === "test" && filtersOn(filter) === 0) {
+          throw new CommandFailure({
+            code: "internal",
+            message: "the category could not be counted",
+          });
+        }
+        return 0;
+      },
+    },
+  });
+
+  test("says no series match these filters, so they can still be cleared", async ({
+    page,
+  }) => {
+    storedListing = UNREAD_ONLY;
+
+    await openOn(page, "Test");
+
+    await expect(
+      noMatches(page).getByRole("button", {
+        name: english.library_clear_all_filters,
+      }),
+    ).toBeVisible();
+  });
+});

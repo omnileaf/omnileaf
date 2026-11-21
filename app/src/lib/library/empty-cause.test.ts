@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { LibraryCategory } from "#lib/ipc/bindings.ts";
 
-import { emptyCause, type EmptyList } from "./empty-cause.ts";
+import { emptyCauseOf, type EmptyList, tabCountOf } from "./empty-cause.ts";
 import type { ArrangedTab } from "./library-tabs.ts";
 
 const ALL: ArrangedTab = { id: { kind: "all" }, name: "All", isHidden: false };
@@ -23,32 +23,36 @@ const NOTHING_KNOWN: EmptyList = {
   listedTab: ALL,
   isFilterOn: false,
   isLibraryEmpty: false,
-  listedTabCount: undefined,
+  listedTabCount: { kind: "counting" },
 };
 
-test("blames an empty library, whatever tab or filter is on", () => {
-  const list = {
+function filteredTest(listedTabCount: EmptyList["listedTabCount"]): EmptyList {
+  return {
     ...NOTHING_KNOWN,
     listedTab: TEST,
     isFilterOn: true,
-    isLibraryEmpty: true,
+    listedTabCount,
   };
+}
 
-  expect(emptyCause(list)).toEqual({ kind: "library" });
+test("blames an empty library, whatever tab or filter is on", () => {
+  const list = { ...filteredTest({ kind: "counting" }), isLibraryEmpty: true };
+
+  expect(emptyCauseOf(list)).toEqual({ kind: "library" });
 });
 
 test("blames an empty library when All lists nothing with no filter on", () => {
-  expect(emptyCause(NOTHING_KNOWN)).toEqual({ kind: "library" });
+  expect(emptyCauseOf(NOTHING_KNOWN)).toEqual({ kind: "library" });
 });
 
 test("blames an empty library when no tab is listed and no filter is on", () => {
-  expect(emptyCause({ ...NOTHING_KNOWN, listedTab: undefined })).toEqual({
+  expect(emptyCauseOf({ ...NOTHING_KNOWN, listedTab: undefined })).toEqual({
     kind: "library",
   });
 });
 
 test("blames the filters when All lists nothing with a filter on", () => {
-  expect(emptyCause({ ...NOTHING_KNOWN, isFilterOn: true })).toEqual({
+  expect(emptyCauseOf({ ...NOTHING_KNOWN, isFilterOn: true })).toEqual({
     kind: "filters",
   });
 });
@@ -56,54 +60,65 @@ test("blames the filters when All lists nothing with a filter on", () => {
 test("blames the filters when no tab is listed and a filter is on", () => {
   const list = { ...NOTHING_KNOWN, listedTab: undefined, isFilterOn: true };
 
-  expect(emptyCause(list)).toEqual({ kind: "filters" });
+  expect(emptyCauseOf(list)).toEqual({ kind: "filters" });
 });
 
-test("blames the category when it lists nothing with no filter on", () => {
-  expect(emptyCause({ ...NOTHING_KNOWN, listedTab: TEST })).toEqual(EMPTY_TEST);
+test("blames the category when it lists nothing with no filter on, whatever its count", () => {
+  const unfiltered = { ...NOTHING_KNOWN, listedTab: TEST };
+
+  expect([
+    emptyCauseOf(unfiltered),
+    emptyCauseOf({ ...unfiltered, listedTabCount: { kind: "failed" } }),
+  ]).toEqual([EMPTY_TEST, EMPTY_TEST]);
 });
 
 test("blames neither the category nor the filters while the category's series are still being counted", () => {
-  const list = { ...NOTHING_KNOWN, listedTab: TEST, isFilterOn: true };
-
-  expect(emptyCause(list)).toEqual({ kind: "counting" });
+  expect(emptyCauseOf(filteredTest({ kind: "counting" }))).toEqual({
+    kind: "counting",
+  });
 });
 
 test("blames the category when it holds nothing even without the filters on", () => {
-  const list = {
-    ...NOTHING_KNOWN,
-    listedTab: TEST,
-    isFilterOn: true,
-    listedTabCount: 0,
-  };
-
-  expect(emptyCause(list)).toEqual(EMPTY_TEST);
+  expect(emptyCauseOf(filteredTest({ kind: "counted", count: 0 }))).toEqual(
+    EMPTY_TEST,
+  );
 });
 
 test("blames the filters when a category holding series lists nothing", () => {
-  const list = {
-    ...NOTHING_KNOWN,
-    listedTab: TEST,
-    isFilterOn: true,
-    listedTabCount: 2,
-  };
+  expect(emptyCauseOf(filteredTest({ kind: "counted", count: 2 }))).toEqual({
+    kind: "filters",
+  });
+});
 
-  expect(emptyCause(list)).toEqual({ kind: "filters" });
+test("blames the filters when the category could not be counted, so they can still be cleared", () => {
+  expect(emptyCauseOf(filteredTest({ kind: "failed" }))).toEqual({
+    kind: "filters",
+  });
 });
 
 test("blames New chapters when it lists nothing with no filter on", () => {
-  expect(emptyCause({ ...NOTHING_KNOWN, listedTab: NEW_CHAPTERS })).toEqual(
+  expect(emptyCauseOf({ ...NOTHING_KNOWN, listedTab: NEW_CHAPTERS })).toEqual(
     NOTHING_NEW,
   );
 });
 
 test("blames New chapters when it holds nothing even without the filters on", () => {
   const list = {
-    ...NOTHING_KNOWN,
+    ...filteredTest({ kind: "counted", count: 0 }),
     listedTab: NEW_CHAPTERS,
-    isFilterOn: true,
-    listedTabCount: 0,
   };
 
-  expect(emptyCause(list)).toEqual(NOTHING_NEW);
+  expect(emptyCauseOf(list)).toEqual(NOTHING_NEW);
+});
+
+test("reads a count as counted, still counting or failed", () => {
+  expect([
+    tabCountOf({ count: 3, hasFailed: false }),
+    tabCountOf({ count: undefined, hasFailed: false }),
+    tabCountOf({ count: undefined, hasFailed: true }),
+  ]).toEqual([
+    { kind: "counted", count: 3 },
+    { kind: "counting" },
+    { kind: "failed" },
+  ]);
 });

@@ -4,6 +4,7 @@ export type CountSeries = () => ReturnType<typeof commands.librarySeriesCount>;
 
 export class LibrarySeriesCount {
   count: number | undefined = $state();
+  hasFailed = $state(false);
 
   #latestLoad = 0;
   isLoading = false;
@@ -17,11 +18,17 @@ export class LibrarySeriesCount {
     this.#latestLoad += 1;
     this.isLoading = false;
     this.count = undefined;
+    this.hasFailed = false;
   }
 
-  async load(): Promise<void> {
-    const load = ++this.#latestLoad;
+  load(): Promise<void> {
     this.count = undefined;
+    this.hasFailed = false;
+    return this.refresh();
+  }
+
+  async refresh(): Promise<void> {
+    const load = ++this.#latestLoad;
     this.isLoading = true;
     const result = await this.countSeries();
     if (result.status === "error") {
@@ -30,6 +37,7 @@ export class LibrarySeriesCount {
     if (load === this.#latestLoad) {
       this.isLoading = false;
       this.count = result.status === "ok" ? result.data : undefined;
+      this.hasFailed = result.status === "error";
     }
   }
 }
