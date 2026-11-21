@@ -3,7 +3,11 @@ import type {
   LibraryTab,
 } from "../../src/lib/ipc/bindings.ts";
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
-import { heldAnimations, holdScriptedAnimations } from "./held-animations.ts";
+import {
+  heldAnimations,
+  holdScriptedAnimations,
+  slowMoves,
+} from "./held-animations.ts";
 
 const CATEGORIES = [
   { id: "reading", name: "Reading" },
@@ -11,6 +15,8 @@ const CATEGORIES = [
 ] as LibraryCategory[];
 const DRAG_STEPS = 8;
 const PART_OF_A_ROW = 20;
+const INSIDE_THE_ROW = 2;
+const SHORT_OF_HALF = 3;
 const TABS: readonly LibraryTab[] = [
   { id: { kind: "all" }, isHidden: false },
   { id: { kind: "newChapters" }, isHidden: true },
@@ -160,11 +166,11 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     await expect(row).toHaveCSS("scale", "none");
   });
 
-  test("sets a dropped row down from where it was lifted, with no jump", async ({
+  test("settles a dropped row from where it was lifted to where it rests, with no jump at either end", async ({
     page,
   }) => {
-    await holdScriptedAnimations(page);
     await page.goto("/settings/library/tabs");
+    await slowMoves(page);
     const row = page.getByRole("listitem").filter({ hasText: "Reading" });
     const box = await boxOf(row.getByRole("button", { name: /^Move Reading/ }));
     const x = box.x + box.width / 2;
@@ -176,8 +182,57 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     });
     const lifted = await boxOf(row);
     await page.mouse.up();
-    await expect.poll(async () => (await heldAnimations(page)).length).toBe(1);
+    const ends = await row.evaluate((element) => {
+      const settles = element.getAnimations();
+      for (const settle of settles) {
+        settle.pause();
+        settle.currentTime = 0;
+      }
+      const start = element.getBoundingClientRect().y;
+      for (const settle of settles) {
+        settle.finish();
+      }
+      return { start, end: element.getBoundingClientRect().y };
+    });
+    await expect(row).toHaveCSS("box-shadow", "none");
+    const rest = await boxOf(row);
 
-    expect((await boxOf(row)).y).toBeCloseTo(lifted.y, 0);
+    expect(ends.start).toBeCloseTo(lifted.y, 0);
+    expect(ends.end).toBeCloseTo(rest.y, 0);
+  });
+
+  test("measures a new drag from the row's resting place while the last drop still settles", async ({
+    page,
+  }) => {
+    await holdScriptedAnimations(page);
+    await page.goto("/settings/library/tabs");
+    await slowMoves(page);
+    const row = page.getByRole("listitem").filter({ hasText: "Reading" });
+    const handle = row.getByRole("button", { name: /^Move Reading/ });
+    const manga = await boxOf(
+      page.getByRole("listitem").filter({ hasText: "Manga" }),
+    );
+    const start = await boxOf(handle);
+    const x = start.x + start.width / 2;
+
+    await page.mouse.move(x, start.y + start.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x, manga.y + manga.height - INSIDE_THE_ROW, {
+      steps: DRAG_STEPS,
+    });
+    await page.mouse.up();
+    await expect.poll(async () => (await heldAnimations(page)).length).toBe(1);
+    const settling = await boxOf(handle);
+    const y = settling.y + settling.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y - (manga.height / 2 - SHORT_OF_HALF), {
+      steps: DRAG_STEPS,
+    });
+    await page.mouse.up();
+
+    await expect(
+      page.getByRole("list", { name: "Library tabs" }).getByRole("listitem"),
+    ).toHaveText([/All/, /New chapters/, /Manga/, /Reading/]);
   });
 });

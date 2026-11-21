@@ -264,8 +264,15 @@
           "transition-transform duration-move ease-emphasized",
         isRaised &&
           (android.isOn
-            ? "relative z-drag-box -translate-y-native-drag-lift scale-102 rounded-native-segment bg-android-container-high shadow-dialog"
-            : "relative z-drag-box rounded-card bg-card shadow-dialog"),
+            ? "relative z-drag-box rounded-native-segment bg-android-container-high"
+            : "relative z-drag-box rounded-card bg-card"),
+        isLifted &&
+          (android.isOn
+            ? "-translate-y-native-drag-lift scale-102 shadow-dialog"
+            : "shadow-dialog"),
+        isRaised &&
+          !isLifted &&
+          "transition-[scale,box-shadow] duration-move ease-emphasized",
       ]}
     >
       <button
