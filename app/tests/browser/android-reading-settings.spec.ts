@@ -52,10 +52,9 @@ test.describe(
       await expect(
         page
           .getByRole("dialog", { name: "Reading mode" })
-          .getByRole("radio")
-          .filter({ hasText: "Automatic" }),
-      ).toContainText(
-        "Automatic picks paged or long strip from the details and the pages.",
+          .getByRole("radio", { name: "Automatic" }),
+      ).toHaveAccessibleDescription(
+        "Automatic picks paged or long strip for each series.",
       );
     });
 

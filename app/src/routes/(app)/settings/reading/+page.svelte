@@ -83,9 +83,14 @@
     READING_MODE_CHOICES.map((choice) => ({
       value: choice,
       label: READING_MODE_NAMES[choice](),
-      hint:
-        choice === "automatic" ? m.reading_mode_automatic_hint() : undefined,
     })),
+  );
+  const newSeriesChoicesWithHint = $derived(
+    newSeriesChoices.map((choice) =>
+      choice.value === "automatic"
+        ? { ...choice, hint: m.reading_mode_automatic_hint() }
+        : choice,
+    ),
   );
 
   function chooseNewSeriesMode(choice: ReadingModeChoice): void {
@@ -184,7 +189,7 @@
       <SettingChoiceRow
         title={m.reading_mode_new_series()}
         value={READING_MODE_NAMES[newSeries.choice]()}
-        choices={newSeriesChoices}
+        choices={newSeriesChoicesWithHint}
         chosen={newSeries.choice}
         onChoose={chooseNewSeriesMode}
       />
@@ -194,7 +199,7 @@
           bleed=""
           title={m.reading_mode_new_series()}
           value={READING_MODE_NAMES[newSeries.choice]()}
-          choices={newSeriesChoices}
+          choices={newSeriesChoicesWithHint}
           chosen={newSeries.choice}
           onChoose={chooseNewSeriesMode}
         />
