@@ -2062,14 +2062,6 @@
       ]
     },
     {
-      "name": "nix",
-      "version": "0.32.0",
-      "licence": "MIT",
-      "texts": [
-        133
-      ]
-    },
-    {
       "name": "nom",
       "version": "8.0.0",
       "licence": "MIT",
@@ -3147,7 +3139,7 @@
     },
     {
       "name": "syn",
-      "version": "3.0.6",
+      "version": "3.0.10",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         43
@@ -3283,7 +3275,7 @@
     },
     {
       "name": "tauri-utils",
-      "version": "2.10.2",
+      "version": "2.10.4",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         43
@@ -3702,7 +3694,7 @@
     },
     {
       "name": "uuid",
-      "version": "1.29.2",
+      "version": "1.29.3",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         29
@@ -4231,7 +4223,7 @@
     },
     {
       "name": "zip",
-      "version": "9.6.0",
+      "version": "9.8.1",
       "licence": "MIT",
       "texts": [
         130
