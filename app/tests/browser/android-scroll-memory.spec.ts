@@ -24,6 +24,7 @@ const CONTINUED_SERIES = sampleSeriesId(11);
 const VOLUME_COUNT = 30;
 const CHAPTER_COUNT = 120;
 
+const removedSeries = new Set<string>();
 let bookReads: HeldReads = { isHolding: false, waiting: [] };
 
 function numbersFrom(first: number, count: number): number[] {
@@ -101,7 +102,26 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
   });
 
   test.describe("from a series to the Library", () => {
-    test.use({ backend: sampleLibraryOn("android") });
+    const sample = sampleLibraryOn("android");
+
+    test.use({
+      backend: {
+        ...sample,
+        librarySeries: async (...asked) => {
+          const listed = await sample.librarySeries(...asked);
+          return {
+            ...listed,
+            series: listed.series.filter(
+              ({ id }) => !removedSeries.has(`/series/${id}`),
+            ),
+          };
+        },
+      },
+    });
+
+    test.beforeEach(() => {
+      removedSeries.clear();
+    });
 
     for (const { way, goBack } of [
       {
@@ -174,6 +194,66 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
       await main(page).dispatchEvent("pointerdown");
 
       await expect(main(page)).toHaveCSS("overflow-anchor", "auto");
+    });
+
+    test("gives the Library its scroll anchoring back once the page scrolls elsewhere", async ({
+      page,
+    }) => {
+      await page.setViewportSize(PHONE);
+      await page.goto("/");
+      await scrollMainTo(page, LIBRARY_DOWN);
+      const opened = await seriesLinkInView(page);
+      const card = main(page).locator(`a[href='${opened}']`).first();
+      await tapWhereItIs(card);
+      await expect(page).toHaveURL(opened);
+      await page.goBack();
+      await expect(card).toBeInViewport();
+      await expect(main(page)).toHaveCSS("overflow-anchor", "none");
+
+      await main(page).evaluate((scroller) => {
+        scroller.scrollTo({ top: 0 });
+      });
+
+      await expect(main(page)).toHaveCSS("overflow-anchor", "auto");
+    });
+
+    test("gives the Library its scroll anchoring back once another page opens", async ({
+      page,
+    }) => {
+      await page.setViewportSize(PHONE);
+      await page.goto("/");
+      await scrollMainTo(page, LIBRARY_DOWN);
+      const opened = await seriesLinkInView(page);
+      const card = main(page).locator(`a[href='${opened}']`).first();
+      await tapWhereItIs(card);
+      await expect(page).toHaveURL(opened);
+      await page.goBack();
+      await expect(card).toBeInViewport();
+      await expect(main(page)).toHaveCSS("overflow-anchor", "none");
+
+      await tapWhereItIs(card);
+
+      await expect(page).toHaveURL(opened);
+      await expect(main(page)).toHaveCSS("overflow-anchor", "auto");
+    });
+
+    test("lands at the saved scroll position when the series it left is gone on the way back", async ({
+      page,
+    }) => {
+      await page.setViewportSize(PHONE);
+      await page.goto("/");
+      await scrollMainTo(page, LIBRARY_DOWN);
+      const before = await scrollTopOf(page);
+      const opened = await seriesLinkInView(page);
+      await tapWhereItIs(main(page).locator(`a[href='${opened}']`).first());
+      await expect(page).toHaveURL(opened);
+      removedSeries.add(opened);
+
+      await page.goBack();
+
+      await expect(page).toHaveURL("/");
+      await expect(main(page).locator(`a[href='${opened}']`)).toHaveCount(0);
+      await expectScrolledTo(page, before);
     });
 
     test("lands where a series page was after opening a volume and going back", async ({
