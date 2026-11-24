@@ -2,7 +2,12 @@ import { expect, test } from "vitest";
 
 import type { ResolvedPathname } from "$app/types";
 
-import { originOnArrival, readerWayBack } from "./reader-way-back";
+import {
+  originOnArrival,
+  readerSeriesOf,
+  readerWayBack,
+  type SeriesPlace,
+} from "./reader-way-back";
 
 const HISTORY = {
   pathname: "/history",
@@ -130,5 +135,35 @@ test("puts the library in its place for a book outside the library", () => {
     fallbackHref: "/",
     genericLabel: "Back to the library",
     isSeries: true,
+  });
+});
+
+const IN_LIBRARY: SeriesPlace = {
+  series: "a1" as SeriesPlace["series"],
+  seriesTitle: "Sample Series 04",
+  isInLibrary: true,
+};
+
+test("takes the series page of a book in the library for its series", () => {
+  expect(readerSeriesOf(IN_LIBRARY)).toEqual({
+    href: "/series/a1",
+    title: "Sample Series 04",
+    isInLibrary: true,
+  });
+});
+
+test("takes the library for the series of a book outside it", () => {
+  expect(readerSeriesOf({ ...IN_LIBRARY, isInLibrary: false })).toEqual({
+    href: "/",
+    title: "",
+    isInLibrary: false,
+  });
+});
+
+test("takes the library for the series of a book with no place", () => {
+  expect(readerSeriesOf(null)).toEqual({
+    href: "/",
+    title: "",
+    isInLibrary: false,
   });
 });

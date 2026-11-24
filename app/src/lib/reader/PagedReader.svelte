@@ -105,12 +105,8 @@
   import { Swipe } from "#lib/reader/swipe.ts";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { followVolumeKeys, hasVolumeKeys } from "#lib/reader/volume-keys.ts";
-  import { readerLeaving } from "#lib/reader/reader-leaving.ts";
   import { moveWithinReader } from "#lib/reader/reader-origin.ts";
-  import {
-    type OriginPage,
-    readerWayBack,
-  } from "#lib/reader/reader-way-back.ts";
+  import type { ReaderWayBack } from "#lib/reader/reader-way-back.ts";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
   import UpNext from "#lib/up-next/UpNext.svelte";
 
@@ -146,13 +142,15 @@
     platform,
     opensAtEnd,
     hasJumped,
-    origin,
+    wayBack,
+    leaveReader,
   }: {
     book: OpenedBook;
     platform: Platform;
     opensAtEnd: boolean;
     hasJumped: boolean;
-    origin: OriginPage | undefined;
+    wayBack: ReaderWayBack;
+    leaveReader: () => Promise<void>;
   } = $props();
 
   const screenshotMode = getScreenshotMode();
@@ -360,13 +358,6 @@
       ? resolve("/(app)/series/[id]", { id: book.series })
       : resolve("/(app)"),
   );
-  const readerSeries = $derived({
-    href: seriesHref,
-    title: named.seriesTitle,
-    isInLibrary: book.isInLibrary,
-  });
-  const wayBack = $derived(readerWayBack(origin, readerSeries));
-  const leaveReader = readerLeaving(() => wayBack);
 
   const nextHref = $derived(
     book.next === null

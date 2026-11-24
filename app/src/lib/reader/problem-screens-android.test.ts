@@ -15,6 +15,7 @@ import BookProblem from "./BookProblem.svelte";
 import DamagedBook from "./DamagedBook.svelte";
 import { bookIdIn } from "./opened-book.ts";
 import UnsupportedBook from "./UnsupportedBook.svelte";
+import { leavesNowhere, seriesWayBackOf } from "./way-back-for-tests";
 
 const BOOK = bookIdIn("0190a3e4-0000-8000-8000-0000000000b6");
 const SERIES = seriesIdIn("0190a3e4-0000-8000-8000-0000000000a4");
@@ -74,12 +75,16 @@ async function damaged(onShowFile?: () => void) {
     platform: "android",
     onRead: () => undefined,
     onShowFile,
+    wayBack: seriesWayBackOf(book),
+    onBack: leavesNowhere,
   });
 }
 
 async function unsupported() {
   return render(UnsupportedBook, {
     place: place(),
+    wayBack: seriesWayBackOf(place()),
+    onBack: leavesNowhere,
     file: { name: "Volume 6.cbr", fileType: "cbr" },
     platform: "android",
     hideFilesLike: () => Promise.resolve({ status: "ok", data: "cbr" }),
@@ -233,6 +238,8 @@ test("sets a missing book's headline and circle as an Android phone's", async ()
   const screen = await render(BookProblem, {
     kind: "missing",
     place: place(),
+    wayBack: seriesWayBackOf(place()),
+    onBack: leavesNowhere,
     platform: "android",
     onShowFile: () => undefined,
   });
@@ -270,6 +277,8 @@ test("shows an unreadable book's file from its Show the file button", async () =
   const screen = await render(BookProblem, {
     kind: "unreadable",
     place: place(),
+    wayBack: seriesWayBackOf(place()),
+    onBack: leavesNowhere,
     platform: "android",
     onShowFile,
   });
@@ -318,6 +327,8 @@ test("draws an unreadable book's Show the file with the Material icon on an Andr
   const screen = await render(BookProblem, {
     kind: "unreadable",
     place: place(),
+    wayBack: seriesWayBackOf(place()),
+    onBack: leavesNowhere,
     platform: "android",
     onShowFile: () => undefined,
   });
@@ -334,6 +345,8 @@ test("says a book isn't connected, with Find the folder first and Back to the se
   const screen = await render(BookProblem, {
     kind: "notConnected",
     place: place(),
+    wayBack: seriesWayBackOf(place()),
+    onBack: leavesNowhere,
     platform: "android",
     onShowFile: () => undefined,
     onFind: () => found.push("find"),

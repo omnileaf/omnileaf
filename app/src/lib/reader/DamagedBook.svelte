@@ -23,6 +23,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import BookBackNav from "./BookBackNav.svelte";
+  import type { ReaderWayBack } from "./reader-way-back.ts";
   import { librarySeriesKey } from "./opened-book.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
   import ProblemHeading from "./ProblemHeading.svelte";
@@ -38,12 +39,16 @@
     platform,
     onRead,
     onShowFile,
+    wayBack,
+    onBack,
   }: {
     book: OpenedBook;
     damage: BookDamage;
     platform: Platform;
     onRead: () => void;
     onShowFile: (() => void) | undefined;
+    wayBack: ReaderWayBack;
+    onBack: () => Promise<void>;
   } = $props();
 
   const settings = untrack(() => readerSettings(librarySeriesKey(book)));
@@ -64,6 +69,8 @@
 >
   <BookBackNav
     {platform}
+    {wayBack}
+    {onBack}
     place={{
       id: book.id,
       title: book.title,

@@ -28,6 +28,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import BookBackNav from "./BookBackNav.svelte";
+  import type { ReaderWayBack } from "./reader-way-back.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
   import { fileKindsOpened, fileTypeLabel } from "./file-types.ts";
   import ProblemHeading from "./ProblemHeading.svelte";
@@ -52,8 +53,12 @@
     showFileType,
     onShowFile,
     notices,
+    wayBack,
+    onBack,
   }: {
     place: BookPlace | null;
+    wayBack: ReaderWayBack;
+    onBack: () => Promise<void>;
     file: BookFile | null;
     platform: Platform;
     hideFilesLike: typeof commands.hideFilesLike;
@@ -130,7 +135,7 @@
   data-ground="grouped"
   class="flex flex-col bg-background text-foreground min-block-dvh touch:bg-native-grouped-ground"
 >
-  <BookBackNav {place} {platform} />
+  <BookBackNav {place} {platform} {wayBack} {onBack} />
   <div
     class="flex flex-1 items-center justify-center px-md pbe-xl expanded:px-xl android:max-medium:px-lg"
   >

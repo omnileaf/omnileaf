@@ -7,6 +7,7 @@ import {
 } from "../../src/lib/sample-library/sample-library.ts";
 import { NOTHING_BENEATH_MS } from "../../src/lib/reader/nothing-beneath.ts";
 import { expect, test, testOnlyInItsWebview } from "./fixtures.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import { sampleLibraryOn, serveSampleArt } from "./screens.ts";
 
 const LIBRARY = "/";
@@ -22,6 +23,7 @@ const VOLUME_PAGE = `${VOLUME_SERIES_PAGE}/volume/2`;
 const SETTINGS = "/settings";
 const APPEARANCE = "/settings/appearance";
 
+const BOOK_THAT_CANNOT_BE_READ = sampleBookId(4, 3);
 const SEARCH_WITH_QUERY = "/search?q=Sample";
 const TABLET = { width: 820, height: 1180 };
 
@@ -561,6 +563,88 @@ test.describe(
           .getByRole("link", { name: "Back to History", exact: true })
           .getByText(SERIES_TITLE),
       ).toHaveCount(0);
+    });
+  },
+);
+
+const SAMPLE_BACKEND = sampleLibraryOn("linux");
+
+function refusing(failure: CommandFailure): FakeBackend {
+  return {
+    ...SAMPLE_BACKEND,
+    openBook: (id, undecodable) => {
+      if (id === BOOK_THAT_CANNOT_BE_READ) {
+        throw failure;
+      }
+      return SAMPLE_BACKEND.openBook(id, undecodable);
+    },
+    bookFile: () => ({ name: "Sample Series 04 v03.cbr", fileType: "cbr" }),
+  };
+}
+
+test.describe(
+  "going back from a book that cannot be opened",
+  { tag: "@native" },
+  () => {
+    test.describe("because its type is unsupported", () => {
+      test.use({
+        backend: refusing(
+          new CommandFailure({
+            code: "bookTypeUnsupported",
+            message: "the book's file is of a type this version can't read",
+          }),
+        ),
+      });
+
+      test("goes back to History", async ({ page, platform }) => {
+        await serveSampleArt(page);
+        await openFromHistory(page, platform);
+
+        await pressLink(
+          page.getByRole("link", { name: "Back to History" }),
+          platform,
+        );
+
+        await expect(page).toHaveURL(HISTORY);
+      });
+    });
+
+    test.describe("because its file is missing", () => {
+      test.use({
+        backend: refusing(
+          new CommandFailure({
+            code: "bookNotFound",
+            message: "the book's file is not where it was",
+          }),
+        ),
+      });
+
+      test("goes back to History from the bar", async ({ page, platform }) => {
+        await serveSampleArt(page);
+        await openFromHistory(page, platform);
+
+        await pressLink(
+          page.getByRole("link", { name: "Back to History" }).first(),
+          platform,
+        );
+
+        await expect(page).toHaveURL(HISTORY);
+      });
+
+      test("goes back to History from its button", async ({
+        page,
+        platform,
+      }) => {
+        await serveSampleArt(page);
+        await openFromHistory(page, platform);
+
+        await pressLink(
+          page.getByRole("link", { name: "Back to History" }).last(),
+          platform,
+        );
+
+        await expect(page).toHaveURL(HISTORY);
+      });
     });
   },
 );

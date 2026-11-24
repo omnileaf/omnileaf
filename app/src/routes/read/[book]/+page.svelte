@@ -16,13 +16,21 @@
   import DamagedBook from "#lib/reader/DamagedBook.svelte";
   import PagedReader from "#lib/reader/PagedReader.svelte";
   import UnsupportedBook from "#lib/reader/UnsupportedBook.svelte";
+  import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { standInOpenedBook } from "#lib/series/series-stand-ins.ts";
   import { allowPinchZoom } from "#lib/reader/pinch-zoom.ts";
+  import { readerLeaving } from "#lib/reader/reader-leaving.ts";
+  import {
+    readerSeriesOf,
+    readerWayBack,
+  } from "#lib/reader/reader-way-back.ts";
 
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
   const shown = $derived(data.shown);
+  const screenshotMode = getScreenshotMode();
   const notices = getNotices();
   const showFile = $derived(
     libraryBookFileShower(
@@ -38,6 +46,20 @@
       void folderFinder.findFrom(commands.bookMissingFolder(shown.place.id));
     }
   }
+  const seriesPlace = $derived(
+    shown.kind === "found"
+      ? screenshotMode.isOn
+        ? standInOpenedBook(shown.book)
+        : shown.book
+      : shown.place,
+  );
+  const wayBack = $derived(
+    readerWayBack(
+      page.state.readerOrigin ?? undefined,
+      readerSeriesOf(seriesPlace),
+    ),
+  );
+  const leaveReader = readerLeaving(() => wayBack);
   const bookPresence = getBookPresence();
   const theme = getThemeSetting();
   let damagedBookRead: string | undefined = $state();
@@ -89,6 +111,8 @@
       damagedBookRead = shown.book.id;
     }}
     onShowFile={showFile}
+    {wayBack}
+    onBack={leaveReader}
   />
 {:else if shown.kind === "found"}
   {#key shown.book.id}
@@ -97,7 +121,8 @@
       platform={data.appInfo.platform}
       opensAtEnd={page.state.readerOpensAtEnd === true}
       hasJumped={page.state.readerJumped === true}
-      origin={page.state.readerOrigin ?? undefined}
+      {wayBack}
+      {leaveReader}
     />
   {/key}
 {:else if shown.kind === "unsupported"}
@@ -109,6 +134,8 @@
     showFileType={commands.showFileType}
     onShowFile={showFile}
     {notices}
+    {wayBack}
+    onBack={leaveReader}
   />
 {:else}
   <BookProblem
@@ -117,6 +144,8 @@
     platform={data.appInfo.platform}
     onShowFile={showFile}
     onFind={findFolder}
+    {wayBack}
+    onBack={leaveReader}
   />
 {/if}
 <FindFolderSheet finder={folderFinder} platform={data.appInfo.platform} />

@@ -1,4 +1,6 @@
+import { resolve } from "$app/paths";
 import type { ResolvedPathname } from "$app/types";
+import type { BookPlace } from "#lib/ipc/bindings.ts";
 import { SECTION_PATHNAMES } from "#lib/navigation/sections.ts";
 import { m } from "#lib/paraglide/messages.js";
 
@@ -16,6 +18,11 @@ export interface ReaderSeries {
   readonly title: string;
   readonly isInLibrary: boolean;
 }
+
+export type SeriesPlace = Pick<
+  BookPlace,
+  "series" | "seriesTitle" | "isInLibrary"
+>;
 
 export interface ReaderWayBack {
   readonly kind: "history" | "replace";
@@ -82,4 +89,14 @@ export function readerWayBack(
   return origin === undefined
     ? wayBackTo("replace", { pathname: series.href, href: series.href }, series)
     : wayBackTo("history", origin, series);
+}
+
+export function readerSeriesOf(place: SeriesPlace | null): ReaderSeries {
+  return place !== null && place.isInLibrary
+    ? {
+        href: resolve("/(app)/series/[id]", { id: place.series }),
+        title: place.seriesTitle,
+        isInLibrary: true,
+      }
+    : { href: resolve("/(app)"), title: "", isInLibrary: false };
 }
