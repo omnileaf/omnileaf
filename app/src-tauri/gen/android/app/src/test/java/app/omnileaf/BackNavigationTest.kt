@@ -21,7 +21,7 @@ private class PageHistory : WebHistory {
 
 private const val SCREEN_HEIGHT_PX = 2000f
 
-/** Android gives a back from a button rather than a swipe the edge `BackEvent.EDGE_NONE`, which `BackEventCompat` 1.10 has no name for. */
+/** Android gives a back from a button instead of a swipe the edge `BackEvent.EDGE_NONE`, which `BackEventCompat` 1.10 does not name. */
 private const val BUTTON_BACK_EDGE = 2
 
 private fun swipedTo(

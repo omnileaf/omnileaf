@@ -86,7 +86,7 @@ internal fun View.screenCornerDp(): Float {
     return largestCornerDp(radiiPx, resources.displayMetrics.density)
 }
 
-/** Android gives a back from a button rather than a swipe no touch point, reporting its touch as NaN. */
+/** Android reports NaN as the touch of a back that comes from a button instead of a swipe. */
 private fun BackEventCompat.touchShareOf(heightPx: Float): Float? {
     val fingerY = touchY.takeUnless(Float::isNaN) ?: return null
     return heightPx.takeIf { it > 0f }?.let { fingerY / it }
