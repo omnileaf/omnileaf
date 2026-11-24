@@ -218,8 +218,10 @@ impl UnreadableBook {
 mod tests {
     use std::{
         fs::{self, File},
+        mem,
         path::PathBuf,
         sync::{
+            Mutex,
             atomic::{AtomicUsize, Ordering},
             mpsc,
         },
@@ -253,34 +255,67 @@ mod tests {
         books_per_series: 8,
         pages_per_book: 1,
     };
+    const TWO_BATCHES: GeneratedLibrary = GeneratedLibrary {
+        series: 2,
+        books_per_series: 8,
+        pages_per_book: 1,
+    };
+    const BOOKS_PER_TEST_BATCH: usize = 8;
     const IMAGE_FOLDER_BOOKS: usize = 8;
     const LISTED_BYTES: u64 = 100;
     const BOOKS_THE_BUDGET_HOLDS: u64 = 2;
     const WAIT_FOR_COMPANY: Duration = Duration::from_secs(2);
     const WAIT_FOR_A_THIRD_OPEN: Duration = Duration::from_millis(300);
 
+    #[derive(Clone, Copy)]
+    enum InCompany {
+        Opens,
+        TimesOut,
+    }
+
     #[derive(Debug)]
     struct OpensInCompany {
         root: PathBuf,
         company: usize,
         longest: Duration,
+        times_out_in_company: bool,
         open_now: AtomicUsize,
         most_open_at_once: AtomicUsize,
+        opened: Mutex<Vec<(PathBuf, usize)>>,
     }
 
     impl OpensInCompany {
         fn waiting_for(scratch: &ScratchFolder, company: usize, longest: Duration) -> Arc<Self> {
+            Self::new(scratch, company, longest, InCompany::Opens)
+        }
+
+        fn timing_out_in_company(scratch: &ScratchFolder) -> Arc<Self> {
+            Self::new(scratch, 2, WAIT_FOR_COMPANY, InCompany::TimesOut)
+        }
+
+        fn new(
+            scratch: &ScratchFolder,
+            company: usize,
+            longest: Duration,
+            in_company: InCompany,
+        ) -> Arc<Self> {
             Arc::new(Self {
                 root: scratch.path().to_path_buf(),
                 company,
                 longest,
+                times_out_in_company: matches!(in_company, InCompany::TimesOut),
                 open_now: AtomicUsize::new(0),
                 most_open_at_once: AtomicUsize::new(0),
+                opened: Mutex::new(Vec::new()),
             })
         }
 
         fn most_open_at_once(&self) -> usize {
             self.most_open_at_once.load(Ordering::SeqCst)
+        }
+
+        fn take_opened(&self) -> Vec<(PathBuf, usize)> {
+            mem::take(&mut self.opened.lock().unwrap())
         }
     }
 
@@ -296,15 +331,21 @@ mod tests {
         fn open(&self, file: &Path) -> io::Result<File> {
             let now = self.open_now.fetch_add(1, Ordering::SeqCst) + 1;
             self.most_open_at_once.fetch_max(now, Ordering::SeqCst);
+            self.opened.lock().unwrap().push((file.to_path_buf(), now));
             wait_until_within(self.longest, || self.most_open_at_once() >= self.company);
-            let opened = LocalStorage.open(&self.root.join(file));
+            let has_company = self.open_now.load(Ordering::SeqCst) > 1;
+            let opened = if self.times_out_in_company && has_company {
+                Err(io::ErrorKind::TimedOut.into())
+            } else {
+                LocalStorage.open(&self.root.join(file))
+            };
             self.open_now.fetch_sub(1, Ordering::SeqCst);
             opened
         }
     }
 
-    fn archives(scratch: &ScratchFolder) -> Vec<FoundBook> {
-        write_generated_library(scratch.path(), ARCHIVES)
+    fn archives_of(scratch: &ScratchFolder, library: GeneratedLibrary) -> Vec<FoundBook> {
+        write_generated_library(scratch.path(), library)
             .unwrap()
             .into_iter()
             .map(|path| {
@@ -312,6 +353,10 @@ mod tests {
                 FoundBook { path, listed_bytes }
             })
             .collect()
+    }
+
+    fn archives(scratch: &ScratchFolder) -> Vec<FoundBook> {
+        archives_of(scratch, ARCHIVES)
     }
 
     #[derive(Debug)]
@@ -520,6 +565,39 @@ mod tests {
             storage.most_open_at_once(),
             usize::try_from(BOOKS_THE_BUDGET_HOLDS).unwrap()
         );
+    }
+
+    fn reader_after_a_timeout_in_company(
+        scratch: &ScratchFolder,
+    ) -> (Arc<OpensInCompany>, BookReader, Vec<FoundBook>) {
+        let books = archives_of(scratch, TWO_BATCHES);
+        let (first, second) = books.split_at(BOOKS_PER_TEST_BATCH);
+        let storage = OpensInCompany::timing_out_in_company(scratch);
+        let reader = BookReader::sharing(
+            target_over(storage.clone()),
+            Arc::new(DecodePermits::new(1)),
+            Arc::new(ByteBudget::new(TEST_BYTE_BUDGET)),
+        );
+        let read = reader.read_each(first);
+        assert!(read.iter().all(Result::is_ok), "{read:?}");
+        storage.take_opened();
+        (storage, reader, second.to_vec())
+    }
+
+    #[test]
+    fn reads_one_book_at_a_time_once_an_open_has_timed_out() {
+        let scratch = ScratchFolder::new("scan-one-at-a-time-after-timeout");
+        let (storage, reader, second) = reader_after_a_timeout_in_company(&scratch);
+
+        let read = reader.read_each(&second);
+
+        assert!(read.iter().all(Result::is_ok), "{read:?}");
+        let most_open_at_once = storage
+            .take_opened()
+            .into_iter()
+            .map(|(_, open_at_once)| open_at_once)
+            .max();
+        assert_eq!(most_open_at_once, Some(1));
     }
 
     #[test]
