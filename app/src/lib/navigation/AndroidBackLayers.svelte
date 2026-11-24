@@ -28,9 +28,7 @@
     (isCancelling ? preview.restingFrame : frame)?.entering,
   );
 
-  function springBack(property: string): string {
-    return `${property} ${String(ANDROID_BACK_SPRING.durationMs)}ms ${ANDROID_BACK_SPRING.easing}`;
-  }
+  const springBack = `transform ${String(ANDROID_BACK_SPRING.durationMs)}ms ${ANDROID_BACK_SPRING.easing}`;
 
   function showCopy(shown: ScreenCopy) {
     return (holder: HTMLElement) => {
@@ -69,7 +67,7 @@
       style:transform={enteringPlace === undefined
         ? undefined
         : placedTransform(enteringPlace)}
-      style:transition={isCancelling ? springBack("transform") : undefined}
+      style:transition={isCancelling ? springBack : undefined}
       style:border-radius="{cornerPx}px"
     >
       {#if behind !== undefined}
@@ -79,8 +77,7 @@
     <div
       class="absolute inset-none"
       style:background-color={SCRIM_COLOUR}
-      style:opacity={isCancelling ? 0 : frame.scrim}
-      style:transition={isCancelling ? springBack("opacity") : undefined}
+      style:opacity={frame.scrim}
     ></div>
   </div>
 {/if}
