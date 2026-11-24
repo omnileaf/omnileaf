@@ -20,6 +20,7 @@ const PERMISSIONS = "/settings/privacy/permissions";
 const COMMIT_MS = 450;
 const BEFORE_THE_COMMIT_ENDS_MS = COMMIT_MS - 50;
 const PAST_THE_COMMIT_MS = 100;
+const COMMIT_PLAYED_MS = COMMIT_MS + PAST_THE_COMMIT_MS;
 const SETTINGS = "/settings";
 const SETTINGS_TITLE = "Settings";
 const PRIVACY_TITLE = "Privacy and security";
@@ -202,10 +203,12 @@ test("springs the page back and takes the page behind away when the gesture is c
   page,
 }) => {
   await openPrivacyFromSettings(page);
+  await pauseTheClock(page);
   await gesture(start());
   await gesture(swipe(1));
 
   await gesture({ kind: "cancelled" });
+  await page.clock.runFor(SPRING_BACK_SETTLED_MS);
 
   await expect(page.getByRole("main")).toHaveCSS("transform", "none");
   await expect(page.locator("[data-previous-screen]")).toHaveCount(0);
@@ -215,6 +218,7 @@ test("lets the page leave and settles the page behind in its place once back goe
   page,
 }) => {
   await openPrivacyFromSettings(page);
+  await pauseTheClock(page);
   await gesture(start());
   await gesture(swipe(1));
 
@@ -222,8 +226,10 @@ test("lets the page leave and settles the page behind in its place once back goe
 
   await expect(page).toHaveURL(SETTINGS);
   await expect(page.locator("[data-leaving-screen]")).toBeAttached();
-  await expect(page.locator("[data-leaving-screen]")).toHaveCount(0);
-  await expect(page.getByRole("main")).toHaveCSS("transform", "none");
+  await page.clock.runFor(BEFORE_THE_COMMIT_ENDS_MS);
+  await expect(page.locator("[data-leaving-screen]")).toBeAttached();
+  await page.clock.runFor(PAST_THE_COMMIT_MS);
+  await expectNoPreviewLeft(page);
 });
 
 test("neither shrinks nor moves the page when reduced motion is on", async ({
@@ -253,11 +259,13 @@ test("puts the screen back when a finished back gesture closes something on the 
   await page.evaluate(() => {
     history.pushState(history.state, "", location.href);
   });
+  await pauseTheClock(page);
   await gesture(start());
   await gesture({ kind: "moved", progress: 0.3 });
   await expect(screen).not.toHaveCSS("transform", "none");
 
   await page.goBack();
+  await page.clock.runFor(SPRING_BACK_SETTLED_MS);
 
   await expect(screen).toHaveCSS("transform", "none");
   await expect(screen).toHaveCSS("border-top-left-radius", "0px");
@@ -268,13 +276,15 @@ test("leaves no preview once back goes through, even when the gesture's last mov
   page,
 }) => {
   await openPrivacyFromSettings(page);
+  await pauseTheClock(page);
   await gesture(start());
   await gesture(swipe(0.6));
 
   await page.goBack();
   await gesture(swipe(0.6));
-
   await expect(page).toHaveURL(SETTINGS);
+  await page.clock.runFor(COMMIT_PLAYED_MS);
+
   await expectNoPreviewLeft(page);
 });
 
@@ -282,11 +292,13 @@ test("leaves no preview once the gesture is cancelled, even when moves arrive af
   page,
 }) => {
   await openPrivacyFromSettings(page);
+  await pauseTheClock(page);
   await gesture(start());
   await gesture(swipe(0.6));
 
   await gesture({ kind: "cancelled" });
   await gesture(swipe(0.3));
+  await page.clock.runFor(SPRING_BACK_SETTLED_MS);
 
   await expectNoPreviewLeft(page);
 });
