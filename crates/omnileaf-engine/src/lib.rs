@@ -89,6 +89,7 @@ mod unread_books;
 mod utc_offset;
 mod value_source;
 mod version_details;
+mod weighted_semaphore;
 mod windows_share;
 
 pub use adult_content::{AdultContent, AdultTreatment};
