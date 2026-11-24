@@ -53,32 +53,24 @@ export class AndroidBackPreview {
   }
 
   get frame(): BackPreviewFrame | undefined {
+    return this.#frameAt(this.#now);
+  }
+
+  get restingFrame(): BackPreviewFrame | undefined {
+    return this.#frameAt(this.#start);
+  }
+
+  #frameAt(now: BackGestureAt | undefined): BackPreviewFrame | undefined {
     if (
       this.#start === undefined ||
-      this.#now === undefined ||
+      now === undefined ||
       this.area === undefined
     ) {
       return undefined;
     }
     return backPreviewFrame(
       this.#start,
-      this.#now,
-      {
-        width: this.area.width,
-        height: this.area.height,
-        isDark: this.#look.isDark(),
-      },
-      this.#look.isMotionReduced(),
-    );
-  }
-
-  get restingFrame(): BackPreviewFrame | undefined {
-    if (this.#start === undefined || this.area === undefined) {
-      return undefined;
-    }
-    return backPreviewFrame(
-      this.#start,
-      this.#start,
+      now,
       {
         width: this.area.width,
         height: this.area.height,
