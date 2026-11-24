@@ -7,6 +7,7 @@ import {
   backPreviewFrame,
   type PlacedScreen,
 } from "./back-preview";
+import { settlingOf } from "./back-spring";
 import type { ScreenCopy } from "./previous-screens";
 
 export type PreviewPhase =
@@ -31,12 +32,17 @@ interface PreviewLook {
   readonly isMotionReduced: () => boolean;
 }
 
-/** Android's post-commit and cancel motion: `DefaultCrossActivityBackAnimation.POST_COMMIT_DURATION` and the closing alpha `1 - progress * 5`, and `BackProgressAnimator`'s medium-stiffness, unbouncy spring back. */
+/** Android's post-commit motion: `DefaultCrossActivityBackAnimation.POST_COMMIT_DURATION` and the closing alpha `1 - progress * 5`. */
 export const ANDROID_BACK_MOTION = {
   commitMs: 450,
   leavingFadeMs: 90,
-  cancelMs: 150,
 } as const;
+
+/** `BackProgressAnimator` springs a cancelled gesture's progress back with `SpringForce.STIFFNESS_MEDIUM` and `DAMPING_RATIO_NO_BOUNCY`, stopping within `MIN_VISIBLE_CHANGE_PIXELS * THRESHOLD_MULTIPLIER` of its progress scaled by `SCALE_FACTOR`. */
+export const ANDROID_BACK_SPRING = settlingOf({
+  stiffness: 1500,
+  restingWithin: 0.75 / 100,
+});
 
 const AFTER_ENTERING_SHIFT_PX = 96;
 
@@ -83,6 +89,22 @@ export class AndroidBackPreview {
     return backPreviewFrame(
       this.#start,
       this.#now,
+      {
+        width: this.area.width,
+        height: this.area.height,
+        isDark: this.#look.isDark(),
+      },
+      this.#look.isMotionReduced(),
+    );
+  }
+
+  get restingFrame(): BackPreviewFrame | undefined {
+    if (this.#start === undefined || this.area === undefined) {
+      return undefined;
+    }
+    return backPreviewFrame(
+      this.#start,
+      this.#start,
       {
         width: this.area.width,
         height: this.area.height,
@@ -151,7 +173,7 @@ export class AndroidBackPreview {
       return;
     }
     this.phase = "cancelling";
-    this.#settleAfter(ANDROID_BACK_MOTION.cancelMs);
+    this.#settleAfter(ANDROID_BACK_SPRING.durationMs);
   }
 
   #settleAfter(ms: number): void {

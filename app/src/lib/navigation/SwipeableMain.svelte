@@ -20,6 +20,7 @@
   import AndroidBackLayers from "./AndroidBackLayers.svelte";
   import {
     ANDROID_BACK_MOTION,
+    ANDROID_BACK_SPRING,
     AndroidBackPreview,
     placedTransform,
   } from "./android-back-preview.svelte";
@@ -132,7 +133,7 @@
   const androidMainTransition = $derived.by(() => {
     switch (androidBack.phase) {
       case "cancelling":
-        return `transform ${String(ANDROID_BACK_MOTION.cancelMs)}ms ease-out`;
+        return `transform ${String(ANDROID_BACK_SPRING.durationMs)}ms ${ANDROID_BACK_SPRING.easing}`;
       case "committing":
         return isEnteringSettled
           ? `transform ${String(ANDROID_BACK_MOTION.commitMs)}ms var(--ease-emphasized)`

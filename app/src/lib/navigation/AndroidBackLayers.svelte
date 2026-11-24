@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     ANDROID_BACK_MOTION,
+    ANDROID_BACK_SPRING,
     type AndroidBackPreview,
     placedTransform,
   } from "./android-back-preview.svelte";
@@ -23,6 +24,13 @@
 
   const frame = $derived(preview.frame);
   const isCancelling = $derived(preview.phase === "cancelling");
+  const enteringPlace = $derived(
+    (isCancelling ? preview.restingFrame : frame)?.entering,
+  );
+
+  function springBack(property: string): string {
+    return `${property} ${String(ANDROID_BACK_SPRING.durationMs)}ms ${ANDROID_BACK_SPRING.easing}`;
+  }
 
   function showCopy(shown: ScreenCopy) {
     return (holder: HTMLElement) => {
@@ -58,7 +66,10 @@
   >
     <div
       class="flex flex-col overflow-hidden bg-background block-full inline-full"
-      style:transform={placedTransform(frame.entering)}
+      style:transform={enteringPlace === undefined
+        ? undefined
+        : placedTransform(enteringPlace)}
+      style:transition={isCancelling ? springBack("transform") : undefined}
       style:border-radius="{cornerPx}px"
     >
       {#if behind !== undefined}
@@ -69,9 +80,7 @@
       class="absolute inset-none"
       style:background-color={SCRIM_COLOUR}
       style:opacity={isCancelling ? 0 : frame.scrim}
-      style:transition={isCancelling
-        ? `opacity ${String(ANDROID_BACK_MOTION.cancelMs)}ms ease-out`
-        : undefined}
+      style:transition={isCancelling ? springBack("opacity") : undefined}
     ></div>
   </div>
 {/if}

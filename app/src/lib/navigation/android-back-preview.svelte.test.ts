@@ -7,6 +7,7 @@ import {
 } from "./android-back-preview.svelte";
 import type { BackGestureAt } from "./back-preview";
 
+const ANDROID_SPRING_SETTLES_MS = 180;
 const AREA = { left: 0, top: 0, width: 400, height: 800 };
 const LOOK = { isDark: () => false, isMotionReduced: () => false };
 const COPY = { content: {} as HTMLElement, scrollTop: 0 };
@@ -54,9 +55,22 @@ test("springs back when the gesture is cancelled, then rests", () => {
 
   preview.follow({ kind: "ended" }, screen());
   const whileCancelling = preview.phase;
-  vi.advanceTimersByTime(ANDROID_BACK_MOTION.cancelMs);
+  vi.advanceTimersByTime(ANDROID_SPRING_SETTLES_MS);
 
   expect(whileCancelling).toBe("cancelling");
+  expect(preview.phase).toBe("resting");
+});
+
+test("springs back for as long as Android's back progress spring takes to settle", () => {
+  const preview = new AndroidBackPreview(LOOK);
+  swipedTo(preview, 1);
+  preview.follow({ kind: "ended" }, screen());
+
+  vi.advanceTimersByTime(ANDROID_SPRING_SETTLES_MS - 1);
+  const justBefore = preview.phase;
+  vi.advanceTimersByTime(1);
+
+  expect(justBefore).toBe("cancelling");
   expect(preview.phase).toBe("resting");
 });
 
@@ -109,7 +123,7 @@ test("follows no moves of a gesture that has ended until another starts", () => 
   const preview = new AndroidBackPreview(LOOK);
   swipedTo(preview, 1);
   preview.follow({ kind: "ended" }, screen());
-  vi.advanceTimersByTime(ANDROID_BACK_MOTION.cancelMs);
+  vi.advanceTimersByTime(ANDROID_SPRING_SETTLES_MS);
 
   preview.follow({ kind: "moved", at: at(0.5) }, screen());
 
