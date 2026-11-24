@@ -2,38 +2,55 @@ import { goto, onNavigate } from "$app/navigation";
 
 import type { ReaderWayBack } from "./reader-way-back";
 
+type Outcome = "arrived" | "failed";
+
 export function readerLeaving(
   wayBack: () => ReaderWayBack,
 ): () => Promise<void> {
-  let pending: Promise<void> | undefined;
-  let arrived: (() => void) | undefined;
+  let leaving: Promise<void> | undefined;
+  let report: ((outcome: Outcome) => void) | undefined;
 
   onNavigate((navigation) => {
-    const settle = arrived;
-    arrived = undefined;
-    if (settle !== undefined) {
-      void navigation.complete.then(settle, settle);
+    const reportTo = report;
+    report = undefined;
+    if (reportTo !== undefined) {
+      void navigation.complete.then(
+        () => {
+          reportTo("arrived");
+        },
+        () => {
+          reportTo("failed");
+        },
+      );
     }
   });
 
-  function goBackThroughHistory(): Promise<void> {
+  function goBackThroughHistory(): Promise<Outcome> {
     return new Promise((settle) => {
-      arrived = settle;
+      report = settle;
       history.back();
     });
   }
 
-  function start(): Promise<void> {
+  function start(): Promise<Outcome> {
     const way = wayBack();
     return way.kind === "replace"
-      ? goto(way.href, { replace: true })
+      ? goto(way.href, { replace: true }).then(() => "arrived")
       : goBackThroughHistory();
   }
 
   return () => {
-    pending ??= start().finally(() => {
-      pending = undefined;
-    });
-    return pending;
+    leaving ??= start().then(
+      (outcome) => {
+        if (outcome === "failed") {
+          leaving = undefined;
+        }
+      },
+      (error: unknown) => {
+        leaving = undefined;
+        throw error;
+      },
+    );
+    return leaving;
   };
 }
