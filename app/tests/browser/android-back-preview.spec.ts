@@ -16,6 +16,10 @@ const SCREEN_CORNER_PX = 32;
 const SMALLEST_SCALE = 0.9;
 const EDGE_MARGIN_PX = 8;
 const PRIVACY = "/settings/privacy";
+const PERMISSIONS = "/settings/privacy/permissions";
+const COMMIT_MS = 450;
+const BEFORE_THE_COMMIT_ENDS_MS = COMMIT_MS - 50;
+const PAST_THE_COMMIT_MS = 100;
 const SETTINGS = "/settings";
 const SETTINGS_TITLE = "Settings";
 const PRIVACY_ONLY_TEXT = "Crash reports";
@@ -324,6 +328,74 @@ test.describe("a back gesture the page keeps for itself", () => {
     await expect(
       page.getByRole("alertdialog", { name: "Discard your changes?" }),
     ).toBeVisible();
+    await expectNoPreviewLeft(page);
+  });
+});
+
+test.describe("going back to a page that takes a while to load", () => {
+  const reads = {
+    isHolding: false,
+    waiting: [] as PromiseWithResolvers<undefined>[],
+  };
+
+  async function answerOnceReleased(): Promise<void> {
+    if (!reads.isHolding) {
+      return;
+    }
+    const answer = Promise.withResolvers<undefined>();
+    reads.waiting.push(answer);
+    await answer.promise;
+  }
+
+  function releaseReads(): void {
+    reads.isHolding = false;
+    for (const answer of reads.waiting.splice(0)) {
+      answer.resolve(undefined);
+    }
+  }
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      appInfo: () => fakeAppInfo("android"),
+      libraryFolders: async () => {
+        await answerOnceReleased();
+        return { folders: [], next: null };
+      },
+      watchBackSwipes: (channel) => {
+        gestures = channel;
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    releaseReads();
+  });
+
+  test("keeps the page and the page behind as the gesture left them until the page behind arrives, then plays the whole leave", async ({
+    page,
+  }) => {
+    await openPrivacyFromSettings(page);
+    await openInApp(page, PERMISSIONS);
+    await pauseTheClock(page);
+    await gesture(start());
+    await gesture(swipe(0.6));
+    const leftByTheGesture = await placementOf(page);
+    reads.isHolding = true;
+
+    await page.goBack();
+
+    await expect.poll(() => reads.waiting.length).toBeGreaterThan(0);
+    expect(await placementOf(page)).toEqual(leftByTheGesture);
+    await expect(page.locator("[data-previous-screen]")).toBeVisible();
+    await expect(page.locator("[data-leaving-screen]")).toHaveCount(0);
+
+    releaseReads();
+    await expect(page.locator("[data-leaving-screen]")).toBeAttached();
+    await page.clock.runFor(BEFORE_THE_COMMIT_ENDS_MS);
+    await expect(page.locator("[data-leaving-screen]")).toBeAttached();
+    await page.clock.runFor(PAST_THE_COMMIT_MS);
     await expectNoPreviewLeft(page);
   });
 });
