@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ANDROID_BACK_TRANSITIONS, placedTransform } from "./back-preview";
   import type { AndroidBackPreview } from "./android-back-preview.svelte";
-  import { type ScreenCopy, showCopy } from "./previous-screens";
+  import { areaStyle, type ScreenCopy, showCopy } from "./previous-screens";
 
   let {
     preview,
@@ -27,10 +27,7 @@
     inert
     data-previous-screen
     class="pointer-events-none fixed overflow-hidden"
-    style:left="{preview.area.left}px"
-    style:top="{preview.area.top}px"
-    style:width="{preview.area.width}px"
-    style:height="{preview.area.height}px"
+    style={areaStyle(preview.area)}
   >
     <div
       class="flex flex-col overflow-hidden bg-background block-full inline-full"
@@ -59,10 +56,7 @@
     inert
     data-leaving-screen
     class="pointer-events-none fixed z-notice overflow-hidden"
-    style:left="{preview.area.left}px"
-    style:top="{preview.area.top}px"
-    style:width="{preview.area.width}px"
-    style:height="{preview.area.height}px"
+    style={areaStyle(preview.area)}
   >
     <div
       class="absolute inset-none bg-native-back-preview-scrim"

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SETTLING_MOTION } from "./back-swipe";
   import {
+    areaStyle,
     type ScreenArea,
     type ScreenCopy,
     showCopy,
@@ -26,10 +27,7 @@
   inert
   data-previous-screen
   class="fixed overflow-hidden bg-background"
-  style:left="{area.left}px"
-  style:top="{area.top}px"
-  style:width="{area.width}px"
-  style:height="{area.height}px"
+  style={areaStyle(area)}
 >
   <div
     class={[

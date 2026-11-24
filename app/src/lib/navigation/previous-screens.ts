@@ -13,6 +13,10 @@ export interface ScreenArea {
   readonly height: number;
 }
 
+export function areaStyle({ left, top, width, height }: ScreenArea): string {
+  return `left: ${String(left)}px; top: ${String(top)}px; width: ${String(width)}px; height: ${String(height)}px;`;
+}
+
 export function showCopy(shown: ScreenCopy): Attachment<HTMLElement> {
   return (holder) => {
     holder.append(shown.content);

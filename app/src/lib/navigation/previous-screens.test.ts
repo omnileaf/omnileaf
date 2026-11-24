@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { PreviousScreens } from "./previous-screens";
+import { areaStyle, PreviousScreens } from "./previous-screens";
 
 function screenSaying(text: string): HTMLElement {
   const screen = document.createElement("main");
@@ -63,4 +63,20 @@ test("lands nowhere later once the swipe's navigation went nowhere", () => {
   const landed = screens.landedOn("/series/1");
 
   expect(landed).toBeUndefined();
+});
+
+test("places a layer over the area a screen took", () => {
+  const layer = document.createElement("div");
+
+  layer.setAttribute(
+    "style",
+    areaStyle({ left: 1, top: 2, width: 30, height: 40 }),
+  );
+
+  expect([
+    layer.style.left,
+    layer.style.top,
+    layer.style.width,
+    layer.style.height,
+  ]).toEqual(["1px", "2px", "30px", "40px"]);
 });
