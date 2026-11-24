@@ -167,7 +167,7 @@ impl BookReader {
         found: &FoundBook,
         unopened: impl Fn(FormatError) -> UnreadableBook + Copy,
     ) -> Result<ParsedBook, UnreadableBook> {
-        let _bytes = self.bytes.hold(found.listed_bytes);
+        let _bytes = self.bytes.hold_for(found.form);
         let recognised = recognise_book_in(&self.target.storage, &found.path).map_err(unopened)?;
         self.parse(recognised, unopened)
     }
@@ -245,7 +245,7 @@ mod tests {
         write_generated_library,
     };
 
-    use crate::file_type::HiddenFileTypes;
+    use crate::{file_type::HiddenFileTypes, library_layout::BookForm};
 
     use super::*;
 
@@ -365,11 +365,23 @@ mod tests {
         write_generated_library(scratch.path(), library)
             .unwrap()
             .into_iter()
-            .map(|path| {
-                let listed_bytes = fs::metadata(scratch.path().join(&path)).unwrap().len();
-                FoundBook { path, listed_bytes }
-            })
+            .map(|path| found_file(scratch, path))
             .collect()
+    }
+
+    fn found_file(scratch: &ScratchFolder, path: PathBuf) -> FoundBook {
+        let size = fs::metadata(scratch.path().join(&path)).unwrap().len();
+        FoundBook {
+            path,
+            form: BookForm::of_file_listed_as(size),
+        }
+    }
+
+    fn listed_bytes(book: &FoundBook) -> u64 {
+        let BookForm::File { listed_bytes } = book.form else {
+            panic!("the test lists its book with a size");
+        };
+        listed_bytes.get()
     }
 
     fn archives(scratch: &ScratchFolder) -> Vec<FoundBook> {
@@ -453,8 +465,7 @@ mod tests {
     fn one_archive(scratch: &ScratchFolder) -> FoundBook {
         let written = write_generated_library(scratch.path(), ONE_ARCHIVE).unwrap();
         let path = written.into_iter().next().unwrap();
-        let listed_bytes = fs::metadata(scratch.path().join(&path)).unwrap().len();
-        FoundBook { path, listed_bytes }
+        found_file(scratch, path)
     }
 
     fn image_folder(scratch: &ScratchFolder, chapter: usize) -> FoundBook {
@@ -466,7 +477,7 @@ mod tests {
         fs::write(scratch.path().join(&book).join("001.png"), page).unwrap();
         FoundBook {
             path: book,
-            listed_bytes: 0,
+            form: BookForm::FolderOfImages,
         }
     }
 
@@ -495,9 +506,9 @@ mod tests {
         let scratch = ScratchFolder::new("scan-bytes-before-open");
         let book = one_archive(&scratch);
         let storage = WatchedStorage::rooted_in(&scratch);
-        let bytes = Arc::new(ByteBudget::new(book.listed_bytes));
+        let bytes = Arc::new(ByteBudget::new(listed_bytes(&book)));
         let reader = budgeted_reader(storage.clone(), &bytes);
-        let held = bytes.hold(book.listed_bytes);
+        let held = bytes.hold_for(book.form);
         let (done, finished) = mpsc::channel();
 
         thread::spawn(move || done.send(reader.read_each(&[book])).unwrap());
@@ -513,7 +524,7 @@ mod tests {
     fn reads_a_book_listed_larger_than_the_whole_byte_budget() {
         let scratch = ScratchFolder::new("scan-bytes-oversized");
         let book = one_archive(&scratch);
-        let bytes = Arc::new(ByteBudget::new(book.listed_bytes - 1));
+        let bytes = Arc::new(ByteBudget::new(listed_bytes(&book) - 1));
         let reader = budgeted_reader(WatchedStorage::rooted_in(&scratch), &bytes);
         let (done, finished) = mpsc::channel();
 
@@ -565,7 +576,7 @@ mod tests {
         let books: Vec<FoundBook> = archives(&scratch)
             .into_iter()
             .map(|book| FoundBook {
-                listed_bytes: LISTED_BYTES,
+                form: BookForm::of_file_listed_as(LISTED_BYTES),
                 ..book
             })
             .collect();
@@ -723,7 +734,7 @@ mod tests {
         };
         let found = FoundBook {
             path: PathBuf::from("/media/Elsewhere/v01.cbz"),
-            listed_bytes: 0,
+            form: BookForm::FileOfUnlistedSize,
         };
 
         let read = BookReader::new(target).read_found_book(&found);

@@ -1,6 +1,7 @@
 use std::{
     ffi::OsStr,
     io,
+    num::NonZeroU64,
     path::{Path, PathBuf},
 };
 
@@ -11,7 +12,22 @@ use crate::file_type::FileType;
 #[derive(Clone, Debug)]
 pub(crate) struct FoundBook {
     pub(crate) path: PathBuf,
-    pub(crate) listed_bytes: u64,
+    pub(crate) form: BookForm,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum BookForm {
+    File { listed_bytes: NonZeroU64 },
+    FileOfUnlistedSize,
+    FolderOfImages,
+}
+
+impl BookForm {
+    pub(crate) fn of_file_listed_as(size: u64) -> Self {
+        NonZeroU64::new(size).map_or(Self::FileOfUnlistedSize, |listed_bytes| Self::File {
+            listed_bytes,
+        })
+    }
 }
 
 #[derive(Debug, Default)]
@@ -79,7 +95,7 @@ impl Layout {
                     holds_comics = true;
                     self.books.push(FoundBook {
                         path: folder.join(&entry.name),
-                        listed_bytes: size,
+                        form: BookForm::of_file_listed_as(size),
                     });
                 }
                 EntryKind::Page => holds_pages = true,
@@ -91,7 +107,7 @@ impl Layout {
         if is_book_of_images {
             self.books.push(FoundBook {
                 path: folder.to_path_buf(),
-                listed_bytes: 0,
+                form: BookForm::FolderOfImages,
             });
         }
     }
@@ -142,5 +158,46 @@ mod tests {
         let kind = EntryKind::of(&failed);
 
         assert_eq!(kind, EntryKind::Unreadable);
+    }
+
+    fn file(name: &str, size: u64) -> Entry {
+        Entry {
+            name: name.into(),
+            kind: formats::EntryKind::File { size },
+        }
+    }
+
+    fn forms_found_in(entries: Vec<Entry>) -> Vec<BookForm> {
+        let mut layout = Layout::default();
+
+        layout.take_in(Path::new("Sample"), entries, &mut Vec::new());
+
+        layout.books.into_iter().map(|book| book.form).collect()
+    }
+
+    #[test]
+    fn finds_a_comic_listed_with_a_size_as_a_file_of_that_size() {
+        let forms = forms_found_in(vec![file("v01.cbz", 2048)]);
+
+        assert_eq!(
+            forms,
+            vec![BookForm::File {
+                listed_bytes: NonZeroU64::new(2048).unwrap()
+            }]
+        );
+    }
+
+    #[test]
+    fn finds_a_comic_listed_at_no_bytes_as_a_file_of_unlisted_size() {
+        let forms = forms_found_in(vec![file("v01.cbz", 0)]);
+
+        assert_eq!(forms, vec![BookForm::FileOfUnlistedSize]);
+    }
+
+    #[test]
+    fn finds_a_folder_of_pages_as_a_folder_of_images() {
+        let forms = forms_found_in(vec![file("001.png", 512), file("002.png", 512)]);
+
+        assert_eq!(forms, vec![BookForm::FolderOfImages]);
     }
 }
