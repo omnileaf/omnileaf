@@ -173,7 +173,9 @@ export class AndroidBackPreview {
     this.leaving = {
       copy,
       from: frame.closing,
-      to: leavingTarget(frame.closing, this.area.width),
+      to: this.#look.isMotionReduced()
+        ? frame.closing
+        : leavingTarget(frame.closing, this.area.width),
       scrim: frame.scrim,
     };
     this.enteringFrom = frame.entering;

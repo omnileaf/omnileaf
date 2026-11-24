@@ -142,3 +142,15 @@ test("takes the page that was leaving away when another gesture starts", () => {
   expect(preview.leaving).toBeUndefined();
   expect(preview.enteringFrom).toBeUndefined();
 });
+
+test("lets the page leave where it stands with reduced motion", () => {
+  const preview = new AndroidBackPreview({
+    ...LOOK,
+    isMotionReduced: () => true,
+  });
+  swipedTo(preview, 1);
+
+  preview.leave(COPY);
+
+  expect(preview.leaving?.to).toEqual({ scale: 1, x: 0, y: 0 });
+});
