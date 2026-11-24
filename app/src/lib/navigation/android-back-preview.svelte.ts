@@ -3,12 +3,15 @@ import { assertNever } from "#lib/assert-never.ts";
 import {
   ANDROID_BACK_MOTION,
   ANDROID_BACK_SPRING,
+  ANDROID_BACK_TRANSITIONS,
   type BackGestureAt,
   type BackGestureStep,
   type BackPreviewFrame,
   backPreviewFrame,
   leavingTarget,
   type PlacedScreen,
+  placedTransform,
+  RESTING_SCREEN,
 } from "./back-preview";
 import type { ScreenArea, ScreenCopy } from "./previous-screens";
 
@@ -34,8 +37,11 @@ export class AndroidBackPreview {
   #now: BackGestureAt | undefined = $state();
   enteringFrom: PlacedScreen | undefined = $state();
   leaving: LeavingScreen | undefined = $state();
+  hasLeft = $state(false);
+  #isEnteringSettled = $state(false);
   readonly #look: PreviewLook;
   #settled: ReturnType<typeof setTimeout> | undefined;
+  #nextFrames: readonly number[] = [];
 
   constructor(look: PreviewLook) {
     this.#look = look;
@@ -47,6 +53,43 @@ export class AndroidBackPreview {
 
   get frame(): BackPreviewFrame | undefined {
     return this.#frameAt(this.#now);
+  }
+
+  get mainTransform(): string | undefined {
+    switch (this.phase) {
+      case "following":
+        return this.frame === undefined
+          ? undefined
+          : placedTransform(this.frame.closing);
+      case "cancelling":
+        return placedTransform(RESTING_SCREEN);
+      case "committing":
+        return placedTransform(
+          this.#isEnteringSettled
+            ? RESTING_SCREEN
+            : (this.enteringFrom ?? RESTING_SCREEN),
+        );
+      case "resting":
+        return undefined;
+      default:
+        return assertNever(this.phase);
+    }
+  }
+
+  get mainTransition(): string | undefined {
+    switch (this.phase) {
+      case "cancelling":
+        return ANDROID_BACK_TRANSITIONS.springBack;
+      case "committing":
+        return this.#isEnteringSettled
+          ? ANDROID_BACK_TRANSITIONS.entering
+          : undefined;
+      case "following":
+      case "resting":
+        return undefined;
+      default:
+        return assertNever(this.phase);
+    }
   }
 
   get restingFrame(): BackPreviewFrame | undefined {
@@ -120,13 +163,41 @@ export class AndroidBackPreview {
     };
     this.enteringFrom = frame.entering;
     this.phase = "committing";
+    this.#isEnteringSettled = false;
+    this.hasLeft = false;
+    this.#onNextFrame(() => {
+      this.hasLeft = true;
+    });
     this.#settleAfter(ANDROID_BACK_MOTION.commitMs);
   }
 
   arrived(): void {
     if (this.phase === "following") {
       this.#rest();
+      return;
     }
+    if (this.phase === "committing") {
+      this.#onNextFrame(() => {
+        this.#isEnteringSettled = true;
+      });
+    }
+  }
+
+  #onNextFrame(run: () => void): void {
+    const frame = requestAnimationFrame(() => {
+      this.#nextFrames = this.#nextFrames.filter(
+        (pending) => pending !== frame,
+      );
+      run();
+    });
+    this.#nextFrames = [...this.#nextFrames, frame];
+  }
+
+  #cancelNextFrames(): void {
+    for (const frame of this.#nextFrames) {
+      cancelAnimationFrame(frame);
+    }
+    this.#nextFrames = [];
   }
 
   #cancel(): void {
@@ -151,6 +222,9 @@ export class AndroidBackPreview {
 
   #rest(): void {
     this.#clearSettling();
+    this.#cancelNextFrames();
+    this.hasLeft = false;
+    this.#isEnteringSettled = false;
     this.phase = "resting";
     this.#start = undefined;
     this.#now = undefined;

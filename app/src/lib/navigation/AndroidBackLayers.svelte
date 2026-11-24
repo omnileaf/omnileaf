@@ -16,23 +16,11 @@
     cornerPx: number;
   } = $props();
 
-  let hasLeft = $state(false);
-
   const frame = $derived(preview.frame);
   const isCancelling = $derived(preview.phase === "cancelling");
   const enteringPlace = $derived(
     (isCancelling ? preview.restingFrame : frame)?.entering,
   );
-
-  function startLeaving() {
-    hasLeft = false;
-    const frameShown = requestAnimationFrame(() => {
-      hasLeft = true;
-    });
-    return () => {
-      cancelAnimationFrame(frameShown);
-    };
-  }
 </script>
 
 {#if preview.area !== undefined && frame !== undefined && (preview.phase === "following" || isCancelling)}
@@ -78,18 +66,19 @@
     style:top="{preview.area.top}px"
     style:width="{preview.area.width}px"
     style:height="{preview.area.height}px"
-    {@attach startLeaving}
   >
     <div
       class="absolute inset-none"
       style:background-color={SCRIM_COLOUR}
-      style:opacity={hasLeft ? 0 : leaving.scrim}
+      style:opacity={preview.hasLeft ? 0 : leaving.scrim}
       style:transition={ANDROID_BACK_TRANSITIONS.leavingScrim}
     ></div>
     <div
       class="flex flex-col overflow-hidden bg-background block-full inline-full"
-      style:transform={placedTransform(hasLeft ? leaving.to : leaving.from)}
-      style:opacity={hasLeft ? 0 : 1}
+      style:transform={placedTransform(
+        preview.hasLeft ? leaving.to : leaving.from,
+      )}
+      style:opacity={preview.hasLeft ? 0 : 1}
       style:border-radius="{cornerPx}px"
       style:transition={ANDROID_BACK_TRANSITIONS.leaving}
     >

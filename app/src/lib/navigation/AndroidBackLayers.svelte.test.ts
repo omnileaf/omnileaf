@@ -4,9 +4,10 @@ import { render } from "vitest-browser-svelte";
 
 import AndroidBackLayers from "./AndroidBackLayers.svelte";
 import { AndroidBackPreview } from "./android-back-preview.svelte";
-import type { BackGestureAt } from "./back-preview";
+import { ANDROID_BACK_MOTION, type BackGestureAt } from "./back-preview";
 
 const LIGHT_SCRIM = "0.2";
+const GONE = "opacity: 0;";
 const EMPHASIZED_JOINT = { x: 0.166666, y: 0.4 };
 const COPY = { content: document.createElement("div"), scrollTop: 0 };
 const LOOK = { isDark: () => false, isMotionReduced: () => false };
@@ -40,6 +41,24 @@ function easedAt(transition: string, x: number): number {
   const below = stops[Math.floor(position)] ?? Number.NaN;
   const above = stops[Math.ceil(position)] ?? Number.NaN;
   return below + (above - below) * (position - Math.floor(position));
+}
+
+function stylesShownIn(layers: Element): () => string[] {
+  const watcher = new MutationObserver(() => undefined);
+  watcher.observe(layers, {
+    subtree: true,
+    attributeFilter: ["style"],
+    attributeOldValue: true,
+  });
+  return () =>
+    watcher
+      .takeRecords()
+      .filter(({ target }) =>
+        target instanceof Element
+          ? target.closest("[data-leaving-screen]") !== null
+          : false,
+      )
+      .map(({ oldValue }) => oldValue ?? "");
 }
 
 function scrimOf(layers: Element): HTMLElement | null {
@@ -104,5 +123,26 @@ test("plays the page's leave on Android's emphasized curve", async () => {
   expect(
     easedAt(leavingPage?.style.transition ?? "", EMPHASIZED_JOINT.x),
   ).toBeCloseTo(EMPHASIZED_JOINT.y, 1);
+  page.remove();
+});
+
+test("shows each leave at its start before it plays", async () => {
+  const preview = new AndroidBackPreview(LOOK);
+  const page = pageOnScreen();
+  const layers = await shownWith(preview);
+  preview.follow({ kind: "started", at: at(0) }, page);
+  preview.follow({ kind: "moved", at: at(0.6) }, page);
+  preview.leave(COPY);
+  flushSync();
+  vi.advanceTimersByTime(ANDROID_BACK_MOTION.commitMs);
+  flushSync();
+  const shownStyles = stylesShownIn(layers);
+
+  preview.follow({ kind: "started", at: at(0) }, page);
+  preview.follow({ kind: "moved", at: at(0.6) }, page);
+  preview.leave(COPY);
+  flushSync();
+
+  expect(shownStyles().filter((style) => style.includes(GONE))).toEqual([]);
   page.remove();
 });
