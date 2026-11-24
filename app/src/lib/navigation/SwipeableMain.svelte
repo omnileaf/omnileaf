@@ -103,6 +103,7 @@
   }
 
   beforeNavigate(({ complete }) => {
+    androidBack.navigationStarted();
     if ((isIos || isAndroid) && swiped.element !== undefined) {
       previousScreens.keep(page.url.pathname, swiped.element);
     }

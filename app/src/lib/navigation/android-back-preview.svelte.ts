@@ -69,7 +69,7 @@ export class AndroidBackPreview {
   #stopSettling: (() => void) | undefined;
   #pendingFrames: readonly (() => void)[] = [];
   #gesturesStarted = 0;
-  #gesturesBeforeNavigating = 0;
+  #gesturesBeforeNavigating: number | undefined;
 
   constructor(
     look: PreviewLook,
@@ -176,19 +176,29 @@ export class AndroidBackPreview {
     }
   }
 
-  navigationGoesAhead(leaving: ScreenCopy | undefined): void {
+  navigationStarted(): void {
     this.#gesturesBeforeNavigating = this.#gesturesStarted;
-    if (leaving !== undefined) {
+  }
+
+  navigationGoesAhead(leaving: ScreenCopy | undefined): void {
+    this.#gesturesBeforeNavigating ??= this.#gesturesStarted;
+    if (leaving !== undefined && this.#isGestureFromBeforeNavigating()) {
       this.#leave(leaving);
     }
   }
 
   navigationStopped(): void {
-    this.#cancel();
+    const isOwnGesture = this.#isGestureFromBeforeNavigating();
+    this.#gesturesBeforeNavigating = undefined;
+    if (isOwnGesture) {
+      this.#cancel();
+    }
   }
 
   navigationArrived(): void {
-    if (this.#gesturesStarted !== this.#gesturesBeforeNavigating) {
+    const isOwnGesture = this.#isGestureFromBeforeNavigating();
+    this.#gesturesBeforeNavigating = undefined;
+    if (!isOwnGesture) {
       return;
     }
     if (this.#motion.kind === "following") {
@@ -200,6 +210,10 @@ export class AndroidBackPreview {
         this.#updateCommit({ isEnteringSettled: true });
       });
     }
+  }
+
+  #isGestureFromBeforeNavigating(): boolean {
+    return this.#gesturesBeforeNavigating === this.#gesturesStarted;
   }
 
   #begin(at: BackGestureAt, screen: HTMLElement): void {

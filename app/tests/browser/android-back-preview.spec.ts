@@ -22,6 +22,7 @@ const BEFORE_THE_COMMIT_ENDS_MS = COMMIT_MS - 50;
 const PAST_THE_COMMIT_MS = 100;
 const SETTINGS = "/settings";
 const SETTINGS_TITLE = "Settings";
+const PRIVACY_TITLE = "Privacy and security";
 const LIGHT_SCRIM = "rgba(0, 0, 0, 0.2)";
 const PRIVACY_ONLY_TEXT = "Crash reports";
 
@@ -405,5 +406,29 @@ test.describe("going back to a page that takes a while to load", () => {
     await expect(page.locator("[data-leaving-screen]")).toBeAttached();
     await page.clock.runFor(PAST_THE_COMMIT_MS);
     await expectNoPreviewLeft(page);
+  });
+
+  test("follows a gesture that starts while the page behind loads, and plays no leave for the first one", async ({
+    page,
+  }) => {
+    await openPrivacyFromSettings(page);
+    await openInApp(page, PERMISSIONS);
+    await pauseTheClock(page);
+    await gesture(start());
+    await gesture(swipe(0.6));
+    reads.isHolding = true;
+    await page.goBack();
+    await expect.poll(() => reads.waiting.length).toBeGreaterThan(0);
+    await gesture(start());
+    await gesture(swipe(0.3));
+    const placedBySecond = await placementOf(page);
+
+    releaseReads();
+
+    await expect(
+      page.getByRole("main").getByRole("heading", { level: 1 }),
+    ).toHaveText(PRIVACY_TITLE);
+    await expect(page.locator("[data-leaving-screen]")).toHaveCount(0);
+    expect(await placementOf(page)).toEqual(placedBySecond);
   });
 });
