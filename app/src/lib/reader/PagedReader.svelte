@@ -105,8 +105,10 @@
   import { Swipe } from "#lib/reader/swipe.ts";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { followVolumeKeys, hasVolumeKeys } from "#lib/reader/volume-keys.ts";
-  import { readerOrigin } from "#lib/reader/reader-origin.svelte.ts";
-  import { readerWayBack } from "#lib/reader/reader-way-back.ts";
+  import {
+    type OriginPage,
+    readerWayBack,
+  } from "#lib/reader/reader-way-back.ts";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
   import UpNext from "#lib/up-next/UpNext.svelte";
 
@@ -142,11 +144,13 @@
     platform,
     opensAtEnd,
     hasJumped,
+    origin,
   }: {
     book: OpenedBook;
     platform: Platform;
     opensAtEnd: boolean;
     hasJumped: boolean;
+    origin: OriginPage | undefined;
   } = $props();
 
   const screenshotMode = getScreenshotMode();
@@ -359,7 +363,7 @@
     title: named.seriesTitle,
     isInLibrary: book.isInLibrary,
   });
-  const wayBack = $derived(readerWayBack(readerOrigin.page, readerSeries));
+  const wayBack = $derived(readerWayBack(origin, readerSeries));
   let leftReader: (() => void) | undefined;
 
   function leaveReader(): Promise<void> {

@@ -1,5 +1,6 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
+import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import {
   sampleBookId,
   sampleSeriesId,
@@ -19,6 +20,22 @@ const VOLUME_SERIES_PAGE = `/series/${sampleSeriesId(21)}`;
 const VOLUME_PAGE = `${VOLUME_SERIES_PAGE}/volume/2`;
 const SETTINGS = "/settings";
 const APPEARANCE = "/settings/appearance";
+
+const NEXT_READER_ON_SERIES_PAGE = `a[href="${NEXT_READER}"]`;
+
+async function pressLink(
+  link: Locator,
+  platform: Platform | undefined,
+): Promise<void> {
+  if (platform !== "ios") {
+    await link.click();
+    return;
+  }
+  const touch = { pointerType: "touch", pointerId: 7, isPrimary: true };
+  await link.dispatchEvent("pointerdown", touch);
+  await link.dispatchEvent("pointerup", touch);
+  await link.dispatchEvent("click");
+}
 
 async function followInApp(page: Page, path: string): Promise<void> {
   await page.evaluate((href) => {
@@ -262,3 +279,43 @@ test.describe(
     });
   },
 );
+
+test.describe("going back from the reader on every platform", () => {
+  test.use({ backend: sampleLibraryOn("linux") });
+
+  test.beforeEach(async ({ page }) => {
+    await serveSampleArt(page);
+  });
+
+  test("goes back to History from a book returned to through its series and another book", async ({
+    page,
+    platform,
+  }) => {
+    await openLibrary(page);
+    await followInApp(page, HISTORY);
+    await pressLink(
+      page.locator(`a[href="${READER}"]`).filter({ visible: true }).first(),
+      platform,
+    );
+    await expect(page).toHaveURL(READER);
+    await followInApp(page, SERIES_PAGE);
+    await pressLink(
+      page
+        .locator(NEXT_READER_ON_SERIES_PAGE)
+        .filter({ visible: true })
+        .first(),
+      platform,
+    );
+    await expect(page).toHaveURL(NEXT_READER);
+    await page.goBack();
+    await expect(page).toHaveURL(SERIES_PAGE);
+    await page.goBack();
+    await expect(page).toHaveURL(READER);
+
+    const back = page.getByRole("link", { name: "Back to History" });
+    await expect(back).toHaveAttribute("href", HISTORY);
+    await pressLink(back, platform);
+
+    await expect(page).toHaveURL(HISTORY);
+  });
+});

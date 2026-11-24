@@ -30,7 +30,7 @@
   import { commands } from "#lib/ipc/bindings.ts";
   import { followHistoryForBack } from "#lib/navigation/android-back.ts";
   import { showOpeningPage } from "#lib/navigation/restored-route.ts";
-  import { followReaderOrigin } from "#lib/reader/reader-origin.svelte.ts";
+  import { followReaderOrigin } from "#lib/reader/reader-origin.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
     languageSettingForDocument,
