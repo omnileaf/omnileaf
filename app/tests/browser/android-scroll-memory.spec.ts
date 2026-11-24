@@ -2,7 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
 import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
-import { boxOf, expect, test } from "./fixtures.ts";
+import { boxOf, expect, framesPassed, test } from "./fixtures.ts";
 import {
   answerOnceReleased,
   type HeldReads,
@@ -19,7 +19,6 @@ const TABLET_LIBRARY_DOWN = 300;
 const TABLET = { width: 820, height: 1180 };
 const SERIES_DOWN = 250;
 const SLACK_PX = 2;
-const SETTLE_MS = 1000;
 const VOLUMES_SERIES = sampleSeriesId(21);
 const CONTINUED_SERIES = sampleSeriesId(11);
 const VOLUME_COUNT = 30;
@@ -56,6 +55,20 @@ async function tapWhereItIs(target: Locator): Promise<void> {
 
 function scrollTopOf(page: Page): Promise<number> {
   return main(page).evaluate((scroller) => scroller.scrollTop);
+}
+
+async function resizeContentOf(page: Page): Promise<void> {
+  await main(page).evaluate((scroller) => {
+    const content = [...scroller.children].find(
+      (child): child is HTMLElement =>
+        child instanceof HTMLElement && child.offsetHeight > 0,
+    );
+    if (content === undefined) {
+      throw new Error("the screen has no content with a height");
+    }
+    content.style.minHeight = `${String(content.offsetHeight + 1)}px`;
+  });
+  await framesPassed(page);
 }
 
 async function expectScrolledTo(page: Page, top: number): Promise<void> {
@@ -141,7 +154,7 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
       });
 
       await expectScrolledTo(page, 0);
-      await page.waitForTimeout(SETTLE_MS);
+      await resizeContentOf(page);
       expect(await scrollTopOf(page)).toBe(0);
     });
 
