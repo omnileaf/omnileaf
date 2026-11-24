@@ -130,3 +130,43 @@ test("holds nothing where the platform does not follow the page's history", () =
   expect(page.entries).toEqual({ pushed: 0, backed: 0 });
   expect(told.count).toBe(0);
 });
+
+test("settles at once when no overlay holds an entry", async () => {
+  const { overlays, page } = overlayBack();
+
+  await overlays.giveBack();
+
+  expect(page.entries.backed).toBe(0);
+});
+
+test("gives an open overlay's entry back and settles once the page has gone back", async () => {
+  const { overlays, page } = overlayBack();
+  overlays.hold(() => undefined);
+  const settled = { isDone: false };
+
+  const giving = overlays.giveBack().then(() => {
+    settled.isDone = true;
+  });
+  await Promise.resolve();
+
+  expect(page.entries.backed).toBe(1);
+  expect(settled.isDone).toBe(false);
+
+  page.goBack();
+  await giving;
+
+  expect(settled.isDone).toBe(true);
+});
+
+test("gives an entry back only once when its overlay closes afterwards", async () => {
+  const { overlays, page } = overlayBack();
+  const release = overlays.hold(() => undefined);
+  const giving = overlays.giveBack();
+  page.goBack();
+  await giving;
+
+  release();
+
+  expect(page.entries.backed).toBe(1);
+  expect(page.listening()).toBe(0);
+});

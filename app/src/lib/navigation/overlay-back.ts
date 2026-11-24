@@ -14,6 +14,7 @@ interface HeldEntry {
   readonly close: () => void;
   isOnEntry: () => boolean;
   isPopped: boolean;
+  isGivenBack: boolean;
 }
 
 export class OverlayBack {
@@ -22,6 +23,7 @@ export class OverlayBack {
   readonly #isOn: () => boolean;
   #held: readonly HeldEntry[] = [];
   #ownPops = 0;
+  #waiting: readonly (() => void)[] = [];
   #stopListening: (() => void) | undefined;
 
   constructor(history: PageHistory, tell: () => void, isOn: () => boolean) {
@@ -35,7 +37,12 @@ export class OverlayBack {
     if (!this.#isOn()) {
       return () => undefined;
     }
-    const entry: HeldEntry = { close, isOnEntry: () => true, isPopped: false };
+    const entry: HeldEntry = {
+      close,
+      isOnEntry: () => true,
+      isPopped: false,
+      isGivenBack: false,
+    };
     this.#held = [...this.#held, entry];
     this.#stopListening ??= this.#history.onBack(() => {
       this.#backed();
@@ -47,9 +54,28 @@ export class OverlayBack {
     };
   }
 
+  giveBack(): Promise<void> {
+    const given = this.#held.filter(
+      (entry) => !entry.isPopped && !entry.isGivenBack && entry.isOnEntry(),
+    );
+    for (const entry of given) {
+      entry.isGivenBack = true;
+      this.#ownPops += 1;
+      this.#history.back();
+    }
+    return given.length === 0
+      ? Promise.resolve()
+      : new Promise((settle) => {
+          this.#waiting = [...this.#waiting, settle];
+        });
+  }
+
   #backed(): void {
     if (this.#ownPops > 0) {
       this.#ownPops -= 1;
+      if (this.#ownPops === 0) {
+        this.#settleWaiting();
+      }
       this.#stopWhenIdle();
       return;
     }
@@ -60,9 +86,17 @@ export class OverlayBack {
     }
   }
 
+  #settleWaiting(): void {
+    const waiting = this.#waiting;
+    this.#waiting = [];
+    for (const settle of waiting) {
+      settle();
+    }
+  }
+
   #release(entry: HeldEntry): void {
     this.#held = this.#held.filter((held) => held !== entry);
-    if (!entry.isPopped && entry.isOnEntry()) {
+    if (!entry.isPopped && !entry.isGivenBack && entry.isOnEntry()) {
       this.#ownPops += 1;
       this.#history.back();
     }
@@ -100,6 +134,8 @@ const windowHistory: PageHistory = {
 const overlays = new OverlayBack(windowHistory, tellAndroidHowFarBack, () =>
   followsHistoryForBack(currentPlatform()),
 );
+
+export const giveBackOverlayEntries = (): Promise<void> => overlays.giveBack();
 
 function closeLikeEscape(element: HTMLElement): void {
   element.dispatchEvent(

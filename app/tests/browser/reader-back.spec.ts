@@ -225,6 +225,20 @@ test.describe(
       await expectBackAndGestureAgree(page, HISTORY, "Back to History");
     });
 
+    test("takes Back and the gesture to History after jumping to another book", async ({
+      page,
+    }) => {
+      await openFrom(page, "android", HISTORY);
+      await page.keyboard.press("g");
+      await page
+        .getByRole("dialog")
+        .locator(`a[href="${NEXT_READER}"]`)
+        .click();
+      await expect(page).toHaveURL(NEXT_READER);
+
+      await expectBackAndGestureAgree(page, HISTORY, "Back to History");
+    });
+
     test("takes Back and the gesture to the page Quick open was opened over", async ({
       page,
     }) => {
