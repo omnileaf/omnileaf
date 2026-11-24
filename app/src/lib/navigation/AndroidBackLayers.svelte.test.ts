@@ -161,7 +161,9 @@ test("shows each leave at its start before it plays", async () => {
   preview.follow({ kind: "started", at: at(0) }, page);
   preview.follow({ kind: "moved", at: at(0.6) }, page);
   preview.navigationGoesAhead(COPY);
+  preview.navigationArrived();
   flushSync();
+  vi.advanceTimersToNextFrame();
   vi.advanceTimersByTime(ANDROID_BACK_MOTION.commitMs);
   flushSync();
   const shownStyles = stylesShownIn(layers);

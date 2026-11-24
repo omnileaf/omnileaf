@@ -21,8 +21,7 @@ interface Commit {
   readonly to: PlacedScreen;
   readonly enteringFrom: PlacedScreen;
   readonly scrimOpacity: number;
-  readonly hasLeft: boolean;
-  readonly isEnteringSettled: boolean;
+  readonly isPlaying: boolean;
 }
 
 type Motion =
@@ -114,9 +113,7 @@ export class AndroidBackPreview {
         return placedTransform(RESTING_SCREEN);
       case "committing":
         return placedTransform(
-          motion.commit.isEnteringSettled
-            ? RESTING_SCREEN
-            : motion.commit.enteringFrom,
+          motion.commit.isPlaying ? RESTING_SCREEN : motion.commit.enteringFrom,
         );
       case "resting":
         return undefined;
@@ -131,7 +128,7 @@ export class AndroidBackPreview {
       case "cancelling":
         return ANDROID_BACK_TRANSITIONS.springBack;
       case "committing":
-        return motion.commit.isEnteringSettled
+        return motion.commit.isPlaying
           ? ANDROID_BACK_TRANSITIONS.entering
           : undefined;
       case "following":
@@ -190,9 +187,14 @@ export class AndroidBackPreview {
   navigationStopped(): void {
     const isOwnGesture = this.#isGestureFromBeforeNavigating();
     this.#gesturesBeforeNavigating = undefined;
-    if (isOwnGesture) {
-      this.#cancel();
+    if (!isOwnGesture) {
+      return;
     }
+    if (this.#motion.kind === "committing") {
+      this.#rest();
+      return;
+    }
+    this.#cancel();
   }
 
   navigationArrived(): void {
@@ -207,7 +209,7 @@ export class AndroidBackPreview {
     }
     if (this.#motion.kind === "committing") {
       this.#onNextFrame(() => {
-        this.#updateCommit({ isEnteringSettled: true });
+        this.#playCommit();
       });
     }
   }
@@ -244,24 +246,21 @@ export class AndroidBackPreview {
           : leavingTarget(frame.closing, this.#area.width),
         enteringFrom: frame.entering,
         scrimOpacity: frame.scrimOpacity,
-        hasLeft: false,
-        isEnteringSettled: false,
+        isPlaying: false,
       },
     };
-    this.#onNextFrame(() => {
-      this.#updateCommit({ hasLeft: true });
-    });
-    this.#settleAfter(ANDROID_BACK_MOTION.commitMs);
   }
 
-  #updateCommit(change: Partial<Commit>): void {
+  #playCommit(): void {
     const motion = this.#motion;
-    if (motion.kind === "committing") {
-      this.#motion = {
-        kind: "committing",
-        commit: { ...motion.commit, ...change },
-      };
+    if (motion.kind !== "committing") {
+      return;
     }
+    this.#motion = {
+      kind: "committing",
+      commit: { ...motion.commit, isPlaying: true },
+    };
+    this.#settleAfter(ANDROID_BACK_MOTION.commitMs);
   }
 
   #cancel(): void {

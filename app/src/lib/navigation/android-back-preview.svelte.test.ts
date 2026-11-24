@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-import { AndroidBackPreview } from "./android-back-preview.svelte";
+import {
+  AndroidBackPreview,
+  type PreviewScheduler,
+} from "./android-back-preview.svelte";
 import { ANDROID_BACK_MOTION, type BackGestureAt } from "./back-preview";
 
 const ANDROID_SPRING_SETTLES_MS = 180;
+const DRAWING_THE_PAGE_BEHIND_MS = 300;
 const AREA = { left: 0, top: 0, width: 400, height: 800 };
 const LOOK = { isMotionReduced: () => false };
 const COPY = { content: {} as HTMLElement, scrollTop: 0 };
@@ -19,6 +23,64 @@ function at(progress: number): BackGestureAt {
 function swipedTo(preview: AndroidBackPreview, progress: number): void {
   preview.follow({ kind: "started", at: at(0) }, screen());
   preview.follow({ kind: "moved", at: at(progress) }, screen());
+}
+
+interface PendingTimer {
+  readonly due: number;
+  readonly run: () => void;
+  isCancelled: boolean;
+}
+
+class SteppedScheduler implements PreviewScheduler {
+  #now = 0;
+  #timers: readonly PendingTimer[] = [];
+  #frames: readonly (() => void)[] = [];
+
+  readonly after = (ms: number, run: () => void): (() => void) => {
+    const timer: PendingTimer = {
+      due: this.#now + ms,
+      run,
+      isCancelled: false,
+    };
+    this.#timers = [...this.#timers, timer];
+    return () => {
+      timer.isCancelled = true;
+    };
+  };
+
+  readonly nextFrame = (run: () => void): (() => void) => {
+    let isCancelled = false;
+    this.#frames = [
+      ...this.#frames,
+      () => {
+        if (!isCancelled) {
+          run();
+        }
+      },
+    ];
+    return () => {
+      isCancelled = true;
+    };
+  };
+
+  pass(ms: number): void {
+    this.#now += ms;
+    const due = this.#timers.filter(
+      (timer) => timer.due <= this.#now && !timer.isCancelled,
+    );
+    this.#timers = this.#timers.filter((timer) => !due.includes(timer));
+    for (const timer of due) {
+      timer.run();
+    }
+  }
+
+  drawFrame(): void {
+    const frames = this.#frames;
+    this.#frames = [];
+    for (const frame of frames) {
+      frame();
+    }
+  }
 }
 
 beforeEach(() => {
@@ -83,6 +145,8 @@ test("rests once the page has finished leaving", () => {
   const preview = new AndroidBackPreview(LOOK);
   swipedTo(preview, 1);
   preview.navigationGoesAhead(COPY);
+  preview.navigationArrived();
+  vi.advanceTimersToNextFrame();
 
   vi.advanceTimersByTime(ANDROID_BACK_MOTION.commitMs);
 
@@ -154,4 +218,22 @@ test("keeps following a gesture that started while the page went back", () => {
   preview.navigationArrived();
 
   expect(preview.phase).toBe("following");
+});
+
+test("plays the whole commit from the frame the page behind arrives in, however long it took to draw", () => {
+  const time = new SteppedScheduler();
+  const preview = new AndroidBackPreview(LOOK, time);
+  swipedTo(preview, 1);
+  preview.navigationStarted();
+  preview.navigationGoesAhead(COPY);
+  time.pass(DRAWING_THE_PAGE_BEHIND_MS);
+  preview.navigationArrived();
+  time.drawFrame();
+
+  time.pass(ANDROID_BACK_MOTION.commitMs - 1);
+  const justBefore = preview.phase;
+  time.pass(1);
+
+  expect(justBefore).toBe("committing");
+  expect(preview.phase).toBe("resting");
 });

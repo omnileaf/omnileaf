@@ -58,15 +58,15 @@
   >
     <div
       class="absolute inset-none bg-native-back-preview-scrim"
-      style:opacity={leaving.hasLeft ? 0 : leaving.scrimOpacity}
+      style:opacity={leaving.isPlaying ? 0 : leaving.scrimOpacity}
       style:transition={ANDROID_BACK_TRANSITIONS.leavingScrim}
     ></div>
     <div
       class="flex flex-col overflow-hidden bg-background block-full inline-full"
       style:transform={placedTransform(
-        leaving.hasLeft ? leaving.to : leaving.from,
+        leaving.isPlaying ? leaving.to : leaving.from,
       )}
-      style:opacity={leaving.hasLeft ? 0 : 1}
+      style:opacity={leaving.isPlaying ? 0 : 1}
       style:border-radius="{preview.cornerPx}px"
       style:transition={ANDROID_BACK_TRANSITIONS.leaving}
     >
