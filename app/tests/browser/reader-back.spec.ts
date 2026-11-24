@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import type { JSHandle, Locator, Page } from "@playwright/test";
 
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import {
@@ -35,6 +35,33 @@ async function pressLink(
   await link.dispatchEvent("pointerdown", touch);
   await link.dispatchEvent("pointerup", touch);
   await link.dispatchEvent("click");
+}
+
+async function countHistoryBacks(
+  page: Page,
+): Promise<JSHandle<{ count: number }>> {
+  return page.evaluateHandle(() => {
+    const backs = { count: 0 };
+    const goBack = history.back.bind(history);
+    history.back = () => {
+      backs.count += 1;
+      goBack();
+    };
+    return backs;
+  });
+}
+
+async function openFromHistory(
+  page: Page,
+  platform: Platform | undefined,
+): Promise<void> {
+  await openLibrary(page);
+  await followInApp(page, HISTORY);
+  await pressLink(
+    page.locator(`a[href="${READER}"]`).filter({ visible: true }).first(),
+    platform,
+  );
+  await expect(page).toHaveURL(READER);
 }
 
 async function followInApp(page: Page, path: string): Promise<void> {
@@ -317,5 +344,38 @@ test.describe("going back from the reader on every platform", () => {
     await pressLink(back, platform);
 
     await expect(page).toHaveURL(HISTORY);
+  });
+
+  test("goes back one page when Back is activated twice in a row", async ({
+    page,
+    platform,
+  }) => {
+    await openFromHistory(page, platform);
+    const backs = await countHistoryBacks(page);
+    const back = page.getByRole("link", { name: "Back to History" });
+
+    await back.evaluate((link: HTMLElement) => {
+      link.click();
+      link.click();
+    });
+
+    await expect(page).toHaveURL(HISTORY);
+    expect(await backs.evaluate(({ count }) => count)).toBe(1);
+  });
+
+  test("goes back one page when Escape is pressed twice in a row", async ({
+    page,
+    platform,
+  }) => {
+    await openFromHistory(page, platform);
+    const backs = await countHistoryBacks(page);
+
+    await Promise.all([
+      page.keyboard.press("Escape"),
+      page.keyboard.press("Escape"),
+    ]);
+
+    await expect(page).toHaveURL(HISTORY);
+    expect(await backs.evaluate(({ count }) => count)).toBe(1);
   });
 });

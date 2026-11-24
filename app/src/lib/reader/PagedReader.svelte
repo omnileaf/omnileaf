@@ -11,7 +11,7 @@
   import { on } from "svelte/events";
   import { SvelteSet } from "svelte/reactivity";
 
-  import { goto, onNavigate } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
   import { reportFailure } from "#lib/errors/report-failure.ts";
@@ -105,6 +105,7 @@
   import { Swipe } from "#lib/reader/swipe.ts";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { followVolumeKeys, hasVolumeKeys } from "#lib/reader/volume-keys.ts";
+  import { readerLeaving } from "#lib/reader/reader-leaving.ts";
   import {
     type OriginPage,
     readerWayBack,
@@ -364,25 +365,7 @@
     isInLibrary: book.isInLibrary,
   });
   const wayBack = $derived(readerWayBack(origin, readerSeries));
-  let leftReader: (() => void) | undefined;
-
-  function leaveReader(): Promise<void> {
-    if (wayBack.kind === "replace") {
-      return goto(seriesHref, { replaceState: true });
-    }
-    return new Promise((left) => {
-      leftReader = left;
-      history.back();
-    });
-  }
-
-  onNavigate((navigation) => {
-    const left = leftReader;
-    leftReader = undefined;
-    if (left !== undefined) {
-      void navigation.complete.then(left, left);
-    }
-  });
+  const leaveReader = readerLeaving(() => wayBack);
 
   const nextHref = $derived(
     book.next === null
