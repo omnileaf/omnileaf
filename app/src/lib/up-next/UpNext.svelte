@@ -109,6 +109,9 @@
     title,
     seriesTitle,
     seriesHref,
+    backHref,
+    backLabel,
+    onBack,
     next,
     nextHref,
     direction,
@@ -117,6 +120,9 @@
     title: string;
     seriesTitle: string;
     seriesHref: ResolvedPathname;
+    backHref: ResolvedPathname;
+    backLabel: string;
+    onBack: () => void;
     next: SeriesNeighbour | null;
     nextHref: ResolvedPathname | undefined;
     direction: ReadingDirection;
@@ -202,8 +208,12 @@
     class="pointer-events-auto flex items-center gap-xs self-start px-reader-bar-inline pbs-reader-bar-top min-inline-none expanded:px-lg expanded:pbs-md"
   >
     <a
-      href={seriesHref}
-      aria-label={m.reader_back_to_series({ series: seriesTitle })}
+      href={backHref}
+      aria-label={backLabel}
+      onclick={(event) => {
+        event.preventDefault();
+        onBack();
+      }}
       class={isOnAndroidPhone
         ? foregroundBackLook(platform, width.current)
         : READER_BUTTON}

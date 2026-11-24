@@ -1265,6 +1265,11 @@
         title={named.title}
         seriesTitle={named.seriesTitle}
         {seriesHref}
+        backHref={wayBack.href}
+        backLabel={wayBack.label}
+        onBack={() => {
+          void leaveReader();
+        }}
         next={named.next}
         {nextHref}
         direction={reading.direction}
