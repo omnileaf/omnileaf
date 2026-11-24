@@ -170,3 +170,25 @@ test("gives an entry back only once when its overlay closes afterwards", async (
   expect(page.entries.backed).toBe(1);
   expect(page.listening()).toBe(0);
 });
+
+test("holds an entry only while an overlay is open and has not given it back", () => {
+  const { overlays, page } = overlayBack();
+  const before = overlays.holdsEntries();
+
+  const release = overlays.hold(() => undefined);
+  const whileOpen = overlays.holdsEntries();
+  void overlays.giveBack();
+  const afterGivingBack = overlays.holdsEntries();
+  page.goBack();
+  release();
+
+  expect([before, whileOpen, afterGivingBack]).toEqual([false, true, false]);
+});
+
+test("holds no entry when the page does not follow history for back", () => {
+  const { overlays } = overlayBack(false);
+
+  overlays.hold(() => undefined);
+
+  expect(overlays.holdsEntries()).toBe(false);
+});

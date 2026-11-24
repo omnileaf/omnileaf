@@ -1,7 +1,11 @@
 import type { Attachment } from "svelte/attachments";
 
+import { beforeNavigate, goto } from "$app/navigation";
+import type { PageRouteId } from "$app/types";
+import { reportFailure } from "#lib/errors/report-failure.ts";
 import { currentPlatform } from "#lib/page/platform.ts";
 
+import { resolvedPathOf } from "./app-path";
 import { followsHistoryForBack, tellAndroidHowFarBack } from "./android-back";
 
 export interface PageHistory {
@@ -54,10 +58,18 @@ export class OverlayBack {
     };
   }
 
-  giveBack(): Promise<void> {
-    const given = this.#held.filter(
+  holdsEntries(): boolean {
+    return this.#giveable().length > 0;
+  }
+
+  #giveable(): readonly HeldEntry[] {
+    return this.#held.filter(
       (entry) => !entry.isPopped && !entry.isGivenBack && entry.isOnEntry(),
     );
+  }
+
+  giveBack(): Promise<void> {
+    const given = this.#giveable();
     for (const entry of given) {
       entry.isGivenBack = true;
       this.#ownPops += 1;
@@ -136,6 +148,24 @@ const overlays = new OverlayBack(windowHistory, tellAndroidHowFarBack, () =>
 );
 
 export const giveBackOverlayEntries = (): Promise<void> => overlays.giveBack();
+
+export function leaveOverlaysThen(go: () => Promise<unknown>): void {
+  void overlays.giveBack().then(go).catch(reportFailure);
+}
+
+export function giveBackOverlayEntriesBeforeLinkTo(routeId: PageRouteId): void {
+  beforeNavigate(({ type, to, cancel }) => {
+    if (
+      type !== "link" ||
+      to?.route.id !== routeId ||
+      !overlays.holdsEntries()
+    ) {
+      return;
+    }
+    cancel();
+    leaveOverlaysThen(() => goto(resolvedPathOf(to.url)));
+  });
+}
 
 function closeLikeEscape(element: HTMLElement): void {
   element.dispatchEvent(
