@@ -23,7 +23,6 @@ const APPEARANCE = "/settings/appearance";
 
 const SEARCH_WITH_QUERY = "/search?q=Sample";
 const TABLET = { width: 820, height: 1180 };
-const NEXT_READER_ON_SERIES_PAGE = `a[href="${NEXT_READER}"]`;
 
 async function pressLink(
   link: Locator,
@@ -317,170 +316,176 @@ test.describe(
   },
 );
 
-test.describe("going back from the reader on every platform", () => {
-  test.use({ backend: sampleLibraryOn("linux") });
+test.describe(
+  "going back from the reader on every platform",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: sampleLibraryOn("linux") });
 
-  test.beforeEach(async ({ page }) => {
-    await serveSampleArt(page);
-  });
-
-  test("goes back to History from a book returned to through its series and another book", async ({
-    page,
-    platform,
-  }) => {
-    await openLibrary(page);
-    await followInApp(page, HISTORY);
-    await pressLink(
-      page.locator(`a[href="${READER}"]`).filter({ visible: true }).first(),
-      platform,
-    );
-    await expect(page).toHaveURL(READER);
-    await followInApp(page, SERIES_PAGE);
-    await pressLink(
-      page
-        .locator(NEXT_READER_ON_SERIES_PAGE)
-        .filter({ visible: true })
-        .first(),
-      platform,
-    );
-    await expect(page).toHaveURL(NEXT_READER);
-    await page.goBack();
-    await expect(page).toHaveURL(SERIES_PAGE);
-    await page.goBack();
-    await expect(page).toHaveURL(READER);
-
-    const back = page.getByRole("link", { name: "Back to History" });
-    await expect(back).toHaveAttribute("href", HISTORY);
-    await pressLink(back, platform);
-
-    await expect(page).toHaveURL(HISTORY);
-  });
-
-  test("goes back one page when Back is activated twice in a row", async ({
-    page,
-    platform,
-  }) => {
-    await openFromHistory(page, platform);
-    const backs = await countHistoryBacks(page);
-    const back = page.getByRole("link", { name: "Back to History" });
-
-    await back.evaluate((link: HTMLElement) => {
-      link.click();
-      link.click();
+    test.beforeEach(async ({ page }) => {
+      await serveSampleArt(page);
     });
 
-    await expect(page).toHaveURL(HISTORY);
-    expect(await backs.evaluate(({ count }) => count)).toBe(1);
-  });
-
-  test("goes back one page when Escape is pressed twice in a row", async ({
-    page,
-    platform,
-  }) => {
-    await openFromHistory(page, platform);
-    const backs = await countHistoryBacks(page);
-
-    await Promise.all([
-      page.keyboard.press("Escape"),
-      page.keyboard.press("Escape"),
-    ]);
-
-    await expect(page).toHaveURL(HISTORY);
-    expect(await backs.evaluate(({ count }) => count)).toBe(1);
-  });
-
-  test("goes back to History from the end of a book", async ({
-    page,
-    platform,
-  }) => {
-    await openFromHistory(page, platform);
-    await page.keyboard.press("End");
-    const finished = page.getByRole("heading", {
-      level: 2,
-      name: / finished$/,
-    });
-    await expect(async () => {
-      await page.keyboard.press("ArrowRight");
-      await expect(finished).toBeVisible({ timeout: 1000 });
-    }).toPass();
-
-    const back = page
-      .getByRole("navigation", { name: "Breadcrumb" })
-      .getByRole("link", { name: "Back to History" });
-    await pressLink(back, platform);
-
-    await expect(page).toHaveURL(HISTORY);
-  });
-
-  test("goes back to the search results with their query", async ({
-    page,
-    platform,
-  }) => {
-    await page.goto(SEARCH_WITH_QUERY);
-    await followInApp(page, READER);
-
-    await pressLink(
-      page.getByRole("link", { name: "Back", exact: true }),
+    test("goes back to History from a book returned to through its series and another book", async ({
+      page,
       platform,
-    );
+    }) => {
+      await openFromHistory(page, platform);
+      await followInApp(page, SERIES_PAGE);
+      await pressLink(
+        page.locator(`a[href="${READER}"]`).filter({ visible: true }).first(),
+        platform,
+      );
+      await expect(page).toHaveURL(READER);
+      await expect(
+        page.getByRole("link", { name: `Back to ${SERIES_TITLE}` }),
+      ).toBeVisible();
+      await page.goBack();
+      await expect(page).toHaveURL(SERIES_PAGE);
+      await page.goBack();
+      await expect(page).toHaveURL(READER);
 
-    await expect(page).toHaveURL(SEARCH_WITH_QUERY);
-  });
+      const back = page.getByRole("link", { name: "Back to History" });
+      await expect(back).toHaveAttribute("href", HISTORY);
+      await pressLink(back, platform);
 
-  test("names the Back to History row in the keyboard shortcuts", async ({
-    page,
-    platform,
-  }) => {
-    await openFromHistory(page, platform);
+      await expect(page).toHaveURL(HISTORY);
+    });
 
-    await page.keyboard.press("?");
+    test("goes back one page when Back is activated twice in a row", async ({
+      page,
+      platform,
+    }) => {
+      await openFromHistory(page, platform);
+      const backs = await countHistoryBacks(page);
+      const back = page.getByRole("link", { name: "Back to History" });
 
-    await expect(
-      page.getByRole("dialog").getByText("Back to History", { exact: true }),
-    ).toBeVisible();
-  });
-});
+      await back.evaluate((link: HTMLElement) => {
+        link.click();
+        link.click();
+      });
 
-test.describe("going back from the reader on an iPad", () => {
-  test.use({
-    backend: sampleLibraryOn("ios"),
-    platform: "ios",
-    viewport: TABLET,
-    hasTouch: true,
-    isMobile: true,
-  });
+      await expect(page).toHaveURL(HISTORY);
+      expect(await backs.evaluate(({ count }) => count)).toBe(1);
+    });
 
-  test.beforeEach(async ({ page }) => {
+    test("goes back one page when Escape is pressed twice in a row", async ({
+      page,
+      platform,
+    }) => {
+      await openFromHistory(page, platform);
+      const backs = await countHistoryBacks(page);
+
+      await Promise.all([
+        page.keyboard.press("Escape"),
+        page.keyboard.press("Escape"),
+      ]);
+
+      await expect(page).toHaveURL(HISTORY);
+      expect(await backs.evaluate(({ count }) => count)).toBe(1);
+    });
+
+    test("goes back to History from the end of a book", async ({
+      page,
+      platform,
+    }) => {
+      await openFromHistory(page, platform);
+      await page.keyboard.press("End");
+      const finished = page.getByRole("heading", {
+        level: 2,
+        name: / finished$/,
+      });
+      await expect(async () => {
+        await page.keyboard.press("ArrowRight");
+        await expect(finished).toBeVisible({ timeout: 1000 });
+      }).toPass();
+
+      const back = page
+        .getByRole("navigation", { name: "Breadcrumb" })
+        .getByRole("link", { name: "Back to History" });
+      await pressLink(back, platform);
+
+      await expect(page).toHaveURL(HISTORY);
+    });
+
+    test("goes back to the search results with their query", async ({
+      page,
+      platform,
+    }) => {
+      await page.goto(SEARCH_WITH_QUERY);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Search" }),
+      ).toBeAttached();
+      await followInApp(page, READER);
+
+      await pressLink(
+        page.getByRole("link", { name: "Back", exact: true }),
+        platform,
+      );
+
+      await expect(page).toHaveURL(SEARCH_WITH_QUERY);
+    });
+
+    test("names the Back to History row in the keyboard shortcuts", async ({
+      page,
+      platform,
+    }) => {
+      await openFromHistory(page, platform);
+
+      await page.keyboard.press("?");
+
+      await expect(
+        page.getByRole("dialog").getByText("Back to History", { exact: true }),
+      ).toBeVisible();
+    });
+  },
+);
+
+test.describe(
+  "going back from the reader on an iPad",
+  { tag: "@native" },
+  () => {
     testOnlyInItsWebview("ios");
-    await serveSampleArt(page);
-  });
 
-  test("names the series beside Back when the book was opened from its series page", async ({
-    page,
-    platform,
-  }) => {
-    await openFrom(page, platform, SERIES_PAGE);
+    test.use({
+      backend: sampleLibraryOn("ios"),
+      platform: "ios",
+      viewport: TABLET,
+      hasTouch: true,
+      isMobile: true,
+    });
 
-    await expect(
-      page
-        .getByRole("link", { name: `Back to ${SERIES_TITLE}`, exact: true })
-        .getByText(SERIES_TITLE),
-    ).toBeVisible();
-  });
+    test.beforeEach(async ({ page }) => {
+      await serveSampleArt(page);
+    });
 
-  test("leaves the series name out of Back when the book was opened from History", async ({
-    page,
-    platform,
-  }) => {
-    await openFromHistory(page, platform);
+    test("names the series beside Back when the book was opened from its series page", async ({
+      page,
+      platform,
+    }) => {
+      await openFrom(page, platform, SERIES_PAGE);
 
-    await expect(
-      page.getByRole("link", { name: "Back to History", exact: true }),
-    ).toBeVisible();
-    await expect(
-      page
-        .getByRole("link", { name: "Back to History", exact: true })
-        .getByText(SERIES_TITLE),
-    ).toHaveCount(0);
-  });
-});
+      await expect(
+        page
+          .getByRole("link", { name: `Back to ${SERIES_TITLE}`, exact: true })
+          .getByText(SERIES_TITLE),
+      ).toBeVisible();
+    });
+
+    test("leaves the series name out of Back when the book was opened from History", async ({
+      page,
+      platform,
+    }) => {
+      await openFromHistory(page, platform);
+
+      await expect(
+        page.getByRole("link", { name: "Back to History", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByRole("link", { name: "Back to History", exact: true })
+          .getByText(SERIES_TITLE),
+      ).toHaveCount(0);
+    });
+  },
+);

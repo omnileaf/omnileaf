@@ -3,11 +3,16 @@ import type { Page } from "@playwright/test";
 import type { BackSwipe, SwipeEdge } from "../../src/lib/ipc/bindings.ts";
 import type { FakeChannel } from "./fake-backend.ts";
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
-import { NOT_STARTED, pinchTo, readerBook, servePages } from "./reader-book.ts";
+import {
+  BOOK_ID,
+  NOT_STARTED,
+  pinchTo,
+  readerBook,
+  servePages,
+} from "./reader-book.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const READER_URL = /\/read\//;
-const BOOK_OPENED_FROM_SEARCH = "sample-book";
 const SERIES_URL = new RegExp(`/series/${SERIES_ID}$`);
 const HALFWAY = 0.5;
 const PAST_HALFWAY = 0.7;
@@ -160,10 +165,11 @@ test.describe("swiping back from the reader", { tag: "@native" }, () => {
       document.body.append(link);
       link.click();
       link.remove();
-    }, `/read/${BOOK_OPENED_FROM_SEARCH}`);
+    }, `/read/${BOOK_ID}`);
     await expect(page).toHaveURL(READER_URL);
 
-    await swipe({ kind: "moved", progress: HALFWAY });
+    await expect.poll(() => watched.length).toBeGreaterThan(0);
+    await watched.at(-1)?.send({ kind: "moved", progress: HALFWAY });
 
     await expect(previousScreen(page)).toContainText("Search");
   });
