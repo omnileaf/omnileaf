@@ -1,56 +1,116 @@
-import { goto, onNavigate } from "$app/navigation";
+import {
+  afterNavigate,
+  beforeNavigate,
+  goto,
+  onNavigate,
+} from "$app/navigation";
+import type { ResolvedPathname } from "$app/types";
+import { reportFailure } from "#lib/errors/report-failure.ts";
 
+import { NOTHING_BENEATH_MS } from "./nothing-beneath";
+import { READER_ROUTE_ID } from "./reader-route";
 import type { ReaderWayBack } from "./reader-way-back";
 
-type Outcome = "arrived" | "failed";
+type Outcome = "arrived" | "failed" | "nothingBeneath";
+
+interface Watch {
+  readonly started: () => void;
+  readonly ended: (outcome: Outcome) => void;
+}
 
 export function readerLeaving(
   wayBack: () => ReaderWayBack,
 ): () => Promise<void> {
   let leaving: Promise<void> | undefined;
-  let report: ((outcome: Outcome) => void) | undefined;
+  let watch: Watch | undefined;
+
+  beforeNavigate(() => {
+    watch?.started();
+  });
 
   onNavigate((navigation) => {
-    const reportTo = report;
-    report = undefined;
-    if (reportTo !== undefined) {
+    const current = watch;
+    if (current !== undefined) {
       void navigation.complete.then(
         () => {
-          reportTo("arrived");
+          current.ended("arrived");
         },
         () => {
-          reportTo("failed");
+          current.ended("failed");
         },
       );
     }
   });
 
+  afterNavigate((navigation) => {
+    const isOwnWrite = navigation.type === "goto" && navigation.shallow;
+    if (navigation.to?.route.id === READER_ROUTE_ID && !isOwnWrite) {
+      leaving = undefined;
+    }
+  });
+
   function goBackThroughHistory(): Promise<Outcome> {
-    return new Promise((settle) => {
-      report = settle;
+    return new Promise((end) => {
+      let hasStarted = false;
+      const noNavigation = setTimeout(() => {
+        finish("nothingBeneath");
+      }, NOTHING_BENEATH_MS);
+
+      function finish(outcome: Outcome): void {
+        clearTimeout(noNavigation);
+        removeEventListener("popstate", popped);
+        watch = undefined;
+        end(outcome);
+      }
+
+      function popped(): void {
+        clearTimeout(noNavigation);
+        setTimeout(() => {
+          if (!hasStarted) {
+            finish("failed");
+          }
+        }, 0);
+      }
+
+      addEventListener("popstate", popped, { once: true });
+      watch = {
+        started: () => {
+          hasStarted = true;
+          clearTimeout(noNavigation);
+        },
+        ended: finish,
+      };
       history.back();
     });
   }
 
-  function start(): Promise<Outcome> {
+  function replaceWith(href: ResolvedPathname): Promise<Outcome> {
+    return goto(href, { replace: true }).then(
+      (): Outcome => "arrived",
+      (error: unknown): Outcome => {
+        reportFailure(error);
+        return "failed";
+      },
+    );
+  }
+
+  async function start(): Promise<Outcome> {
     const way = wayBack();
-    return way.kind === "replace"
-      ? goto(way.href, { replace: true }).then(() => "arrived")
-      : goBackThroughHistory();
+    if (way.kind === "replace") {
+      return replaceWith(way.href);
+    }
+    const outcome = await goBackThroughHistory();
+    return outcome === "nothingBeneath"
+      ? replaceWith(way.fallbackHref)
+      : outcome;
   }
 
   return () => {
-    leaving ??= start().then(
-      (outcome) => {
-        if (outcome === "failed") {
-          leaving = undefined;
-        }
-      },
-      (error: unknown) => {
+    leaving ??= start().then((outcome) => {
+      if (outcome === "failed") {
         leaving = undefined;
-        throw error;
-      },
-    );
+      }
+    });
     return leaving;
   };
 }

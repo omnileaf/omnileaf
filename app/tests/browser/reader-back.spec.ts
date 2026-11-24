@@ -5,6 +5,7 @@ import {
   sampleBookId,
   sampleSeriesId,
 } from "../../src/lib/sample-library/sample-library.ts";
+import { NOTHING_BENEATH_MS } from "../../src/lib/reader/nothing-beneath.ts";
 import { expect, test, testOnlyInItsWebview } from "./fixtures.ts";
 import { sampleLibraryOn, serveSampleArt } from "./screens.ts";
 
@@ -400,12 +401,14 @@ test.describe(
         await expect(finished).toBeVisible({ timeout: 1000 });
       }).toPass();
 
+      const backs = await countHistoryBacks(page);
       const back = page
         .getByRole("navigation", { name: "Breadcrumb" })
         .getByRole("link", { name: "Back to History" });
       await pressLink(back, platform);
 
       await expect(page).toHaveURL(HISTORY);
+      expect(await backs.evaluate(({ count }) => count)).toBe(1);
     });
 
     test("goes back to the search results with their query", async ({
@@ -418,12 +421,14 @@ test.describe(
       ).toBeAttached();
       await followInApp(page, READER);
 
+      const backs = await countHistoryBacks(page);
       await pressLink(
         page.getByRole("link", { name: "Back", exact: true }),
         platform,
       );
 
       await expect(page).toHaveURL(SEARCH_WITH_QUERY);
+      expect(await backs.evaluate(({ count }) => count)).toBe(1);
     });
 
     test("goes back to the book another book was opened over", async ({
@@ -438,6 +443,48 @@ test.describe(
       await pressLink(back, platform);
 
       await expect(page).toHaveURL(READER);
+    });
+
+    test("tries again when going back starts no navigation", async ({
+      page,
+      platform,
+    }) => {
+      await page.clock.install();
+      await openFromHistory(page, platform);
+      await page.evaluate(() => {
+        const goBack = history.back.bind(history);
+        history.back = () => {
+          history.back = goBack;
+          const state: unknown = history.state;
+          dispatchEvent(new PopStateEvent("popstate", { state }));
+        };
+      });
+      const back = page.getByRole("link", { name: "Back to History" });
+      await pressLink(back, platform);
+      await page.clock.runFor(1);
+
+      await pressLink(back, platform);
+
+      await expect(page).toHaveURL(HISTORY);
+    });
+
+    test("puts the series page in the reader's place when nothing is beneath it", async ({
+      page,
+      platform,
+    }) => {
+      await page.clock.install();
+      await openFromHistory(page, platform);
+      await page.evaluate(() => {
+        history.back = () => undefined;
+      });
+
+      await pressLink(
+        page.getByRole("link", { name: "Back to History" }),
+        platform,
+      );
+      await page.clock.runFor(NOTHING_BENEATH_MS);
+
+      await expect(page).toHaveURL(SERIES_PAGE);
     });
 
     test("names the Back to History row in the keyboard shortcuts", async ({
