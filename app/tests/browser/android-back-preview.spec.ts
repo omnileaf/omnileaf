@@ -16,6 +16,8 @@ const SMALLEST_SCALE = 0.9;
 const EDGE_MARGIN_PX = 8;
 const PRIVACY = "/settings/privacy";
 const SETTINGS = "/settings";
+const SETTINGS_TITLE = "Settings";
+const PRIVACY_ONLY_TEXT = "Crash reports";
 
 let gestures: FakeChannel<BackSwipe> | undefined;
 
@@ -133,7 +135,8 @@ test("shows the page it goes back to behind the shrinking page, dimmed", async (
   await gesture(swipe(0.5));
 
   const behind = page.locator("[data-previous-screen]");
-  await expect(behind).toContainText("Privacy and security");
+  await expect(behind.locator("h1")).toHaveText(SETTINGS_TITLE);
+  await expect(behind).not.toContainText(PRIVACY_ONLY_TEXT);
   await expect(behind.locator("div").last()).toHaveCSS("opacity", "0.2");
 });
 
