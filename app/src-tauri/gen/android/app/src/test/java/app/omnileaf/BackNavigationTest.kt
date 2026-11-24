@@ -21,6 +21,9 @@ private class PageHistory : WebHistory {
 
 private const val SCREEN_HEIGHT_PX = 2000f
 
+/** Android gives a back from a button rather than a swipe the edge `BackEvent.EDGE_NONE`, which `BackEventCompat` 1.10 has no name for. */
+private const val BUTTON_BACK_EDGE = 2
+
 private fun swipedTo(
     progress: Float,
     touchYPx: Float = 500f,
@@ -177,5 +180,14 @@ class BackNavigationTest {
         val cornerDp = largestCornerDp(emptyList(), density = 2f)
 
         assertEquals(0f, cornerDp)
+    }
+
+    @Test
+    fun `takes a button's back, which has no finger, as halfway down the screen`() {
+        val watching = watched()
+
+        watching.handleOnBackStarted(BackEventCompat(Float.NaN, Float.NaN, 0f, BUTTON_BACK_EDGE))
+
+        assertEquals(listOf(startedAt(0f, touchY = 0.5f)), gestures)
     }
 }

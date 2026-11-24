@@ -86,6 +86,12 @@ internal fun View.screenCornerDp(): Float {
     return largestCornerDp(radiiPx, resources.displayMetrics.density)
 }
 
+/** Android gives a back from a button rather than a swipe no touch point, reporting its touch as NaN. */
+private fun BackEventCompat.touchShareOf(heightPx: Float): Float? {
+    val fingerY = touchY.takeUnless(Float::isNaN) ?: return null
+    return heightPx.takeIf { it > 0f }?.let { fingerY / it }
+}
+
 internal class ScreenShape(
     val heightPx: () -> Float,
     val cornerDp: () -> Float,
@@ -131,7 +137,7 @@ internal class BackNavigation(
         BackPosition(
             progress = backEvent.progress,
             edge = if (backEvent.swipeEdge == BackEventCompat.EDGE_RIGHT) SwipeSide.RIGHT else SwipeSide.LEFT,
-            touchY = screen.heightPx().takeIf { it > 0f }?.let { backEvent.touchY / it } ?: SCREEN_MIDDLE,
+            touchY = backEvent.touchShareOf(screen.heightPx()) ?: SCREEN_MIDDLE,
             cornerDp = screen.cornerDp(),
         )
 
