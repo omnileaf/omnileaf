@@ -66,7 +66,7 @@ export const ANDROID_BACK_MOTION = {
   leavingFadeMs: 90,
 } as const;
 
-/** `BackProgressAnimator` springs a cancelled gesture's progress back with `SpringForce.STIFFNESS_MEDIUM` and `DAMPING_RATIO_NO_BOUNCY`, stopping within `MIN_VISIBLE_CHANGE_PIXELS * THRESHOLD_MULTIPLIER` of its progress scaled by `SCALE_FACTOR`. */
+/** Android springs a cancelled gesture's progress back to rest with a medium-stiffness, unbouncy spring that stops within 0.75% of rest (`BackProgressAnimator`). */
 export const ANDROID_BACK_SPRING = settlingOf({
   stiffness: 1500,
   restingWithin: 0.75 / 100,
@@ -95,6 +95,9 @@ export function leavingTarget(
   return { scale: 1, x: left + ANDROID_BACK.enteringOffsetPx, y: 0 };
 }
 
+/** Android reads at most half the screen's height of the finger's travel up or down (`CrossActivityBackAnimation.getYOffset`). */
+const FINGER_REACH_OF_SCREEN = 0.5;
+
 function decelerate(ratio: number): number {
   return 1 - (1 - ratio) * (1 - ratio);
 }
@@ -121,7 +124,8 @@ function verticalShift(
   height: number,
 ): number {
   const moved = now.touchY - start.touchY;
-  const reach = Math.min(0.5, Math.abs(moved)) / 0.5;
+  const reach =
+    Math.min(FINGER_REACH_OF_SCREEN, Math.abs(moved)) / FINGER_REACH_OF_SCREEN;
   const room = Math.max(
     0,
     (height - height * scale) / 2 - ANDROID_BACK.edgeMarginPx,
