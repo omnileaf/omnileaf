@@ -7,6 +7,8 @@ import { AndroidBackPreview } from "./android-back-preview.svelte";
 import type { BackGestureAt } from "./back-preview";
 
 const LIGHT_SCRIM = "0.2";
+const EMPHASIZED_JOINT = { x: 0.166666, y: 0.4 };
+const COPY = { content: document.createElement("div"), scrollTop: 0 };
 const LOOK = { isDark: () => false, isMotionReduced: () => false };
 
 function at(progress: number): BackGestureAt {
@@ -28,6 +30,16 @@ async function shownWith(preview: AndroidBackPreview): Promise<Element> {
     cornerPx: 0,
   });
   return screen.container;
+}
+
+function easedAt(transition: string, x: number): number {
+  const stops = (/linear\(([^)]*)\)/.exec(transition)?.[1] ?? "")
+    .split(",")
+    .map((stop) => Number(stop.trim().split(" ")[0]));
+  const position = x * (stops.length - 1);
+  const below = stops[Math.floor(position)] ?? Number.NaN;
+  const above = stops[Math.ceil(position)] ?? Number.NaN;
+  return below + (above - below) * (position - Math.floor(position));
 }
 
 function scrimOf(layers: Element): HTMLElement | null {
@@ -73,5 +85,24 @@ test("holds the scrim while the page springs back after a cancelled gesture", as
 
   expect(preview.phase).toBe("cancelling");
   expect(scrimOf(layers)?.style.opacity).toBe(LIGHT_SCRIM);
+  page.remove();
+});
+
+test("plays the page's leave on Android's emphasized curve", async () => {
+  const preview = new AndroidBackPreview(LOOK);
+  const page = pageOnScreen();
+  const layers = await shownWith(preview);
+  preview.follow({ kind: "started", at: at(0) }, page);
+  preview.follow({ kind: "moved", at: at(0.6) }, page);
+
+  preview.leave(COPY);
+  flushSync();
+
+  const leavingPage = layers.querySelector<HTMLElement>(
+    "[data-leaving-screen] > div:last-child",
+  );
+  expect(
+    easedAt(leavingPage?.style.transition ?? "", EMPHASIZED_JOINT.x),
+  ).toBeCloseTo(EMPHASIZED_JOINT.y, 1);
   page.remove();
 });

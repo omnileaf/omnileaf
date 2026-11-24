@@ -8,6 +8,8 @@ import {
   type PlacedScreen,
 } from "./back-preview";
 import { settlingOf } from "./back-spring";
+import { cssLinearEasing } from "./css-easing";
+import { cubicPath } from "./cubic-bezier";
 import type { ScreenCopy } from "./previous-screens";
 
 export type PreviewPhase =
@@ -32,9 +34,26 @@ interface PreviewLook {
   readonly isMotionReduced: () => boolean;
 }
 
-/** Android's post-commit motion: `DefaultCrossActivityBackAnimation.POST_COMMIT_DURATION` and the closing alpha `1 - progress * 5`. */
+const EMPHASIZED_STOPS = 64;
+
+/** WindowManager Shell's `Interpolators.EMPHASIZED`, the two-segment `fast_out_extra_slow_in` path. */
+const ANDROID_EMPHASIZED = cubicPath([
+  {
+    control1: { x: 0.05, y: 0 },
+    control2: { x: 0.133333, y: 0.06 },
+    to: { x: 0.166666, y: 0.4 },
+  },
+  {
+    control1: { x: 0.208333, y: 0.82 },
+    control2: { x: 0.25, y: 1 },
+    to: { x: 1, y: 1 },
+  },
+]);
+
+/** Android's post-commit motion: `DefaultCrossActivityBackAnimation.POST_COMMIT_DURATION` on its emphasized curve, and the closing alpha `1 - progress * 5`. */
 export const ANDROID_BACK_MOTION = {
   commitMs: 450,
+  commitEasing: cssLinearEasing(ANDROID_EMPHASIZED, EMPHASIZED_STOPS),
   leavingFadeMs: 90,
 } as const;
 

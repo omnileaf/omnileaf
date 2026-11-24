@@ -105,9 +105,8 @@
       style:transform={placedTransform(hasLeft ? leaving.to : leaving.from)}
       style:opacity={hasLeft ? 0 : 1}
       style:border-radius="{cornerPx}px"
-      style:transition="transform {ANDROID_BACK_MOTION.commitMs}ms
-      var(--ease-emphasized), opacity {ANDROID_BACK_MOTION.leavingFadeMs}ms
-      linear"
+      style:transition="transform {ANDROID_BACK_MOTION.commitMs}ms {ANDROID_BACK_MOTION.commitEasing},
+      opacity {ANDROID_BACK_MOTION.leavingFadeMs}ms linear"
     >
       <div class="contents" {@attach showCopy(leaving.copy)}></div>
     </div>

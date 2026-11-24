@@ -136,7 +136,7 @@
         return `transform ${String(ANDROID_BACK_SPRING.durationMs)}ms ${ANDROID_BACK_SPRING.easing}`;
       case "committing":
         return isEnteringSettled
-          ? `transform ${String(ANDROID_BACK_MOTION.commitMs)}ms var(--ease-emphasized)`
+          ? `transform ${String(ANDROID_BACK_MOTION.commitMs)}ms ${ANDROID_BACK_MOTION.commitEasing}`
           : undefined;
       default:
         return undefined;
