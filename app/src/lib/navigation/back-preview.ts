@@ -109,7 +109,7 @@ export function previewBackGestures(
 ): () => void {
   const gestures = new Channel<BackSwipe>((gesture) => {
     show(
-      gesture.kind === "moved"
+      gesture.kind === "started" || gesture.kind === "moved"
         ? {
             progress: gesture.progress ?? 0,
             edge: gesture.edge ?? null,

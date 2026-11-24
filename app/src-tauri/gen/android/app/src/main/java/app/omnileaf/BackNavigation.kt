@@ -44,12 +44,20 @@ internal enum class SwipeSide(
     RIGHT("right"),
 }
 
+internal data class BackPosition(
+    val progress: Float,
+    val edge: SwipeSide,
+    val touchY: Float,
+    val cornerDp: Float,
+)
+
 internal sealed interface BackGesture {
+    data class Started(
+        val at: BackPosition,
+    ) : BackGesture
+
     data class Moved(
-        val progress: Float,
-        val edge: SwipeSide,
-        val touchY: Float,
-        val cornerDp: Float,
+        val at: BackPosition,
     ) : BackGesture
 
     data object Cancelled : BackGesture
@@ -98,15 +106,15 @@ internal class BackNavigation(
     }
 
     override fun handleOnBackStarted(backEvent: BackEventCompat) {
-        gestures?.report(moved(backEvent))
+        gestures?.report(BackGesture.Started(positionOf(backEvent)))
     }
 
     override fun handleOnBackProgressed(backEvent: BackEventCompat) {
-        gestures?.report(moved(backEvent))
+        gestures?.report(BackGesture.Moved(positionOf(backEvent)))
     }
 
-    private fun moved(backEvent: BackEventCompat): BackGesture.Moved =
-        BackGesture.Moved(
+    private fun positionOf(backEvent: BackEventCompat): BackPosition =
+        BackPosition(
             progress = backEvent.progress,
             edge = if (backEvent.swipeEdge == BackEventCompat.EDGE_RIGHT) SwipeSide.RIGHT else SwipeSide.LEFT,
             touchY = screen.heightPx().takeIf { it > 0f }?.let { backEvent.touchY / it } ?: SCREEN_MIDDLE,

@@ -29,11 +29,19 @@ private fun swipedTo(
 
 private const val SCREEN_CORNER_DP = 32f
 
-private fun movedTo(
+private fun positionAt(
     progress: Float,
     touchY: Float = 0.25f,
     edge: SwipeSide = SwipeSide.LEFT,
-) = BackGesture.Moved(progress, edge, touchY, SCREEN_CORNER_DP)
+) = BackPosition(progress, edge, touchY, SCREEN_CORNER_DP)
+
+private fun startedAt(
+    progress: Float,
+    touchY: Float = 0.25f,
+    edge: SwipeSide = SwipeSide.LEFT,
+) = BackGesture.Started(positionAt(progress, touchY, edge))
+
+private fun movedTo(progress: Float) = BackGesture.Moved(positionAt(progress))
 
 class BackNavigationTest {
     private val history = PageHistory()
@@ -100,13 +108,13 @@ class BackNavigationTest {
     }
 
     @Test
-    fun `reports how far the back gesture has moved`() {
+    fun `reports where the back gesture started and how far it has moved`() {
         val watching = watched()
 
         watching.handleOnBackStarted(swipedTo(0f))
         watching.handleOnBackProgressed(swipedTo(0.4f))
 
-        assertEquals(listOf(movedTo(0f), movedTo(0.4f)), gestures)
+        assertEquals(listOf(startedAt(0f), movedTo(0.4f)), gestures)
     }
 
     @Test
@@ -115,7 +123,7 @@ class BackNavigationTest {
 
         watching.handleOnBackStarted(swipedTo(0f, touchYPx = 1500f, edge = BackEventCompat.EDGE_RIGHT))
 
-        assertEquals(listOf(movedTo(0f, touchY = 0.75f, edge = SwipeSide.RIGHT)), gestures)
+        assertEquals(listOf(startedAt(0f, touchY = 0.75f, edge = SwipeSide.RIGHT)), gestures)
     }
 
     @Test
@@ -125,7 +133,7 @@ class BackNavigationTest {
 
         watching.handleOnBackCancelled()
 
-        assertEquals(listOf(movedTo(0f), BackGesture.Cancelled), gestures)
+        assertEquals(listOf(startedAt(0f), BackGesture.Cancelled), gestures)
     }
 
     @Test
@@ -135,7 +143,7 @@ class BackNavigationTest {
 
         watching.handleOnBackPressed()
 
-        assertEquals(1 to listOf(movedTo(0f)), history.stepsBack to gestures)
+        assertEquals(1 to listOf(startedAt(0f)), history.stepsBack to gestures)
     }
 
     @Test

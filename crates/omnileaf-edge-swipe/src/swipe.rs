@@ -11,6 +11,13 @@ pub enum SwipeEdge {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Type)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum BackSwipe {
+    Started {
+        progress: f64,
+        edge: SwipeEdge,
+        #[serde(rename = "touchY")]
+        touch_y: f64,
+        corner: f64,
+    },
     Moved {
         progress: f64,
         #[specta(optional)]

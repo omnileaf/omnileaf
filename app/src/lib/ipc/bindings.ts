@@ -311,7 +311,7 @@ export type AppLock = {
 
 export type AppLockTurning = "turnedOn" | "notConfirmed" | "noScreenLock";
 
-export type BackSwipe = { kind: "moved"; progress: number | null; edge?: SwipeEdge | null; touchY?: number | null; corner?: number | null } | { kind: "released"; progress: number | null; velocity: number | null } | { kind: "cancelled" };
+export type BackSwipe = { kind: "started"; progress: number | null; edge: SwipeEdge; touchY: number | null; corner: number | null } | { kind: "moved"; progress: number | null; edge?: SwipeEdge | null; touchY?: number | null; corner?: number | null } | { kind: "released"; progress: number | null; velocity: number | null } | { kind: "cancelled" };
 
 /**  What's wrong with a book that opens with fewer pages than its file promises, the pages past the last one in `pages` being the ones lost. */
 export type BookDamage = {
