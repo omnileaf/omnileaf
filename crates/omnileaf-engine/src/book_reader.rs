@@ -34,6 +34,7 @@ const BOOKS_READ_AT_ONCE: NonZeroUsize = NonZeroUsize::MIN.saturating_add(7);
 /// Android copies a document its provider can only stream into the cache before it is read, so a phone keeps at most this many listed bytes of books open at once.
 const BOOK_BYTES_OPEN_AT_ONCE: u64 = if IS_MOBILE { GIBIBYTE } else { 64 * GIBIBYTE };
 const GIBIBYTE: u64 = 1 << 30;
+const ONE_AT_A_TIME: NonZeroUsize = NonZeroUsize::MIN;
 /// One archive at a time, since a phone's OS ends an app holding too much memory while an archive's index and comic details are decoded.
 const ARCHIVES_PARSED_AT_ONCE: usize = 1;
 
@@ -72,10 +73,11 @@ impl BookReader {
     }
 
     fn read_each(&self, batch: &[FoundBook]) -> Vec<Result<ScannedBook, UnreadableBook>> {
-        let mut read = read_at_most(batch, self.books_read_at_once(), |found| {
-            self.read_found_book(found)
-        });
-        self.read_again_what_timed_out(batch, &mut read);
+        let at_once = self.books_read_at_once();
+        let mut read = read_at_most(batch, at_once, |found| self.read_found_book(found));
+        if at_once > ONE_AT_A_TIME {
+            self.read_again_what_timed_out(batch, &mut read);
+        }
         for (found, book) in batch.iter().zip(&read) {
             if let Err(error) = book
                 && !error.is_hidden()
@@ -88,7 +90,7 @@ impl BookReader {
 
     fn books_read_at_once(&self) -> NonZeroUsize {
         if self.has_timed_out.load(Ordering::Relaxed) {
-            NonZeroUsize::MIN
+            ONE_AT_A_TIME
         } else {
             BOOKS_READ_AT_ONCE
         }
@@ -222,7 +224,7 @@ mod tests {
         path::PathBuf,
         sync::{
             Mutex,
-            atomic::{AtomicUsize, Ordering},
+            atomic::{AtomicBool, AtomicUsize, Ordering},
             mpsc,
         },
         thread,
@@ -279,6 +281,7 @@ mod tests {
         company: usize,
         longest: Duration,
         times_out_in_company: bool,
+        is_hanging: AtomicBool,
         open_now: AtomicUsize,
         most_open_at_once: AtomicUsize,
         opened: Mutex<Vec<(PathBuf, usize)>>,
@@ -304,10 +307,15 @@ mod tests {
                 company,
                 longest,
                 times_out_in_company: matches!(in_company, InCompany::TimesOut),
+                is_hanging: AtomicBool::new(false),
                 open_now: AtomicUsize::new(0),
                 most_open_at_once: AtomicUsize::new(0),
                 opened: Mutex::new(Vec::new()),
             })
+        }
+
+        fn hang(&self) {
+            self.is_hanging.store(true, Ordering::SeqCst);
         }
 
         fn most_open_at_once(&self) -> usize {
@@ -334,7 +342,9 @@ mod tests {
             self.opened.lock().unwrap().push((file.to_path_buf(), now));
             wait_until_within(self.longest, || self.most_open_at_once() >= self.company);
             let has_company = self.open_now.load(Ordering::SeqCst) > 1;
-            let opened = if self.times_out_in_company && has_company {
+            let opened = if self.is_hanging.load(Ordering::SeqCst)
+                || (self.times_out_in_company && has_company)
+            {
                 Err(io::ErrorKind::TimedOut.into())
             } else {
                 LocalStorage.open(&self.root.join(file))
@@ -598,6 +608,30 @@ mod tests {
             .map(|(_, open_at_once)| open_at_once)
             .max();
         assert_eq!(most_open_at_once, Some(1));
+    }
+
+    #[test]
+    fn opens_each_book_once_when_the_provider_hangs_after_an_open_has_timed_out() {
+        let scratch = ScratchFolder::new("scan-hung-after-timeout");
+        let (storage, reader, second) = reader_after_a_timeout_in_company(&scratch);
+        storage.hang();
+
+        let read = reader.read_each(&second);
+
+        assert!(
+            read.iter()
+                .all(|book| book.as_ref().is_err_and(UnreadableBook::has_timed_out)),
+            "{read:?}"
+        );
+        let mut opened: Vec<PathBuf> = storage
+            .take_opened()
+            .into_iter()
+            .map(|(path, _)| path)
+            .collect();
+        opened.sort();
+        let mut books: Vec<PathBuf> = second.into_iter().map(|book| book.path).collect();
+        books.sort();
+        assert_eq!(opened, books);
     }
 
     #[test]
