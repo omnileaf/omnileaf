@@ -634,7 +634,7 @@
 
   function startNextBook(): void {
     void (nextHref === undefined
-      ? goto(seriesHref)
+      ? goto(seriesHref).catch(reportFailure)
       : moveWithinReader(nextHref));
   }
 
