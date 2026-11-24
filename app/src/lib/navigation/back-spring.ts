@@ -1,11 +1,11 @@
 import { cssLinearEasing } from "./css-easing";
 
-export interface SpringSettling {
+interface SpringSettling {
   readonly durationMs: number;
   readonly easing: string;
 }
 
-export interface UnbouncySpring {
+interface UnbouncySpring {
   readonly stiffness: number;
   readonly restingWithin: number;
 }

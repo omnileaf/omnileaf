@@ -1,12 +1,12 @@
 const SOLVE_STEPS = 24;
 const ORIGIN: CurvePoint = { x: 0, y: 0 };
 
-export interface CurvePoint {
+interface CurvePoint {
   readonly x: number;
   readonly y: number;
 }
 
-export interface CubicSegment {
+interface CubicSegment {
   readonly control1: CurvePoint;
   readonly control2: CurvePoint;
   readonly to: CurvePoint;

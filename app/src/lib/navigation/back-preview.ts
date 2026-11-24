@@ -15,7 +15,7 @@ export interface BackGestureAt {
   readonly cornerPx: number;
 }
 
-export interface PreviewScreen {
+interface PreviewScreen {
   readonly width: number;
   readonly height: number;
 }
