@@ -7,8 +7,7 @@ import {
   originAfter,
   type ReaderArrival,
 } from "./reader-way-back";
-
-const READER_ROUTE = "/read/[book]";
+import { READER_ROUTE_ID } from "./reader-route";
 
 class ReaderOrigin {
   page: OriginPage | undefined = $state();
@@ -28,7 +27,7 @@ function arrivalOf(navigation: OnNavigate): ReaderArrival {
   if (navigation.type === "popstate" && navigation.delta < 0) {
     return { kind: "returned" };
   }
-  return from.route.id === READER_ROUTE
+  return from.route.id === READER_ROUTE_ID
     ? { kind: "fromReader" }
     : {
         kind: "fromPage",
@@ -38,7 +37,7 @@ function arrivalOf(navigation: OnNavigate): ReaderArrival {
 
 export function followReaderOrigin(): void {
   onNavigate((navigation) => {
-    if (navigation.to?.route.id === READER_ROUTE) {
+    if (navigation.to?.route.id === READER_ROUTE_ID) {
       readerOrigin.arrive(arrivalOf(navigation));
     }
   });
