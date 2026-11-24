@@ -101,7 +101,7 @@ test("puts the series page in its place when there is nothing to go back to", ()
 test("puts the library in its place for a book outside the library", () => {
   expect(
     readerWayBack(undefined, {
-      href: "/" as ResolvedPathname,
+      href: "/",
       title: "",
       isInLibrary: false,
     }),
