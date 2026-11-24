@@ -359,11 +359,7 @@
     title: named.seriesTitle,
     isInLibrary: book.isInLibrary,
   });
-  const wayBack = $derived(
-    readerWayBack(readerOrigin.page?.pathname, readerSeries),
-  );
-  const backHref = $derived(readerOrigin.page?.href ?? seriesHref);
-  const isBackToSeries = $derived(wayBack.path === seriesHref);
+  const wayBack = $derived(readerWayBack(readerOrigin.page, readerSeries));
   let leftReader: (() => void) | undefined;
 
   function leaveReader(): Promise<void> {
@@ -1183,7 +1179,7 @@
 <ReaderBackSwipe
   swipeState={backSwipe}
   takenEdge={nextPageDragEdge}
-  backPath={backHref}
+  backPath={wayBack.href}
   onBack={leaveReader}
 >
   <main
@@ -1305,9 +1301,9 @@
       >
         <ReaderTopBar
           {seriesHref}
-          {backHref}
+          backHref={wayBack.href}
           backLabel={wayBack.label}
-          {isBackToSeries}
+          isBackToSeries={wayBack.isSeries}
           onBack={() => {
             void leaveReader();
           }}
