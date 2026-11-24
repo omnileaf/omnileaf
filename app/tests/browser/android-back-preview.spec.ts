@@ -309,6 +309,10 @@ test.describe("a back gesture the page keeps for itself", () => {
   test("lets no page leave when the page keeps a finished back gesture for itself", async ({
     page,
   }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "Edit details opens as a dialog on a wide screen",
+    );
     await page.goto(`/series/${SERIES_ID}`);
     await page
       .getByRole("button", { name: `More for ${SERIES_TITLE}`, exact: true })
