@@ -5,6 +5,7 @@ mod background_lane;
 mod book_details;
 mod book_numbering;
 mod book_numbers;
+mod book_reader;
 mod bookmark_access;
 mod books_removal;
 mod byte_budget;

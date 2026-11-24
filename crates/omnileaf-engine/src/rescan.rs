@@ -13,10 +13,11 @@ use tokio::task::spawn_blocking;
 
 use crate::{
     FolderId, LibraryError, ScanProgress, SkippedType,
+    book_reader::{BOOKS_PER_BATCH, BookReader},
     library_layout::Layout,
     library_removal::{RemovedBooks, marked_to_leave_out},
     rescan_plan::{Forgetting, Plan, ReadBook, Replacement, ToRead},
-    scan::{BOOKS_PER_BATCH, BookReader, Target, saturating_u32},
+    scan::{Target, saturating_u32},
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
