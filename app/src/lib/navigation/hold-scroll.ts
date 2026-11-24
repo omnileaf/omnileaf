@@ -106,16 +106,32 @@ export function placeOf(
   };
 }
 
+function contentTopOf(link: HTMLAnchorElement, screen: HTMLElement): number {
+  return (
+    link.getBoundingClientRect().top -
+    screen.getBoundingClientRect().top +
+    screen.scrollTop
+  );
+}
+
 function anchorOf(
   screen: HTMLElement,
   anchor: ScrollAnchor,
+  savedAt: number,
 ): HTMLAnchorElement | null {
-  return (
-    [
-      ...screen.querySelectorAll<HTMLAnchorElement>(
-        `${ANCHOR}[href="${CSS.escape(anchor.href)}"]`,
-      ),
-    ].find(isShown) ?? null
+  const shown = [
+    ...screen.querySelectorAll<HTMLAnchorElement>(
+      `${ANCHOR}[href="${CSS.escape(anchor.href)}"]`,
+    ),
+  ].filter(isShown);
+  const distanceFromSaved = (link: HTMLAnchorElement): number =>
+    Math.abs(contentTopOf(link, screen) - savedAt);
+  return shown.reduce<HTMLAnchorElement | null>(
+    (nearest, link) =>
+      nearest === null || distanceFromSaved(link) < distanceFromSaved(nearest)
+        ? link
+        : nearest,
+    null,
   );
 }
 
@@ -125,7 +141,7 @@ function scrollToPlace(screen: HTMLElement, place: ScrollPlace): void {
     screen.scrollTop = place.top;
     return;
   }
-  const link = anchorOf(screen, anchor);
+  const link = anchorOf(screen, anchor, place.top + anchor.offset);
   if (link === null) {
     screen.scrollTop = place.top;
     return;

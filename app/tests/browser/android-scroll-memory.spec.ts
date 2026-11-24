@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
+import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
 import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
 import { boxOf, expect, test } from "./fixtures.ts";
 import { sampleLibraryOn } from "./screens.ts";
@@ -15,6 +16,7 @@ const SERIES_DOWN = 250;
 const SLACK_PX = 2;
 const SETTLE_MS = 1000;
 const VOLUMES_SERIES = sampleSeriesId(21);
+const CONTINUED_SERIES = sampleSeriesId(11);
 const VOLUME_COUNT = 30;
 const CHAPTER_COUNT = 120;
 const READ_DELAY_MS = 400;
@@ -204,6 +206,47 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
 
       await expect(page).toHaveURL(/\/series\//);
       await expectScrolledTo(page, 0);
+    });
+
+    test.describe("with the Continue reading row on", () => {
+      test.use({
+        backend: {
+          ...sampleLibraryOn("android"),
+          libraryView: () => ({
+            ...DEFAULT_LIBRARY_VIEW,
+            showsContinueRow: true,
+          }),
+        },
+      });
+
+      test("lands on the grid card, not the Continue reading one, when both show the series", async ({
+        page,
+      }) => {
+        const opened = `/series/${CONTINUED_SERIES}`;
+        await page.setViewportSize(PHONE);
+        await page.goto("/");
+        await expect(
+          page
+            .getByRole("region", { name: "Continue reading" })
+            .locator(`a[href='${opened}']`),
+        ).toBeVisible();
+        const card = main(page)
+          .locator(`a[href='${opened}']:not(section a)`)
+          .first();
+        await card.evaluate((element) => {
+          element.scrollIntoView({ block: "center" });
+        });
+        const shownAt = (await boxOf(card)).y;
+
+        await tapWhereItIs(card);
+        await expect(page).toHaveURL(opened);
+        await page.goBack();
+
+        await expect(page).toHaveURL("/");
+        await expect
+          .poll(async () => Math.abs((await boxOf(card)).y - shownAt))
+          .toBeLessThanOrEqual(SLACK_PX);
+      });
     });
   });
 
