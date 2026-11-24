@@ -2,9 +2,9 @@
   import {
     ANDROID_BACK_MOTION,
     ANDROID_BACK_SPRING,
-    type AndroidBackPreview,
     placedTransform,
-  } from "./android-back-preview.svelte";
+  } from "./back-preview";
+  import type { AndroidBackPreview } from "./android-back-preview.svelte";
   import type { ScreenCopy } from "./previous-screens";
 
   /** Android dims the page behind a back gesture with black, not the theme's scrim colour. */

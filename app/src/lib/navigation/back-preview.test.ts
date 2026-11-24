@@ -8,6 +8,7 @@ import {
   type BackGestureAt,
   type BackGestureStep,
   backPreviewFrame,
+  leavingTarget,
   previewBackGestures,
 } from "./back-preview";
 
@@ -73,6 +74,12 @@ test("shrinks faster early in the gesture, as Android's back curve does", () => 
 
   expect(scale).toBeLessThan(0.95);
   expect(scale).toBeGreaterThan(0.9);
+});
+
+test("moves a page that leaves to the right of where it stood, at full size", () => {
+  const target = leavingTarget({ scale: 0.9, x: 12, y: 24 }, 400);
+
+  expect(target).toEqual({ scale: 1, x: 128, y: 0 });
 });
 
 test("keeps to the gesture's range however far the system reports it", () => {

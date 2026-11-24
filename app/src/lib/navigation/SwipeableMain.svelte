@@ -14,17 +14,18 @@
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
-  import { getBackGoesUp } from "./back-goes-up";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
 
   import AndroidBackLayers from "./AndroidBackLayers.svelte";
+  import { AndroidBackPreview } from "./android-back-preview.svelte";
+  import { getBackGoesUp } from "./back-goes-up";
   import {
     ANDROID_BACK_MOTION,
     ANDROID_BACK_SPRING,
-    AndroidBackPreview,
     placedTransform,
-  } from "./android-back-preview.svelte";
-  import { previewBackGestures } from "./back-preview";
+    previewBackGestures,
+    RESTING_SCREEN,
+  } from "./back-preview";
   import { wayBackFrom } from "./back-link";
   import { backSwipeEdge, directionOf } from "./back-swipe";
   import { holdScrollTop } from "./hold-scroll";
@@ -121,10 +122,10 @@
           ? undefined
           : placedTransform(androidBack.frame.closing);
       case "cancelling":
-        return placedTransform({ scale: 1, x: 0, y: 0 });
+        return placedTransform(RESTING_SCREEN);
       case "committing":
         return androidBack.enteringFrom === undefined || isEnteringSettled
-          ? placedTransform({ scale: 1, x: 0, y: 0 })
+          ? placedTransform(RESTING_SCREEN)
           : placedTransform(androidBack.enteringFrom);
       case "resting":
         return undefined;

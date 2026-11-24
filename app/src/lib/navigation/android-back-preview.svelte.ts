@@ -1,15 +1,15 @@
 import { assertNever } from "#lib/assert-never.ts";
 
 import {
+  ANDROID_BACK_MOTION,
+  ANDROID_BACK_SPRING,
   type BackGestureAt,
   type BackGestureStep,
   type BackPreviewFrame,
   backPreviewFrame,
+  leavingTarget,
   type PlacedScreen,
 } from "./back-preview";
-import { settlingOf } from "./back-spring";
-import { cssLinearEasing } from "./css-easing";
-import { cubicPath } from "./cubic-bezier";
 import type { ScreenCopy } from "./previous-screens";
 
 export type PreviewPhase =
@@ -32,51 +32,6 @@ export interface LeavingScreen {
 interface PreviewLook {
   readonly isDark: () => boolean;
   readonly isMotionReduced: () => boolean;
-}
-
-const EMPHASIZED_STOPS = 64;
-
-/** WindowManager Shell's `Interpolators.EMPHASIZED`, the two-segment `fast_out_extra_slow_in` path. */
-const ANDROID_EMPHASIZED = cubicPath([
-  {
-    control1: { x: 0.05, y: 0 },
-    control2: { x: 0.133333, y: 0.06 },
-    to: { x: 0.166666, y: 0.4 },
-  },
-  {
-    control1: { x: 0.208333, y: 0.82 },
-    control2: { x: 0.25, y: 1 },
-    to: { x: 1, y: 1 },
-  },
-]);
-
-/** Android's post-commit motion: `DefaultCrossActivityBackAnimation.POST_COMMIT_DURATION` on its emphasized curve, and the closing alpha `1 - progress * 5`. */
-export const ANDROID_BACK_MOTION = {
-  commitMs: 450,
-  commitEasing: cssLinearEasing(ANDROID_EMPHASIZED, EMPHASIZED_STOPS),
-  leavingFadeMs: 90,
-} as const;
-
-/** `BackProgressAnimator` springs a cancelled gesture's progress back with `SpringForce.STIFFNESS_MEDIUM` and `DAMPING_RATIO_NO_BOUNCY`, stopping within `MIN_VISIBLE_CHANGE_PIXELS * THRESHOLD_MULTIPLIER` of its progress scaled by `SCALE_FACTOR`. */
-export const ANDROID_BACK_SPRING = settlingOf({
-  stiffness: 1500,
-  restingWithin: 0.75 / 100,
-});
-
-const AFTER_ENTERING_SHIFT_PX = 96;
-
-export const RESTING_SCREEN: PlacedScreen = { scale: 1, x: 0, y: 0 };
-
-export function placedTransform({ scale, x, y }: PlacedScreen): string {
-  return `translate(${String(x)}px, ${String(y)}px) scale(${String(scale)})`;
-}
-
-export function leavingTarget(
-  closing: PlacedScreen,
-  width: number,
-): PlacedScreen {
-  const left = closing.x + (width - width * closing.scale) / 2;
-  return { scale: 1, x: left + AFTER_ENTERING_SHIFT_PX, y: 0 };
 }
 
 export class AndroidBackPreview {

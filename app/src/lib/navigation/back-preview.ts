@@ -4,7 +4,9 @@ import { assertNever } from "#lib/assert-never.ts";
 import type { BackSwipe, SwipeEdge } from "#lib/ipc/bindings.ts";
 
 import { watchBackSwipes } from "./back-swipe-allowance";
-import { cubicBezier } from "./cubic-bezier";
+import { settlingOf } from "./back-spring";
+import { cssLinearEasing } from "./css-easing";
+import { cubicBezier, cubicPath } from "./cubic-bezier";
 
 export interface BackGestureAt {
   readonly progress: number;
@@ -35,13 +37,54 @@ export interface BackPreviewFrame {
 const ANDROID_BACK = {
   smallestScale: 0.9,
   edgeMarginPx: 8,
-  enteringStartPx: -96,
+  enteringOffsetPx: 96,
   scrimLight: 0.2,
   scrimDark: 0.8,
   gestureCurve: cubicBezier(0.1, 0.1, 0, 1),
 } as const;
 
-const RESTING: PlacedScreen = { scale: 1, x: 0, y: 0 };
+const EMPHASIZED_STOPS = 64;
+
+/** WindowManager Shell's `Interpolators.EMPHASIZED`, the two-segment `fast_out_extra_slow_in` path. */
+const ANDROID_EMPHASIZED = cubicPath([
+  {
+    control1: { x: 0.05, y: 0 },
+    control2: { x: 0.133333, y: 0.06 },
+    to: { x: 0.166666, y: 0.4 },
+  },
+  {
+    control1: { x: 0.208333, y: 0.82 },
+    control2: { x: 0.25, y: 1 },
+    to: { x: 1, y: 1 },
+  },
+]);
+
+/** Android's post-commit motion: `DefaultCrossActivityBackAnimation.POST_COMMIT_DURATION` on its emphasized curve, and the closing alpha `1 - progress * 5`. */
+export const ANDROID_BACK_MOTION = {
+  commitMs: 450,
+  commitEasing: cssLinearEasing(ANDROID_EMPHASIZED, EMPHASIZED_STOPS),
+  leavingFadeMs: 90,
+} as const;
+
+/** `BackProgressAnimator` springs a cancelled gesture's progress back with `SpringForce.STIFFNESS_MEDIUM` and `DAMPING_RATIO_NO_BOUNCY`, stopping within `MIN_VISIBLE_CHANGE_PIXELS * THRESHOLD_MULTIPLIER` of its progress scaled by `SCALE_FACTOR`. */
+export const ANDROID_BACK_SPRING = settlingOf({
+  stiffness: 1500,
+  restingWithin: 0.75 / 100,
+});
+
+export const RESTING_SCREEN: PlacedScreen = { scale: 1, x: 0, y: 0 };
+
+export function placedTransform({ scale, x, y }: PlacedScreen): string {
+  return `translate(${String(x)}px, ${String(y)}px) scale(${String(scale)})`;
+}
+
+export function leavingTarget(
+  closing: PlacedScreen,
+  width: number,
+): PlacedScreen {
+  const left = closing.x + (width - width * closing.scale) / 2;
+  return { scale: 1, x: left + ANDROID_BACK.enteringOffsetPx, y: 0 };
+}
 
 function decelerate(ratio: number): number {
   return 1 - (1 - ratio) * (1 - ratio);
@@ -84,7 +127,7 @@ export function backPreviewFrame(
   isReducedMotion: boolean,
 ): BackPreviewFrame {
   if (isReducedMotion) {
-    return { closing: RESTING, entering: RESTING, scrim: 0 };
+    return { closing: RESTING_SCREEN, entering: RESTING_SCREEN, scrim: 0 };
   }
   const eased = ANDROID_BACK.gestureCurve(clampedProgress(now.progress));
   const scale = 1 - (1 - ANDROID_BACK.smallestScale) * eased;
@@ -96,7 +139,7 @@ export function backPreviewFrame(
   const y = verticalShift(start, now, scale, screen.height);
   return {
     closing: { scale, x: sideways * eased, y },
-    entering: { scale, x: ANDROID_BACK.enteringStartPx, y },
+    entering: { scale, x: -ANDROID_BACK.enteringOffsetPx, y },
     scrim: screen.isDark ? ANDROID_BACK.scrimDark : ANDROID_BACK.scrimLight,
   };
 }

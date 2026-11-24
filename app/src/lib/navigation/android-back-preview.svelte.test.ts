@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-import {
-  ANDROID_BACK_MOTION,
-  AndroidBackPreview,
-  leavingTarget,
-} from "./android-back-preview.svelte";
-import type { BackGestureAt } from "./back-preview";
+import { AndroidBackPreview } from "./android-back-preview.svelte";
+import { ANDROID_BACK_MOTION, type BackGestureAt } from "./back-preview";
 
 const ANDROID_SPRING_SETTLES_MS = 180;
 const AREA = { left: 0, top: 0, width: 400, height: 800 };
@@ -31,12 +27,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
-});
-
-test("moves a page that leaves to the right of where it stood, at full size", () => {
-  const target = leavingTarget({ scale: 0.9, x: 12, y: 24 }, 400);
-
-  expect(target).toEqual({ scale: 1, x: 128, y: 0 });
 });
 
 test("follows a gesture with the page's place and the screen's corners", () => {
