@@ -146,9 +146,7 @@ function scrollToPlace(screen: HTMLElement, place: ScrollPlace): void {
     screen.scrollTop = place.top;
     return;
   }
-  const shownTop = screen.getBoundingClientRect().top;
-  screen.scrollTop +=
-    link.getBoundingClientRect().top - shownTop - anchor.offset;
+  screen.scrollTop = contentTopOf(link, screen) - anchor.offset;
 }
 
 export function holdScrollPlace(
