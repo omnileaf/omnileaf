@@ -179,6 +179,10 @@ export class AndroidBackPreview {
     this.#settleAfter(ANDROID_BACK_MOTION.commitMs);
   }
 
+  stayed(): void {
+    this.#cancel();
+  }
+
   arrived(): void {
     if (this.#gesturesStarted !== this.#gesturesBeforeNavigating) {
       return;

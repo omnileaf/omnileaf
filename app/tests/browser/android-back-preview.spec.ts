@@ -1,7 +1,8 @@
 import type { Page } from "@playwright/test";
 
-import type { BackSwipe } from "../../src/lib/ipc/bindings.ts";
+import type { BackSwipe, SeriesDetails } from "../../src/lib/ipc/bindings.ts";
 import type { FakeChannel } from "./fake-backend.ts";
+import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 import {
   DEFAULT_BACKEND,
   EXPANDED_MIN_WIDTH,
@@ -19,6 +20,19 @@ const SETTINGS = "/settings";
 const SETTINGS_TITLE = "Settings";
 const PRIVACY_ONLY_TEXT = "Crash reports";
 
+const SPRING_BACK_SETTLED_MS = 200;
+const PAUSED_AFTER_MS = 1000;
+const EDITED_TITLE = "Sample Series Renamed";
+const SERIES_DETAILS = {
+  title: { fromFile: SERIES_TITLE, source: "folderName", edited: null },
+  people: { fromFile: [], edited: null },
+  tags: { fromFile: [], edited: null },
+  summary: { fromFile: null, edited: null },
+  year: null,
+  language: null,
+  isMarkedAdult: false,
+  isRatedAdult: false,
+} satisfies SeriesDetails;
 let gestures: FakeChannel<BackSwipe> | undefined;
 
 test.use({
@@ -77,6 +91,24 @@ async function expectNoPreviewLeft(page: Page): Promise<void> {
   await expect(page.locator("[data-leaving-screen]")).toHaveCount(0);
 }
 
+async function pauseTheClock(page: Page): Promise<void> {
+  await page.clock.install();
+  await page.clock.pauseAt(
+    (await page.evaluate(() => Date.now())) + PAUSED_AFTER_MS,
+  );
+}
+
+async function openInApp(page: Page, path: string): Promise<void> {
+  await page.evaluate((href) => {
+    const link = document.createElement("a");
+    link.href = href;
+    document.body.append(link);
+    link.click();
+    link.remove();
+  }, path);
+  await expect(page).toHaveURL(path);
+}
+
 async function openPrivacyFromSettings(page: Page): Promise<void> {
   test.skip(
     viewportOf(page).width >= EXPANDED_MIN_WIDTH,
@@ -84,14 +116,7 @@ async function openPrivacyFromSettings(page: Page): Promise<void> {
   );
   await page.goto(SETTINGS);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await page.evaluate((href) => {
-    const link = document.createElement("a");
-    link.href = href;
-    document.body.append(link);
-    link.click();
-    link.remove();
-  }, PRIVACY);
-  await expect(page).toHaveURL(PRIVACY);
+  await openInApp(page, PRIVACY);
 }
 
 async function widthOf(page: Page): Promise<number> {
@@ -255,4 +280,50 @@ test("leaves no preview once the gesture is cancelled, even when moves arrive af
   await gesture(swipe(0.3));
 
   await expectNoPreviewLeft(page);
+});
+
+test.describe("a back gesture the page keeps for itself", () => {
+  const shelf = new FakeShelf([{ state: "notStarted" }]);
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      appInfo: () => fakeAppInfo("android"),
+      seriesOverview: (id) => shelf.backend().seriesOverview(id),
+      seriesBooks: (id, listing, after) =>
+        shelf.backend().seriesBooks(id, listing, after),
+      keepsDetailEdits: () => true,
+      seriesDetails: () => SERIES_DETAILS,
+      editSeriesDetails: () => null,
+      watchBackSwipes: (channel) => {
+        gestures = channel;
+        return null;
+      },
+    },
+  });
+
+  test("lets no page leave when the page keeps a finished back gesture for itself", async ({
+    page,
+  }) => {
+    await page.goto(`/series/${SERIES_ID}`);
+    await page
+      .getByRole("button", { name: `More for ${SERIES_TITLE}`, exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Edit details…" }).click();
+    await page
+      .getByRole("main")
+      .getByRole("textbox", { name: "Title" })
+      .fill(EDITED_TITLE);
+    await pauseTheClock(page);
+    await gesture(start());
+    await gesture(swipe(0.6));
+
+    await page.goBack();
+    await page.clock.runFor(SPRING_BACK_SETTLED_MS);
+
+    await expect(
+      page.getByRole("alertdialog", { name: "Discard your changes?" }),
+    ).toBeVisible();
+    await expectNoPreviewLeft(page);
+  });
 });

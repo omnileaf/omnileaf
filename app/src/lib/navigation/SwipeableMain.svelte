@@ -7,6 +7,7 @@
     afterNavigate,
     beforeNavigate,
     type NavigationType,
+    onNavigate,
   } from "$app/navigation";
   import { page } from "$app/state";
   import type { SwipeEdge } from "#lib/ipc/bindings.ts";
@@ -97,12 +98,19 @@
     };
   }
 
-  beforeNavigate(({ type }) => {
+  beforeNavigate(({ complete }) => {
     if ((isIos || isAndroid) && swiped.element !== undefined) {
       previousScreens.keep(page.url.pathname, swiped.element);
     }
+    complete.catch(() => {
+      androidBack.stayed();
+    });
+  });
+
+  onNavigate(({ type, from }) => {
     androidBack.navigating();
-    const leavingCopy = previousScreens.of(page.url.pathname);
+    const leavingCopy =
+      from === null ? undefined : previousScreens.of(from.url.pathname);
     if (type === "popstate" && leavingCopy !== undefined) {
       androidBack.leave(leavingCopy);
     }
