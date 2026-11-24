@@ -19,6 +19,7 @@ const TABLET_LIBRARY_DOWN = 300;
 const TABLET = { width: 820, height: 1180 };
 const SERIES_DOWN = 250;
 const SLACK_PX = 2;
+const SERIES_PAGE = /\/series\//;
 const VOLUMES_SERIES = sampleSeriesId(21);
 const CONTINUED_SERIES = sampleSeriesId(11);
 const VOLUME_COUNT = 30;
@@ -76,6 +77,19 @@ async function expectScrolledTo(page: Page, top: number): Promise<void> {
   await expect
     .poll(async () => Math.abs((await scrollTopOf(page)) - top))
     .toBeLessThanOrEqual(SLACK_PX);
+}
+
+async function backToLibraryFromSeries(page: Page): Promise<Locator> {
+  await page.setViewportSize(PHONE);
+  await page.goto("/");
+  await scrollMainTo(page, LIBRARY_DOWN);
+  const opened = await seriesLinkInView(page);
+  const card = main(page).locator(`a[href='${opened}']`).first();
+  await tapWhereItIs(card);
+  await expect(page).toHaveURL(opened);
+  await page.goBack();
+  await expect(card).toBeInViewport();
+  return card;
 }
 
 function seriesLinkInView(page: Page): Promise<string> {
@@ -156,18 +170,11 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
       });
     }
 
-    test("lets go of the Library's place once the app scrolls it elsewhere", async ({
+    test("lets go of the Library's place and its scroll anchoring once the app scrolls it elsewhere", async ({
       page,
     }) => {
-      await page.setViewportSize(PHONE);
-      await page.goto("/");
-      await scrollMainTo(page, LIBRARY_DOWN);
-      const opened = await seriesLinkInView(page);
-      const card = main(page).locator(`a[href='${opened}']`).first();
-      await tapWhereItIs(card);
-      await expect(page).toHaveURL(opened);
-      await page.goBack();
-      await expect(card).toBeInViewport();
+      await backToLibraryFromSeries(page);
+      await expect(main(page)).toHaveCSS("overflow-anchor", "none");
 
       await main(page).evaluate((scroller) => {
         scroller.scrollTo({ top: 0 });
@@ -176,43 +183,15 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
       await expectScrolledTo(page, 0);
       await resizeContentOf(page);
       expect(await scrollTopOf(page)).toBe(0);
+      await expect(main(page)).toHaveCSS("overflow-anchor", "auto");
     });
 
     test("gives the Library its scroll anchoring back once a finger touches it", async ({
       page,
     }) => {
-      await page.setViewportSize(PHONE);
-      await page.goto("/");
-      await scrollMainTo(page, LIBRARY_DOWN);
-      const opened = await seriesLinkInView(page);
-      const card = main(page).locator(`a[href='${opened}']`).first();
-      await tapWhereItIs(card);
-      await expect(page).toHaveURL(opened);
-      await page.goBack();
-      await expect(card).toBeInViewport();
+      await backToLibraryFromSeries(page);
 
       await main(page).dispatchEvent("pointerdown");
-
-      await expect(main(page)).toHaveCSS("overflow-anchor", "auto");
-    });
-
-    test("gives the Library its scroll anchoring back once the page scrolls elsewhere", async ({
-      page,
-    }) => {
-      await page.setViewportSize(PHONE);
-      await page.goto("/");
-      await scrollMainTo(page, LIBRARY_DOWN);
-      const opened = await seriesLinkInView(page);
-      const card = main(page).locator(`a[href='${opened}']`).first();
-      await tapWhereItIs(card);
-      await expect(page).toHaveURL(opened);
-      await page.goBack();
-      await expect(card).toBeInViewport();
-      await expect(main(page)).toHaveCSS("overflow-anchor", "none");
-
-      await main(page).evaluate((scroller) => {
-        scroller.scrollTo({ top: 0 });
-      });
 
       await expect(main(page)).toHaveCSS("overflow-anchor", "auto");
     });
@@ -220,20 +199,12 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
     test("gives the Library its scroll anchoring back once another page opens", async ({
       page,
     }) => {
-      await page.setViewportSize(PHONE);
-      await page.goto("/");
-      await scrollMainTo(page, LIBRARY_DOWN);
-      const opened = await seriesLinkInView(page);
-      const card = main(page).locator(`a[href='${opened}']`).first();
-      await tapWhereItIs(card);
-      await expect(page).toHaveURL(opened);
-      await page.goBack();
-      await expect(card).toBeInViewport();
+      const card = await backToLibraryFromSeries(page);
       await expect(main(page)).toHaveCSS("overflow-anchor", "none");
 
       await tapWhereItIs(card);
 
-      await expect(page).toHaveURL(opened);
+      await expect(page).toHaveURL(SERIES_PAGE);
       await expect(main(page)).toHaveCSS("overflow-anchor", "auto");
     });
 
@@ -303,7 +274,7 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
 
       await main(page).locator("a[href^='/series/']").first().click();
 
-      await expect(page).toHaveURL(/\/series\//);
+      await expect(page).toHaveURL(SERIES_PAGE);
       await expectScrolledTo(page, 0);
     });
 
