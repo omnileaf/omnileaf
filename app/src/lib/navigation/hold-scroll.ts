@@ -119,6 +119,22 @@ function anchorOf(
   );
 }
 
+function scrollToPlace(screen: HTMLElement, place: ScrollPlace): void {
+  const { anchor } = place;
+  if (anchor === undefined) {
+    screen.scrollTop = place.top;
+    return;
+  }
+  const link = anchorOf(screen, anchor);
+  if (link === null) {
+    screen.scrollTop = place.top;
+    return;
+  }
+  const shownTop = screen.getBoundingClientRect().top;
+  screen.scrollTop +=
+    link.getBoundingClientRect().top - shownTop - anchor.offset;
+}
+
 export function holdScrollPlace(
   screen: HTMLElement,
   place: ScrollPlace,
@@ -134,15 +150,7 @@ export function holdScrollPlace(
   const stop = holdWhileContentResizes(
     screen,
     () => {
-      const anchored =
-        place.anchor === undefined ? null : anchorOf(screen, place.anchor);
-      if (place.anchor === undefined || anchored === null) {
-        screen.scrollTop = place.top;
-      } else {
-        const shownTop = screen.getBoundingClientRect().top;
-        screen.scrollTop +=
-          anchored.getBoundingClientRect().top - shownTop - place.anchor.offset;
-      }
+      scrollToPlace(screen, place);
       placedAt = screen.scrollTop;
     },
     () => {
