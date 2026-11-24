@@ -10,15 +10,10 @@ import {
 import type { ResolvedPathname } from "$app/types";
 
 import { resolvedPathOf } from "./app-path";
+import { isInAppShell } from "./sections";
 import { type HistoryMove, moveTo } from "./up-history";
 
 type Replacing = Extract<HistoryMove, { kind: "replace" }>;
-
-const APP_SHELL_GROUP = "(app)";
-
-function isInAppShell(routeId: string): boolean {
-  return routeId.split("/")[1] === APP_SHELL_GROUP;
-}
 
 export interface BackGoesUp {
   readonly isPassingThrough: boolean;
