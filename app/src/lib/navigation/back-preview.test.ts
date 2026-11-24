@@ -6,6 +6,7 @@ import type { BackSwipe } from "#lib/ipc/bindings.ts";
 
 import {
   type BackGestureAt,
+  type BackGestureStep,
   backPreviewFrame,
   previewBackGestures,
 } from "./back-preview";
@@ -99,11 +100,18 @@ test("neither scales nor moves either page with reduced motion", () => {
   );
 });
 
-test("reports where a moving gesture is and nothing once it is cancelled", async () => {
-  const shown: (BackGestureAt | undefined)[] = [];
+test("reports where a gesture starts and moves, and its end once it is cancelled", async () => {
+  const shown: BackGestureStep[] = [];
   mockIPC((command, args) => {
     if (command === "watch_back_swipes") {
       const channel = (args as { onSwipe: Channel<BackSwipe> }).onSwipe;
+      channel.onmessage({
+        kind: "started",
+        progress: 0,
+        edge: "right",
+        touchY: 0.3,
+        corner: 32,
+      });
       channel.onmessage({
         kind: "moved",
         progress: 0.4,
@@ -117,8 +125,8 @@ test("reports where a moving gesture is and nothing once it is cancelled", async
   });
 
   previewBackGestures(
-    (gesture) => {
-      shown.push(gesture);
+    (step) => {
+      shown.push(step);
     },
     () => true,
   );
@@ -126,14 +134,21 @@ test("reports where a moving gesture is and nothing once it is cancelled", async
   await expect
     .poll(() => shown)
     .toEqual([
-      { progress: 0.4, edge: "right", touchY: 0.3, cornerPx: 32 },
-      undefined,
+      {
+        kind: "started",
+        at: { progress: 0, edge: "right", touchY: 0.3, cornerPx: 32 },
+      },
+      {
+        kind: "moved",
+        at: { progress: 0.4, edge: "right", touchY: 0.3, cornerPx: 32 },
+      },
+      { kind: "ended" },
     ]);
   clearMocks();
 });
 
 test("takes a gesture that says nothing of its edge, finger or corner as one from the left, halfway down, on a square screen", async () => {
-  const shown: (BackGestureAt | undefined)[] = [];
+  const shown: BackGestureStep[] = [];
   mockIPC((command, args) => {
     if (command === "watch_back_swipes") {
       const channel = (args as { onSwipe: Channel<BackSwipe> }).onSwipe;
@@ -149,24 +164,29 @@ test("takes a gesture that says nothing of its edge, finger or corner as one fro
   });
 
   previewBackGestures(
-    (gesture) => {
-      shown.push(gesture);
+    (step) => {
+      shown.push(step);
     },
     () => true,
   );
 
   await expect
     .poll(() => shown)
-    .toEqual([{ progress: 0.4, edge: null, touchY: 0.5, cornerPx: 0 }]);
+    .toEqual([
+      {
+        kind: "moved",
+        at: { progress: 0.4, edge: null, touchY: 0.5, cornerPx: 0 },
+      },
+    ]);
   clearMocks();
 });
 
 function previewOnce(isScreenKept: boolean) {
-  const shown: (BackGestureAt | undefined)[] = [];
+  const shown: BackGestureStep[] = [];
   mockIPC(() => null);
   const stop = previewBackGestures(
-    (gesture) => {
-      shown.push(gesture);
+    (step) => {
+      shown.push(step);
     },
     () => isScreenKept,
   );
@@ -178,7 +198,7 @@ test("ends the preview when the page steps back and keeps its screen", () => {
 
   dispatchEvent(new PopStateEvent("popstate"));
 
-  expect(shown).toEqual([undefined]);
+  expect(shown).toEqual([{ kind: "ended" }]);
   stop();
   clearMocks();
 });

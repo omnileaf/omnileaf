@@ -1,5 +1,6 @@
 import { Channel } from "@tauri-apps/api/core";
 
+import { assertNever } from "#lib/assert-never.ts";
 import type { BackSwipe, SwipeEdge } from "#lib/ipc/bindings.ts";
 
 import { watchBackSwipes } from "./back-swipe-allowance";
@@ -103,26 +104,49 @@ export function backPreviewFrame(
 const MIDDLE_OF_THE_SCREEN = 0.5;
 const SQUARE_CORNER_PX = 0;
 
+export type BackGestureStep =
+  | { readonly kind: "started"; readonly at: BackGestureAt }
+  | { readonly kind: "moved"; readonly at: BackGestureAt }
+  | { readonly kind: "ended" };
+
+const ENDED: BackGestureStep = { kind: "ended" };
+
+function positionOf(
+  swipe: Extract<BackSwipe, { kind: "started" | "moved" }>,
+): BackGestureAt {
+  return {
+    progress: swipe.progress ?? 0,
+    edge: swipe.edge ?? null,
+    touchY: swipe.touchY ?? MIDDLE_OF_THE_SCREEN,
+    cornerPx: swipe.corner ?? SQUARE_CORNER_PX,
+  };
+}
+
+function stepOf(swipe: BackSwipe): BackGestureStep {
+  switch (swipe.kind) {
+    case "started":
+    case "moved":
+      return { kind: swipe.kind, at: positionOf(swipe) };
+    case "released":
+    case "cancelled":
+      return ENDED;
+    default:
+      return assertNever(swipe);
+  }
+}
+
 export function previewBackGestures(
-  show: (gesture: BackGestureAt | undefined) => void,
+  follow: (step: BackGestureStep) => void,
   isScreenKept: () => boolean,
 ): () => void {
-  const gestures = new Channel<BackSwipe>((gesture) => {
-    show(
-      gesture.kind === "started" || gesture.kind === "moved"
-        ? {
-            progress: gesture.progress ?? 0,
-            edge: gesture.edge ?? null,
-            touchY: gesture.touchY ?? MIDDLE_OF_THE_SCREEN,
-            cornerPx: gesture.corner ?? SQUARE_CORNER_PX,
-          }
-        : undefined,
-    );
-  });
-  watchBackSwipes(gestures);
+  watchBackSwipes(
+    new Channel<BackSwipe>((swipe) => {
+      follow(stepOf(swipe));
+    }),
+  );
   const endPreview = () => {
     if (isScreenKept()) {
-      show(undefined);
+      follow(ENDED);
     }
   };
   addEventListener("popstate", endPreview);

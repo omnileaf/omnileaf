@@ -244,6 +244,13 @@ test.describe(
       const sheet = page.getByRole("dialog", { name: "Categories and tags" });
       await expect(sheet).toBeVisible();
       await expect.poll(() => gestures).toBeDefined();
+      await gestures?.send({
+        kind: "started",
+        progress: 0,
+        edge: "left",
+        touchY: 0.5,
+        corner: 0,
+      });
       await gestures?.send({ kind: "moved", progress: 0.4 });
 
       await page.goBack();

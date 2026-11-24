@@ -1,5 +1,8 @@
+import { assertNever } from "#lib/assert-never.ts";
+
 import {
   type BackGestureAt,
+  type BackGestureStep,
   type BackPreviewFrame,
   backPreviewFrame,
   type PlacedScreen,
@@ -89,18 +92,32 @@ export class AndroidBackPreview {
     );
   }
 
-  follow(gesture: BackGestureAt | undefined, screen: HTMLElement): void {
-    if (gesture === undefined) {
-      this.#cancel();
-      return;
+  follow(step: BackGestureStep, screen: HTMLElement): void {
+    switch (step.kind) {
+      case "started":
+        this.#begin(step.at, screen);
+        return;
+      case "moved":
+        if (this.phase === "following") {
+          this.#now = step.at;
+        }
+        return;
+      case "ended":
+        this.#cancel();
+        return;
+      default:
+        assertNever(step);
     }
-    if (this.phase !== "following") {
-      this.#clearSettling();
-      this.area = screen.getBoundingClientRect();
-      this.#start = gesture;
-      this.phase = "following";
-    }
-    this.#now = gesture;
+  }
+
+  #begin(at: BackGestureAt, screen: HTMLElement): void {
+    this.#clearSettling();
+    this.area ??= screen.getBoundingClientRect();
+    this.leaving = undefined;
+    this.enteringFrom = undefined;
+    this.#start = at;
+    this.#now = at;
+    this.phase = "following";
   }
 
   leave(copy: ScreenCopy): void {

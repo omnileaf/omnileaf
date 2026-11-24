@@ -178,9 +178,9 @@
   onMount(() => {
     const stopPreviewing = isAndroid
       ? previewBackGestures(
-          (gesture) => {
+          (step) => {
             if (swiped.element !== undefined) {
-              androidBack.follow(gesture, swiped.element);
+              androidBack.follow(step, swiped.element);
             }
           },
           () =>

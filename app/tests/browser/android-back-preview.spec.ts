@@ -56,6 +56,27 @@ function swipe(
   };
 }
 
+function start(
+  change: Partial<Extract<BackSwipe, { kind: "started" }>> = {},
+): BackSwipe {
+  return {
+    kind: "started",
+    progress: 0,
+    edge: "left",
+    touchY: 0.5,
+    corner: SCREEN_CORNER_PX,
+    ...change,
+  };
+}
+
+async function expectNoPreviewLeft(page: Page): Promise<void> {
+  const main = page.getByRole("main");
+  await expect(main).toHaveCSS("transform", "none");
+  await expect(main).toHaveCSS("border-top-left-radius", "0px");
+  await expect(page.locator("[data-previous-screen]")).toHaveCount(0);
+  await expect(page.locator("[data-leaving-screen]")).toHaveCount(0);
+}
+
 async function openPrivacyFromSettings(page: Page): Promise<void> {
   test.skip(
     viewportOf(page).width >= EXPANDED_MIN_WIDTH,
@@ -95,6 +116,7 @@ test("shrinks a page swiped from the left to 90% and moves it to 8 px from the r
 }) => {
   await openPrivacyFromSettings(page);
   const width = await widthOf(page);
+  await gesture(start());
 
   await gesture(swipe(1));
 
@@ -109,6 +131,7 @@ test("shrinks a page swiped from the left to 90% and moves it to 8 px from the r
 
 test("shrinks a page swiped from the right in the middle", async ({ page }) => {
   await openPrivacyFromSettings(page);
+  await gesture(start({ edge: "right" }));
 
   await gesture(swipe(1, { edge: "right" }));
 
@@ -120,7 +143,7 @@ test("shrinks a page swiped from the right in the middle", async ({ page }) => {
 
 test("follows the finger down the screen", async ({ page }) => {
   await openPrivacyFromSettings(page);
-  await gesture(swipe(0));
+  await gesture(start());
 
   await gesture(swipe(1, { touchY: 0.9 }));
 
@@ -131,6 +154,7 @@ test("shows the page it goes back to behind the shrinking page, dimmed", async (
   page,
 }) => {
   await openPrivacyFromSettings(page);
+  await gesture(start());
 
   await gesture(swipe(0.5));
 
@@ -144,6 +168,7 @@ test("springs the page back and takes the page behind away when the gesture is c
   page,
 }) => {
   await openPrivacyFromSettings(page);
+  await gesture(start());
   await gesture(swipe(1));
 
   await gesture({ kind: "cancelled" });
@@ -156,6 +181,7 @@ test("lets the page leave and settles the page behind in its place once back goe
   page,
 }) => {
   await openPrivacyFromSettings(page);
+  await gesture(start());
   await gesture(swipe(1));
 
   await page.goBack();
@@ -171,6 +197,7 @@ test("neither shrinks nor moves the page when reduced motion is on", async ({
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openPrivacyFromSettings(page);
+  await gesture(start());
 
   await gesture(swipe(1, { touchY: 0.9 }));
 
@@ -192,6 +219,7 @@ test("puts the screen back when a finished back gesture closes something on the 
   await page.evaluate(() => {
     history.pushState(history.state, "", location.href);
   });
+  await gesture(start());
   await gesture({ kind: "moved", progress: 0.3 });
   await expect(screen).not.toHaveCSS("transform", "none");
 
@@ -200,4 +228,31 @@ test("puts the screen back when a finished back gesture closes something on the 
   await expect(screen).toHaveCSS("transform", "none");
   await expect(screen).toHaveCSS("border-top-left-radius", "0px");
   expect(new URL(page.url()).pathname).toBe("/settings/privacy");
+});
+
+test("leaves no preview once back goes through, even when the gesture's last moves arrive after the page steps back", async ({
+  page,
+}) => {
+  await openPrivacyFromSettings(page);
+  await gesture(start());
+  await gesture(swipe(0.6));
+
+  await page.goBack();
+  await gesture(swipe(0.6));
+
+  await expect(page).toHaveURL(SETTINGS);
+  await expectNoPreviewLeft(page);
+});
+
+test("leaves no preview once the gesture is cancelled, even when moves arrive after it", async ({
+  page,
+}) => {
+  await openPrivacyFromSettings(page);
+  await gesture(start());
+  await gesture(swipe(0.6));
+
+  await gesture({ kind: "cancelled" });
+  await gesture(swipe(0.3));
+
+  await expectNoPreviewLeft(page);
 });
