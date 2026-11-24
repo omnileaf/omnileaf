@@ -378,6 +378,7 @@ test.describe(
 
       await tapWhereItIs(page.getByRole("tab", { name: /^Chapters/ }));
       await expect.poll(() => bookReads.waiting.length).toBeGreaterThan(0);
+      await framesPassed(page);
       releaseEvery(bookReads);
 
       await expect(
