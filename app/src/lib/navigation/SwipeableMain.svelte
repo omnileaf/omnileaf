@@ -101,6 +101,7 @@
     if ((isIos || isAndroid) && swiped.element !== undefined) {
       previousScreens.keep(page.url.pathname, swiped.element);
     }
+    androidBack.navigating();
     const leavingCopy = previousScreens.of(page.url.pathname);
     if (type === "popstate" && leavingCopy !== undefined) {
       androidBack.leave(leavingCopy);

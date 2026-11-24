@@ -42,6 +42,8 @@ export class AndroidBackPreview {
   readonly #look: PreviewLook;
   #settled: ReturnType<typeof setTimeout> | undefined;
   #nextFrames: readonly number[] = [];
+  #gesturesStarted = 0;
+  #gesturesBeforeNavigating = 0;
 
   constructor(look: PreviewLook) {
     this.#look = look;
@@ -135,6 +137,7 @@ export class AndroidBackPreview {
   }
 
   #begin(at: BackGestureAt, screen: HTMLElement): void {
+    this.#gesturesStarted += 1;
     this.#clearSettling();
     this.area ??= screen.getBoundingClientRect();
     this.leaving = undefined;
@@ -144,7 +147,12 @@ export class AndroidBackPreview {
     this.phase = "following";
   }
 
+  navigating(): void {
+    this.#gesturesBeforeNavigating = this.#gesturesStarted;
+  }
+
   leave(copy: ScreenCopy): void {
+    this.navigating();
     const frame = this.frame;
     if (
       this.phase !== "following" ||
@@ -172,6 +180,9 @@ export class AndroidBackPreview {
   }
 
   arrived(): void {
+    if (this.#gesturesStarted !== this.#gesturesBeforeNavigating) {
+      return;
+    }
     if (this.phase === "following") {
       this.#rest();
       return;

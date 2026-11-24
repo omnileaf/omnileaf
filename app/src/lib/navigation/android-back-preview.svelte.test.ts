@@ -144,3 +144,14 @@ test("lets the page leave where it stands with reduced motion", () => {
 
   expect(preview.leaving?.to).toEqual({ scale: 1, x: 0, y: 0 });
 });
+
+test("keeps following a gesture that started while the page went back", () => {
+  const preview = new AndroidBackPreview(LOOK);
+  swipedTo(preview, 1);
+  preview.leave(COPY);
+  preview.follow({ kind: "started", at: at(0) }, screen());
+
+  preview.arrived();
+
+  expect(preview.phase).toBe("following");
+});
