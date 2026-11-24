@@ -20,7 +20,7 @@ use crate::{
     book_numbering::FileNumbers,
     byte_budget::ByteBudget,
     decode_permits::DecodePermits,
-    device_class::IS_MOBILE,
+    device_class::{IS_MOBILE, MEBIBYTE},
     library_layout::{FoundBook, folder_name},
     overlapped_reads::read_at_most,
     placement::{Placement, place_book},
@@ -30,10 +30,17 @@ use crate::{
 
 pub(crate) const BOOKS_PER_BATCH: usize = 32;
 /// Each open through Android's storage access framework waits on a round trip to the documents provider, so a scan reads this many books at once to overlap those waits.
-const BOOKS_READ_AT_ONCE: NonZeroUsize = NonZeroUsize::MIN.saturating_add(7);
+const BOOKS_READ_AT_ONCE: NonZeroUsize = match NonZeroUsize::new(8) {
+    Some(books) => books,
+    None => ONE_AT_A_TIME,
+};
 /// Android copies a document its provider can only stream into the cache before it is read, so a phone keeps at most this many listed bytes of books open at once.
-const BOOK_BYTES_OPEN_AT_ONCE: u64 = if IS_MOBILE { GIBIBYTE } else { 64 * GIBIBYTE };
-const GIBIBYTE: u64 = 1 << 30;
+const BOOK_BYTES_OPEN_AT_ONCE: u64 = (if IS_MOBILE {
+    1024
+} else {
+    MEBIBYTES_THAT_NEVER_LIMIT_A_DESKTOP
+}) * MEBIBYTE as u64;
+const MEBIBYTES_THAT_NEVER_LIMIT_A_DESKTOP: u64 = 64 * 1024;
 const ONE_AT_A_TIME: NonZeroUsize = NonZeroUsize::MIN;
 /// One archive at a time, since a phone's OS ends an app holding too much memory while an archive's index and comic details are decoded.
 const ARCHIVES_PARSED_AT_ONCE: usize = 1;

@@ -98,7 +98,7 @@ mod tests {
 
     const BOOKS: usize = 100;
     const WORK_STEPS: usize = 1000;
-    const SMALL_BOUND: NonZeroUsize = NonZeroUsize::MIN.saturating_add(2);
+    const SMALL_BOUND: NonZeroUsize = NonZeroUsize::new(3).unwrap();
     const ONE_AT_A_TIME: NonZeroUsize = NonZeroUsize::MIN;
     const LONGEST_WAIT: Duration = Duration::from_secs(2);
     const FIRST_BOOK: usize = 0;
