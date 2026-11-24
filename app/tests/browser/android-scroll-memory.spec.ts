@@ -3,6 +3,11 @@ import type { Locator, Page } from "@playwright/test";
 import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
 import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
 import { boxOf, expect, test } from "./fixtures.ts";
+import {
+  answerOnceReleased,
+  type HeldReads,
+  releaseEvery,
+} from "./held-reads.ts";
 import { sampleLibraryOn } from "./screens.ts";
 import { chapters, SectionShelf, volumes } from "./series-sections-shelf.ts";
 import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
@@ -19,7 +24,8 @@ const VOLUMES_SERIES = sampleSeriesId(21);
 const CONTINUED_SERIES = sampleSeriesId(11);
 const VOLUME_COUNT = 30;
 const CHAPTER_COUNT = 120;
-const READ_DELAY_MS = 400;
+
+let bookReads: HeldReads = { isHolding: false, waiting: [] };
 
 function numbersFrom(first: number, count: number): number[] {
   return Array.from({ length: count }, (_, index) => first + index);
@@ -282,13 +288,14 @@ test.describe(
       backend: {
         ...shelved,
         seriesBooks: async (...asked) => {
-          await new Promise((answered) => setTimeout(answered, READ_DELAY_MS));
+          await answerOnceReleased(bookReads);
           return shelved.seriesBooks(...asked);
         },
       },
     });
 
     test.beforeEach(({ platform }) => {
+      bookReads = { isHolding: false, waiting: [] };
       test.skip(platform !== "android", "Android's series tabs");
     });
 
@@ -303,7 +310,11 @@ test.describe(
       await scrollMainTo(page, SERIES_DOWN);
       const before = await scrollTopOf(page);
 
+      bookReads.isHolding = true;
+
       await tapWhereItIs(page.getByRole("tab", { name: /^Chapters/ }));
+      await expect.poll(() => bookReads.waiting.length).toBeGreaterThan(0);
+      releaseEvery(bookReads);
 
       await expect(
         page.getByRole("tab", { name: /^Chapters/ }),
