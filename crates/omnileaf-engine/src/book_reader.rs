@@ -274,6 +274,8 @@ mod tests {
     const LISTED_BYTES: u64 = 100;
     const BOOKS_THE_BUDGET_HOLDS: u64 = 2;
     const WAIT_FOR_COMPANY: Duration = Duration::from_secs(2);
+    const WAIT_FOR_A_SECOND_OPEN: Duration = Duration::from_millis(100);
+    const UNLISTED_FILES: usize = 4;
     const WAIT_FOR_A_THIRD_OPEN: Duration = Duration::from_millis(300);
 
     #[derive(Clone, Copy)]
@@ -650,6 +652,36 @@ mod tests {
         let mut books: Vec<PathBuf> = second.into_iter().map(|book| book.path).collect();
         books.sort();
         assert_eq!(opened, books);
+    }
+
+    #[test]
+    fn opens_files_of_unlisted_size_one_at_a_time_while_folders_of_images_overlap() {
+        let scratch = ScratchFolder::new("scan-unlisted-sizes");
+        let unlisted: Vec<FoundBook> = archives(&scratch)
+            .into_iter()
+            .take(UNLISTED_FILES)
+            .map(|book| FoundBook {
+                form: BookForm::FileOfUnlistedSize,
+                ..book
+            })
+            .collect();
+        let folders: Vec<FoundBook> = (1..=IMAGE_FOLDER_BOOKS)
+            .map(|chapter| image_folder(&scratch, chapter))
+            .collect();
+        let storage = OpensInCompany::waiting_for(&scratch, 2, WAIT_FOR_A_SECOND_OPEN);
+        let reader = budgeted_reader(
+            storage.clone(),
+            &Arc::new(ByteBudget::new(TEST_BYTE_BUDGET)),
+        );
+
+        let read_files = reader.read_each(&unlisted);
+        let most_files_open_at_once = storage.most_open_at_once();
+        let read_folders = reader.read_each(&folders);
+
+        assert!(read_files.iter().all(Result::is_ok), "{read_files:?}");
+        assert!(read_folders.iter().all(Result::is_ok), "{read_folders:?}");
+        assert_eq!(most_files_open_at_once, 1);
+        assert!(storage.most_open_at_once() > 1);
     }
 
     #[test]

@@ -36,6 +36,10 @@ impl WeightedSemaphore {
         }
     }
 
+    pub(crate) fn hold_all(&self) -> Held<'_> {
+        self.hold(self.total)
+    }
+
     fn free(&self) -> MutexGuard<'_, u64> {
         self.free.lock().unwrap_or_else(PoisonError::into_inner)
     }
@@ -143,6 +147,19 @@ mod tests {
 
         let has_got_in = holding_in_the_background(&semaphore, TOTAL + 1);
 
+        assert!(has_got_in.recv_timeout(LONGEST_WAIT).is_ok());
+    }
+
+    #[test]
+    fn keeps_every_other_holder_out_while_one_holds_all() {
+        let semaphore = Arc::new(WeightedSemaphore::new(TOTAL));
+        let all = semaphore.hold_all();
+
+        let has_got_in = holding_in_the_background(&semaphore, 1);
+
+        let got_in_early = has_got_in.recv_timeout(LONG_ENOUGH_TO_GET_IN).is_ok();
+        drop(all);
+        assert!(!got_in_early);
         assert!(has_got_in.recv_timeout(LONGEST_WAIT).is_ok());
     }
 }

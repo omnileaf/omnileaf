@@ -13,7 +13,7 @@ impl ByteBudget {
     pub(crate) fn hold_for(&self, form: BookForm) -> Option<Held<'_>> {
         match form {
             BookForm::File { listed_bytes } => Some(self.0.hold(listed_bytes.get())),
-            BookForm::FileOfUnlistedSize => Some(self.0.hold(0)),
+            BookForm::FileOfUnlistedSize => Some(self.0.hold_all()),
             BookForm::FolderOfImages => None,
         }
     }
