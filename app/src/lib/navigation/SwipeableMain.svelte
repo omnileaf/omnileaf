@@ -65,6 +65,14 @@
     return link === undefined ? undefined : new URL(link.href).pathname;
   }
 
+  const androidPageBehind = $derived.by(() => {
+    if (androidBack.area === undefined || swiped.element === undefined) {
+      return undefined;
+    }
+    const backPath = backPathFrom(swiped.element);
+    return backPath === undefined ? undefined : previousScreens.of(backPath);
+  });
+
   function goBack(): boolean {
     const link =
       swiped.element === undefined ? undefined : wayBackFrom(swiped.element);
@@ -163,13 +171,7 @@
   <ScreenBehindSwipe {...swiped.behind} />
 {/if}
 {#if isAndroid}
-  <AndroidBackLayers
-    preview={androidBack}
-    behind={androidBack.area === undefined || swiped.element === undefined
-      ? undefined
-      : previousScreens.of(backPathFrom(swiped.element) ?? "")}
-    cornerPx={androidBack.cornerPx}
-  />
+  <AndroidBackLayers preview={androidBack} behind={androidPageBehind} />
 {/if}
 <main
   bind:this={swiped.element}

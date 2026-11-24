@@ -30,7 +30,6 @@ async function shownWith(preview: AndroidBackPreview): Promise<Element> {
   const screen = await render(AndroidBackLayers, {
     preview,
     behind: undefined,
-    cornerPx: 0,
   });
   return screen.container;
 }

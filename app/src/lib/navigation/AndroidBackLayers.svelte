@@ -6,11 +6,9 @@
   let {
     preview,
     behind,
-    cornerPx,
   }: {
     preview: AndroidBackPreview;
     behind: ScreenCopy | undefined;
-    cornerPx: number;
   } = $props();
 
   const frame = $derived(preview.frame);
@@ -37,7 +35,7 @@
       style:transition={isCancelling
         ? ANDROID_BACK_TRANSITIONS.springBack
         : undefined}
-      style:border-radius="{cornerPx}px"
+      style:border-radius="{preview.cornerPx}px"
     >
       {#if behind !== undefined}
         <div class="contents" {@attach showCopy(behind)}></div>
@@ -69,7 +67,7 @@
         leaving.hasLeft ? leaving.to : leaving.from,
       )}
       style:opacity={leaving.hasLeft ? 0 : 1}
-      style:border-radius="{cornerPx}px"
+      style:border-radius="{preview.cornerPx}px"
       style:transition={ANDROID_BACK_TRANSITIONS.leaving}
     >
       {#if leavingCopy !== undefined}
