@@ -237,3 +237,25 @@ test("plays the whole commit from the frame the page behind arrives in, however 
   expect(justBefore).toBe("committing");
   expect(preview.phase).toBe("resting");
 });
+
+test("springs back a gesture whose back navigation is stopped before it goes ahead", () => {
+  const preview = new AndroidBackPreview(LOOK);
+  swipedTo(preview, 1);
+  preview.navigationStarted();
+
+  preview.navigationStopped();
+
+  expect(preview.phase).toBe("cancelling");
+});
+
+test("takes away a commit whose navigation is stopped before the page behind arrives", () => {
+  const preview = new AndroidBackPreview(LOOK);
+  swipedTo(preview, 1);
+  preview.navigationStarted();
+  preview.navigationGoesAhead(COPY);
+
+  preview.navigationStopped();
+
+  expect(preview.phase).toBe("resting");
+  expect(preview.commit).toBeUndefined();
+});
