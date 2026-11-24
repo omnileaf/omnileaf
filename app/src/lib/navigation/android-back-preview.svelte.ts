@@ -22,11 +22,10 @@ export interface LeavingScreen {
   readonly copy: ScreenCopy;
   readonly from: PlacedScreen;
   readonly to: PlacedScreen;
-  readonly scrim: number;
+  readonly scrimOpacity: number;
 }
 
 interface PreviewLook {
-  readonly isDark: () => boolean;
   readonly isMotionReduced: () => boolean;
 }
 
@@ -109,11 +108,7 @@ export class AndroidBackPreview {
     return backPreviewFrame(
       this.#start,
       now,
-      {
-        width: this.area.width,
-        height: this.area.height,
-        isDark: this.#look.isDark(),
-      },
+      { width: this.area.width, height: this.area.height },
       this.#look.isMotionReduced(),
     );
   }
@@ -167,7 +162,7 @@ export class AndroidBackPreview {
       to: this.#look.isMotionReduced()
         ? frame.closing
         : leavingTarget(frame.closing, this.area.width),
-      scrim: frame.scrim,
+      scrimOpacity: frame.scrimOpacity,
     };
     this.enteringFrom = frame.entering;
     this.phase = "committing";

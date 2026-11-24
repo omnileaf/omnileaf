@@ -18,7 +18,6 @@ export interface BackGestureAt {
 export interface PreviewScreen {
   readonly width: number;
   readonly height: number;
-  readonly isDark: boolean;
 }
 
 export interface PlacedScreen {
@@ -30,7 +29,7 @@ export interface PlacedScreen {
 export interface BackPreviewFrame {
   readonly closing: PlacedScreen;
   readonly entering: PlacedScreen;
-  readonly scrim: number;
+  readonly scrimOpacity: number;
 }
 
 /** Android's cross-activity back animation: `CrossActivityBackAnimation` and `DefaultCrossActivityBackAnimation` in AOSP's WindowManager Shell. */
@@ -38,8 +37,6 @@ const ANDROID_BACK = {
   smallestScale: 0.9,
   edgeMarginPx: 8,
   enteringOffsetPx: 96,
-  scrimLight: 0.2,
-  scrimDark: 0.8,
   gestureCurve: cubicBezier(0.1, 0.1, 0, 1),
 } as const;
 
@@ -80,6 +77,9 @@ export const ANDROID_BACK_TRANSITIONS = {
   leaving: `${COMMIT_TRANSFORM}, opacity ${String(ANDROID_BACK_MOTION.leavingFadeMs)}ms linear`,
   leavingScrim: `opacity ${String(ANDROID_BACK_MOTION.commitMs)}ms linear`,
 } as const;
+
+const SCRIM_SHOWN = 1;
+const SCRIM_HIDDEN = 0;
 
 export const RESTING_SCREEN: PlacedScreen = { scale: 1, x: 0, y: 0 };
 
@@ -140,7 +140,11 @@ export function backPreviewFrame(
   isReducedMotion: boolean,
 ): BackPreviewFrame {
   if (isReducedMotion) {
-    return { closing: RESTING_SCREEN, entering: RESTING_SCREEN, scrim: 0 };
+    return {
+      closing: RESTING_SCREEN,
+      entering: RESTING_SCREEN,
+      scrimOpacity: SCRIM_HIDDEN,
+    };
   }
   const eased = ANDROID_BACK.gestureCurve(clampedProgress(now.progress));
   const scale = 1 - (1 - ANDROID_BACK.smallestScale) * eased;
@@ -153,7 +157,7 @@ export function backPreviewFrame(
   return {
     closing: { scale, x: sideways * eased, y },
     entering: { scale, x: -ANDROID_BACK.enteringOffsetPx, y },
-    scrim: screen.isDark ? ANDROID_BACK.scrimDark : ANDROID_BACK.scrimLight,
+    scrimOpacity: SCRIM_SHOWN,
   };
 }
 

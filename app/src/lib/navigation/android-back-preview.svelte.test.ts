@@ -5,7 +5,7 @@ import { ANDROID_BACK_MOTION, type BackGestureAt } from "./back-preview";
 
 const ANDROID_SPRING_SETTLES_MS = 180;
 const AREA = { left: 0, top: 0, width: 400, height: 800 };
-const LOOK = { isDark: () => false, isMotionReduced: () => false };
+const LOOK = { isMotionReduced: () => false };
 const COPY = { content: {} as HTMLElement, scrollTop: 0 };
 
 function screen(): HTMLElement {
@@ -74,7 +74,7 @@ test("lets the page leave from where the gesture left it once back goes through"
   expect(preview.leaving).toMatchObject({
     from: { scale: 0.9, x: 12, y: 0 },
     to: { scale: 1, x: 128, y: 0 },
-    scrim: 0.2,
+    scrimOpacity: 1,
   });
   expect(preview.enteringFrom).toEqual({ scale: 0.9, x: -96, y: 0 });
 });

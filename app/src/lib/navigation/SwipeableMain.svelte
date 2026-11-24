@@ -15,8 +15,6 @@
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
-  import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
-
   import AndroidBackLayers from "./AndroidBackLayers.svelte";
   import { AndroidBackPreview } from "./android-back-preview.svelte";
   import { getBackGoesUp } from "./back-goes-up";
@@ -43,9 +41,7 @@
     children: Snippet;
   } = $props();
 
-  const theme = getThemeSetting();
   const androidBack = new AndroidBackPreview({
-    isDark: () => theme.resolved === "dark",
     isMotionReduced: () => prefersReducedMotion.current,
   });
 

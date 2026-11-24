@@ -22,6 +22,7 @@ const BEFORE_THE_COMMIT_ENDS_MS = COMMIT_MS - 50;
 const PAST_THE_COMMIT_MS = 100;
 const SETTINGS = "/settings";
 const SETTINGS_TITLE = "Settings";
+const LIGHT_SCRIM = "rgba(0, 0, 0, 0.2)";
 const PRIVACY_ONLY_TEXT = "Crash reports";
 
 const SPRING_BACK_SETTLED_MS = 200;
@@ -190,7 +191,10 @@ test("shows the page it goes back to behind the shrinking page, dimmed", async (
   const behind = page.locator("[data-previous-screen]");
   await expect(behind.locator("h1")).toHaveText(SETTINGS_TITLE);
   await expect(behind).not.toContainText(PRIVACY_ONLY_TEXT);
-  await expect(behind.locator("div").last()).toHaveCSS("opacity", "0.2");
+  await expect(behind.locator("div").last()).toHaveCSS(
+    "background-color",
+    LIGHT_SCRIM,
+  );
 });
 
 test("springs the page back and takes the page behind away when the gesture is cancelled", async ({

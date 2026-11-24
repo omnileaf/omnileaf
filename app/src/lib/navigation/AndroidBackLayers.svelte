@@ -3,9 +3,6 @@
   import type { AndroidBackPreview } from "./android-back-preview.svelte";
   import { type ScreenCopy, showCopy } from "./previous-screens";
 
-  /** Android dims the page behind a back gesture with black, not the theme's scrim colour. */
-  const SCRIM_COLOUR = "black";
-
   let {
     preview,
     behind,
@@ -49,9 +46,8 @@
       {/if}
     </div>
     <div
-      class="absolute inset-none"
-      style:background-color={SCRIM_COLOUR}
-      style:opacity={frame.scrim}
+      class="absolute inset-none bg-native-back-preview-scrim"
+      style:opacity={frame.scrimOpacity}
     ></div>
   </div>
 {/if}
@@ -68,9 +64,8 @@
     style:height="{preview.area.height}px"
   >
     <div
-      class="absolute inset-none"
-      style:background-color={SCRIM_COLOUR}
-      style:opacity={preview.hasLeft ? 0 : leaving.scrim}
+      class="absolute inset-none bg-native-back-preview-scrim"
+      style:opacity={preview.hasLeft ? 0 : leaving.scrimOpacity}
       style:transition={ANDROID_BACK_TRANSITIONS.leavingScrim}
     ></div>
     <div

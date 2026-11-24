@@ -12,7 +12,7 @@ import {
   previewBackGestures,
 } from "./back-preview";
 
-const SCREEN = { width: 400, height: 800, isDark: false };
+const SCREEN = { width: 400, height: 800 };
 const START: BackGestureAt = {
   progress: 0,
   edge: "left",
@@ -28,7 +28,7 @@ test("leaves the page where it is before the gesture moves, the page behind wait
   expect(backPreviewFrame(START, START, SCREEN, false)).toEqual({
     closing: { scale: 1, x: 0, y: 0 },
     entering: { scale: 1, x: -96, y: 0 },
-    scrim: 0.2,
+    scrimOpacity: 1,
   });
 });
 
@@ -91,18 +91,12 @@ test("keeps to the gesture's range however far the system reports it", () => {
   );
 });
 
-test("dims the page behind more in the dark theme", () => {
-  expect(
-    backPreviewFrame(START, at(1), { ...SCREEN, isDark: true }, false).scrim,
-  ).toBe(0.8);
-});
-
 test("neither scales nor moves either page with reduced motion", () => {
   expect(backPreviewFrame(START, at(1, { touchY: 0.9 }), SCREEN, true)).toEqual(
     {
       closing: { scale: 1, x: 0, y: 0 },
       entering: { scale: 1, x: 0, y: 0 },
-      scrim: 0,
+      scrimOpacity: 0,
     },
   );
 });
