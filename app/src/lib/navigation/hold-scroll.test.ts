@@ -18,19 +18,32 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-function screenShowingSeriesTwice(): HTMLElement {
+function linkTo(text: string): HTMLAnchorElement {
+  const link = document.createElement("a");
+  link.href = SERIES;
+  link.textContent = text;
+  link.style.display = "block";
+  link.style.height = `${String(LINK_HEIGHT_PX)}px`;
+  return link;
+}
+
+function gap(): HTMLElement {
+  const spacer = document.createElement("div");
+  spacer.style.height = `${String(GAP_PX)}px`;
+  return spacer;
+}
+
+function screenShowingSeriesTwice(): {
+  screen: HTMLElement;
+  lower: HTMLAnchorElement;
+} {
   const screen = document.createElement("main");
+  const lower = linkTo("far down");
   screen.style.height = `${String(SCREEN_HEIGHT_PX)}px`;
   screen.style.overflowY = "scroll";
-  screen.innerHTML = `
-    <div>
-      <a href="${SERIES}" style="display:block;height:${String(LINK_HEIGHT_PX)}px">near the top</a>
-      <div style="height:${String(GAP_PX)}px"></div>
-      <a href="${SERIES}" style="display:block;height:${String(LINK_HEIGHT_PX)}px">far down</a>
-      <div style="height:${String(GAP_PX)}px"></div>
-    </div>`;
+  screen.append(linkTo("near the top"), gap(), lower, gap());
   document.body.append(screen);
-  return screen;
+  return { screen, lower };
 }
 
 function linkTopWithin(screen: HTMLElement, link: Element): number {
@@ -38,20 +51,19 @@ function linkTopWithin(screen: HTMLElement, link: Element): number {
 }
 
 test("brings back the link nearest where it was left when the screen shows the same link twice", () => {
-  const screen = screenShowingSeriesTwice();
+  const { screen, lower } = screenShowingSeriesTwice();
   screen.scrollTop = SHOWN_LOWER_LINK_AT;
   const left = placeOf(screen, undefined);
   screen.scrollTop = 0;
 
   stops.push(holdScrollPlace(screen, left));
 
-  const [, lower] = screen.querySelectorAll("a");
   expect(left.anchor?.offset).toBe(LOWER_LINK_TOP - SHOWN_LOWER_LINK_AT);
   expect(linkTopWithin(screen, lower)).toBe(left.anchor?.offset);
 });
 
 test("goes back to the saved scroll position when no link shows the saved address", () => {
-  const screen = screenShowingSeriesTwice();
+  const { screen } = screenShowingSeriesTwice();
   const left = { top: 500, anchor: { href: "/series/gone", offset: 20 } };
 
   stops.push(holdScrollPlace(screen, left));
