@@ -21,6 +21,11 @@ import {
   emitFakeEvent,
   type FakeBackend,
 } from "./fake-backend.ts";
+import {
+  type HeldReads,
+  answerOnceReleased,
+  releaseEvery,
+} from "./held-reads.ts";
 import { sampleLibraryOn, serveSampleArt } from "./screens.ts";
 import { textClippedUnmarked } from "./text-fit.ts";
 
@@ -37,11 +42,6 @@ async function startPickingFrom(page: Page, title: string): Promise<void> {
     .getByRole("dialog", { name: title })
     .getByRole("button", { name: "Select", exact: true })
     .click();
-}
-
-interface HeldReads {
-  isHolding: boolean;
-  readonly waiting: PromiseWithResolvers<undefined>[];
 }
 
 interface VolumeReads extends HeldReads {
@@ -61,22 +61,6 @@ function answeredReads(): SeriesReads {
 }
 
 let seriesReads = answeredReads();
-
-async function answerOnceReleased(reads: HeldReads): Promise<void> {
-  if (!reads.isHolding) {
-    return;
-  }
-  const answer = Promise.withResolvers<undefined>();
-  reads.waiting.push(answer);
-  await answer.promise;
-}
-
-function releaseEvery(reads: HeldReads): void {
-  reads.isHolding = false;
-  for (const answer of reads.waiting.splice(0)) {
-    answer.resolve(undefined);
-  }
-}
 
 function backendWithHeldReads(): FakeBackend {
   const sample = sampleLibraryOn("android");
