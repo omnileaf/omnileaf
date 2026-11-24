@@ -72,6 +72,15 @@ export const ANDROID_BACK_SPRING = settlingOf({
   restingWithin: 0.75 / 100,
 });
 
+const COMMIT_TRANSFORM = `transform ${String(ANDROID_BACK_MOTION.commitMs)}ms ${ANDROID_BACK_MOTION.commitEasing}`;
+
+export const ANDROID_BACK_TRANSITIONS = {
+  springBack: `transform ${String(ANDROID_BACK_SPRING.durationMs)}ms ${ANDROID_BACK_SPRING.easing}`,
+  entering: COMMIT_TRANSFORM,
+  leaving: `${COMMIT_TRANSFORM}, opacity ${String(ANDROID_BACK_MOTION.leavingFadeMs)}ms linear`,
+  leavingScrim: `opacity ${String(ANDROID_BACK_MOTION.commitMs)}ms linear`,
+} as const;
+
 export const RESTING_SCREEN: PlacedScreen = { scale: 1, x: 0, y: 0 };
 
 export function placedTransform({ scale, x, y }: PlacedScreen): string {

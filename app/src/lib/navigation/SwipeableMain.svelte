@@ -20,8 +20,7 @@
   import { AndroidBackPreview } from "./android-back-preview.svelte";
   import { getBackGoesUp } from "./back-goes-up";
   import {
-    ANDROID_BACK_MOTION,
-    ANDROID_BACK_SPRING,
+    ANDROID_BACK_TRANSITIONS,
     placedTransform,
     previewBackGestures,
     RESTING_SCREEN,
@@ -134,10 +133,10 @@
   const androidMainTransition = $derived.by(() => {
     switch (androidBack.phase) {
       case "cancelling":
-        return `transform ${String(ANDROID_BACK_SPRING.durationMs)}ms ${ANDROID_BACK_SPRING.easing}`;
+        return ANDROID_BACK_TRANSITIONS.springBack;
       case "committing":
         return isEnteringSettled
-          ? `transform ${String(ANDROID_BACK_MOTION.commitMs)}ms ${ANDROID_BACK_MOTION.commitEasing}`
+          ? ANDROID_BACK_TRANSITIONS.entering
           : undefined;
       default:
         return undefined;

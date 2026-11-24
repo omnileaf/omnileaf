@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    ANDROID_BACK_MOTION,
-    ANDROID_BACK_SPRING,
-    placedTransform,
-  } from "./back-preview";
+  import { ANDROID_BACK_TRANSITIONS, placedTransform } from "./back-preview";
   import type { AndroidBackPreview } from "./android-back-preview.svelte";
   import type { ScreenCopy } from "./previous-screens";
 
@@ -27,8 +23,6 @@
   const enteringPlace = $derived(
     (isCancelling ? preview.restingFrame : frame)?.entering,
   );
-
-  const springBack = `transform ${String(ANDROID_BACK_SPRING.durationMs)}ms ${ANDROID_BACK_SPRING.easing}`;
 
   function showCopy(shown: ScreenCopy) {
     return (holder: HTMLElement) => {
@@ -67,7 +61,9 @@
       style:transform={enteringPlace === undefined
         ? undefined
         : placedTransform(enteringPlace)}
-      style:transition={isCancelling ? springBack : undefined}
+      style:transition={isCancelling
+        ? ANDROID_BACK_TRANSITIONS.springBack
+        : undefined}
       style:border-radius="{cornerPx}px"
     >
       {#if behind !== undefined}
@@ -98,15 +94,14 @@
       class="absolute inset-none"
       style:background-color={SCRIM_COLOUR}
       style:opacity={hasLeft ? 0 : leaving.scrim}
-      style:transition="opacity {ANDROID_BACK_MOTION.commitMs}ms linear"
+      style:transition={ANDROID_BACK_TRANSITIONS.leavingScrim}
     ></div>
     <div
       class="flex flex-col overflow-hidden bg-background block-full inline-full"
       style:transform={placedTransform(hasLeft ? leaving.to : leaving.from)}
       style:opacity={hasLeft ? 0 : 1}
       style:border-radius="{cornerPx}px"
-      style:transition="transform {ANDROID_BACK_MOTION.commitMs}ms {ANDROID_BACK_MOTION.commitEasing},
-      opacity {ANDROID_BACK_MOTION.leavingFadeMs}ms linear"
+      style:transition={ANDROID_BACK_TRANSITIONS.leaving}
     >
       <div class="contents" {@attach showCopy(leaving.copy)}></div>
     </div>
