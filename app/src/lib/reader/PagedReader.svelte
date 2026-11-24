@@ -1477,6 +1477,7 @@
     <KeyboardShortcuts
       isOpen={areShortcutsOpen}
       isInLibrary={book.isInLibrary}
+      backLabel={wayBack.genericLabel}
       {platform}
       onClose={() => {
         openShortcuts(false);
