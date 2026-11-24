@@ -22,8 +22,8 @@ import {
   type FakeBackend,
 } from "./fake-backend.ts";
 import {
-  type HeldReads,
   answerOnceReleased,
+  type HeldReads,
   releaseEvery,
 } from "./held-reads.ts";
 import { sampleLibraryOn, serveSampleArt } from "./screens.ts";
