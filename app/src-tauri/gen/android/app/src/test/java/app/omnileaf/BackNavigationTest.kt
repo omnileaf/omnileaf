@@ -164,4 +164,18 @@ class BackNavigationTest {
 
         assertEquals(0, leftTheApp)
     }
+
+    @Test
+    fun `takes the largest of the screen's corners, as Material's full-screen back does`() {
+        val cornerDp = largestCornerDp(listOf(60, 90, 120, 90), density = 2f)
+
+        assertEquals(60f, cornerDp)
+    }
+
+    @Test
+    fun `takes a screen without rounded corners as square`() {
+        val cornerDp = largestCornerDp(emptyList(), density = 2f)
+
+        assertEquals(0f, cornerDp)
+    }
 }

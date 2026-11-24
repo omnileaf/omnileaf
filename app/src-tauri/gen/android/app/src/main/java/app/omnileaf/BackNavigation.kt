@@ -67,9 +67,23 @@ internal fun interface BackGestures {
     fun report(gesture: BackGesture)
 }
 
+private val SCREEN_CORNERS =
+    listOf(
+        RoundedCorner.POSITION_TOP_LEFT,
+        RoundedCorner.POSITION_TOP_RIGHT,
+        RoundedCorner.POSITION_BOTTOM_RIGHT,
+        RoundedCorner.POSITION_BOTTOM_LEFT,
+    )
+
+internal fun largestCornerDp(
+    radiiPx: List<Int>,
+    density: Float,
+): Float = (radiiPx.maxOrNull() ?: 0) / density
+
 internal fun View.screenCornerDp(): Float {
-    val corner = rootWindowInsets?.getRoundedCorner(RoundedCorner.POSITION_TOP_LEFT) ?: return 0f
-    return corner.radius / resources.displayMetrics.density
+    val insets = rootWindowInsets ?: return 0f
+    val radiiPx = SCREEN_CORNERS.map { insets.getRoundedCorner(it)?.radius ?: 0 }
+    return largestCornerDp(radiiPx, resources.displayMetrics.density)
 }
 
 internal class ScreenShape(
