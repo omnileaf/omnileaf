@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ANDROID_BACK_TRANSITIONS, placedTransform } from "./back-preview";
   import type { AndroidBackPreview } from "./android-back-preview.svelte";
-  import type { ScreenCopy } from "./previous-screens";
+  import { type ScreenCopy, showCopy } from "./previous-screens";
 
   /** Android dims the page behind a back gesture with black, not the theme's scrim colour. */
   const SCRIM_COLOUR = "black";
@@ -23,16 +23,6 @@
   const enteringPlace = $derived(
     (isCancelling ? preview.restingFrame : frame)?.entering,
   );
-
-  function showCopy(shown: ScreenCopy) {
-    return (holder: HTMLElement) => {
-      holder.append(shown.content);
-      shown.content.scrollTop = shown.scrollTop;
-      return () => {
-        shown.content.remove();
-      };
-    };
-  }
 
   function startLeaving() {
     hasLeft = false;

@@ -1,8 +1,26 @@
 import { createContext } from "svelte";
+import type { Attachment } from "svelte/attachments";
 
 export interface ScreenCopy {
   readonly content: HTMLElement;
   readonly scrollTop: number;
+}
+
+export interface ScreenArea {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export function showCopy(shown: ScreenCopy): Attachment<HTMLElement> {
+  return (holder) => {
+    holder.append(shown.content);
+    shown.content.scrollTop = shown.scrollTop;
+    return () => {
+      shown.content.remove();
+    };
+  };
 }
 
 export class PreviousScreens {

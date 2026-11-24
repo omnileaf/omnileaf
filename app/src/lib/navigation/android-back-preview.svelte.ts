@@ -10,17 +10,10 @@ import {
   leavingTarget,
   type PlacedScreen,
 } from "./back-preview";
-import type { ScreenCopy } from "./previous-screens";
+import type { ScreenArea, ScreenCopy } from "./previous-screens";
 
 export type PreviewPhase =
   "resting" | "following" | "cancelling" | "committing";
-
-export interface PreviewArea {
-  readonly left: number;
-  readonly top: number;
-  readonly width: number;
-  readonly height: number;
-}
 
 export interface LeavingScreen {
   readonly copy: ScreenCopy;
@@ -36,7 +29,7 @@ interface PreviewLook {
 
 export class AndroidBackPreview {
   phase: PreviewPhase = $state("resting");
-  area: PreviewArea | undefined = $state();
+  area: ScreenArea | undefined = $state();
   #start: BackGestureAt | undefined = $state();
   #now: BackGestureAt | undefined = $state();
   enteringFrom: PlacedScreen | undefined = $state();

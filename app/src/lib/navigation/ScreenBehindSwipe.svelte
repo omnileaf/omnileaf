@@ -1,13 +1,10 @@
 <script lang="ts">
   import { SETTLING_MOTION } from "./back-swipe";
-  import type { ScreenCopy } from "./previous-screens";
-
-  interface Area {
-    readonly left: number;
-    readonly top: number;
-    readonly width: number;
-    readonly height: number;
-  }
+  import {
+    type ScreenArea,
+    type ScreenCopy,
+    showCopy,
+  } from "./previous-screens";
 
   let {
     area,
@@ -16,22 +13,12 @@
     dimming,
     isSettling,
   }: {
-    area: Area;
+    area: ScreenArea;
     copy: ScreenCopy | undefined;
     offset: number;
     dimming: number;
     isSettling: boolean;
   } = $props();
-
-  function showCopy(shown: ScreenCopy) {
-    return (holder: HTMLElement) => {
-      holder.append(shown.content);
-      shown.content.scrollTop = shown.scrollTop;
-      return () => {
-        shown.content.remove();
-      };
-    };
-  }
 </script>
 
 <div
