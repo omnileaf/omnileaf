@@ -1166,7 +1166,7 @@
 <ReaderBackSwipe
   swipeState={backSwipe}
   takenEdge={nextPageDragEdge}
-  backPath={wayBack.href}
+  backPath={wayBack.path}
   onBack={leaveReader}
 >
   <main
