@@ -14,7 +14,7 @@ declare global {
       folderGuide?: boolean;
       readerOpensAtEnd?: boolean;
       readerJumped?: boolean;
-      readerOrigin?: OriginPage;
+      readerOrigin?: OriginPage | null;
       libraryTag?: string;
     }
   }

@@ -106,6 +106,7 @@
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { followVolumeKeys, hasVolumeKeys } from "#lib/reader/volume-keys.ts";
   import { readerLeaving } from "#lib/reader/reader-leaving.ts";
+  import { moveWithinReader } from "#lib/reader/reader-origin.ts";
   import {
     type OriginPage,
     readerWayBack,
@@ -641,7 +642,9 @@
   }
 
   function startNextBook(): void {
-    void goto(nextHref ?? seriesHref, { replaceState: nextHref !== undefined });
+    void (nextHref === undefined
+      ? goto(seriesHref)
+      : moveWithinReader(nextHref));
   }
 
   function goStraightOn(): void {
@@ -656,10 +659,7 @@
     notices.offerUndo({
       title: m.reader_now_reading({ title: named.next.title }),
       undo: () => {
-        void goto(finished, {
-          replaceState: true,
-          state: { readerOpensAtEnd: true },
-        });
+        void moveWithinReader(finished, { readerOpensAtEnd: true });
       },
     });
   }

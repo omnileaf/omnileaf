@@ -97,7 +97,7 @@
       platform={data.appInfo.platform}
       opensAtEnd={page.state.readerOpensAtEnd === true}
       hasJumped={page.state.readerJumped === true}
-      origin={page.state.readerOrigin}
+      origin={page.state.readerOrigin ?? undefined}
     />
   {/key}
 {:else if shown.kind === "unsupported"}

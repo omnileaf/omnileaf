@@ -9,6 +9,10 @@ const HISTORY = {
   href: "/history" as ResolvedPathname,
 };
 const LIBRARY = { pathname: "/", href: "/" as ResolvedPathname };
+const ANOTHER_BOOK = {
+  pathname: "/read/b2",
+  href: "/read/b2" as ResolvedPathname,
+};
 const SEARCH = {
   pathname: "/search",
   href: "/search?q=sample" as ResolvedPathname,
@@ -24,23 +28,31 @@ const SERIES = {
 };
 
 test("remembers the page the reader was opened from", () => {
-  expect(originOnArrival({ kind: "fromPage", page: HISTORY })).toBe(HISTORY);
-});
-
-test("hands the origin of the book it moves on from to the next book", () => {
-  expect(originOnArrival({ kind: "fromReader", origin: HISTORY })).toBe(
+  expect(originOnArrival({ kind: "fromPage", page: HISTORY }, undefined)).toBe(
     HISTORY,
   );
 });
 
-test("has no origin to hand on from a book that was opened with none", () => {
+test("remembers another book as the page the reader was opened from", () => {
   expect(
-    originOnArrival({ kind: "fromReader", origin: undefined }),
+    originOnArrival({ kind: "fromPage", page: ANOTHER_BOOK }, undefined),
+  ).toBe(ANOTHER_BOOK);
+});
+
+test("keeps the origin an entry already carries over the page it came from", () => {
+  expect(
+    originOnArrival({ kind: "fromPage", page: ANOTHER_BOOK }, HISTORY),
+  ).toBeUndefined();
+});
+
+test("keeps an entry opened from nowhere opened from nowhere", () => {
+  expect(
+    originOnArrival({ kind: "fromPage", page: ANOTHER_BOOK }, null),
   ).toBeUndefined();
 });
 
 test("writes no origin when history returns to the reader", () => {
-  expect(originOnArrival({ kind: "returned" })).toBeUndefined();
+  expect(originOnArrival({ kind: "returned" }, undefined)).toBeUndefined();
 });
 
 test("goes back to the series page it was opened from, named by its series", () => {
@@ -49,6 +61,7 @@ test("goes back to the series page it was opened from, named by its series", () 
     href: "/series/a1",
     path: "/series/a1",
     label: "Back to Sample Series 04",
+    fallbackHref: "/series/a1",
     genericLabel: "Back to the series",
     isSeries: true,
   });
@@ -60,6 +73,7 @@ test("goes back to the library it was opened from", () => {
     href: "/",
     path: "/",
     label: "Back to the library",
+    fallbackHref: "/series/a1",
     genericLabel: "Back to the library",
     isSeries: false,
   });
@@ -71,6 +85,7 @@ test("goes back to History it was opened from", () => {
     href: "/history",
     path: "/history",
     label: "Back to History",
+    fallbackHref: "/series/a1",
     genericLabel: "Back to History",
     isSeries: false,
   });
@@ -82,6 +97,7 @@ test("keeps the search of the page it was opened from in its link but not in its
     href: "/search?q=sample",
     path: "/search",
     label: "Back",
+    fallbackHref: "/series/a1",
     genericLabel: "Back",
     isSeries: false,
   });
@@ -93,6 +109,7 @@ test("puts the series page in its place when there is nothing to go back to", ()
     href: "/series/a1",
     path: "/series/a1",
     label: "Back to Sample Series 04",
+    fallbackHref: "/series/a1",
     genericLabel: "Back to the series",
     isSeries: true,
   });
@@ -110,6 +127,7 @@ test("puts the library in its place for a book outside the library", () => {
     href: "/",
     path: "/",
     label: "Back to the library",
+    fallbackHref: "/",
     genericLabel: "Back to the library",
     isSeries: true,
   });

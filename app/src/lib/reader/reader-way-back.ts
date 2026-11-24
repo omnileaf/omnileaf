@@ -9,10 +9,6 @@ export interface OriginPage {
 
 export type ReaderArrival =
   | { readonly kind: "returned" }
-  | {
-      readonly kind: "fromReader";
-      readonly origin: OriginPage | undefined;
-    }
   | { readonly kind: "fromPage"; readonly page: OriginPage };
 
 export interface ReaderSeries {
@@ -25,6 +21,7 @@ export interface ReaderWayBack {
   readonly kind: "history" | "replace";
   readonly href: ResolvedPathname;
   readonly path: string;
+  readonly fallbackHref: ResolvedPathname;
   readonly label: string;
   readonly genericLabel: string;
   readonly isSeries: boolean;
@@ -37,15 +34,11 @@ const NAMED_ORIGINS: Readonly<Record<string, () => string>> = {
 
 export function originOnArrival(
   arrival: ReaderArrival,
+  kept: OriginPage | null | undefined,
 ): OriginPage | undefined {
-  switch (arrival.kind) {
-    case "returned":
-      return undefined;
-    case "fromReader":
-      return arrival.origin;
-    case "fromPage":
-      return arrival.page;
-  }
+  return arrival.kind === "fromPage" && kept === undefined
+    ? arrival.page
+    : undefined;
 }
 
 function seriesLabel(series: ReaderSeries): string {
@@ -75,6 +68,7 @@ function wayBackTo(
     kind,
     href: page.href,
     path: page.pathname,
+    fallbackHref: series.href,
     label: other ?? seriesLabel(series),
     genericLabel: other ?? genericSeriesLabel(series),
     isSeries,

@@ -426,6 +426,20 @@ test.describe(
       await expect(page).toHaveURL(SEARCH_WITH_QUERY);
     });
 
+    test("goes back to the book another book was opened over", async ({
+      page,
+      platform,
+    }) => {
+      await openFromHistory(page, platform);
+      await followInApp(page, NEXT_READER);
+
+      const back = page.getByRole("link", { name: "Back", exact: true });
+      await expect(back).toHaveAttribute("href", READER);
+      await pressLink(back, platform);
+
+      await expect(page).toHaveURL(READER);
+    });
+
     test("names the Back to History row in the keyboard shortcuts", async ({
       page,
       platform,
