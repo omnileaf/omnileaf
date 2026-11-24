@@ -1,3 +1,8 @@
+#![expect(
+    dead_code,
+    reason = "each test file reads, paces or changes only some of the tree, so the helpers it leaves out go unused there"
+)]
+
 use std::{
     fmt,
     fs::File,

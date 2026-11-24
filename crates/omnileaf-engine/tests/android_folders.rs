@@ -5,10 +5,6 @@
 
 mod stepped_clock;
 mod support;
-#[expect(
-    dead_code,
-    reason = "these tests never read a generated library or wait a set time to open"
-)]
 mod tree_of_folder;
 
 use std::{

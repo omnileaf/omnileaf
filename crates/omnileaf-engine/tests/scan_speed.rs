@@ -4,10 +4,6 @@
 )]
 
 mod support;
-#[expect(
-    dead_code,
-    reason = "these tests never lose access to a tree, change its archives, count the files opened, wait for company or time out, nor read the sample library"
-)]
 mod tree_of_folder;
 
 use std::time::Duration;
