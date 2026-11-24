@@ -31,11 +31,7 @@ test.use({
   },
 });
 
-test.beforeEach(({ page }) => {
-  test.skip(
-    viewportOf(page).width >= EXPANDED_MIN_WIDTH,
-    "Settings opens its pages beside the list on a wide screen",
-  );
+test.beforeEach(() => {
   gestures = undefined;
 });
 
@@ -59,6 +55,10 @@ function swipe(
 }
 
 async function openPrivacyFromSettings(page: Page): Promise<void> {
+  test.skip(
+    viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+    "Settings opens its pages beside the list on a wide screen",
+  );
   await page.goto(SETTINGS);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.evaluate((href) => {
