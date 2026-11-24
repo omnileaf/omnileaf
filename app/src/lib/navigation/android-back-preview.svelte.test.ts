@@ -68,32 +68,32 @@ test("lets the page leave from where the gesture left it once back goes through"
   const preview = new AndroidBackPreview(LOOK);
   swipedTo(preview, 1);
 
-  preview.leave(COPY);
+  preview.navigationGoesAhead(COPY);
 
   expect(preview.phase).toBe("committing");
-  expect(preview.leaving).toMatchObject({
+  expect(preview.commit).toMatchObject({
     from: { scale: 0.9, x: 12, y: 0 },
     to: { scale: 1, x: 128, y: 0 },
     scrimOpacity: 1,
   });
-  expect(preview.enteringFrom).toEqual({ scale: 0.9, x: -96, y: 0 });
+  expect(preview.commit?.enteringFrom).toEqual({ scale: 0.9, x: -96, y: 0 });
 });
 
 test("rests once the page has finished leaving", () => {
   const preview = new AndroidBackPreview(LOOK);
   swipedTo(preview, 1);
-  preview.leave(COPY);
+  preview.navigationGoesAhead(COPY);
 
   vi.advanceTimersByTime(ANDROID_BACK_MOTION.commitMs);
 
   expect(preview.phase).toBe("resting");
-  expect(preview.leaving).toBeUndefined();
+  expect(preview.commit).toBeUndefined();
 });
 
 test("has no page to let leave when no gesture was moving", () => {
   const preview = new AndroidBackPreview(LOOK);
 
-  preview.leave(COPY);
+  preview.navigationGoesAhead(COPY);
 
   expect(preview.phase).toBe("resting");
 });
@@ -124,13 +124,13 @@ test("follows no moves of a gesture that has ended until another starts", () => 
 test("takes the page that was leaving away when another gesture starts", () => {
   const preview = new AndroidBackPreview(LOOK);
   swipedTo(preview, 1);
-  preview.leave(COPY);
+  preview.navigationGoesAhead(COPY);
 
   preview.follow({ kind: "started", at: at(0) }, screen());
 
   expect(preview.phase).toBe("following");
-  expect(preview.leaving).toBeUndefined();
-  expect(preview.enteringFrom).toBeUndefined();
+  expect(preview.commit).toBeUndefined();
+  expect(preview.commit?.enteringFrom).toBeUndefined();
 });
 
 test("lets the page leave where it stands with reduced motion", () => {
@@ -140,18 +140,18 @@ test("lets the page leave where it stands with reduced motion", () => {
   });
   swipedTo(preview, 1);
 
-  preview.leave(COPY);
+  preview.navigationGoesAhead(COPY);
 
-  expect(preview.leaving?.to).toEqual({ scale: 1, x: 0, y: 0 });
+  expect(preview.commit?.to).toEqual({ scale: 1, x: 0, y: 0 });
 });
 
 test("keeps following a gesture that started while the page went back", () => {
   const preview = new AndroidBackPreview(LOOK);
   swipedTo(preview, 1);
-  preview.leave(COPY);
+  preview.navigationGoesAhead(COPY);
   preview.follow({ kind: "started", at: at(0) }, screen());
 
-  preview.arrived();
+  preview.navigationArrived();
 
   expect(preview.phase).toBe("following");
 });

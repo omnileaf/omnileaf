@@ -99,17 +99,16 @@
       previousScreens.keep(page.url.pathname, swiped.element);
     }
     complete.catch(() => {
-      androidBack.stayed();
+      androidBack.navigationStopped();
     });
   });
 
   onNavigate(({ type, from }) => {
-    androidBack.navigating();
-    const leavingCopy =
-      from === null ? undefined : previousScreens.of(from.url.pathname);
-    if (type === "popstate" && leavingCopy !== undefined) {
-      androidBack.leave(leavingCopy);
-    }
+    androidBack.navigationGoesAhead(
+      type === "popstate" && from !== null
+        ? previousScreens.of(from.url.pathname)
+        : undefined,
+    );
   });
 
   function isArrival(type: NavigationType): boolean {
@@ -128,7 +127,7 @@
         ? undefined
         : holdScrollTop(swiped.element, landedOn.scrollTop);
     swiped.arrived();
-    androidBack.arrived();
+    androidBack.navigationArrived();
     previousScreens.forgetAllButAbove(page.url.pathname);
   });
 

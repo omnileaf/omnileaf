@@ -15,6 +15,7 @@
 
   const frame = $derived(preview.frame);
   const isCancelling = $derived(preview.phase === "cancelling");
+  const leavingCopy = $derived(preview.commit?.copy);
   const enteringPlace = $derived(
     (isCancelling ? preview.restingFrame : frame)?.entering,
   );
@@ -51,8 +52,8 @@
     ></div>
   </div>
 {/if}
-{#if preview.area !== undefined && preview.leaving !== undefined}
-  {@const leaving = preview.leaving}
+{#if preview.area !== undefined && preview.commit !== undefined}
+  {@const leaving = preview.commit}
   <div
     aria-hidden="true"
     inert
@@ -65,19 +66,21 @@
   >
     <div
       class="absolute inset-none bg-native-back-preview-scrim"
-      style:opacity={preview.hasLeft ? 0 : leaving.scrimOpacity}
+      style:opacity={leaving.hasLeft ? 0 : leaving.scrimOpacity}
       style:transition={ANDROID_BACK_TRANSITIONS.leavingScrim}
     ></div>
     <div
       class="flex flex-col overflow-hidden bg-background block-full inline-full"
       style:transform={placedTransform(
-        preview.hasLeft ? leaving.to : leaving.from,
+        leaving.hasLeft ? leaving.to : leaving.from,
       )}
-      style:opacity={preview.hasLeft ? 0 : 1}
+      style:opacity={leaving.hasLeft ? 0 : 1}
       style:border-radius="{cornerPx}px"
       style:transition={ANDROID_BACK_TRANSITIONS.leaving}
     >
-      <div class="contents" {@attach showCopy(leaving.copy)}></div>
+      {#if leavingCopy !== undefined}
+        <div class="contents" {@attach showCopy(leavingCopy)}></div>
+      {/if}
     </div>
   </div>
 {/if}

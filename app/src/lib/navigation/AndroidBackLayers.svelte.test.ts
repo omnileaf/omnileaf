@@ -143,7 +143,7 @@ test("plays the page's leave on Android's emphasized curve", async () => {
   preview.follow({ kind: "started", at: at(0) }, page);
   preview.follow({ kind: "moved", at: at(0.6) }, page);
 
-  preview.leave(COPY);
+  preview.navigationGoesAhead(COPY);
   flushSync();
 
   const leavingPage = layers.querySelector<HTMLElement>(
@@ -161,7 +161,7 @@ test("shows each leave at its start before it plays", async () => {
   const layers = await shownWith(preview);
   preview.follow({ kind: "started", at: at(0) }, page);
   preview.follow({ kind: "moved", at: at(0.6) }, page);
-  preview.leave(COPY);
+  preview.navigationGoesAhead(COPY);
   flushSync();
   vi.advanceTimersByTime(ANDROID_BACK_MOTION.commitMs);
   flushSync();
@@ -169,7 +169,7 @@ test("shows each leave at its start before it plays", async () => {
 
   preview.follow({ kind: "started", at: at(0) }, page);
   preview.follow({ kind: "moved", at: at(0.6) }, page);
-  preview.leave(COPY);
+  preview.navigationGoesAhead(COPY);
   flushSync();
 
   expect(shownStyles().filter((style) => style.includes(GONE))).toEqual([]);

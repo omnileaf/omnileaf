@@ -15,37 +15,80 @@ import {
 } from "./back-preview";
 import type { ScreenArea, ScreenCopy } from "./previous-screens";
 
-export type PreviewPhase =
-  "resting" | "following" | "cancelling" | "committing";
-
-export interface LeavingScreen {
+interface Commit {
   readonly copy: ScreenCopy;
   readonly from: PlacedScreen;
   readonly to: PlacedScreen;
+  readonly enteringFrom: PlacedScreen;
   readonly scrimOpacity: number;
+  readonly hasLeft: boolean;
+  readonly isEnteringSettled: boolean;
 }
+
+type Motion =
+  | { readonly kind: "resting" }
+  | { readonly kind: "following" }
+  | { readonly kind: "cancelling" }
+  | { readonly kind: "committing"; readonly commit: Commit };
 
 interface PreviewLook {
   readonly isMotionReduced: () => boolean;
 }
 
+export interface PreviewScheduler {
+  readonly after: (ms: number, run: () => void) => () => void;
+  readonly nextFrame: (run: () => void) => () => void;
+}
+
+const BROWSER_SCHEDULER: PreviewScheduler = {
+  after: (ms, run) => {
+    const timer = setTimeout(run, ms);
+    return () => {
+      clearTimeout(timer);
+    };
+  },
+  nextFrame: (run) => {
+    const frame = requestAnimationFrame(run);
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  },
+};
+
+const RESTING: Motion = { kind: "resting" };
+const FOLLOWING: Motion = { kind: "following" };
+const CANCELLING: Motion = { kind: "cancelling" };
+
 export class AndroidBackPreview {
-  phase: PreviewPhase = $state("resting");
-  area: ScreenArea | undefined = $state();
+  #motion: Motion = $state(RESTING);
+  #area: ScreenArea | undefined = $state();
   #start: BackGestureAt | undefined = $state();
   #now: BackGestureAt | undefined = $state();
-  enteringFrom: PlacedScreen | undefined = $state();
-  leaving: LeavingScreen | undefined = $state();
-  hasLeft = $state(false);
-  #isEnteringSettled = $state(false);
   readonly #look: PreviewLook;
-  #settled: ReturnType<typeof setTimeout> | undefined;
-  #nextFrames: readonly number[] = [];
+  readonly #scheduler: PreviewScheduler;
+  #stopSettling: (() => void) | undefined;
+  #pendingFrames: readonly (() => void)[] = [];
   #gesturesStarted = 0;
   #gesturesBeforeNavigating = 0;
 
-  constructor(look: PreviewLook) {
+  constructor(
+    look: PreviewLook,
+    scheduler: PreviewScheduler = BROWSER_SCHEDULER,
+  ) {
     this.#look = look;
+    this.#scheduler = scheduler;
+  }
+
+  get phase(): Motion["kind"] {
+    return this.#motion.kind;
+  }
+
+  get area(): ScreenArea | undefined {
+    return this.#area;
+  }
+
+  get commit(): Commit | undefined {
+    return this.#motion.kind === "committing" ? this.#motion.commit : undefined;
   }
 
   get cornerPx(): number {
@@ -56,8 +99,13 @@ export class AndroidBackPreview {
     return this.#frameAt(this.#now);
   }
 
+  get restingFrame(): BackPreviewFrame | undefined {
+    return this.#frameAt(this.#start);
+  }
+
   get mainTransform(): string | undefined {
-    switch (this.phase) {
+    const motion = this.#motion;
+    switch (motion.kind) {
       case "following":
         return this.frame === undefined
           ? undefined
@@ -66,49 +114,46 @@ export class AndroidBackPreview {
         return placedTransform(RESTING_SCREEN);
       case "committing":
         return placedTransform(
-          this.#isEnteringSettled
+          motion.commit.isEnteringSettled
             ? RESTING_SCREEN
-            : (this.enteringFrom ?? RESTING_SCREEN),
+            : motion.commit.enteringFrom,
         );
       case "resting":
         return undefined;
       default:
-        return assertNever(this.phase);
+        return assertNever(motion);
     }
   }
 
   get mainTransition(): string | undefined {
-    switch (this.phase) {
+    const motion = this.#motion;
+    switch (motion.kind) {
       case "cancelling":
         return ANDROID_BACK_TRANSITIONS.springBack;
       case "committing":
-        return this.#isEnteringSettled
+        return motion.commit.isEnteringSettled
           ? ANDROID_BACK_TRANSITIONS.entering
           : undefined;
       case "following":
       case "resting":
         return undefined;
       default:
-        return assertNever(this.phase);
+        return assertNever(motion);
     }
-  }
-
-  get restingFrame(): BackPreviewFrame | undefined {
-    return this.#frameAt(this.#start);
   }
 
   #frameAt(now: BackGestureAt | undefined): BackPreviewFrame | undefined {
     if (
       this.#start === undefined ||
       now === undefined ||
-      this.area === undefined
+      this.#area === undefined
     ) {
       return undefined;
     }
     return backPreviewFrame(
       this.#start,
       now,
-      { width: this.area.width, height: this.area.height },
+      { width: this.#area.width, height: this.#area.height },
       this.#look.isMotionReduced(),
     );
   }
@@ -119,7 +164,7 @@ export class AndroidBackPreview {
         this.#begin(step.at, screen);
         return;
       case "moved":
-        if (this.phase === "following") {
+        if (this.#motion.kind === "following") {
           this.#now = step.at;
         }
         return;
@@ -131,115 +176,119 @@ export class AndroidBackPreview {
     }
   }
 
-  #begin(at: BackGestureAt, screen: HTMLElement): void {
-    this.#gesturesStarted += 1;
-    this.#clearSettling();
-    this.area ??= screen.getBoundingClientRect();
-    this.leaving = undefined;
-    this.enteringFrom = undefined;
-    this.#start = at;
-    this.#now = at;
-    this.phase = "following";
-  }
-
-  navigating(): void {
+  navigationGoesAhead(leaving: ScreenCopy | undefined): void {
     this.#gesturesBeforeNavigating = this.#gesturesStarted;
-  }
-
-  leave(copy: ScreenCopy): void {
-    this.navigating();
-    const frame = this.frame;
-    if (
-      this.phase !== "following" ||
-      frame === undefined ||
-      this.area === undefined
-    ) {
-      return;
+    if (leaving !== undefined) {
+      this.#leave(leaving);
     }
-    this.leaving = {
-      copy,
-      from: frame.closing,
-      to: this.#look.isMotionReduced()
-        ? frame.closing
-        : leavingTarget(frame.closing, this.area.width),
-      scrimOpacity: frame.scrimOpacity,
-    };
-    this.enteringFrom = frame.entering;
-    this.phase = "committing";
-    this.#isEnteringSettled = false;
-    this.hasLeft = false;
-    this.#onNextFrame(() => {
-      this.hasLeft = true;
-    });
-    this.#settleAfter(ANDROID_BACK_MOTION.commitMs);
   }
 
-  stayed(): void {
+  navigationStopped(): void {
     this.#cancel();
   }
 
-  arrived(): void {
+  navigationArrived(): void {
     if (this.#gesturesStarted !== this.#gesturesBeforeNavigating) {
       return;
     }
-    if (this.phase === "following") {
+    if (this.#motion.kind === "following") {
       this.#rest();
       return;
     }
-    if (this.phase === "committing") {
+    if (this.#motion.kind === "committing") {
       this.#onNextFrame(() => {
-        this.#isEnteringSettled = true;
+        this.#updateCommit({ isEnteringSettled: true });
       });
     }
   }
 
-  #onNextFrame(run: () => void): void {
-    const frame = requestAnimationFrame(() => {
-      this.#nextFrames = this.#nextFrames.filter(
-        (pending) => pending !== frame,
-      );
-      run();
-    });
-    this.#nextFrames = [...this.#nextFrames, frame];
+  #begin(at: BackGestureAt, screen: HTMLElement): void {
+    this.#gesturesStarted += 1;
+    this.#stopTimers();
+    this.#area ??= screen.getBoundingClientRect();
+    this.#start = at;
+    this.#now = at;
+    this.#motion = FOLLOWING;
   }
 
-  #cancelNextFrames(): void {
-    for (const frame of this.#nextFrames) {
-      cancelAnimationFrame(frame);
+  #leave(copy: ScreenCopy): void {
+    const frame = this.frame;
+    if (
+      this.#motion.kind !== "following" ||
+      frame === undefined ||
+      this.#area === undefined
+    ) {
+      return;
     }
-    this.#nextFrames = [];
+    this.#motion = {
+      kind: "committing",
+      commit: {
+        copy,
+        from: frame.closing,
+        to: this.#look.isMotionReduced()
+          ? frame.closing
+          : leavingTarget(frame.closing, this.#area.width),
+        enteringFrom: frame.entering,
+        scrimOpacity: frame.scrimOpacity,
+        hasLeft: false,
+        isEnteringSettled: false,
+      },
+    };
+    this.#onNextFrame(() => {
+      this.#updateCommit({ hasLeft: true });
+    });
+    this.#settleAfter(ANDROID_BACK_MOTION.commitMs);
+  }
+
+  #updateCommit(change: Partial<Commit>): void {
+    const motion = this.#motion;
+    if (motion.kind === "committing") {
+      this.#motion = {
+        kind: "committing",
+        commit: { ...motion.commit, ...change },
+      };
+    }
   }
 
   #cancel(): void {
-    if (this.phase !== "following") {
+    if (this.#motion.kind !== "following") {
       return;
     }
-    this.phase = "cancelling";
+    this.#motion = CANCELLING;
     this.#settleAfter(ANDROID_BACK_SPRING.durationMs);
   }
 
-  #settleAfter(ms: number): void {
-    this.#clearSettling();
-    this.#settled = setTimeout(() => {
-      this.#rest();
-    }, ms);
+  #onNextFrame(run: () => void): void {
+    const cancel = this.#scheduler.nextFrame(() => {
+      this.#pendingFrames = this.#pendingFrames.filter(
+        (pending) => pending !== cancel,
+      );
+      run();
+    });
+    this.#pendingFrames = [...this.#pendingFrames, cancel];
   }
 
-  #clearSettling(): void {
-    clearTimeout(this.#settled);
-    this.#settled = undefined;
+  #settleAfter(ms: number): void {
+    this.#stopSettling?.();
+    this.#stopSettling = this.#scheduler.after(ms, () => {
+      this.#rest();
+    });
+  }
+
+  #stopTimers(): void {
+    this.#stopSettling?.();
+    this.#stopSettling = undefined;
+    for (const cancel of this.#pendingFrames) {
+      cancel();
+    }
+    this.#pendingFrames = [];
   }
 
   #rest(): void {
-    this.#clearSettling();
-    this.#cancelNextFrames();
-    this.hasLeft = false;
-    this.#isEnteringSettled = false;
-    this.phase = "resting";
+    this.#stopTimers();
+    this.#motion = RESTING;
     this.#start = undefined;
     this.#now = undefined;
-    this.leaving = undefined;
-    this.enteringFrom = undefined;
-    this.area = undefined;
+    this.#area = undefined;
   }
 }
