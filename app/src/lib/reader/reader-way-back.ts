@@ -32,7 +32,7 @@ export interface ReaderWayBack {
 
 const NAMED_ORIGINS: Readonly<Record<string, () => string>> = {
   [SECTION_PATHNAMES.library]: m.reader_back_label,
-  [SECTION_PATHNAMES.history]: m.history_back,
+  [SECTION_PATHNAMES.history]: m.reader_back_to_history,
 };
 
 export function originOnArrival(
@@ -70,14 +70,13 @@ function wayBackTo(
   series: ReaderSeries,
 ): ReaderWayBack {
   const isSeries = page.pathname === series.href;
+  const other = isSeries ? undefined : otherLabel(page.pathname);
   return {
     kind,
     href: page.href,
     path: page.pathname,
-    label: isSeries ? seriesLabel(series) : otherLabel(page.pathname),
-    genericLabel: isSeries
-      ? genericSeriesLabel(series)
-      : otherLabel(page.pathname),
+    label: other ?? seriesLabel(series),
+    genericLabel: other ?? genericSeriesLabel(series),
     isSeries,
   };
 }
