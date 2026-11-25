@@ -57,9 +57,14 @@ const CARD_LOOKS = {
   windows: WINDOWS_LOOK,
 } satisfies Record<Platform, ReportLook>;
 
+const REPORT_LOOKS = {
+  flush: () => FLUSH_LOOK,
+  card: (platform) => CARD_LOOKS[platform],
+} satisfies Record<ReportRowsLook, (platform: Platform) => ReportLook>;
+
 export function reportLook(
   platform: Platform,
   rowsLook: ReportRowsLook,
 ): ReportLook {
-  return rowsLook === "flush" ? FLUSH_LOOK : CARD_LOOKS[platform];
+  return REPORT_LOOKS[rowsLook](platform);
 }
