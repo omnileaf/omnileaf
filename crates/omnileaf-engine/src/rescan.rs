@@ -17,7 +17,8 @@ use crate::{
     library_layout::Layout,
     library_removal::{RemovedBooks, marked_to_leave_out},
     rescan_plan::{Forgetting, Plan, ReadBook, Replacement, ToRead},
-    scan::{Target, saturating_u32},
+    saturating_u32::saturating_u32,
+    scan_target::Target,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]

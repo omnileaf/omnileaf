@@ -1,6 +1,4 @@
 use std::{
-    error::Error,
-    io, iter,
     num::NonZeroUsize,
     path::Path,
     sync::{
@@ -21,11 +19,14 @@ use crate::{
     byte_budget::ByteBudget,
     decode_permits::DecodePermits,
     device_class::{IS_MOBILE, MEBIBYTE},
+    file_stamp::{FileStamp, page_bytes},
     library_layout::{FoundBook, folder_name},
     overlapped_reads::read_at_most,
     placement::{Placement, place_book},
-    scan::{FileStamp, Target, UnreadableBook, saturating_u32, warn_unreadable},
+    saturating_u32::saturating_u32,
+    scan_target::Target,
     series_naming::series_named_in_files,
+    unreadable_book::{UnreadableBook, warn_unreadable},
 };
 
 pub(crate) const BOOKS_PER_BATCH: usize = 32;
@@ -206,25 +207,11 @@ impl ParsedBook {
     }
 }
 
-pub(crate) fn page_bytes(book: &Book) -> u64 {
-    book.pages().iter().map(|page| page.size).sum()
-}
-
-impl UnreadableBook {
-    fn has_timed_out(&self) -> bool {
-        iter::successors(Some(self as &(dyn Error + 'static)), |&error| {
-            error.source()
-        })
-        .filter_map(|error| error.downcast_ref::<io::Error>())
-        .any(|error| error.kind() == io::ErrorKind::TimedOut)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::{
         fs::{self, File},
-        mem,
+        io, mem,
         path::PathBuf,
         sync::{
             Mutex,
