@@ -30,10 +30,7 @@ use crate::{
 
 pub(crate) const BOOKS_PER_BATCH: usize = 32;
 /// Each open through Android's storage access framework waits on a round trip to the documents provider, so a scan reads this many books at once to overlap those waits.
-const BOOKS_READ_AT_ONCE: NonZeroUsize = match NonZeroUsize::new(8) {
-    Some(books) => books,
-    None => ONE_AT_A_TIME,
-};
+const BOOKS_READ_AT_ONCE: NonZeroUsize = NonZeroUsize::MIN.saturating_add(7);
 /// Android copies a document its provider can only stream into the cache before it is read, so a phone keeps at most this many listed bytes of books open at once.
 const BOOK_BYTES_OPEN_AT_ONCE: u64 = (if IS_MOBILE {
     1024
