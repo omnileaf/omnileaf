@@ -27,7 +27,9 @@ use tokio::{task::spawn_blocking, time::timeout};
 use crate::{
     BookId, LibraryError, SeriesId,
     file_disposal::{Disposal, DisposalFailure, FileDisposal},
-    scan::{FileStamp, UnreadableBook, saturating_u32},
+    file_stamp::FileStamp,
+    saturating_u32::saturating_u32,
+    unreadable_book::UnreadableBook,
 };
 
 const FILE_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
