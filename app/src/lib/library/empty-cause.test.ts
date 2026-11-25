@@ -2,7 +2,14 @@ import { expect, test } from "vitest";
 
 import type { LibraryCategory } from "#lib/ipc/bindings.ts";
 
-import { emptyCauseOf, type EmptyList } from "./empty-cause.ts";
+import {
+  actionOffered,
+  type EmptyCause,
+  emptyCauseOf,
+  type EmptyList,
+  keepsListChrome,
+  narrowsLibrary,
+} from "./empty-cause.ts";
 import type { ArrangedTab } from "./library-tabs.ts";
 
 const ALL: ArrangedTab = { id: { kind: "all" }, name: "All", isHidden: false };
@@ -16,8 +23,11 @@ const TEST: ArrangedTab = {
   name: "Test",
   isHidden: false,
 };
-const EMPTY_TEST = { kind: "tab", tab: { kind: "category", name: "Test" } };
-const NOTHING_NEW = { kind: "tab", tab: { kind: "newChapters" } };
+const EMPTY_TEST: EmptyCause = {
+  kind: "tab",
+  tab: { kind: "category", name: "Test" },
+};
+const NOTHING_NEW: EmptyCause = { kind: "tab", tab: { kind: "newChapters" } };
 
 const NOTHING_KNOWN: EmptyList = {
   listedTab: ALL,
@@ -109,4 +119,46 @@ test("blames New chapters when it holds nothing even without the filters on", ()
   };
 
   expect(emptyCauseOf(list)).toEqual(NOTHING_NEW);
+});
+
+test("narrows the library on a category or New chapters, or with a filter on", () => {
+  expect([
+    narrowsLibrary({ listedTab: ALL, isFilterOn: false }),
+    narrowsLibrary({ listedTab: undefined, isFilterOn: false }),
+    narrowsLibrary({ listedTab: ALL, isFilterOn: true }),
+    narrowsLibrary({ listedTab: undefined, isFilterOn: true }),
+    narrowsLibrary({ listedTab: TEST, isFilterOn: false }),
+    narrowsLibrary({ listedTab: NEW_CHAPTERS, isFilterOn: false }),
+  ]).toEqual([false, false, true, true, true, true]);
+});
+
+test("keeps the tabs and filters on screen for every empty state but an empty library's", () => {
+  const causes: EmptyCause[] = [
+    { kind: "library" },
+    { kind: "tab", tab: { kind: "category", name: "Test" } },
+    { kind: "filters" },
+    { kind: "counting" },
+  ];
+
+  expect(causes.map(keepsListChrome)).toEqual([false, true, true, true]);
+});
+
+test("offers each empty state's own action", () => {
+  expect([
+    actionOffered({ kind: "library" }, undefined),
+    actionOffered(EMPTY_TEST, undefined),
+    actionOffered(NOTHING_NEW, undefined),
+    actionOffered({ kind: "filters" }, undefined),
+  ]).toEqual(["addFolder", "goToAll", "goToAll", "clearFilters"]);
+});
+
+test("offers no action once the list shows series", () => {
+  expect(actionOffered(undefined, "clearFilters")).toBeUndefined();
+});
+
+test("keeps the action offered before while still counting", () => {
+  expect([
+    actionOffered({ kind: "counting" }, "goToAll"),
+    actionOffered({ kind: "counting" }, undefined),
+  ]).toEqual(["goToAll", undefined]);
 });

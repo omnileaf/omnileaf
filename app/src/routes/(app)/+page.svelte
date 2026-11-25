@@ -51,7 +51,13 @@
   import FolderNotice from "#lib/library/FolderNotice.svelte";
   import ContinueRow from "#lib/library/ContinueRow.svelte";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
-  import { type EmptyCause, emptyCauseOf } from "#lib/library/empty-cause.ts";
+  import {
+    actionOffered,
+    type EmptyAction,
+    emptyCauseOf,
+    keepsListChrome,
+    narrowsLibrary,
+  } from "#lib/library/empty-cause.ts";
   import EmptyTab from "#lib/library/EmptyTab.svelte";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
@@ -492,9 +498,7 @@
   const listedTabKey = $derived(
     listedTab === undefined ? ALL_SERIES : tabKey(listedTab.id),
   );
-  const isListFiltered = $derived(
-    (listedTab !== undefined && listedTab.id.kind !== "all") || isFilterOn,
-  );
+  const isListFiltered = $derived(narrowsLibrary({ listedTab, isFilterOn }));
 
   const listsNothing = $derived(
     library.list.kind === "loaded" && library.list.items.length === 0,
@@ -579,7 +583,7 @@
   const hasBooks = $derived(
     loaded !== undefined &&
       (loaded.series.items.length > 0 ||
-        (emptyCause !== undefined && emptyCause.kind !== "library")),
+        (emptyCause !== undefined && keepsListChrome(emptyCause))),
   );
   const offersTabs = $derived(hasBooks && tabsShown && !selection.isSelecting);
   const showsLibraryTools = $derived(
@@ -1012,11 +1016,10 @@
     }
   }
 
-  let offeredEmptyAction: EmptyCause["kind"] | undefined;
+  let offeredEmptyAction: EmptyAction | undefined;
 
   function keepFocusOnPageOnceEmptyActionChanges(): void {
-    const offered =
-      emptyCause?.kind === "counting" ? offeredEmptyAction : emptyCause?.kind;
+    const offered = actionOffered(emptyCause, offeredEmptyAction);
     if (
       offeredEmptyAction !== undefined &&
       offered !== offeredEmptyAction &&

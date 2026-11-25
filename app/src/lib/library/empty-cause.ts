@@ -13,9 +13,12 @@ export type EmptyCause =
   | { readonly kind: "filters" }
   | { readonly kind: "counting" };
 
-export interface EmptyList {
+export interface ListedSeries {
   readonly listedTab: ArrangedTab | undefined;
   readonly isFilterOn: boolean;
+}
+
+export interface EmptyList extends ListedSeries {
   readonly isLibraryEmpty: boolean;
   readonly listedTabCount: TabCount;
 }
@@ -62,5 +65,59 @@ export function emptyCauseOf(list: EmptyList): EmptyCause {
       return tabCauseOf({ kind: "category", name: listedTab.name }, list);
     default:
       return assertNever(listedTab.id);
+  }
+}
+
+export type EmptyAction = "addFolder" | "goToAll" | "clearFilters";
+
+export function narrowsLibrary({
+  listedTab,
+  isFilterOn,
+}: ListedSeries): boolean {
+  if (listedTab === undefined) {
+    return isFilterOn;
+  }
+  switch (listedTab.id.kind) {
+    case "all":
+      return isFilterOn;
+    case "newChapters":
+    case "category":
+      return true;
+    default:
+      return assertNever(listedTab.id);
+  }
+}
+
+export function keepsListChrome(cause: EmptyCause): boolean {
+  switch (cause.kind) {
+    case "library":
+      return false;
+    case "tab":
+    case "filters":
+    case "counting":
+      return true;
+    default:
+      return assertNever(cause);
+  }
+}
+
+export function actionOffered(
+  cause: EmptyCause | undefined,
+  offeredBefore: EmptyAction | undefined,
+): EmptyAction | undefined {
+  if (cause === undefined) {
+    return undefined;
+  }
+  switch (cause.kind) {
+    case "library":
+      return "addFolder";
+    case "tab":
+      return "goToAll";
+    case "filters":
+      return "clearFilters";
+    case "counting":
+      return offeredBefore;
+    default:
+      return assertNever(cause);
   }
 }
