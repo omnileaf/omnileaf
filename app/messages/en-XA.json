@@ -22,6 +22,54 @@
       }
     }
   ],
+  "library_series_volumes": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ṽöļûɱé··········⟧",
+        "countPlural=other": "⟦{formattedCount} ṽöļûɱéš··········⟧"
+      }
+    }
+  ],
+  "library_series_chapters": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} çĥáþţéŕ··········⟧",
+        "countPlural=other": "⟦{formattedCount} çĥáþţéŕš··········⟧"
+      }
+    }
+  ],
+  "library_series_volumes_and_chapters": [
+    {
+      "declarations": [
+        "input volumes",
+        "input chapters",
+        "local volumesPlural = volumes: plural",
+        "local chaptersPlural = chapters: plural",
+        "local formattedVolumes = volumes: number",
+        "local formattedChapters = chapters: number"
+      ],
+      "selectors": ["volumesPlural", "chaptersPlural"],
+      "match": {
+        "volumesPlural=one, chaptersPlural=one": "⟦{formattedVolumes} ṽöļûɱé · {formattedChapters} çĥáþţéŕ······················⟧",
+        "volumesPlural=one, chaptersPlural=other": "⟦{formattedVolumes} ṽöļûɱé · {formattedChapters} çĥáþţéŕš·······················⟧",
+        "volumesPlural=other, chaptersPlural=one": "⟦{formattedVolumes} ṽöļûɱéš · {formattedChapters} çĥáþţéŕ·······················⟧",
+        "volumesPlural=other, chaptersPlural=other": "⟦{formattedVolumes} ṽöļûɱéš · {formattedChapters} çĥáþţéŕš·······················⟧"
+      }
+    }
+  ],
+  "library_series_one_shot": "⟦Öñé-šĥöţ····⟧",
   "library_series_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ļíƀŕáŕý. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
   "library_unchanged": "⟦Ñöţĥíñĝ íñ ýöûŕ ļíƀŕáŕý ĥáš çĥáñĝéð.···············⟧",
   "library_try_again": "⟦Ţŕý áĝáíñ····⟧",
