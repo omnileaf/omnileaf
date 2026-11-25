@@ -1,5 +1,6 @@
 import { assertNever } from "#lib/assert-never.ts";
 
+import type { TabCount } from "./library-series-count.svelte.ts";
 import type { ArrangedTab } from "./library-tabs.ts";
 
 export type EmptyTab =
@@ -12,11 +13,6 @@ export type EmptyCause =
   | { readonly kind: "filters" }
   | { readonly kind: "counting" };
 
-export type TabCount =
-  | { readonly kind: "counting" }
-  | { readonly kind: "counted"; readonly count: number }
-  | { readonly kind: "failed" };
-
 export interface EmptyList {
   readonly listedTab: ArrangedTab | undefined;
   readonly isFilterOn: boolean;
@@ -24,23 +20,9 @@ export interface EmptyList {
   readonly listedTabCount: TabCount;
 }
 
-interface CountReading {
-  readonly count: number | undefined;
-  readonly hasFailed: boolean;
-}
-
 const EMPTY_LIBRARY: EmptyCause = { kind: "library" };
 const FILTERED_OUT: EmptyCause = { kind: "filters" };
 const COUNTING: EmptyCause = { kind: "counting" };
-
-export function tabCountOf({ count, hasFailed }: CountReading): TabCount {
-  if (hasFailed) {
-    return { kind: "failed" };
-  }
-  return count === undefined
-    ? { kind: "counting" }
-    : { kind: "counted", count };
-}
 
 function wholeLibraryCauseOf(list: EmptyList): EmptyCause {
   return list.isFilterOn ? FILTERED_OUT : EMPTY_LIBRARY;

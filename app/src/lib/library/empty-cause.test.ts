@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { LibraryCategory } from "#lib/ipc/bindings.ts";
 
-import { emptyCauseOf, type EmptyList, tabCountOf } from "./empty-cause.ts";
+import { emptyCauseOf, type EmptyList } from "./empty-cause.ts";
 import type { ArrangedTab } from "./library-tabs.ts";
 
 const ALL: ArrangedTab = { id: { kind: "all" }, name: "All", isHidden: false };
@@ -109,16 +109,4 @@ test("blames New chapters when it holds nothing even without the filters on", ()
   };
 
   expect(emptyCauseOf(list)).toEqual(NOTHING_NEW);
-});
-
-test("reads a count as counted, still counting or failed", () => {
-  expect([
-    tabCountOf({ count: 3, hasFailed: false }),
-    tabCountOf({ count: undefined, hasFailed: false }),
-    tabCountOf({ count: undefined, hasFailed: true }),
-  ]).toEqual([
-    { kind: "counted", count: 3 },
-    { kind: "counting" },
-    { kind: "failed" },
-  ]);
 });

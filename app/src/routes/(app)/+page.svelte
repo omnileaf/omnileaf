@@ -51,11 +51,7 @@
   import FolderNotice from "#lib/library/FolderNotice.svelte";
   import ContinueRow from "#lib/library/ContinueRow.svelte";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
-  import {
-    type EmptyCause,
-    emptyCauseOf,
-    tabCountOf,
-  } from "#lib/library/empty-cause.ts";
+  import { type EmptyCause, emptyCauseOf } from "#lib/library/empty-cause.ts";
   import EmptyTab from "#lib/library/EmptyTab.svelte";
   import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
@@ -516,7 +512,7 @@
           listedTab,
           isFilterOn,
           isLibraryEmpty: holdsNoSeries,
-          listedTabCount: tabCountOf(listedTabCount),
+          listedTabCount: listedTabCount.reading,
         })
       : undefined,
   );
@@ -997,7 +993,7 @@
       if (countsSeries) {
         void seriesCount.load();
       }
-      if (listedTabCount.count !== undefined || listedTabCount.hasFailed) {
+      if (listedTabCount.reading.kind !== "counting") {
         void listedTabCount.refresh();
       }
       pages.refreshBeside();
