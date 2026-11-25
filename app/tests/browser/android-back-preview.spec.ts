@@ -1,7 +1,9 @@
 import type { Page } from "@playwright/test";
 
 import type { BackSwipe, SeriesDetails } from "../../src/lib/ipc/bindings.ts";
+import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
 import type { FakeChannel } from "./fake-backend.ts";
+import { sampleLibraryOn } from "./screens.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 import {
   DEFAULT_BACKEND,
@@ -26,6 +28,10 @@ const SETTINGS_TITLE = "Settings";
 const PRIVACY_TITLE = "Privacy and security";
 const LIGHT_SCRIM = "rgba(0, 0, 0, 0.2)";
 const PRIVACY_ONLY_TEXT = "Crash reports";
+const PHONE = { width: 412, height: 700 };
+const VOLUMES_SERIES = `/series/${sampleSeriesId(21)}`;
+const SERIES_DOWN = 250;
+const SCROLL_SLACK_PX = 2;
 
 const SPRING_BACK_SETTLED_MS = 200;
 const PAUSED_AFTER_MS = 1000;
@@ -350,6 +356,77 @@ test.describe("a back gesture the page keeps for itself", () => {
       page.getByRole("alertdialog", { name: "Discard your changes?" }),
     ).toBeVisible();
     await expectNoPreviewLeft(page);
+  });
+});
+
+test.describe("going back to a list scrolled down", () => {
+  test.use({
+    backend: {
+      ...sampleLibraryOn("android"),
+      watchBackSwipes: (channel) => {
+        gestures = channel;
+        return null;
+      },
+    },
+  });
+
+  function scrollTopOf(page: Page): Promise<number> {
+    return page.getByRole("main").evaluate((main) => main.scrollTop);
+  }
+
+  function scrollTopBehind(page: Page): Promise<number> {
+    return page
+      .locator("[data-previous-screen] > div > .contents > *")
+      .evaluate((copy) => copy.scrollTop);
+  }
+
+  async function scrollListDown(page: Page): Promise<number> {
+    await expect
+      .poll(() =>
+        page.getByRole("main").evaluate((main, top) => {
+          main.scrollTo({ top });
+          return main.scrollTop;
+        }, SERIES_DOWN),
+      )
+      .toBeGreaterThanOrEqual(SERIES_DOWN - SCROLL_SLACK_PX);
+    return scrollTopOf(page);
+  }
+
+  async function expectScrolledTo(page: Page, top: number): Promise<void> {
+    await expect
+      .poll(async () => Math.abs((await scrollTopOf(page)) - top))
+      .toBeLessThanOrEqual(SCROLL_SLACK_PX);
+  }
+
+  test("shows the list behind where it was left, plays the leave and lands the list there", async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE);
+    await page.goto(VOLUMES_SERIES);
+    const leftAt = await scrollListDown(page);
+    await page
+      .getByRole("main")
+      .getByRole("link", { name: /^Volume 2/ })
+      .first()
+      .evaluate((link) => {
+        if (link instanceof HTMLElement) {
+          link.click();
+        }
+      });
+    await expect(page).toHaveURL(/\/volume\/2$/);
+    await pauseTheClock(page);
+    await gesture(start());
+    await gesture(swipe(0.6));
+    await expect.poll(() => scrollTopBehind(page)).toBe(leftAt);
+
+    await page.goBack();
+
+    await expect(page).toHaveURL(VOLUMES_SERIES);
+    await expect(page.locator("[data-leaving-screen]")).toBeAttached();
+    await expectScrolledTo(page, leftAt);
+    await page.clock.runFor(COMMIT_PLAYED_MS);
+    await expectNoPreviewLeft(page);
+    await expectScrolledTo(page, leftAt);
   });
 });
 
