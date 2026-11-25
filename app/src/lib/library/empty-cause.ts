@@ -78,7 +78,18 @@ export function emptyCauseOf(list: EmptyList): EmptyCause {
   }
 }
 
-export type EmptyAction = "addFolder" | "goToAll" | "clearFilters";
+export type EmptyAction = "addFolder" | "addSeries" | "clearFilters";
+
+export function tabActionOf(tab: EmptyTab): EmptyAction | undefined {
+  switch (tab.kind) {
+    case "category":
+      return "addSeries";
+    case "newChapters":
+      return undefined;
+    default:
+      return assertNever(tab);
+  }
+}
 
 export function narrowsLibrary({
   listedTab,
@@ -122,7 +133,7 @@ export function actionOffered(
     case "library":
       return "addFolder";
     case "tab":
-      return "goToAll";
+      return tabActionOf(cause.tab);
     case "filters":
       return "clearFilters";
     case "counting":

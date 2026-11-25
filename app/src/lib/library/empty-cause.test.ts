@@ -190,7 +190,7 @@ test("offers each empty state's own action", () => {
     actionOffered(EMPTY_TEST, undefined),
     actionOffered(NOTHING_NEW, undefined),
     actionOffered({ kind: "filters" }, undefined),
-  ]).toEqual(["addFolder", "goToAll", "goToAll", "clearFilters"]);
+  ]).toEqual(["addFolder", "addSeries", undefined, "clearFilters"]);
 });
 
 test("offers no action once the list shows series", () => {
@@ -199,7 +199,7 @@ test("offers no action once the list shows series", () => {
 
 test("keeps the action offered before while still counting", () => {
   expect([
-    actionOffered({ kind: "counting" }, "goToAll"),
+    actionOffered({ kind: "counting" }, "addSeries"),
     actionOffered({ kind: "counting" }, undefined),
-  ]).toEqual(["goToAll", undefined]);
+  ]).toEqual(["addSeries", undefined]);
 });

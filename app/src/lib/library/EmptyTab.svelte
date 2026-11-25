@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LibraryBig, Sparkles, Tag } from "@lucide/svelte";
+  import { Folder, Plus, Sparkles } from "@lucide/svelte";
 
   import { assertNever } from "#lib/assert-never.ts";
   import EmptyAction from "#lib/page/EmptyAction.svelte";
@@ -7,9 +7,10 @@
   import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import type { EmptyTab } from "./empty-cause.ts";
+  import { type EmptyTab, tabActionOf } from "./empty-cause.ts";
 
-  let { tab, onGoToAll }: { tab: EmptyTab; onGoToAll: () => void } = $props();
+  let { tab, onAddSeries }: { tab: EmptyTab; onAddSeries: () => void } =
+    $props();
 
   interface Wording {
     readonly icon: Glyph;
@@ -21,7 +22,7 @@
     switch (empty.kind) {
       case "category":
         return {
-          icon: Tag,
+          icon: Folder,
           title: m.library_category_empty({ name: empty.name }),
           body: m.library_category_empty_body(),
         };
@@ -37,12 +38,16 @@
   }
 
   const wording = $derived(wordingOf(tab));
+  const action = $derived(tabActionOf(tab));
 </script>
 
 <EmptyState icon={wording.icon} title={wording.title} body={wording.body}>
-  <EmptyAction
-    icon={LibraryBig}
-    label={m.library_go_to_all()}
-    onclick={onGoToAll}
-  />
+  {#if action === "addSeries"}
+    <EmptyAction
+      icon={Plus}
+      label={m.library_add_series()}
+      rank="main"
+      onclick={onAddSeries}
+    />
+  {/if}
 </EmptyState>

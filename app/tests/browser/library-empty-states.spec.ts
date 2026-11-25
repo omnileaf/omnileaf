@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import english from "../../messages/en.json" with { type: "json" };
 import type {
@@ -41,7 +41,7 @@ const UNREAD_ONLY: LibraryListing = {
   filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
 };
 
-const GO_TO_ALL = english.library_go_to_all;
+const ADD_SERIES = english.library_add_series;
 
 let storedListing: LibraryListing = NEW_LIBRARY_LISTING;
 
@@ -200,16 +200,18 @@ test.describe("the library's empty states", { tag: "@native" }, () => {
       await expect(noMatches(page)).toHaveCount(0);
     });
 
-    test("goes to All from an empty category on asking", async ({ page }) => {
+    test("starts selecting on All from an empty category's Add series", async ({
+      page,
+    }) => {
       await openOn(page, "Test");
 
       await emptyCategory(page, "Test")
-        .getByRole("button", { name: GO_TO_ALL })
+        .getByRole("button", { name: ADD_SERIES })
         .click();
 
       await expect(
-        tabs(page).getByRole("tab", { name: "All" }),
-      ).toHaveAttribute("aria-selected", "true");
+        page.getByRole("list", { name: "Series" }).getByRole("checkbox"),
+      ).toHaveCount(LIBRARY.length);
     });
 
     test("says an empty category has nothing in it yet while a filter is on, since clearing it would show nothing either", async ({
@@ -232,14 +234,14 @@ test.describe("the library's empty states", { tag: "@native" }, () => {
       await expect(noMatches(page)).toHaveCount(0);
     });
 
-    test("goes to All from New chapters on asking", async ({ page }) => {
+    test("offers no action under New chapters, since nothing can be added there", async ({
+      page,
+    }) => {
       await openOn(page, "New chapters");
 
-      await nothingNew(page).getByRole("button", { name: GO_TO_ALL }).click();
+      await expect(nothingNew(page)).toBeVisible();
 
-      await expect(
-        tabs(page).getByRole("tab", { name: "All" }),
-      ).toHaveAttribute("aria-selected", "true");
+      await expect(nothingNew(page).getByRole("button")).toHaveCount(0);
     });
 
     for (const colorScheme of ["light", "dark"] as const) {
@@ -256,14 +258,14 @@ test.describe("the library's empty states", { tag: "@native" }, () => {
       });
     }
 
-    test("goes to All without saying on the way that the library is empty", async ({
+    test("starts selecting on All without saying on the way that the library is empty", async ({
       page,
     }) => {
       await noteEveryLibraryEmptyShown(page);
       await openOn(page, "Test");
 
       await emptyCategory(page, "Test")
-        .getByRole("button", { name: GO_TO_ALL })
+        .getByRole("button", { name: ADD_SERIES })
         .click();
       await expect(
         page.getByRole("list", { name: "Series" }).getByRole("listitem"),
@@ -272,12 +274,12 @@ test.describe("the library's empty states", { tag: "@native" }, () => {
       expect(await libraryEmptyShown(page)).toBe(0);
     });
 
-    test("puts focus on the library's heading once Go to All takes the empty category away", async ({
+    test("puts focus on the library's heading once Add series takes the empty category away", async ({
       page,
     }) => {
       await openOn(page, "Test");
       await emptyCategory(page, "Test")
-        .getByRole("button", { name: GO_TO_ALL })
+        .getByRole("button", { name: ADD_SERIES })
         .focus();
 
       await page.keyboard.press("Enter");
@@ -291,7 +293,7 @@ test.describe("the library's empty states", { tag: "@native" }, () => {
       storedListing = UNREAD_ONLY;
       await openOn(page, "Test");
       await emptyCategory(page, "Test")
-        .getByRole("button", { name: GO_TO_ALL })
+        .getByRole("button", { name: ADD_SERIES })
         .focus();
 
       await page.keyboard.press("Enter");
@@ -314,20 +316,20 @@ test.describe("the library's empty states", { tag: "@native" }, () => {
       await expect(libraryHeading(page)).toBeFocused();
     });
 
-    test("keeps Go to All and the focus on it through a library change on an empty category under a filter", async ({
+    test("keeps Add series and the focus on it through a library change on an empty category under a filter", async ({
       page,
     }) => {
       storedListing = UNREAD_ONLY;
       await openOn(page, "Test");
-      const goToAll = emptyCategory(page, "Test").getByRole("button", {
-        name: GO_TO_ALL,
+      const addSeries = emptyCategory(page, "Test").getByRole("button", {
+        name: ADD_SERIES,
       });
-      await goToAll.focus();
+      await addSeries.focus();
 
       await emitFakeEvent(page, "library-changed");
       await waitForAnswers(page);
 
-      await expect(goToAll).toBeFocused();
+      await expect(addSeries).toBeFocused();
       await expect(noMatches(page)).toHaveCount(0);
     });
 
@@ -415,14 +417,14 @@ test.describe(
       page,
     }) => {
       await openOn(page, "Test");
-      const goToAll = emptyCategory(page, "Test").getByRole("button", {
-        name: GO_TO_ALL,
+      const addSeries = emptyCategory(page, "Test").getByRole("button", {
+        name: ADD_SERIES,
       });
-      await expect(goToAll).toBeVisible();
+      await expect(addSeries).toBeVisible();
       releaseEveryCount();
       await waitForAnswers(page);
-      await goToAll.evaluate((button) => {
-        Object.assign(window, { goToAllShown: button });
+      await addSeries.evaluate((button) => {
+        Object.assign(window, { addSeriesShown: button });
       });
 
       await openSortAndFilter(page);
@@ -437,7 +439,7 @@ test.describe(
       expect(
         await page.evaluate(
           () =>
-            (window as Window & { goToAllShown?: HTMLElement }).goToAllShown
+            (window as Window & { addSeriesShown?: HTMLElement }).addSeriesShown
               ?.isConnected,
         ),
       ).toBe(true);
@@ -581,5 +583,50 @@ test.describe("when the library changes", { tag: "@native" }, () => {
 
     await expect(emptyCategory(page, "Manga")).toBeVisible();
     await expect(noMatches(page)).toHaveCount(0);
+  });
+});
+
+test.describe("an empty category's Add series", { tag: "@native" }, () => {
+  const shelf: WireSeries[] = [];
+
+  test.use({ backend: backendHolding(shelf) });
+
+  test.beforeEach(() => {
+    shelf.splice(0);
+  });
+
+  async function lookOf(button: Locator): Promise<readonly string[]> {
+    await expect(button).toBeVisible();
+    return button.evaluate((shown) => {
+      const style = getComputedStyle(shown);
+      return [
+        style.backgroundColor,
+        style.color,
+        style.blockSize,
+        style.borderStartStartRadius,
+        style.fontWeight,
+        style.fontSize,
+      ];
+    });
+  }
+
+  test("looks like the empty library's Add a folder, the one main action of an empty screen", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const addFolder = await lookOf(
+      page
+        .getByRole("region", { name: english.library_empty })
+        .getByRole("button", { name: english.library_add_folder }),
+    );
+    shelf.splice(0, 0, ...LIBRARY);
+    await emitFakeEvent(page, "library-changed");
+    await tabs(page).getByRole("tab", { name: "Test" }).click();
+
+    const addSeries = await lookOf(
+      emptyCategory(page, "Test").getByRole("button", { name: ADD_SERIES }),
+    );
+
+    expect(addSeries).toEqual(addFolder);
   });
 });

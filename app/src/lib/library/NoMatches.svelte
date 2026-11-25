@@ -32,6 +32,7 @@
   <EmptyAction
     icon={X}
     label={m.library_clear_all_filters()}
+    rank="other"
     onclick={onClear}
   />
 </EmptyState>

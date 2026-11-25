@@ -1396,8 +1396,9 @@
       {#if emptyCause?.kind === "tab"}
         <EmptyTab
           tab={emptyCause.tab}
-          onGoToAll={() => {
+          onAddSeries={() => {
             chooseTab(ALL_SERIES);
+            selection.begin();
           }}
         />
       {:else if emptyCause?.kind === "filters" && chosenListing !== undefined}
