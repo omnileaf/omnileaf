@@ -502,6 +502,11 @@
   const listsNothing = $derived(
     library.list.kind === "loaded" && library.list.items.length === 0,
   );
+  interface AskedCount {
+    readonly count: LibrarySeriesCount;
+    readonly askedFor: () => string | undefined;
+  }
+
   const libraryCount = new LibrarySeriesCount(
     countOf(ALL_TAB, NEW_LIBRARY_LISTING),
     (error) => {
@@ -514,11 +519,18 @@
       reportError(error);
     },
   );
-  const emptyListCounts = [libraryCount, listedTabCount];
-  const asksLibraryCount = $derived(
-    listsNothing && narrowsLibrary({ listedTab, isFilterOn }),
+  const libraryCountAskedFor = $derived(
+    listsNothing && narrowsLibrary({ listedTab, isFilterOn })
+      ? ALL_SERIES
+      : undefined,
   );
-  const asksTabCount = $derived(listsNothing && listedTabKey !== ALL_SERIES);
+  const tabCountAskedFor = $derived(
+    listsNothing && listedTabKey !== ALL_SERIES ? listedTabKey : undefined,
+  );
+  const emptyListCounts: readonly AskedCount[] = [
+    { count: libraryCount, askedFor: () => libraryCountAskedFor },
+    { count: listedTabCount, askedFor: () => tabCountAskedFor },
+  ];
   const emptyCause = $derived(
     listsNothing
       ? emptyCauseOf({
@@ -644,24 +656,22 @@
     });
   });
 
-  function countOnlyWhileAsked(
-    count: LibrarySeriesCount,
-    isAsked: () => boolean,
-  ): void {
+  function countOnlyWhileAsked({ count, askedFor }: AskedCount): void {
     $effect.pre(() => {
-      const asked = isAsked();
+      const tab = askedFor();
       untrack(() => {
-        if (asked) {
-          void count.load();
-        } else {
+        if (tab === undefined) {
           count.clear();
+        } else {
+          void count.load();
         }
       });
     });
   }
 
-  countOnlyWhileAsked(libraryCount, () => asksLibraryCount);
-  countOnlyWhileAsked(listedTabCount, () => asksTabCount);
+  for (const asked of emptyListCounts) {
+    countOnlyWhileAsked(asked);
+  }
 
   const listingShown = $derived(
     chosenListing === undefined
@@ -1002,7 +1012,7 @@
       if (countsSeries) {
         void seriesCount.load();
       }
-      for (const count of emptyListCounts) {
+      for (const { count } of emptyListCounts) {
         if (count.reading.kind !== "counting") {
           void count.refresh();
         }

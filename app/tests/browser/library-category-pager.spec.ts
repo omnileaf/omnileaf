@@ -6,6 +6,7 @@ import {
   type LibraryTab,
   type Platform,
 } from "../../src/lib/ipc/bindings.ts";
+import { filtersOn } from "../../src/lib/library/library-listing.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -807,6 +808,57 @@ for (const platform of PLATFORMS) {
 
       await expectChosen(page, "New chapters");
       await expect(nothingNew(page)).toBeVisible();
+    });
+  });
+
+  test.describe(`swiping between tabs that list nothing under a filter on ${platform}`, () => {
+    const holding = backendWith(EMPTY_COMICS, platform);
+
+    test.use({
+      backend: {
+        ...holding,
+        libraryTabs: () => [...NEW_CHAPTERS_SHOWN],
+        libraryListing: () => UNREAD_ONLY,
+        categorySeries: (category, after, listing) =>
+          filtersOn(listing.filter) > 0
+            ? { series: [], next: null }
+            : holding.categorySeries(category, after, listing),
+        categorySeriesCount: (category, filter) =>
+          filtersOn(filter) > 0
+            ? 0
+            : holding.categorySeriesCount(category, filter),
+      },
+    });
+    test.skip(({ hasTouch }) => !hasTouch, "a finger swipes");
+
+    test("says no series match on a category the filter empties, after New chapters with nothing new", async ({
+      page,
+    }) => {
+      await openEmptyTab(page, "New chapters", nothingNew(page));
+      const blank = await blankBelow(page, nothingNew(page));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(-SWIPE_PX);
+      await drag.release();
+
+      await expectChosen(page, "Manga");
+      await expect(noMatches(page)).toBeVisible();
+      await expect(emptyCategory(page, "Manga")).toHaveCount(0);
+    });
+
+    test("says an empty category has nothing in it, after a category the filter empties", async ({
+      page,
+    }) => {
+      await openEmptyTab(page, "Manga", noMatches(page));
+      const blank = await blankBelow(page, noMatches(page));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(-SWIPE_PX);
+      await drag.release();
+
+      await expectChosen(page, "Comics");
+      await expect(emptyCategory(page, "Comics")).toBeVisible();
+      await expect(noMatches(page)).toHaveCount(0);
     });
   });
 

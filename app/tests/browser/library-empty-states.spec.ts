@@ -339,6 +339,42 @@ test.describe("the library's empty states", { tag: "@native" }, () => {
 });
 
 test.describe(
+  "moving between tabs that list nothing under a filter",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: backendHolding(LIBRARY) });
+
+    test.beforeEach(() => {
+      storedListing = UNREAD_ONLY;
+    });
+
+    test("says no series match on a category the filter empties, after New chapters with nothing new", async ({
+      page,
+    }) => {
+      await openOn(page, "New chapters");
+      await expect(nothingNew(page)).toBeVisible();
+
+      await tabs(page).getByRole("tab", { name: "Manga" }).click();
+
+      await expect(noMatches(page)).toBeVisible();
+      await expect(emptyCategory(page, "Manga")).toHaveCount(0);
+    });
+
+    test("says an empty category has nothing in it, after a category the filter empties", async ({
+      page,
+    }) => {
+      await openOn(page, "Manga");
+      await expect(noMatches(page)).toBeVisible();
+
+      await tabs(page).getByRole("tab", { name: "Test" }).click();
+
+      await expect(emptyCategory(page, "Test")).toBeVisible();
+      await expect(noMatches(page)).toHaveCount(0);
+    });
+  },
+);
+
+test.describe(
   "while asking whether a category holds anything",
   { tag: "@native" },
   () => {
