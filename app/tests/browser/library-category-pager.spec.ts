@@ -46,6 +46,7 @@ const SAME_ROW_PX = 1;
 const TOUCH = { pointerType: "touch", pointerId: 7, isPrimary: true } as const;
 const LAST_FRAME_BEFORE_END_MS = 1;
 const FRACTIONAL_TRIM_PX = 0.4;
+const CLEAR_OF_ENDS_PX = 4;
 
 interface Library {
   readonly all: ReturnType<typeof sampleSeries>;
@@ -283,13 +284,18 @@ async function halfADevicePixel(page: Page): Promise<number> {
   return page.evaluate(() => 1 / (2 * window.devicePixelRatio));
 }
 
-async function releaseToSettleEnd(
+interface SettleFrames {
+  readonly halfway: RowSpan;
+  readonly end: RowSpan;
+}
+
+async function releaseThroughSettle(
   page: Page,
   drag: Drag,
   incoming: Locator,
-): Promise<RowSpan> {
+): Promise<SettleFrames> {
   const covers = await incoming.elementHandles();
-  const boxes = await pagerTrack(page).evaluate(
+  const frames = await pagerTrack(page).evaluate(
     (track, { touch, at, coming, beforeEnd }) => {
       track.dispatchEvent(
         new PointerEvent("pointerup", {
@@ -304,17 +310,21 @@ async function releaseToSettleEnd(
       if (settling === undefined || typeof end !== "number") {
         throw new Error("the swipe settles without sliding");
       }
+      const coversNow = () =>
+        coming.map((cover) => {
+          if (!(cover instanceof Element)) {
+            throw new Error("a cover is not drawn as an element");
+          }
+          const { left, right, top } = cover.getBoundingClientRect();
+          return { left, right, top };
+        });
       settling.pause();
+      settling.currentTime = end / 2;
+      const halfway = coversNow();
       settling.currentTime = end - beforeEnd;
-      const settled = coming.map((cover) => {
-        if (!(cover instanceof Element)) {
-          throw new Error("a cover is not drawn as an element");
-        }
-        const { left, right, top } = cover.getBoundingClientRect();
-        return { left, right, top };
-      });
+      const last = coversNow();
       settling.finish();
-      return settled;
+      return { halfway, last };
     },
     {
       touch: TOUCH,
@@ -323,7 +333,7 @@ async function releaseToSettleEnd(
       beforeEnd: LAST_FRAME_BEFORE_END_MS,
     },
   );
-  return firstRowIn(boxes);
+  return { halfway: firstRowIn(frames.halfway), end: firstRowIn(frames.last) };
 }
 
 async function scrolledBy(page: Page): Promise<number> {
@@ -907,7 +917,7 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
     const drag = await beginDrag(page, seriesList(page));
     await drag.to(-SWIPE_PX);
     await expect(besideCovers(page, incomingTitle)).toHaveCount(MANGA.length);
-    const atSettleEnd = await releaseToSettleEnd(
+    const settling = await releaseThroughSettle(
       page,
       drag,
       besideCovers(page, incomingTitle),
@@ -917,8 +927,8 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
     await expect(pagerTrack(page)).toHaveCSS("translate", "none");
     const settled = await firstRowOf(chosenCovers(page));
 
-    expect(Math.abs(atSettleEnd.left - settled.left)).toBeLessThan(unseenJump);
-    expect(Math.abs(atSettleEnd.right - settled.right)).toBeLessThan(
+    expect(Math.abs(settling.end.left - settled.left)).toBeLessThan(unseenJump);
+    expect(Math.abs(settling.end.right - settled.right)).toBeLessThan(
       unseenJump,
     );
   });
@@ -1001,7 +1011,7 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
       );
       const chosen = await firstRowOf(chosenCovers(page));
       const beside = await firstRowOf(besideCovers(page, incomingTitle));
-      const atSettleEnd = await releaseToSettleEnd(
+      const settling = await releaseThroughSettle(
         page,
         drag,
         besideCovers(page, incomingTitle),
@@ -1023,8 +1033,14 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
       expect(
         onRight.left - leftInset - (onLeft.right + rightInset),
       ).toBeCloseTo(gap, 0);
-      expect(atSettleEnd.left).toBeCloseTo(atRest.left, 0);
-      expect(atSettleEnd.right).toBeCloseTo(atRest.right, 0);
+      expect(settling.halfway.left).toBeGreaterThan(
+        Math.min(beside.left, atRest.left) + CLEAR_OF_ENDS_PX,
+      );
+      expect(settling.halfway.left).toBeLessThan(
+        Math.max(beside.left, atRest.left) - CLEAR_OF_ENDS_PX,
+      );
+      expect(settling.end.left).toBeCloseTo(atRest.left, 0);
+      expect(settling.end.right).toBeCloseTo(atRest.right, 0);
       expect(settled.left).toBeCloseTo(atRest.left, 0);
       expect(settled.right).toBeCloseTo(atRest.right, 0);
     });
