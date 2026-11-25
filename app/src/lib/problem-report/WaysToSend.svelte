@@ -84,6 +84,7 @@
             {iconName}
             label={label()}
             look="android"
+            class={ROW_FOCUS_RING}
             {opensBrowser}
             onPress={() => {
               shareBy(way);

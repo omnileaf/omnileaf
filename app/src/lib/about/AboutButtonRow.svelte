@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ExternalLink } from "@lucide/svelte";
+  import type { ClassValue } from "svelte/elements";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Item } from "#lib/components/ui/item/index.ts";
@@ -25,6 +26,7 @@
     opensBrowser = false,
     isBusy,
     onPress,
+    class: className,
   }: {
     icon: Glyph;
     iconName: IconName;
@@ -35,10 +37,11 @@
     opensBrowser?: boolean;
     isBusy?: boolean | undefined;
     onPress: () => void;
+    class?: ClassValue;
   } = $props();
 </script>
 
-<Item look={ROW_LOOKS[look]}>
+<Item look={ROW_LOOKS[look]} class={className}>
   {#snippet child({ props })}
     <Button
       {...props}

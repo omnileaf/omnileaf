@@ -1,3 +1,5 @@
+import type { Locator, Page } from "@playwright/test";
+
 import {
   boxOf,
   DEFAULT_BACKEND,
@@ -17,6 +19,25 @@ const ROWS = [
   { name: "Copy report", icon: "copy" },
   { name: "Save as a file", icon: "save" },
 ] as const;
+
+const WAYS = ["Open on GitHub", "Copy report", "Save as a file"] as const;
+
+const TAB_STOPS_AT_MOST = 20;
+
+async function focusByKeyboard(page: Page, target: Locator): Promise<void> {
+  await page
+    .getByRole("textbox", { name: "Email for a reply (optional)" })
+    .focus();
+  for (let presses = 0; presses < TAB_STOPS_AT_MOST; presses += 1) {
+    if (
+      await target.evaluate((element) => element === document.activeElement)
+    ) {
+      return;
+    }
+    await page.keyboard.press("Tab");
+  }
+  await expect(target).toBeFocused();
+}
 
 test.describe(
   "Report a problem on an Android phone",
@@ -73,6 +94,23 @@ test.describe(
         expect((await boxOf(row)).x).toBe(0);
         await expect(label).toHaveCSS("font-size", "16px");
         await expect(label).toHaveCSS("font-weight", "400");
+      });
+    }
+
+    for (const name of WAYS) {
+      test(`rings ${name} in the accent like a Settings row when the keyboard reaches it`, async ({
+        page,
+      }) => {
+        await page.goto("/settings/about/report");
+        const row = page.getByRole("button", { name: new RegExp(`^${name}`) });
+
+        await focusByKeyboard(page, row);
+
+        await expect(row).toHaveCSS("outline-style", "solid");
+        await expect(row).toHaveCSS(
+          "outline-color",
+          await tokenColour(page, "--color-accent"),
+        );
       });
     }
 
