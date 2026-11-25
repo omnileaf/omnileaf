@@ -10,6 +10,7 @@
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { realLook } from "#lib/library/series-look.ts";
   import { resolvedPathOf } from "#lib/navigation/app-path.ts";
+  import { getBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { getNotices, type UndoOffer } from "#lib/notices/notices.ts";
@@ -46,6 +47,7 @@
   let series = $state<EditedSeries | undefined>();
   let editing = $state<DetailsBeingEdited | undefined>();
   let isAsking = $state(false);
+  const backGoesUp = getBackGoesUp();
   let hasPageBehind = false;
   let isLeavingForGood = false;
   let leaveAgain: (() => void) | undefined;
@@ -110,9 +112,7 @@
       history.back();
       return;
     }
-    void goto(resolve("/(app)/series/[id]", { id: data.id }), {
-      replaceState: true,
-    });
+    void backGoesUp.replaceWith(resolve("/(app)/series/[id]", { id: data.id }));
   }
 
   async function save(): Promise<void> {

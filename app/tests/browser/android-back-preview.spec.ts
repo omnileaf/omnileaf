@@ -354,6 +354,27 @@ test.describe("a back gesture the page keeps for itself", () => {
     },
   });
 
+  test("shows no edit page behind a series that the edit page was closed into", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "Edit details opens as a dialog on a wide screen",
+    );
+    await page.goto(`/series/${SERIES_ID}/edit`);
+    await page.getByRole("button", { name: "Close" }).click();
+    await expect(page).toHaveURL(`/series/${SERIES_ID}`);
+    await expect(
+      page.getByRole("main").getByRole("heading", { level: 1 }),
+    ).toHaveText(SERIES_TITLE);
+
+    await gesture(start());
+    await gesture(swipe(0.5));
+
+    await expect(page.locator("[data-previous-screen]")).toBeVisible();
+    await expect(page.locator("[data-previous-screen] h1")).toHaveCount(0);
+  });
+
   test("lets no page leave when the page keeps a finished back gesture for itself", async ({
     page,
   }) => {
