@@ -146,7 +146,7 @@ interface Point {
 
 type DragTarget = Pick<ElementHandle, "dispatchEvent">;
 
-interface BlankSpot {
+interface Spot {
   readonly target: ElementHandle<Element>;
   readonly at: Point;
 }
@@ -162,7 +162,22 @@ async function beginDrag(page: Page, from: Locator): Promise<Drag> {
   });
 }
 
-async function blankBelow(page: Page, emptyState: Locator): Promise<BlankSpot> {
+async function spotAt(page: Page, at: Point): Promise<Spot> {
+  const target = (
+    await page.evaluateHandle(({ x, y }) => document.elementFromPoint(x, y), at)
+  ).asElement();
+  if (target === null) {
+    throw new Error("nothing is drawn at the spot");
+  }
+  return { target, at };
+}
+
+async function spotInside(page: Page, from: Locator): Promise<Spot> {
+  const box = await boxOf(from);
+  return spotAt(page, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+}
+
+async function blankBelow(page: Page, emptyState: Locator): Promise<Spot> {
   const drawnEnd = await emptyState.evaluate((state) =>
     Math.max(
       ...[...state.children].map((part) => part.getBoundingClientRect().bottom),
@@ -178,13 +193,7 @@ async function blankBelow(page: Page, emptyState: Locator): Promise<BlankSpot> {
   if (at.y <= drawnEnd) {
     throw new Error("the empty state leaves no blank space below it");
   }
-  const target = (
-    await page.evaluateHandle(({ x, y }) => document.elementFromPoint(x, y), at)
-  ).asElement();
-  if (target === null) {
-    throw new Error("nothing is drawn below the empty state");
-  }
-  return { target, at };
+  return spotAt(page, at);
 }
 
 async function beginDragAt(from: DragTarget, start: Point): Promise<Drag> {
@@ -571,8 +580,12 @@ for (const platform of PLATFORMS) {
       expect(
         await cards.evaluate((row) => row.scrollWidth > row.clientWidth),
       ).toBe(true);
+      const onCard = await spotInside(
+        page,
+        cards.getByRole("listitem").first(),
+      );
 
-      const drag = await beginDrag(page, cards);
+      const drag = await beginDragAt(onCard.target, onCard.at);
       await drag.to(-SWIPE_PX);
       const swiping = await page.locator("[data-swiping]").count();
       const moved = await pagerTrack(page).evaluate(
