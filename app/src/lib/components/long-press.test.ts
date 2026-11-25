@@ -99,3 +99,23 @@ test("waits as long as the hold time asked for when the press starts", () => {
 
   expect(onHeld).toHaveBeenCalledOnce();
 });
+
+test("counts as held once a finger has been held for the hold time", () => {
+  const longPress = new LongPress(() => HELD_MS);
+  longPress.pointerWentDown();
+  longPress.pressed(press("touch"), () => undefined);
+
+  vi.advanceTimersByTime(HELD_MS);
+
+  expect(longPress.wasHeld).toBe(true);
+});
+
+test("stops counting as held when the next finger goes down", () => {
+  const longPress = new LongPress(() => HELD_MS);
+  longPress.pressed(press("touch"), () => undefined);
+  vi.advanceTimersByTime(HELD_MS);
+
+  longPress.pointerWentDown();
+
+  expect(longPress.wasHeld).toBe(false);
+});

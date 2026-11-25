@@ -67,7 +67,11 @@
       {...restProps}
       onpointerdown={press}
       onpointerup={(event) => {
-        onpointerup?.(event);
+        if (longPress.wasHeld) {
+          event.preventDefault();
+        } else {
+          onpointerup?.(event);
+        }
         release();
       }}
       onpointercancel={(event) => {
