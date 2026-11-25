@@ -21,7 +21,7 @@ use omnileaf_engine::{
     RescanOutcome, Resource, ResourceRouter, RootLocator, SeriesBookListing, SeriesShown,
     ShownInTree, TreeUri,
 };
-use omnileaf_testkit::SAMPLE_LIBRARY_NAME;
+use omnileaf_testkit::{GENEROUS_WAIT, SAMPLE_LIBRARY_NAME};
 use stepped_clock::SteppedClock;
 use support::{FixedClock, ScratchFolder};
 use tree_of_folder::{Opening, TreeOfFolder};
@@ -33,7 +33,6 @@ const SAMPLE_BOOKS: u32 = 7;
 const ARCHIVE_BOOKS: usize = 5;
 const IMAGE_FOLDER_BOOKS: usize = 2;
 const IMAGES_OPENED_PER_IMAGE_FOLDER: usize = 2;
-const WAIT_FOR_A_SECOND_OPEN: Duration = Duration::from_secs(2);
 const ARCHIVES_CHANGED_AT: Duration = Duration::from_hours(500_000);
 const TIMED_OUT_AFTER: Duration = Duration::from_millis(200);
 
@@ -161,7 +160,7 @@ async fn opens_several_books_at_once_when_scanning_an_android_folder() {
     let home = ScratchFolder::new("tree-overlap-home");
     let tree = TreeOfFolder::opening(
         "tree-overlap-comics",
-        Opening::InCompanyWithin(WAIT_FOR_A_SECOND_OPEN),
+        Opening::InCompanyWithin(GENEROUS_WAIT),
     );
     let library = open_reading(home.path(), &tree).await;
 
@@ -176,7 +175,7 @@ async fn opens_several_changed_books_at_once_when_rescanning_an_android_folder()
     let home = ScratchFolder::new("tree-overlap-rescan-home");
     let tree = TreeOfFolder::opening(
         "tree-overlap-rescan-comics",
-        Opening::InCompanyWithin(WAIT_FOR_A_SECOND_OPEN),
+        Opening::InCompanyWithin(GENEROUS_WAIT),
     );
     let library = open_reading(home.path(), &tree).await;
     library.add_folder(sample_tree(), |_| {}).await.unwrap();

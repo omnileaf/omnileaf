@@ -224,7 +224,7 @@ mod tests {
         path::PathBuf,
         sync::{
             Mutex,
-            atomic::{AtomicBool, AtomicUsize, Ordering},
+            atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
             mpsc,
         },
         thread,
@@ -234,8 +234,8 @@ mod tests {
     use omnileaf_db::catalog::RootKind;
     use omnileaf_formats::{Entry, LocalStorage, Storage};
     use omnileaf_testkit::{
-        GENERATED_LIBRARY_NAME, GeneratedLibrary, InFlight, PageShape, ScratchFolder, page_png,
-        wait_until, write_generated_library,
+        GENERATED_LIBRARY_NAME, GENEROUS_WAIT, GeneratedLibrary, InFlight, PageShape,
+        ScratchFolder, page_png, wait_until, write_generated_library,
     };
 
     use crate::{file_type::HiddenFileTypes, library_layout::BookForm};
@@ -248,7 +248,6 @@ mod tests {
         pages_per_book: 1,
     };
     const PAGE_SEED: u64 = 7;
-    const LONGEST_WAIT: Duration = Duration::from_secs(5);
     const LONG_ENOUGH_TO_PARSE: Duration = Duration::from_millis(300);
     const BYTES_ADDED_SINCE_RECOGNISED: u64 = 1;
     const TEST_BYTE_BUDGET: u64 = 1 << 20;
@@ -268,15 +267,10 @@ mod tests {
     const BOOKS_THE_BUDGET_HOLDS: u64 = 2;
     const A_PAIR: u64 = 2;
     const A_THIRD_OPEN: u64 = BOOKS_THE_BUDGET_HOLDS + 1;
-    const WAIT_FOR_COMPANY: Duration = Duration::from_secs(2);
+    const FIRST_WAVE: u64 = BOOKS_READ_AT_ONCE.get() as u64;
+    const NO_OPENS: u64 = 0;
     const WAIT_FOR_A_PEER: Duration = Duration::from_millis(50);
-    const WAITING_FOR_A_PEER: Pacing = Pacing::UntilCompany {
-        longest: WAIT_FOR_A_PEER,
-    };
-    const WAITING_FOR_EVERY_READER: Pacing = Pacing::UntilMostAtOnce {
-        at_once: BOOKS_READ_AT_ONCE.get() as u64,
-        longest: WAIT_FOR_COMPANY,
-    };
+    const ONE_BYTE: u64 = 1;
     const WAIT_FOR_A_SECOND_OPEN: Duration = Duration::from_millis(100);
     const UNLISTED_FILES: usize = 4;
     const WAIT_FOR_A_THIRD_OPEN: Duration = Duration::from_millis(300);
@@ -321,8 +315,9 @@ mod tests {
     #[derive(Debug)]
     struct PacedStorage {
         rooted: Rooted,
-        pacing: Pacing,
-        times_out_in_company: bool,
+        pacing: Mutex<Pacing>,
+        opens_that_time_out: u64,
+        opens_started: AtomicU64,
         is_hanging: AtomicBool,
         has_timed_out: AtomicBool,
         in_flight: InFlight,
@@ -331,27 +326,40 @@ mod tests {
 
     impl PacedStorage {
         fn unpaced(scratch: &ScratchFolder) -> Arc<Self> {
-            Self::new(scratch, Pacing::Immediately, false)
+            Self::new(scratch, Pacing::Immediately, NO_OPENS)
         }
 
         fn waiting_for(scratch: &ScratchFolder, at_once: u64, longest: Duration) -> Arc<Self> {
-            Self::new(scratch, Pacing::UntilMostAtOnce { at_once, longest }, false)
+            Self::new(
+                scratch,
+                Pacing::UntilMostAtOnce { at_once, longest },
+                NO_OPENS,
+            )
         }
 
-        fn timing_out_in_company(scratch: &ScratchFolder, pacing: Pacing) -> Arc<Self> {
-            Self::new(scratch, pacing, true)
+        fn timing_out_the_first(scratch: &ScratchFolder, opens: u64) -> Arc<Self> {
+            let pacing = Pacing::UntilMostAtOnce {
+                at_once: opens,
+                longest: GENEROUS_WAIT,
+            };
+            Self::new(scratch, pacing, opens)
         }
 
-        fn new(scratch: &ScratchFolder, pacing: Pacing, times_out_in_company: bool) -> Arc<Self> {
+        fn new(scratch: &ScratchFolder, pacing: Pacing, opens_that_time_out: u64) -> Arc<Self> {
             Arc::new(Self {
                 rooted: Rooted::in_scratch(scratch),
-                pacing,
-                times_out_in_company,
+                pacing: Mutex::new(pacing),
+                opens_that_time_out,
+                opens_started: AtomicU64::new(0),
                 is_hanging: AtomicBool::new(false),
                 has_timed_out: AtomicBool::new(false),
                 in_flight: InFlight::new(),
                 opened: Mutex::new(Vec::new()),
             })
+        }
+
+        fn pace(&self, pacing: Pacing) {
+            *self.pacing.lock().unwrap() = pacing;
         }
 
         fn hang(&self) {
@@ -371,7 +379,8 @@ mod tests {
         }
 
         fn wait_to_open(&self) {
-            match self.pacing {
+            let pacing = *self.pacing.lock().unwrap();
+            match pacing {
                 Pacing::Immediately => {}
                 Pacing::UntilMostAtOnce { at_once, longest } => {
                     self.in_flight
@@ -395,15 +404,14 @@ mod tests {
 
         fn open(&self, file: &Path) -> io::Result<File> {
             let entered = self.in_flight.enter();
+            let position = self.opens_started.fetch_add(1, Ordering::SeqCst);
             self.opened.lock().unwrap().push(Opened {
                 path: file.to_path_buf(),
                 in_flight_at_entry: entered.in_flight_at_entry(),
                 after_a_timeout: self.has_timed_out.load(Ordering::SeqCst),
             });
             self.wait_to_open();
-            if self.is_hanging.load(Ordering::SeqCst)
-                || (self.times_out_in_company && self.in_flight.has_company())
-            {
+            if self.is_hanging.load(Ordering::SeqCst) || position < self.opens_that_time_out {
                 self.has_timed_out.store(true, Ordering::SeqCst);
                 Err(io::ErrorKind::TimedOut.into())
             } else {
@@ -520,7 +528,7 @@ mod tests {
 
         let opened_while_held = wait_until(LONG_ENOUGH_TO_PARSE, || storage.has_opened());
         drop(held);
-        let read = finished.recv_timeout(LONGEST_WAIT).unwrap();
+        let read = finished.recv_timeout(GENEROUS_WAIT).unwrap();
         assert!(!opened_while_held);
         assert!(read.iter().all(Result::is_ok), "{read:?}");
     }
@@ -535,7 +543,7 @@ mod tests {
 
         thread::spawn(move || done.send(reader.read_each(&[book])).unwrap());
 
-        let read = finished.recv_timeout(LONGEST_WAIT).unwrap();
+        let read = finished.recv_timeout(GENEROUS_WAIT).unwrap();
         assert!(read.iter().all(Result::is_ok), "{read:?}");
     }
 
@@ -543,7 +551,7 @@ mod tests {
     fn opens_archives_at_once_on_one_permit() {
         let scratch = ScratchFolder::new("scan-archives-in-company");
         let books = archives(&scratch);
-        let storage = PacedStorage::waiting_for(&scratch, A_PAIR, WAIT_FOR_COMPANY);
+        let storage = PacedStorage::waiting_for(&scratch, A_PAIR, GENEROUS_WAIT);
         let reader = BookReader::sharing(
             target_over(storage.clone()),
             Arc::new(DecodePermits::new(1)),
@@ -562,7 +570,7 @@ mod tests {
         let books: Vec<FoundBook> = (1..=IMAGE_FOLDER_BOOKS)
             .map(|chapter| image_folder(&scratch, chapter))
             .collect();
-        let storage = PacedStorage::waiting_for(&scratch, A_PAIR, WAIT_FOR_COMPANY);
+        let storage = PacedStorage::waiting_for(&scratch, A_PAIR, GENEROUS_WAIT);
         let reader = BookReader::sharing(
             target_over(storage.clone()),
             Arc::new(DecodePermits::new(1)),
@@ -575,17 +583,21 @@ mod tests {
         assert!(storage.most_open_at_once() > 1);
     }
 
-    #[test]
-    fn opens_no_more_listed_bytes_at_once_than_its_budget_holds() {
-        let scratch = ScratchFolder::new("scan-bytes-in-company");
-        let books: Vec<FoundBook> = archives(&scratch)
+    fn archives_listed_as_100_bytes(scratch: &ScratchFolder) -> Vec<FoundBook> {
+        archives(scratch)
             .into_iter()
             .map(|book| FoundBook {
                 form: BookForm::of_file_listed_as(LISTED_BYTES),
                 ..book
             })
-            .collect();
-        let storage = PacedStorage::waiting_for(&scratch, A_THIRD_OPEN, WAIT_FOR_A_THIRD_OPEN);
+            .collect()
+    }
+
+    #[test]
+    fn opens_as_many_books_at_once_as_its_budget_holds() {
+        let scratch = ScratchFolder::new("scan-bytes-overlap");
+        let books = archives_listed_as_100_bytes(&scratch);
+        let storage = PacedStorage::waiting_for(&scratch, BOOKS_THE_BUDGET_HOLDS, GENEROUS_WAIT);
         let reader = budgeted_reader(
             storage.clone(),
             &Arc::new(ByteBudget::new(LISTED_BYTES * BOOKS_THE_BUDGET_HOLDS)),
@@ -597,12 +609,28 @@ mod tests {
         assert_eq!(storage.most_open_at_once(), BOOKS_THE_BUDGET_HOLDS);
     }
 
+    #[test]
+    fn opens_no_more_listed_bytes_at_once_than_its_budget_holds() {
+        let scratch = ScratchFolder::new("scan-bytes-in-company");
+        let books = archives_listed_as_100_bytes(&scratch);
+        let storage = PacedStorage::waiting_for(&scratch, A_THIRD_OPEN, WAIT_FOR_A_THIRD_OPEN);
+        let reader = budgeted_reader(
+            storage.clone(),
+            &Arc::new(ByteBudget::new(LISTED_BYTES * BOOKS_THE_BUDGET_HOLDS)),
+        );
+
+        let read = reader.read_each(&books);
+
+        assert!(read.iter().all(Result::is_ok), "{read:?}");
+        assert!(storage.most_open_at_once() <= BOOKS_THE_BUDGET_HOLDS);
+    }
+
     fn reader_after_a_timeout_in_company(
         scratch: &ScratchFolder,
     ) -> (Arc<PacedStorage>, BookReader, Vec<FoundBook>) {
         let books = archives_of(scratch, TWO_BATCHES);
         let (first, second) = books.split_at(BOOKS_PER_TEST_BATCH);
-        let storage = PacedStorage::timing_out_in_company(scratch, WAITING_FOR_A_PEER);
+        let storage = PacedStorage::timing_out_the_first(scratch, FIRST_WAVE);
         let reader = BookReader::sharing(
             target_over(storage.clone()),
             Arc::new(DecodePermits::new(1)),
@@ -611,6 +639,9 @@ mod tests {
         let read = reader.read_each(first);
         assert!(read.iter().all(Result::is_ok), "{read:?}");
         storage.take_opened();
+        storage.pace(Pacing::UntilCompany {
+            longest: WAIT_FOR_A_PEER,
+        });
         (storage, reader, second.to_vec())
     }
 
@@ -658,7 +689,7 @@ mod tests {
     fn opens_every_book_after_the_first_timeout_alone_within_one_batch() {
         let scratch = ScratchFolder::new("scan-alone-after-timeout-in-a-batch");
         let books = archives_of(&scratch, TWO_BATCHES);
-        let storage = PacedStorage::timing_out_in_company(&scratch, WAITING_FOR_EVERY_READER);
+        let storage = PacedStorage::timing_out_the_first(&scratch, FIRST_WAVE);
         let reader = BookReader::new(target_over(storage.clone()));
 
         let read = reader.read_each(&books);
@@ -677,7 +708,7 @@ mod tests {
     fn keeps_the_books_of_a_batch_in_order_when_an_open_times_out() {
         let scratch = ScratchFolder::new("scan-order-after-timeout-in-a-batch");
         let books = archives_of(&scratch, TWO_BATCHES);
-        let storage = PacedStorage::timing_out_in_company(&scratch, WAITING_FOR_EVERY_READER);
+        let storage = PacedStorage::timing_out_the_first(&scratch, FIRST_WAVE);
         let reader = BookReader::new(target_over(storage));
 
         let read = reader.read_each(&books);
@@ -730,20 +761,17 @@ mod tests {
         let folders: Vec<FoundBook> = (1..=IMAGE_FOLDER_BOOKS)
             .map(|chapter| image_folder(&scratch, chapter))
             .collect();
-        let storage = PacedStorage::waiting_for(&scratch, A_PAIR, WAIT_FOR_A_SECOND_OPEN);
-        let reader = budgeted_reader(
-            storage.clone(),
-            &Arc::new(ByteBudget::new(TEST_BYTE_BUDGET)),
-        );
+        let bytes = Arc::new(ByteBudget::new(ONE_BYTE));
+        let file_opens = PacedStorage::waiting_for(&scratch, A_PAIR, WAIT_FOR_A_SECOND_OPEN);
+        let folder_opens = PacedStorage::waiting_for(&scratch, A_PAIR, GENEROUS_WAIT);
 
-        let read_files = reader.read_each(&unlisted);
-        let most_files_open_at_once = storage.most_open_at_once();
-        let read_folders = reader.read_each(&folders);
+        let read_files = budgeted_reader(file_opens.clone(), &bytes).read_each(&unlisted);
+        let read_folders = budgeted_reader(folder_opens.clone(), &bytes).read_each(&folders);
 
         assert!(read_files.iter().all(Result::is_ok), "{read_files:?}");
         assert!(read_folders.iter().all(Result::is_ok), "{read_folders:?}");
-        assert_eq!(most_files_open_at_once, 1);
-        assert!(storage.most_open_at_once() > 1);
+        assert_eq!(file_opens.most_open_at_once(), 1);
+        assert!(folder_opens.most_open_at_once() > 1);
     }
 
     #[test]
@@ -780,7 +808,7 @@ mod tests {
         thread::scope(|scope| {
             scope.spawn(|| done.send(reader.read_each(&[book])).unwrap());
 
-            let read_while_held = finished.recv_timeout(LONGEST_WAIT).ok();
+            let read_while_held = finished.recv_timeout(GENEROUS_WAIT).ok();
             drop(held);
 
             let read = read_while_held.unwrap_or_else(|| panic!("waited on a decode permit"));
@@ -805,13 +833,13 @@ mod tests {
         thread::scope(|scope| {
             scope.spawn(|| done.send(reader.read_each(&[book])).unwrap());
 
-            let has_opened = wait_until(LONGEST_WAIT, || storage.has_opened());
+            let has_opened = wait_until(GENEROUS_WAIT, || storage.has_opened());
             let read_while_held = finished.recv_timeout(LONG_ENOUGH_TO_PARSE).ok();
             drop(held);
 
             assert!(has_opened);
             assert!(read_while_held.is_none(), "{read_while_held:?}");
-            let read = finished.recv_timeout(LONGEST_WAIT).unwrap();
+            let read = finished.recv_timeout(GENEROUS_WAIT).unwrap();
             assert!(read.iter().all(Result::is_ok), "{read:?}");
         });
     }
