@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import type { ElementHandle, Locator, Page } from "@playwright/test";
 
 import type {
   LibraryCategory,
@@ -38,6 +38,7 @@ const SCROLLED_ALL_PX = 1500;
 const SCROLLED_MANGA_PX = 600;
 const SCROLLED_FAR_PX = 3000;
 const SCROLL_TOLERANCE_PX = 2;
+const BLANK_INSET_PX = 8;
 
 interface Library {
   readonly all: ReturnType<typeof sampleSeries>;
@@ -125,12 +126,55 @@ interface Drag {
   readonly release: () => Promise<void>;
 }
 
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+type DragTarget = Pick<ElementHandle, "dispatchEvent">;
+
+interface BlankSpot {
+  readonly target: ElementHandle<Element>;
+  readonly at: Point;
+}
+
 async function beginDrag(page: Page, from: Locator): Promise<Drag> {
   const box = await from.boundingBox();
   if (box === null) {
     throw new Error("the dragged element is not on screen");
   }
-  const start = { x: box.x + box.width / 2, y: box.y + box.height / 3 };
+  return beginDragAt(from, {
+    x: box.x + box.width / 2,
+    y: box.y + box.height / 3,
+  });
+}
+
+async function blankBelow(page: Page, emptyState: Locator): Promise<BlankSpot> {
+  const drawnEnd = await emptyState.evaluate((state) =>
+    Math.max(
+      ...[...state.children].map((part) => part.getBoundingClientRect().bottom),
+    ),
+  );
+  const at = await page.getByRole("main").evaluate((main, inset) => {
+    const box = main.getBoundingClientRect();
+    const contentEnd =
+      Math.min(box.bottom, window.innerHeight) -
+      parseFloat(getComputedStyle(main).paddingBlockEnd);
+    return { x: box.x + box.width / 2, y: contentEnd - inset };
+  }, BLANK_INSET_PX);
+  if (at.y <= drawnEnd) {
+    throw new Error("the empty state leaves no blank space below it");
+  }
+  const target = (
+    await page.evaluateHandle(({ x, y }) => document.elementFromPoint(x, y), at)
+  ).asElement();
+  if (target === null) {
+    throw new Error("nothing is drawn below the empty state");
+  }
+  return { target, at };
+}
+
+async function beginDragAt(from: DragTarget, start: Point): Promise<Drag> {
   const touch = { pointerType: "touch", pointerId: 7, isPrimary: true };
   let reached = 0;
   await from.dispatchEvent("pointerdown", {
@@ -506,8 +550,9 @@ for (const platform of PLATFORMS) {
         page,
       }) => {
         await openEmptyTab(page, "New chapters");
+        const blank = await blankBelow(page, noMatches(page));
 
-        const drag = await beginDrag(page, noMatches(page));
+        const drag = await beginDragAt(blank.target, blank.at);
         await drag.to(by);
         await drag.release();
 
@@ -532,22 +577,31 @@ for (const platform of PLATFORMS) {
     test("keeps sideways drags on an empty tab for the swipe", async ({
       page,
     }) => {
-      await openLibrary(page);
+      await openEmptyTab(page, "New chapters");
+      const blank = await blankBelow(page, noMatches(page));
 
-      await chosenTab(page, "New chapters").click();
+      const touchActions = await blank.target.evaluate((spot) => {
+        const actions: string[] = [];
+        for (
+          let element: Element | null = spot;
+          element !== null && element.tagName !== "MAIN";
+          element = element.parentElement
+        ) {
+          actions.push(getComputedStyle(element).touchAction);
+        }
+        return actions.filter((action) => action !== "auto");
+      });
 
-      await expect(noMatches(page).locator("xpath=..")).toHaveCSS(
-        "touch-action",
-        "pan-y",
-      );
+      expect(touchActions).toEqual(["pan-y"]);
     });
 
     test("moves from an empty category to the tab before it", async ({
       page,
     }) => {
       await openEmptyTab(page, "Comics");
+      const blank = await blankBelow(page, noMatches(page));
 
-      const drag = await beginDrag(page, noMatches(page));
+      const drag = await beginDragAt(blank.target, blank.at);
       await drag.to(SWIPE_PX);
       await drag.release();
 
@@ -588,8 +642,9 @@ for (const platform of PLATFORMS) {
     test("moves to the tab after it", async ({ page }) => {
       await page.goto("/");
       await expect(noMatches(page)).toBeVisible();
+      const blank = await blankBelow(page, noMatches(page));
 
-      const drag = await beginDrag(page, noMatches(page));
+      const drag = await beginDragAt(blank.target, blank.at);
       await drag.to(-SWIPE_PX);
       await drag.release();
 
