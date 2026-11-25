@@ -273,14 +273,7 @@ test.describe(
       page,
     }) => {
       await openLibrary(page);
-      await page.keyboard.press("Control+k");
-      const quickOpen = page.getByRole("dialog", { name: "Quick open" });
-      await quickOpen.locator("input").fill(SERIES_TITLE);
-      await quickOpen
-        .getByRole("option", { name: new RegExp(SERIES_TITLE) })
-        .first()
-        .click();
-      await expect(page).toHaveURL(ANY_READER);
+      await openFromQuickOpen(page);
 
       await expectBackAndGestureAgree(page, LIBRARY, "Back to the library");
     });
@@ -290,14 +283,7 @@ test.describe(
     }) => {
       await openLibrary(page);
       await followInApp(page, HISTORY);
-      await page.keyboard.press("Control+k");
-      const quickOpen = page.getByRole("dialog", { name: "Quick open" });
-      await quickOpen.locator("input").fill(SERIES_TITLE);
-      await quickOpen
-        .getByRole("option", { name: new RegExp(SERIES_TITLE) })
-        .first()
-        .click();
-      await expect(page).toHaveURL(ANY_READER);
+      await openFromQuickOpen(page);
 
       await page.goBack();
       await expect(page).toHaveURL(HISTORY);
