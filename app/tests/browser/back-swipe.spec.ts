@@ -1,7 +1,9 @@
 import type { Page } from "@playwright/test";
 
 import type { BackSwipe, SwipeEdge } from "../../src/lib/ipc/bindings.ts";
+import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
 import type { FakeChannel } from "./fake-backend.ts";
+import { sampleLibraryOn } from "./screens.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
@@ -23,6 +25,9 @@ const SHORT_VIEWPORT_HEIGHT = 200;
 const LANGUAGE_KEY = "omnileaf.language";
 const PSEUDO_LOCALE = "en-XA";
 const PSEUDO_LOCALE_MARK = "⟦";
+const PHONE = { width: 390, height: 844 };
+const CREDITED_SERIES = `/series/${sampleSeriesId(4)}`;
+const CREDITED_TITLE = "Sample Series 04";
 
 let swipes: FakeChannel<BackSwipe> | undefined;
 const allowedEdges: (SwipeEdge | null)[] = [];
@@ -452,5 +457,54 @@ test.describe("with reduced motion", () => {
     const main = page.getByRole("main");
     await expect(main).toHaveCSS("transition-duration", "0.2s");
     await expect(main).toHaveCSS("transition-timing-function", "ease-out");
+  });
+});
+
+test.describe("a screen whose way back is not above it", () => {
+  test.use({
+    backend: {
+      ...sampleLibraryOn("ios"),
+      watchBackSwipes: (channel) => {
+        swipes = channel;
+        return null;
+      },
+      allowBackSwipe: (edge) => {
+        allowedEdges.push(edge);
+        return null;
+      },
+    },
+  });
+
+  async function openFromScreen(page: Page, href: string): Promise<void> {
+    await page.getByRole("main").locator(`a[href^="${href}"]`).first().click();
+    await expect(page).toHaveURL(new RegExp(href));
+  }
+
+  test("shows the Library behind a series opened from it", async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    await page.goto("/");
+    await expect(heading(page, "Library")).toBeVisible();
+    await openFromScreen(page, "/series/");
+    await expect.poll(lastAllowedEdge).toBe("left");
+
+    await swipe({ kind: "moved", progress: 0.5 });
+
+    await expect(previousScreen(page).locator("h1").first()).toHaveText(
+      "Library",
+    );
+  });
+
+  test("shows the series behind a creator opened from it", async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    await page.goto(CREDITED_SERIES);
+    await expect(heading(page, CREDITED_TITLE)).toBeVisible();
+    await openFromScreen(page, "/creator/");
+    await expect.poll(lastAllowedEdge).toBe("left");
+
+    await swipe({ kind: "moved", progress: 0.5 });
+
+    await expect(previousScreen(page).locator("h1").first()).toHaveText(
+      CREDITED_TITLE,
+    );
   });
 });
