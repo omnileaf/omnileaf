@@ -9,6 +9,7 @@
   import { CrashTests } from "#lib/crash-tests/crash-tests.ts";
   import CrashTestList from "#lib/crash-tests/CrashTestList.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import TapOpenTabChoice from "#lib/navigation/TapOpenTabChoice.svelte";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
@@ -51,6 +52,7 @@
   const undoHeadingId = $props.id();
   const navigationHeadingId = `${undoHeadingId}-navigation`;
   const android = androidListLook();
+  const androidPhone = new AndroidPhone();
   const isCheckingFolders = $derived(
     scheduledRescans.isOnFor(data.appInfo.platform),
   );
@@ -58,7 +60,7 @@
 
 <SectionHeading title={m.advanced_title()} />
 <div
-  class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none android:max-medium:gap-none"
+  class="mbs-pane-gap flex flex-col gap-pane-gap android:mbs-none android:gap-none"
 >
   <SettingsEntries
     entries={[
@@ -71,7 +73,7 @@
       },
     ]}
   />
-  {#if android.isOn}
+  {#if androidPhone.isOn}
     <section
       data-settings-group
       aria-labelledby={navigationHeadingId}
@@ -87,7 +89,7 @@
     data-settings-group
     aria-labelledby={undoHeadingId}
     class={[
-      "flex flex-col rounded-card border border-border bg-card android:max-medium:border-0",
+      "flex flex-col rounded-card border border-border bg-card android:border-0",
       !android.isOn && "divide-y divide-border overflow-hidden",
       GROUP_PLATE,
     ]}
@@ -158,7 +160,7 @@
     />
   {/if}
   {#if data.appInfo.isDevelopmentBuild}
-    <div class="flex flex-col gap-pane-gap android:max-medium:mbs-pane-gap">
+    <div class="flex flex-col gap-pane-gap android:mbs-pane-gap">
       <div
         role="note"
         class="flex items-start gap-md rounded-card border border-border bg-card py-md ps-md pe-list-row touch:max-medium:ps-list-row"

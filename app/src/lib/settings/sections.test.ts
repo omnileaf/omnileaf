@@ -73,14 +73,14 @@ test("lists every section in the order the Settings nav draws them", () => {
   ]);
 });
 
-test("shows Accessibility only on an Android phone", () => {
+test("shows Accessibility only where settings draws Android lists", () => {
   const onOtherScreens = sectionsShown(SETTINGS_SECTIONS, false);
-  const onAndroidPhones = sectionsShown(SETTINGS_SECTIONS, true);
+  const withAndroidLists = sectionsShown(SETTINGS_SECTIONS, true);
 
   expect(onOtherScreens.map(({ route }) => route)).not.toContain(
     "/(app)/settings/accessibility",
   );
-  expect(onAndroidPhones.map(({ route }) => route)).toContain(
+  expect(withAndroidLists.map(({ route }) => route)).toContain(
     "/(app)/settings/accessibility",
   );
 });

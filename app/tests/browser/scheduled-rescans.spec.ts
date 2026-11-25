@@ -28,8 +28,8 @@ function scheduledRescansSwitch(page: Page) {
   return page.getByRole("switch", { name: SWITCH_NAME });
 }
 
-function isAndroidPhone(page: Page, platform: Platform): boolean {
-  return platform === "android" && viewportOf(page).width <= PHONE_MAX_WIDTH;
+function checksFromLibrarySettings(platform: Platform): boolean {
+  return platform === "android";
 }
 
 for (const platform of ["ios", "android", "linux"] as const) {
@@ -63,8 +63,8 @@ for (const platform of ["ios", "android", "linux"] as const) {
       page,
     }) => {
       test.skip(
-        isAndroidPhone(page, platform),
-        "an Android phone checks folders from Settings › Library",
+        checksFromLibrarySettings(platform),
+        "Android checks folders from Settings › Library",
       );
       await page.goto("/settings/advanced");
 
@@ -81,8 +81,8 @@ for (const platform of ["ios", "android", "linux"] as const) {
       page,
     }) => {
       test.skip(
-        isAndroidPhone(page, platform),
-        "an Android phone checks folders from Settings › Library",
+        checksFromLibrarySettings(platform),
+        "Android checks folders from Settings › Library",
       );
       await page.goto("/settings/advanced");
       const wasOn = IS_ON_BY_DEFAULT[platform];
@@ -104,8 +104,8 @@ for (const platform of ["ios", "android", "linux"] as const) {
 
     test("spans the pane in a row tall enough to touch", async ({ page }) => {
       test.skip(
-        isAndroidPhone(page, platform),
-        "an Android phone checks folders from Settings › Library",
+        checksFromLibrarySettings(platform),
+        "Android checks folders from Settings › Library",
       );
       await page.goto("/settings/advanced");
       const checks = scheduledRescansSwitch(page);

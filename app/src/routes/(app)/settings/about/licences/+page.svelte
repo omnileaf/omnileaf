@@ -28,7 +28,7 @@
   parent={{ route: "/(app)/settings/about", title: m.about_title() }}
 />
 <div
-  class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none two-pane:max-inline-section"
+  class="mbs-pane-gap flex flex-col gap-sm android:mbs-none two-pane:max-inline-section"
 >
   <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
     {m.licences_intro()}

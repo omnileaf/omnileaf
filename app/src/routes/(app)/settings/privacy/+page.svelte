@@ -91,7 +91,7 @@
 {/snippet}
 
 <SectionHeading title={m.privacy_title()} />
-<div class="mbs-pane-gap flex flex-col gap-lg android:max-medium:mbs-none">
+<div class="mbs-pane-gap flex flex-col gap-lg android:mbs-none">
   <SettingsEntries
     entries={[
       ...(data.appLock.kind === "unavailable"

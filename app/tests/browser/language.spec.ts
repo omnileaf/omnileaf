@@ -5,15 +5,12 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
-  MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
   testOnlyInItsWebview,
-  viewportOf,
 } from "./fixtures.ts";
 
 const PHONE_HINT = "Omnileaf uses your phone's language unless you pick one.";
-const TOUCH_ROW_HEIGHT = 48;
 const POINTER_ROW_HEIGHT = 44;
 
 function languageRow(page: Page) {
@@ -76,14 +73,13 @@ test("points the Language row's chevron toward the end of the line in a right-to
   await expect(languageRow(page).locator("svg")).toHaveCSS("scale", "-1 1");
 });
 
-test.describe("on an Android phone", () => {
+test.describe("on Android", () => {
   testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
   test("offers the system language in a choice dialog from a two-line row", async ({
     page,
   }) => {
-    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
     await page.goto("/settings/general");
 
     const row = page.getByRole("button", { name: /^Language/ });
@@ -94,21 +90,6 @@ test.describe("on an Android phone", () => {
     await expect(
       dialog.getByRole("radio", { name: /Use the system language/ }),
     ).toBeChecked();
-  });
-});
-
-test.describe("on an Android tablet", () => {
-  testOnlyInItsWebview("android");
-  test.use(onPlatform("android"));
-
-  test("shows the Language row 48px tall", async ({ page }) => {
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "tablets only");
-    await page.goto("/settings/general");
-
-    const row = await boxOf(languageRow(page));
-
-    expect(row.height).toBe(TOUCH_ROW_HEIGHT);
-    await expect(page.getByText(PHONE_HINT)).toBeHidden();
   });
 });
 
