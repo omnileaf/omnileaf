@@ -83,7 +83,6 @@
             icon={Icon}
             {iconName}
             label={label()}
-            hint={undefined}
             look="android"
             {opensBrowser}
             onPress={() => {

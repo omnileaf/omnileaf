@@ -24,7 +24,7 @@
     icon: Glyph;
     iconName: IconName;
     label: string;
-    hint: string | undefined;
+    hint?: string | undefined;
     hintKind?: HintKind | undefined;
     look: AboutLook;
   } = $props();
