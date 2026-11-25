@@ -6,7 +6,12 @@ import {
   sampleSeriesId,
 } from "../../src/lib/sample-library/sample-library.ts";
 import { NOTHING_BENEATH_MS } from "../../src/lib/reader/nothing-beneath.ts";
-import { expect, test, testOnlyInItsWebview } from "./fixtures.ts";
+import {
+  expect,
+  selectByLongPress,
+  test,
+  testOnlyInItsWebview,
+} from "./fixtures.ts";
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import { sampleLibraryOn, serveSampleArt } from "./screens.ts";
 
@@ -26,7 +31,6 @@ const APPEARANCE = "/settings/appearance";
 const BOOK_THAT_CANNOT_BE_READ = sampleBookId(4, 3);
 const SEARCH_WITH_QUERY = "/search?q=Sample";
 const TABLET = { width: 820, height: 1180 };
-const LONG_PRESS_MS = 800;
 
 async function pressLink(
   link: Locator,
@@ -94,18 +98,11 @@ async function openLibrary(page: Page): Promise<void> {
 }
 
 async function selectASeries(page: Page): Promise<void> {
-  await page.clock.install();
   await openLibrary(page);
-  const card = page
-    .getByRole("list", { name: "Series" })
-    .getByRole("listitem")
-    .nth(1);
-  const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
-  await card.getByRole("link").first().dispatchEvent("pointerdown", touch);
-  await page.clock.runFor(LONG_PRESS_MS);
-  const picked = card.getByRole("checkbox");
-  await picked.dispatchEvent("pointerup", touch);
-  await picked.dispatchEvent("click");
+  await selectByLongPress(
+    page,
+    page.getByRole("list", { name: "Series" }).getByRole("listitem").nth(1),
+  );
   await expect(page.getByText("1 selected").first()).toBeVisible();
 }
 
