@@ -36,11 +36,15 @@
     isOpen = $bindable(false),
     series,
     startsAtTags,
+    onApplied,
+    onApplyFailed,
     onError,
   }: {
     isOpen?: boolean;
     series: readonly SeriesId[];
     startsAtTags: boolean;
+    onApplied?: () => void;
+    onApplyFailed: (error: unknown) => void;
     onError: (error: unknown) => void;
   } = $props();
 
@@ -165,10 +169,11 @@
       tagsRemoved,
     });
     if (applied.status !== "ok") {
-      onError(applied.error);
+      onApplyFailed(applied.error);
       return;
     }
     isOpen = false;
+    onApplied?.();
   }
 </script>
 
