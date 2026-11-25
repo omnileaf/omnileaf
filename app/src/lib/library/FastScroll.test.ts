@@ -29,7 +29,7 @@ function handleIn(screen: HTMLElement): Element | null {
 for (const ending of ["transitionend", "transitioncancel"]) {
   test(`puts its handle beside the screen once the screen's move ends with ${ending}`, async () => {
     const screen = screenDrawnMoving();
-    render(
+    await render(
       FastScroll,
       { total: 100, letterAt: () => "A" },
       { baseElement: screen },
