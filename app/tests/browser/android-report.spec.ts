@@ -10,8 +10,6 @@ import {
 
 test.use({ backend: { ...DEFAULT_BACKEND } });
 
-const SETTINGS_RULE_WIDTH = 1;
-
 const ROWS = [
   { name: "Version and device", icon: "info" },
   { name: "Log", icon: "scroll-text" },
@@ -131,7 +129,7 @@ test.describe(
       expect(new Set(edges)).toEqual(new Set(["0px"]));
     });
 
-    test("heads Other ways to send it like a Settings group, in the accent straight under its line", async ({
+    test("heads Other ways to send it like a Settings group, in the accent right above its rows", async ({
       page,
     }) => {
       await page.goto("/settings/about/report");
@@ -143,10 +141,6 @@ test.describe(
 
       const headingBox = await boxOf(heading);
 
-      expect(headingBox.y - (await boxOf(group)).y).toBeCloseTo(
-        SETTINGS_RULE_WIDTH,
-        0,
-      );
       expect((await boxOf(firstRow)).y).toBeCloseTo(
         headingBox.y + headingBox.height,
         0,

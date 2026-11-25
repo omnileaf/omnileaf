@@ -213,6 +213,7 @@ const HEADINGS_ON_LINES = [
   { route: "/settings/accessibility", heading: "Motion and contrast" },
   { route: "/settings/advanced", heading: "Navigation" },
   { route: "/settings/advanced", heading: "Undo" },
+  { route: "/settings/about/report", heading: "Other ways to send it" },
 ] as const;
 
 interface EdgeProbe {
