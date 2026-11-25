@@ -12,6 +12,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   selectedByDoubleClick,
+  tabTo,
   test,
   testOnlyInItsWebview,
   viewportOf,
@@ -167,6 +168,26 @@ test.describe("when the device turns the app down", () => {
     );
   });
 });
+
+for (const platform of ["ios", "linux"] as const) {
+  test.describe(`on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
+    test.use(onPlatform(platform));
+
+    test("keeps the browser's own focus ring on Source code", async ({
+      page,
+    }) => {
+      await openAbout(page);
+
+      await tabTo(page, linkRow(page, "Source code"));
+
+      await expect(linkRow(page, "Source code")).toHaveCSS(
+        "outline-style",
+        "auto",
+      );
+    });
+  });
+}
 
 test("shows where the source code lives", async ({ page }) => {
   await openAbout(page);
