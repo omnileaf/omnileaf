@@ -183,6 +183,25 @@ test.describe(
       );
     });
 
+    test("fills the reply email and sizes Send to Omnileaf to it, as the plated card does elsewhere", async ({
+      page,
+    }) => {
+      await page.goto("/settings/about/report");
+      const field = page.getByRole("textbox", {
+        name: "Email for a reply (optional)",
+      });
+      const send = page.getByRole("button", { name: "Send to Omnileaf" });
+
+      await expect(field).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--color-input-fill"),
+      );
+      expect((await boxOf(send)).height).toBeCloseTo(
+        (await boxOf(field)).height,
+        0,
+      );
+    });
+
     for (const group of ["What's included", "Other ways to send it"]) {
       test(`keeps ${group} as rows with tiled icons and a line between them`, async ({
         page,

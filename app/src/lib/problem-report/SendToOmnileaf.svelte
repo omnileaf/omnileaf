@@ -8,7 +8,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { reportLook } from "./report-look.ts";
-  import { CurrentReportRowsLook, REPORT_CARDS } from "./report-rows-look.ts";
+  import { CurrentReportRowsLook } from "./report-rows-look.ts";
   import type { ReportSharing } from "./report-sharing.svelte";
   import { failureMessage } from "./share-failure";
 
@@ -16,8 +16,9 @@
 
   let { sharing }: { sharing: ReportSharing } = $props();
 
-  const look = reportLook(currentPlatform());
+  const platform = currentPlatform();
   const rowsLook = new CurrentReportRowsLook();
+  const look = $derived(reportLook(platform, rowsLook.current));
   const fieldId = $props.id();
   const hintId = `${fieldId}-hint`;
   const refusalId = `${fieldId}-refusal`;
@@ -30,7 +31,7 @@
 </script>
 
 <div class="mbs-lg mbe-xs flex flex-col android:max-medium:mbe-none">
-  <div class={["flex flex-col gap-sm", REPORT_CARDS[rowsLook.current]]}>
+  <div class={["flex flex-col gap-sm", look.card]}>
     <label for={fieldId} class="text-label font-medium">
       {m.report_reply_email()}
     </label>
