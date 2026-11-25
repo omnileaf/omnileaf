@@ -1,10 +1,10 @@
 <script lang="ts">
   import { ROW_SUBTITLE_MUTED_TYPE } from "#lib/components/ui/item/looks.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { FLUSH_BLEED } from "#lib/settings/android-flush-look.ts";
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
 </script>
 
 {#if android.isOn}

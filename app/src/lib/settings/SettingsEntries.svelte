@@ -25,7 +25,7 @@
     ItemDescription,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
 
   import { FLUSH_LIST } from "./android-flush-look.ts";
@@ -37,7 +37,7 @@
   const TODAYS_LIST =
     "divide-y divide-border overflow-hidden rounded-list border border-border bg-card";
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
 </script>
 
 {#if android.isOn}

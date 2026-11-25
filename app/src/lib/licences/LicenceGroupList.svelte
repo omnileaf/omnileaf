@@ -4,7 +4,7 @@
 
   import { resolve } from "$app/paths";
   import { type AboutLook, ROW_ICON_SIZES } from "#lib/about/look.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -28,7 +28,7 @@
   let { group, look }: { group: LicenceGroup; look: AboutLook } = $props();
 
   const headingId = $props.id();
-  const android = new AndroidPhone();
+  const android = androidListLook();
 
   let isExpanded = $state(false);
   const links: HTMLAnchorElement[] = $state([]);

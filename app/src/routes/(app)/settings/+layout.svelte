@@ -4,6 +4,7 @@
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { drawAndroidListsWith } from "#lib/settings/android-list-look.svelte.ts";
   import { pagesListLook } from "#lib/settings/pages-list-look.ts";
   import {
     SETTINGS_SECTIONS,
@@ -19,6 +20,7 @@
 
   const look = pagesListLook(currentPlatform());
   const android = new AndroidPhone();
+  drawAndroidListsWith(android);
 </script>
 
 <div

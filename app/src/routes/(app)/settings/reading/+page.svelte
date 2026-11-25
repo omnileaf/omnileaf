@@ -2,7 +2,7 @@
   import { CircleCheck } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import { Slider } from "#lib/components/ui/slider/index.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
@@ -70,7 +70,7 @@
   const hints = readerHints();
   const notices = getNotices();
   const width = new WindowWidth();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const isAndroid = currentPlatform() === "android";
   const isOnPhone = $derived(isPhone(currentPlatform(), width.current));
 

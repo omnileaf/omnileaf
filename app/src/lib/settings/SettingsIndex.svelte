@@ -12,7 +12,7 @@
   } from "#lib/components/ui/item/index.ts";
   import { cn } from "#lib/components/cn.ts";
   import { ITEM_LOOKS, ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -44,7 +44,7 @@
   } satisfies Record<SectionChip, string>;
   const platform = currentPlatform();
   const headingId = $props.id();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const TODAYS_HEADING =
     "px-lg text-small font-semibold text-muted ios:text-native-row-title/native-row-title ios:font-native-tile-title ios:tracking-native-row-title android:font-medium android:text-accent";
   const TODAYS_LIST =

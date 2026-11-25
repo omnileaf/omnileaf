@@ -8,7 +8,7 @@
     AppLockSetting,
   } from "#lib/app-lock/app-lock-setting.svelte.ts";
   import type { LockAfter } from "#lib/ipc/bindings.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -26,7 +26,7 @@
   let { data }: PageProps = $props();
 
   const notices = getNotices();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const setting = $derived(
     new AppLockSetting(data.appLock, APP_LOCK_CHANGES, {
       onFailure: (error) => {
