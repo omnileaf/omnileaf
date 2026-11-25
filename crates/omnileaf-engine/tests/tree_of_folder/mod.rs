@@ -32,6 +32,7 @@ pub(crate) struct TreeOfFolder {
     pub(crate) scratch: ScratchFolder,
     library: WrittenLibrary,
     opening: Opening,
+    in_company_deadline: Deadline,
     opened: Mutex<Vec<PathBuf>>,
     open: InFlight,
     is_lost: AtomicBool,
@@ -48,6 +49,17 @@ pub(crate) enum Opening {
     After(Duration),
     InCompanyWithin(Duration),
     TimingOutInCompanyWithin(Duration),
+}
+
+impl Opening {
+    fn longest_in_company(self) -> Duration {
+        match self {
+            Self::InCompanyWithin(longest) => longest,
+            Self::Immediately | Self::After(_) | Self::TimingOutInCompanyWithin(_) => {
+                Duration::ZERO
+            }
+        }
+    }
 }
 
 impl TreeOfFolder {
@@ -78,6 +90,7 @@ impl TreeOfFolder {
             scratch,
             library,
             opening,
+            in_company_deadline: Deadline::after(opening.longest_in_company()),
             opened: Mutex::new(Vec::new()),
             open: InFlight::new(),
             is_lost: AtomicBool::new(false),
@@ -134,9 +147,9 @@ impl TreeOfFolder {
                 thread::sleep(latency);
                 Ok(())
             }
-            Opening::InCompanyWithin(longest) => {
+            Opening::InCompanyWithin(_) => {
                 self.open
-                    .wait_until_most_at_once_reaches(A_PAIR, Deadline::after(longest));
+                    .wait_until_most_at_once_reaches(A_PAIR, self.in_company_deadline);
                 Ok(())
             }
             Opening::TimingOutInCompanyWithin(longest) => {

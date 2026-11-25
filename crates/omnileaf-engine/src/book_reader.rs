@@ -301,8 +301,8 @@ mod tests {
     #[derive(Clone, Copy, Debug)]
     enum Pacing {
         Immediately,
-        UntilMostAtOnce { at_once: u64, longest: Duration },
-        UntilCompany { longest: Duration },
+        UntilMostAtOnce { at_once: u64, deadline: Deadline },
+        UntilCompany { deadline: Deadline },
     }
 
     #[derive(Debug)]
@@ -330,9 +330,10 @@ mod tests {
         }
 
         fn waiting_for(scratch: &ScratchFolder, at_once: u64, longest: Duration) -> Arc<Self> {
+            let deadline = Deadline::after(longest);
             Self::new(
                 scratch,
-                Pacing::UntilMostAtOnce { at_once, longest },
+                Pacing::UntilMostAtOnce { at_once, deadline },
                 NO_OPENS,
             )
         }
@@ -340,7 +341,7 @@ mod tests {
         fn timing_out_the_first(scratch: &ScratchFolder, opens: u64) -> Arc<Self> {
             let pacing = Pacing::UntilMostAtOnce {
                 at_once: opens,
-                longest: GENEROUS_WAIT,
+                deadline: Deadline::after(GENEROUS_WAIT),
             };
             Self::new(scratch, pacing, opens)
         }
@@ -382,12 +383,12 @@ mod tests {
             let pacing = *self.pacing.lock().unwrap();
             match pacing {
                 Pacing::Immediately => {}
-                Pacing::UntilMostAtOnce { at_once, longest } => {
+                Pacing::UntilMostAtOnce { at_once, deadline } => {
                     self.in_flight
-                        .wait_until_most_at_once_reaches(at_once, Deadline::after(longest));
+                        .wait_until_most_at_once_reaches(at_once, deadline);
                 }
-                Pacing::UntilCompany { longest } => {
-                    self.in_flight.wait_for_company(Deadline::after(longest));
+                Pacing::UntilCompany { deadline } => {
+                    self.in_flight.wait_for_company(deadline);
                 }
             }
         }
@@ -584,7 +585,7 @@ mod tests {
         assert!(storage.most_open_at_once() > 1);
     }
 
-    fn archives_listed_as_100_bytes(scratch: &ScratchFolder) -> Vec<FoundBook> {
+    fn archives_with_a_set_listed_size(scratch: &ScratchFolder) -> Vec<FoundBook> {
         archives(scratch)
             .into_iter()
             .map(|book| FoundBook {
@@ -597,7 +598,7 @@ mod tests {
     #[test]
     fn opens_as_many_books_at_once_as_its_budget_holds() {
         let scratch = ScratchFolder::new("scan-bytes-overlap");
-        let books = archives_listed_as_100_bytes(&scratch);
+        let books = archives_with_a_set_listed_size(&scratch);
         let storage = PacedStorage::waiting_for(&scratch, BOOKS_THE_BUDGET_HOLDS, GENEROUS_WAIT);
         let reader = budgeted_reader(
             storage.clone(),
@@ -613,7 +614,7 @@ mod tests {
     #[test]
     fn opens_no_more_listed_bytes_at_once_than_its_budget_holds() {
         let scratch = ScratchFolder::new("scan-bytes-in-company");
-        let books = archives_listed_as_100_bytes(&scratch);
+        let books = archives_with_a_set_listed_size(&scratch);
         let storage = PacedStorage::waiting_for(&scratch, A_THIRD_OPEN, WAIT_FOR_A_THIRD_OPEN);
         let reader = budgeted_reader(
             storage.clone(),
@@ -641,7 +642,7 @@ mod tests {
         assert!(read.iter().all(Result::is_ok), "{read:?}");
         storage.take_opened();
         storage.pace(Pacing::UntilCompany {
-            longest: WAIT_FOR_A_PEER,
+            deadline: Deadline::after(WAIT_FOR_A_PEER),
         });
         (storage, reader, second.to_vec())
     }
