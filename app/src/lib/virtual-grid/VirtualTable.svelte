@@ -3,6 +3,7 @@
   import type { ClassValue } from "svelte/elements";
 
   import { Table, TableBody } from "#lib/components/ui/table/index.ts";
+  import { shownScaleOf } from "#lib/page/shown-scale.ts";
 
   import { rowWindow, type Seen } from "./row-window";
 
@@ -61,11 +62,12 @@
     if (body === null) {
       return;
     }
-    const top = -body.getBoundingClientRect().top;
-    seen = { top, bottom: top + window.innerHeight };
+    const scale = shownScaleOf(body);
+    const top = -body.getBoundingClientRect().top / scale;
+    seen = { top, bottom: top + window.innerHeight / scale };
     const height = firstRowHeight(body);
     if (height !== undefined && height > 0) {
-      rowStride = height;
+      rowStride = height / scale;
     }
   }
 

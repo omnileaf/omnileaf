@@ -1,5 +1,5 @@
 import { createRawSnippet } from "svelte";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, expect, onTestFinished, test, vi } from "vitest";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -13,6 +13,8 @@ interface Sample {
 
 const TEN_THOUSAND = 10_000;
 const LABEL = "Samples";
+const SHOWN_SCALE = 0.5;
+const ROW_HEIGHT = 40;
 
 const head = createRawSnippet(() => ({
   render: () => `<thead><tr aria-rowindex="1"><th>Name</th></tr></thead>`,
@@ -36,22 +38,49 @@ afterEach(() => {
   window.scrollTo(0, 0);
 });
 
+const fixedRow = createRawSnippet(
+  (sample: () => Sample, rowIndex: () => number) => ({
+    render: () =>
+      `<tr aria-rowindex="${String(rowIndex())}" style="block-size: ${String(ROW_HEIGHT)}px"><td>${sample().name}</td></tr>`,
+  }),
+);
+
+function scaledDown(): HTMLDivElement {
+  const holder = document.createElement("div");
+  holder.style.transform = `scale(${String(SHOWN_SCALE)})`;
+  holder.style.transformOrigin = "0 0";
+  document.body.append(holder);
+  onTestFinished(() => {
+    holder.remove();
+  });
+  return holder;
+}
+
 async function renderTable(
   count: number,
-  options: { isComplete?: boolean; onNearEnd?: () => void } = {},
+  options: {
+    isComplete?: boolean;
+    onNearEnd?: () => void;
+    row?: typeof row;
+    baseElement?: HTMLElement;
+  } = {},
 ) {
-  await render(VirtualTable<Sample>, {
-    items: samples(count),
-    key: (sample: Sample) => sample.id,
-    label: LABEL,
-    columns: 1,
-    isComplete: options.isComplete ?? true,
-    ...(options.onNearEnd === undefined
-      ? {}
-      : { onNearEnd: options.onNearEnd }),
-    head,
-    row,
-  });
+  await render(
+    VirtualTable<Sample>,
+    {
+      items: samples(count),
+      key: (sample: Sample) => sample.id,
+      label: LABEL,
+      columns: 1,
+      isComplete: options.isComplete ?? true,
+      ...(options.onNearEnd === undefined
+        ? {}
+        : { onNearEnd: options.onNearEnd }),
+      head,
+      row: options.row ?? row,
+    },
+    { baseElement: options.baseElement ?? document.body },
+  );
   const table = document.querySelector<HTMLTableElement>(
     `table[aria-label="${LABEL}"]`,
   );
@@ -138,4 +167,31 @@ test("asks for nothing more far from the last row", async () => {
   await nextFrame();
 
   expect(onNearEnd).not.toHaveBeenCalled();
+});
+
+test("makes room for every row at its laid out height while drawn scaled down", async () => {
+  const table = await renderTable(TEN_THOUSAND, {
+    row: fixedRow,
+    baseElement: scaledDown(),
+  });
+  await nextFrame();
+
+  const body = table.tBodies.item(0);
+
+  expect(body?.offsetHeight).toBe(TEN_THOUSAND * ROW_HEIGHT);
+});
+
+test("lays out every row on screen while drawn scaled down", async () => {
+  const table = await renderTable(TEN_THOUSAND, {
+    row: fixedRow,
+    baseElement: scaledDown(),
+  });
+  await nextFrame();
+  await nextFrame();
+
+  const last = bodyRows(table).at(-1);
+
+  expect(last?.getBoundingClientRect().bottom).toBeGreaterThanOrEqual(
+    window.innerHeight,
+  );
 });
