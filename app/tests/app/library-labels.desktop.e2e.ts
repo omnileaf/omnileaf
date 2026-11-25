@@ -62,6 +62,8 @@ const categoryTicked = (
 ): string => `const box = document.querySelector(${JSON.stringify(`${DIALOG} [role=checkbox][aria-label=${JSON.stringify(name)}]`)});
 return box !== null && box.getAttribute("aria-checked") === "true";`;
 
+const SELECTING_ENDED = `return document.querySelectorAll(${JSON.stringify(SERIES_BOXES)}).length === 0;`;
+
 const DIALOG_GONE = `return document.querySelector(${JSON.stringify(DIALOG)}) === null;`;
 
 async function openLabels(from: "Categories" | "Tags"): Promise<void> {
@@ -75,6 +77,7 @@ async function openLabels(from: "Categories" | "Tags"): Promise<void> {
 async function finishDialog(): Promise<void> {
   await appSession().waitUntil(press(DIALOG, "Done"), "the Done button");
   await appSession().waitUntil(DIALOG_GONE, "the dialog closed");
+  await appSession().waitUntil(SELECTING_ENDED, "selecting ended");
 }
 
 test("keeps a category and a tag on every series they were applied to together", async () => {
@@ -89,6 +92,7 @@ test("keeps a category and a tag on every series they were applied to together",
   );
   await appSession().waitUntil(categoryTicked("Holiday"), "Holiday ticked");
   await finishDialog();
+  await pickFirstTwo();
   await openLabels("Tags");
   await appSession().waitUntil(
     typeInto("Add a tag", "Winter"),
@@ -107,6 +111,7 @@ test("keeps a category and a tag on every series they were applied to together",
   await openLabels("Categories");
   await appSession().waitUntil(categoryTicked("Holiday"), "Holiday kept");
   await finishDialog();
+  await pickFirstTwo();
   await openLabels("Tags");
   await appSession().waitUntil(holdsLabel("Remove Winter"), "Winter kept");
   expect(await appSession().run(holdsLabel("Remove Winter"))).toBe(true);

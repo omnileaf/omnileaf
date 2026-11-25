@@ -22,6 +22,54 @@
       }
     }
   ],
+  "library_series_volumes": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ṽöļûɱé··········⟧",
+        "countPlural=other": "⟦{formattedCount} ṽöļûɱéš··········⟧"
+      }
+    }
+  ],
+  "library_series_chapters": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} çĥáþţéŕ··········⟧",
+        "countPlural=other": "⟦{formattedCount} çĥáþţéŕš··········⟧"
+      }
+    }
+  ],
+  "library_series_volumes_and_chapters": [
+    {
+      "declarations": [
+        "input volumes",
+        "input chapters",
+        "local volumesPlural = volumes: plural",
+        "local chaptersPlural = chapters: plural",
+        "local formattedVolumes = volumes: number",
+        "local formattedChapters = chapters: number"
+      ],
+      "selectors": ["volumesPlural", "chaptersPlural"],
+      "match": {
+        "volumesPlural=one, chaptersPlural=one": "⟦{formattedVolumes} ṽöļûɱé · {formattedChapters} çĥáþţéŕ······················⟧",
+        "volumesPlural=one, chaptersPlural=other": "⟦{formattedVolumes} ṽöļûɱé · {formattedChapters} çĥáþţéŕš·······················⟧",
+        "volumesPlural=other, chaptersPlural=one": "⟦{formattedVolumes} ṽöļûɱéš · {formattedChapters} çĥáþţéŕ·······················⟧",
+        "volumesPlural=other, chaptersPlural=other": "⟦{formattedVolumes} ṽöļûɱéš · {formattedChapters} çĥáþţéŕš·······················⟧"
+      }
+    }
+  ],
+  "library_series_one_shot": "⟦Öñé-šĥöţ····⟧",
   "library_series_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ļíƀŕáŕý. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
   "library_unchanged": "⟦Ñöţĥíñĝ íñ ýöûŕ ļíƀŕáŕý ĥáš çĥáñĝéð.···············⟧",
   "library_try_again": "⟦Ţŕý áĝáíñ····⟧",
@@ -197,7 +245,6 @@
   "library_tabs_summary": "⟦Öŕðéŕ, ĥíððéñ ţáƀš, ŵĥéŕé ţĥé ļíƀŕáŕý öþéñš··················⟧",
   "library_opens_on": "⟦Ţĥé ļíƀŕáŕý öþéñš öñ········⟧",
   "library_opens_on_last": "⟦Ţĥé ţáƀ ûšéð ļášţ·······⟧",
-  "library_opens_on_help": "⟦Öŕ Áļļ, öŕ á ţáƀ ýöû çĥööšé. Íƒ íţ ŵöûļð öþéñ öñ Ñéŵ çĥáþţéŕš áñð ñöţĥíñĝ íš ñéŵ, íţ öþéñš öñ Áļļ.········································⟧",
   "library_tabs_title_mac": "⟦Çáţéĝöŕíéš····⟧",
   "library_tabs_intro_mac": "⟦Ðŕáĝ ţö ŕéöŕðéŕ, öŕ ûšé ⌥↑ áñð ⌥↓. Ĥíðíñĝ á çáţéĝöŕý ñéṽéŕ ŕéɱöṽéš á šéŕíéš.·······························⟧",
   "library_tabs_all_mac": "⟦Ļíƀŕáŕý···⟧",
@@ -455,6 +502,10 @@
   "library_cancel": "⟦Çáñçéļ···⟧",
   "library_mark_read": "⟦Ṁáŕķ áš ŕéáð·····⟧",
   "library_marked_read": "⟦{count} šéŕíéš ɱáŕķéð áš ŕéáð············⟧",
+  "library_mark_read_failed": "⟦Çöûļðñ'ţ ɱáŕķ ţĥé šéŕíéš áš ŕéáð·············⟧",
+  "library_labels_failed": "⟦Çöûļðñ'ţ çĥáñĝé ţĥé çáţéĝöŕíéš áñð ţáĝš················⟧",
+  "library_remove_failed": "⟦Çöûļðñ'ţ ŕéɱöṽé ţĥé šéŕíéš···········⟧",
+  "library_action_failed_body": "⟦Ñöţĥíñĝ íñ ýöûŕ ļíƀŕáŕý ĥáš çĥáñĝéð. Ţŕý áĝáíñ íñ á ɱöɱéñţ.························⟧",
   "library_selection_toolbar": "⟦Šéļéçţéð šéŕíéš······⟧",
   "library_selection_more": "⟦Ṁöŕé··⟧",
   "library_tags": "⟦Ţáĝš··⟧",
@@ -2552,6 +2603,21 @@
       }
     }
   ],
+  "reading_long_strip_speed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ļöñĝ šţŕíþ: {formattedCount} šçŕééñ á ɱíñûţé··················⟧",
+        "countPlural=other": "⟦Ļöñĝ šţŕíþ: {formattedCount} šçŕééñš á ɱíñûţé··················⟧"
+      }
+    }
+  ],
+  "reading_long_strip_speed_help": "⟦Ţĥé šþééð éṽéŕý ļöñĝ šţŕíþ šţáŕţš áţ, ƒŕöɱ {slowest} ţö {fastest} šçŕééñš á ɱíñûţé. Çĥáñĝé íţ ŵĥíļé ŕéáðíñĝ áñð ţĥáţ šéŕíéš ķééþš íţš öŵñ.························································⟧",
   "reader_auto_scroll_rate": "⟦Šçŕééñš á ɱíñûţé·······⟧",
   "reader_auto_scroll_rate_value": "⟦Šçŕééñš á ɱíñûţé: {count}··········⟧",
   "reader_save_speed_for": "⟦Šáṽé ţĥé šþééð ƒöŕ········⟧",

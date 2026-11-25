@@ -78,6 +78,7 @@
 @custom-variant heading-crowded (&:where([data-crowded] *));
 @custom-variant more-contrast (&:where([data-contrast="more"] *));
 @custom-variant picked (&:where([data-picked] *));
+@custom-variant over-hero (&:where(main:has(header[data-hero-bar]) *));
 @custom-variant inactive (&:where([data-window-active="false"] *));
 @custom-variant drop-over (&:where([data-over="true"]));
 @custom-variant narrow-desktop {
@@ -496,6 +497,7 @@
   --spacing-colour-swatch: 2.5rem;
   --spacing-settings-list: 17rem;
   --spacing-settings-list-widest: 17rem;
+  --spacing-android-settings-list: 22.5rem;
   --spacing-problem-top: calc(10.625rem - var(--spacing-title-gap));
   --spacing-problem-media: 3.5rem;
   --spacing-switch-length: 2rem;

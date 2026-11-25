@@ -41,10 +41,55 @@ test("reports the progress of a moving gesture and nothing once it is cancelled"
     return null;
   });
 
-  previewBackGestures((progress) => {
-    shown.push(progress);
-  });
+  previewBackGestures(
+    (progress) => {
+      shown.push(progress);
+    },
+    () => true,
+  );
 
   await expect.poll(() => shown).toEqual([0.4, undefined]);
+  clearMocks();
+});
+
+function previewOnce(isScreenKept: boolean) {
+  const shown: (number | undefined)[] = [];
+  mockIPC(() => null);
+  const stop = previewBackGestures(
+    (progress) => {
+      shown.push(progress);
+    },
+    () => isScreenKept,
+  );
+  return { shown, stop };
+}
+
+test("ends the preview when the page steps back and keeps its screen", () => {
+  const { shown, stop } = previewOnce(true);
+
+  dispatchEvent(new PopStateEvent("popstate"));
+
+  expect(shown).toEqual([undefined]);
+  stop();
+  clearMocks();
+});
+
+test("leaves the preview to the next screen when the page's step back changes the screen", () => {
+  const { shown, stop } = previewOnce(false);
+
+  dispatchEvent(new PopStateEvent("popstate"));
+
+  expect(shown).toEqual([]);
+  stop();
+  clearMocks();
+});
+
+test("stops ending the preview once it stops watching", () => {
+  const { shown, stop } = previewOnce(true);
+
+  stop();
+  dispatchEvent(new PopStateEvent("popstate"));
+
+  expect(shown).toEqual([]);
   clearMocks();
 });

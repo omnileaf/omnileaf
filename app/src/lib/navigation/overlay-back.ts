@@ -17,6 +17,7 @@ export interface PageHistory {
 interface HeldEntry {
   readonly close: () => void;
   isOnEntry: () => boolean;
+  isPushed: boolean;
   isPopped: boolean;
   isGivenBack: boolean;
 }
@@ -44,6 +45,7 @@ export class OverlayBack {
     const entry: HeldEntry = {
       close,
       isOnEntry: () => true,
+      isPushed: false,
       isPopped: false,
       isGivenBack: false,
     };
@@ -51,8 +53,9 @@ export class OverlayBack {
     this.#stopListening ??= this.#history.onBack(() => {
       this.#backed();
     });
-    entry.isOnEntry = this.#history.push();
-    this.#tell();
+    if (this.#ownPops === 0) {
+      this.#push(entry);
+    }
     return () => {
       this.#release(entry);
     };
@@ -64,7 +67,11 @@ export class OverlayBack {
 
   #giveable(): readonly HeldEntry[] {
     return this.#held.filter(
-      (entry) => !entry.isPopped && !entry.isGivenBack && entry.isOnEntry(),
+      (entry) =>
+        entry.isPushed &&
+        !entry.isPopped &&
+        !entry.isGivenBack &&
+        entry.isOnEntry(),
     );
   }
 
@@ -82,16 +89,25 @@ export class OverlayBack {
         });
   }
 
+  #push(entry: HeldEntry): void {
+    entry.isOnEntry = this.#history.push();
+    entry.isPushed = true;
+    this.#tell();
+  }
+
   #backed(): void {
     if (this.#ownPops > 0) {
       this.#ownPops -= 1;
       if (this.#ownPops === 0) {
+        this.#pushWaiting();
         this.#settleWaiting();
       }
       this.#stopWhenIdle();
       return;
     }
-    const top = this.#held.findLast((entry) => !entry.isPopped);
+    const top = this.#held.findLast(
+      (entry) => entry.isPushed && !entry.isPopped,
+    );
     if (top !== undefined) {
       top.isPopped = true;
       top.close();
@@ -108,12 +124,25 @@ export class OverlayBack {
 
   #release(entry: HeldEntry): void {
     this.#held = this.#held.filter((held) => held !== entry);
-    if (!entry.isPopped && !entry.isGivenBack && entry.isOnEntry()) {
+    if (
+      entry.isPushed &&
+      !entry.isPopped &&
+      !entry.isGivenBack &&
+      entry.isOnEntry()
+    ) {
       this.#ownPops += 1;
       this.#history.back();
     }
     this.#stopWhenIdle();
     this.#tell();
+  }
+
+  #pushWaiting(): void {
+    for (const entry of this.#held) {
+      if (!entry.isPushed) {
+        this.#push(entry);
+      }
+    }
   }
 
   #stopWhenIdle(): void {
@@ -177,7 +206,11 @@ function closeLikeEscape(element: HTMLElement): void {
   );
 }
 
+export function holdBack(close: () => void): () => void {
+  return overlays.hold(close);
+}
+
 export const closesOnBack: Attachment<HTMLElement> = (element) =>
-  overlays.hold(() => {
+  holdBack(() => {
     closeLikeEscape(element);
   });

@@ -236,7 +236,7 @@
   --native-weight-search-field: var(--font-weight-regular);
   --native-tracking-search-field: 0;
   --native-radius-cover: 4px;
-  --native-radius-picked-cover: 12px;
+  --native-radius-picked-tile: 12px;
   --native-spacing-read-mark: 1.5rem;
   --native-radius-cover-badge: var(--radius-label-badge);
   --native-spacing-cover-badge: 16px;
@@ -246,8 +246,6 @@
   --native-radius-select: 2px;
   --native-spacing-select: 18px;
   --native-spacing-select-edge: 2px;
-  --native-spacing-select-inset: calc((var(--spacing-touch-target) - var(--native-spacing-select)) / 2);
-  --native-shadow-select-ring-lift: none;
   --native-color-dialog: var(--dialog-surface);
   --native-color-dialog-layer: transparent;
   --native-color-dialog-edge: var(--dialog-edge);

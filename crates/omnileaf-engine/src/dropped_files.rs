@@ -11,8 +11,7 @@ use tokio::task::spawn_blocking;
 
 use crate::{
     BookId, FileToRead, FileType, FolderId, FolderScan, Library, LibraryError, OpenFileError,
-    library_layout::folder_name,
-    scan::{find_books_in, saturating_u32},
+    library_layout::folder_name, saturating_u32::saturating_u32, scan::find_books_in,
 };
 
 /// What a drop would hold, read from the dragged paths alone.

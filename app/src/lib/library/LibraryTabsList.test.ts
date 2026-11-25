@@ -1,4 +1,5 @@
 import { afterEach, expect, test } from "vitest";
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -87,3 +88,19 @@ test("keeps the outlined Hidden badge and Lucide icons off Android", async () =>
   expect(getComputedStyle(badge).borderTopWidth).toBe("1px");
   expect(screen.container.querySelector("[data-icon]")).toBeNull();
 });
+
+for (const platform of ["android", "ios", "linux"] as const) {
+  test(`says a move to screen readers without drawing it on ${platform}`, async () => {
+    followCorePlatform(platform);
+    const screen = await render(LibraryTabsList, PROPS);
+    const handle = screen.getByRole("button", { name: "Move All" });
+
+    handle.element().focus();
+    await userEvent.keyboard("{Alt>}{ArrowDown}{/Alt}");
+
+    const status = screen.getByRole("status").element();
+    expect(status.textContent).toContain("All moved down, to position 2 of 2");
+    expect(status.getBoundingClientRect().width).toBeLessThanOrEqual(1);
+    expect(getComputedStyle(status).clipPath).not.toBe("none");
+  });
+}

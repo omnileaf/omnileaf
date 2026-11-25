@@ -19,6 +19,8 @@ function series(number: number, bookCount: number): WireSeries {
     id: `0190a3e4-0000-8000-8000-0000000000${String(number).padStart(2, "0")}`,
     title: `Sample Series ${String(number).padStart(2, "0")}`,
     bookCount,
+    volumeCount: 0,
+    chapterCount: 0,
     unreadCount: bookCount,
     cover: null,
     language: null,
