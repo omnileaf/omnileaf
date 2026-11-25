@@ -443,7 +443,7 @@
     },
     {
       "name": "cookie",
-      "version": "0.18.2",
+      "version": "0.18.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         22
@@ -988,7 +988,7 @@
     },
     {
       "name": "form_urlencoded",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         29
@@ -3662,7 +3662,7 @@
     },
     {
       "name": "url",
-      "version": "2.5.8",
+      "version": "2.5.9",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         29
