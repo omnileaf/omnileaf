@@ -22,6 +22,12 @@ interface HeldEntry {
   isGivenBack: boolean;
 }
 
+function isGiveable(entry: HeldEntry): boolean {
+  return (
+    entry.isPushed && !entry.isPopped && !entry.isGivenBack && entry.isOnEntry()
+  );
+}
+
 export class OverlayBack {
   readonly #history: PageHistory;
   readonly #tell: () => void;
@@ -62,27 +68,18 @@ export class OverlayBack {
   }
 
   holdsEntries(): boolean {
-    return this.#giveable().length > 0;
-  }
-
-  #giveable(): readonly HeldEntry[] {
-    return this.#held.filter(
-      (entry) =>
-        entry.isPushed &&
-        !entry.isPopped &&
-        !entry.isGivenBack &&
-        entry.isOnEntry(),
-    );
+    return this.#held.some((entry) => isGiveable(entry));
   }
 
   giveBack(): Promise<void> {
-    const given = this.#giveable();
-    for (const entry of given) {
+    for (const entry of this.#held) {
+      if (isGiveable(entry)) {
+        this.#ownPops += 1;
+        this.#history.back();
+      }
       entry.isGivenBack = true;
-      this.#ownPops += 1;
-      this.#history.back();
     }
-    return given.length === 0
+    return this.#ownPops === 0
       ? Promise.resolve()
       : new Promise((settle) => {
           this.#waiting = [...this.#waiting, settle];
@@ -124,12 +121,7 @@ export class OverlayBack {
 
   #release(entry: HeldEntry): void {
     this.#held = this.#held.filter((held) => held !== entry);
-    if (
-      entry.isPushed &&
-      !entry.isPopped &&
-      !entry.isGivenBack &&
-      entry.isOnEntry()
-    ) {
+    if (isGiveable(entry)) {
       this.#ownPops += 1;
       this.#history.back();
     }
@@ -139,7 +131,7 @@ export class OverlayBack {
 
   #pushWaiting(): void {
     for (const entry of this.#held) {
-      if (!entry.isPushed) {
+      if (!entry.isPushed && !entry.isGivenBack) {
         this.#push(entry);
       }
     }

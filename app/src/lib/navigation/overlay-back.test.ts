@@ -210,3 +210,22 @@ test("holds a new entry only once its own step back for the last overlay has lan
   expect([pushedWhileStepping, pushedOnceLanded]).toEqual([1, 2]);
   expect(closed).toBe(1);
 });
+
+test("settles a give-back once its last step back lands, never pushing the overlay that waited for an entry", async () => {
+  const { overlays, page } = overlayBack();
+  const releaseSheet = overlays.hold(() => undefined);
+  releaseSheet();
+  overlays.hold(() => undefined);
+  const settled = { isDone: false };
+
+  const giving = overlays.giveBack().then(() => {
+    settled.isDone = true;
+  });
+  await Promise.resolve();
+  const settledBeforeLanding = settled.isDone;
+  page.goBack();
+  await giving;
+
+  expect(settledBeforeLanding).toBe(false);
+  expect(page.entries).toEqual({ pushed: 1, backed: 1 });
+});
