@@ -138,6 +138,33 @@ test.describe("a series with volumes, chapters and specials", () => {
   });
 });
 
+test.describe(
+  "back while a series' volumes are picked",
+  { tag: "@native" },
+  () => {
+    const shelf = new SectionShelf(EVERY_KIND);
+    test.use({ backend: shelf.backend() });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's back gesture");
+    });
+
+    test("ends picking and stays on the series", async ({ page }) => {
+      await openSeries(page);
+      const series = page.url();
+      await expect(covers(page, "Volumes")).toHaveCount(2);
+      await page.keyboard.press("Control+a");
+      const picked = page.getByRole("group", { name: "Selected books" });
+      await expect(picked).toBeVisible();
+
+      await page.goBack();
+
+      await expect(picked).toBeHidden();
+      expect(page.url()).toBe(series);
+    });
+  },
+);
+
 test.describe("a series of chapters only", () => {
   const shelf = new SectionShelf(chapters(1, 2, 3));
   test.use({ backend: shelf.backend() });
