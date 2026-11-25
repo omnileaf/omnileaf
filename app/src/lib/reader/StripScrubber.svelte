@@ -94,8 +94,8 @@
         ></span>
       {/snippet}
     </Slider.Thumb>
-    <span aria-hidden="true" data-scrubber-count class={STRIP_SCRUBBER.count}
-      >{position}</span
-    >
+    <span aria-hidden="true" data-scrubber-count class={STRIP_SCRUBBER.count}>
+      {position}
+    </span>
   </Slider.Root>
 </div>

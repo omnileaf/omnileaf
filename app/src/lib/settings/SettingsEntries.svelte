@@ -81,14 +81,15 @@
           <span
             class="flex flex-1 flex-col gap-2xs min-inline-none desktop:gap-xs"
           >
-            <span class="font-semibold desktop:text-label desktop:font-medium"
-              >{entry.label}</span
-            >
+            <span class="font-semibold desktop:text-label desktop:font-medium">
+              {entry.label}
+            </span>
             {#if entry.summary !== undefined}
               <span
                 class="text-detail text-muted group-hover:text-foreground desktop:text-label"
-                >{entry.summary}</span
               >
+                {entry.summary}
+              </span>
             {/if}
           </span>
           <ChevronRight

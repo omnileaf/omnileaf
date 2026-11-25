@@ -269,9 +269,9 @@
             look={look.row}
             class={cn(look.rowLayout, "pointer-events-none text-muted")}
           >
-            <ItemTitle class={cn(look.title, look.missingTitle)}
-              >{book.title}</ItemTitle
-            >
+            <ItemTitle class={cn(look.title, look.missingTitle)}>
+              {book.title}
+            </ItemTitle>
             <ItemDescription class={look.detail}>
               <ReaderIcon
                 name="file-x"
@@ -307,8 +307,10 @@
                       look.title,
                       book.reading.state === "read" && look.readTitle,
                       isCurrent && look.currentTitle,
-                    )}>{book.title}</ItemTitle
+                    )}
                   >
+                    {book.title}
+                  </ItemTitle>
                   {#if book.isBookmarked}
                     <span
                       role="img"
@@ -326,9 +328,9 @@
                     </span>
                   {/if}
                   {#if isCurrent}
-                    <Badge look="secondary" class={look.readingBadge}
-                      >{m.reader_jump_reading()}</Badge
-                    >
+                    <Badge look="secondary" class={look.readingBadge}>
+                      {m.reader_jump_reading()}
+                    </Badge>
                   {/if}
                 </span>
                 <ItemDescription

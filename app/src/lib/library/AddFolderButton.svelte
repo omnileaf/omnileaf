@@ -103,9 +103,9 @@
           size={placement === "list-row" ? LIST_ROW_ICON_SIZE : ICON_SIZE}
         />
       {/if}
-      <span class={{ "max-medium:sr-only": isInHeading }}
-        >{m.library_add_folder()}</span
-      >
+      <span class={{ "max-medium:sr-only": isInHeading }}>
+        {m.library_add_folder()}
+      </span>
     </Button>
   {/snippet}
 </Tooltip>

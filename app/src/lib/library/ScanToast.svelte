@@ -104,8 +104,8 @@
   <span id={titleId}>{m.library_scan_finding()}</span>
   {#if count.label !== undefined}
     <span aria-hidden="true">·</span>
-    <span aria-hidden="true" id={countId} class="tabular-nums"
-      >{count.label}</span
-    >
+    <span aria-hidden="true" id={countId} class="tabular-nums">
+      {count.label}
+    </span>
   {/if}
 {/snippet}

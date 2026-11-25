@@ -196,9 +196,9 @@
           <Smartphone size={ROW_ICON_SIZE} />
         </span>
         <span class="flex flex-1 flex-col gap-2xs min-inline-none">
-          <span class="font-semibold android:font-regular"
-            >{m.screenshot_mode_long_press()}</span
-          >
+          <span class="font-semibold android:font-regular">
+            {m.screenshot_mode_long_press()}
+          </span>
           <span
             class="text-detail text-muted android:text-native-row-subtitle/native-row-subtitle"
           >
