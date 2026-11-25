@@ -155,27 +155,53 @@ function scrollToPlace(screen: HTMLElement, place: ScrollPlace): void {
   screen.scrollTop = contentTopOf(link, screen) - anchor.offset;
 }
 
+/** WebKit clamps the scroll position while a batch of DOM changes shrinks the content mid-task, and fires the scroll event only once the content has grown back. */
+function isClampedByRemovedContent(
+  changes: readonly MutationRecord[],
+  screen: HTMLElement,
+  placedAt: number,
+): boolean {
+  return (
+    changes.some((change) => change.removedNodes.length > 0) &&
+    screen.scrollTop < placedAt - SCROLL_SLACK_PX
+  );
+}
+
 export function holdScrollPlace(
   screen: HTMLElement,
   place: ScrollPlace,
 ): () => void {
-  let placed = { top: screen.scrollTop, height: screen.scrollHeight };
+  let placedAt = screen.scrollTop;
   const anchoring = screen.style.overflowAnchor;
   screen.style.overflowAnchor = "none";
 
   function reachPlace(): void {
     scrollToPlace(screen, place);
-    placed = { top: screen.scrollTop, height: screen.scrollHeight };
+    placedAt = screen.scrollTop;
   }
 
-  const stopWatching = on(screen, "scroll", () => {
-    if (screen.scrollHeight !== placed.height) {
+  function isClampedBelowPlace(): boolean {
+    return (
+      screen.scrollHeight - screen.clientHeight < placedAt - SCROLL_SLACK_PX
+    );
+  }
+
+  const clampWatcher = new MutationObserver((changes) => {
+    if (isClampedByRemovedContent(changes, screen, placedAt)) {
       reachPlace();
-    } else if (Math.abs(screen.scrollTop - placed.top) > SCROLL_SLACK_PX) {
+    }
+  });
+  clampWatcher.observe(screen, { childList: true, subtree: true });
+  const stopWatching = on(screen, "scroll", () => {
+    if (isClampedBelowPlace()) {
+      return;
+    }
+    if (Math.abs(screen.scrollTop - placedAt) > SCROLL_SLACK_PX) {
       stop();
     }
   });
   const stop = holdWhileContentResizes(screen, reachPlace, () => {
+    clampWatcher.disconnect();
     stopWatching();
     screen.style.overflowAnchor = anchoring;
   });
