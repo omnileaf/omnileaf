@@ -221,7 +221,7 @@
           onChoose={chooseNewSeriesMode}
         />
         <p id="{modeId}-help" class="col-span-full text-footnote text-muted">
-          {m.reading_mode_automatic_hint()}
+          {m.reading_mode_new_series_help()}
         </p>
       </section>
     {/if}

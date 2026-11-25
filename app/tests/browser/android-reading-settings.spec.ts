@@ -51,7 +51,7 @@ test.describe(
       const automatic = page
         .getByRole("dialog", { name: "Reading mode" })
         .getByRole("radio", { name: "Automatic" });
-      const hint = "Automatic picks paged or long strip for each series.";
+      const hint = "Picks paged or long strip from the details and the pages.";
 
       await expect(automatic.getByText(hint)).toBeVisible();
       await expect(automatic).toHaveAccessibleDescription(hint);
