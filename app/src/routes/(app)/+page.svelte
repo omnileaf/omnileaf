@@ -53,7 +53,7 @@
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import {
     actionOffered,
-    type EmptyAction,
+    type EmptyActionKind,
     emptyCauseOf,
     keepsListChrome,
     narrowsLibrary,
@@ -1023,7 +1023,7 @@
     }
   }
 
-  let offeredEmptyAction: EmptyAction | undefined;
+  let offeredEmptyAction: EmptyActionKind | undefined;
 
   function keepFocusOnPageOnceEmptyActionChanges(): void {
     const offered = actionOffered(emptyCause, offeredEmptyAction);

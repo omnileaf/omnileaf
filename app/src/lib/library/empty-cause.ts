@@ -78,9 +78,9 @@ export function emptyCauseOf(list: EmptyList): EmptyCause {
   }
 }
 
-export type EmptyAction = "addFolder" | "addSeries" | "clearFilters";
+export type EmptyActionKind = "addFolder" | "addSeries" | "clearFilters";
 
-export function tabActionOf(tab: EmptyTab): EmptyAction | undefined {
+export function tabActionOf(tab: EmptyTab): EmptyActionKind | undefined {
   switch (tab.kind) {
     case "category":
       return "addSeries";
@@ -124,8 +124,8 @@ export function keepsListChrome(cause: EmptyCause): boolean {
 
 export function actionOffered(
   cause: EmptyCause | undefined,
-  offeredBefore: EmptyAction | undefined,
-): EmptyAction | undefined {
+  offeredBefore: EmptyActionKind | undefined,
+): EmptyActionKind | undefined {
   if (cause === undefined) {
     return undefined;
   }
