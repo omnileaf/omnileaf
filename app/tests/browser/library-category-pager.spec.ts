@@ -975,6 +975,10 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
       await openLibrary(page);
       await page.evaluate((textDirection) => {
         document.documentElement.dir = textDirection;
+        document.documentElement.style.setProperty(
+          "--system-inset-left",
+          "var(--spacing-sm)",
+        );
       }, dir);
       await chosenTab(page, from).click();
       await expectChosen(page, from);
@@ -984,6 +988,7 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
       const gap = await lengthOf(page, "--spacing-pager-gap");
       const leftInset = await lengthOf(page, padding.left);
       const rightInset = await lengthOf(page, padding.right);
+      expect(leftInset).not.toBeCloseTo(rightInset, 0);
       const atRest = await firstRowOf(chosenCovers(page));
 
       const drag = await beginDrag(page, seriesList(page));
