@@ -1,10 +1,9 @@
-import type { Locator, Page } from "@playwright/test";
-
 import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
   MEDIUM_MIN_WIDTH,
+  tabTo,
   test,
   tokenColour,
 } from "./fixtures.ts";
@@ -19,26 +18,11 @@ const ROWS = [
   { name: "Save as a file", icon: "save" },
 ] as const;
 
+const REPLY_EMAIL = "Email for a reply (optional)";
+
 const WAYS = ["Open on GitHub", "Copy report", "Save as a file"] as const;
 
-const TAB_STOPS_AT_MOST = 20;
-
 const TABLET = { width: MEDIUM_MIN_WIDTH + 100, height: 1000 };
-
-async function focusByKeyboard(page: Page, target: Locator): Promise<void> {
-  await page
-    .getByRole("textbox", { name: "Email for a reply (optional)" })
-    .focus();
-  for (let presses = 0; presses < TAB_STOPS_AT_MOST; presses += 1) {
-    if (
-      await target.evaluate((element) => element === document.activeElement)
-    ) {
-      return;
-    }
-    await page.keyboard.press("Tab");
-  }
-  await expect(target).toBeFocused();
-}
 
 test.describe(
   "Report a problem on an Android phone",
@@ -105,7 +89,8 @@ test.describe(
         await page.goto("/settings/about/report");
         const row = page.getByRole("button", { name: new RegExp(`^${name}`) });
 
-        await focusByKeyboard(page, row);
+        await page.getByRole("textbox", { name: REPLY_EMAIL }).focus();
+        await tabTo(page, row);
 
         await expect(row).toHaveCSS("outline-style", "solid");
         await expect(row).toHaveCSS(
