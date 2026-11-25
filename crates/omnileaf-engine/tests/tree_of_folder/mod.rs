@@ -31,8 +31,7 @@ const A_PAIR: u64 = 2;
 pub(crate) struct TreeOfFolder {
     pub(crate) scratch: ScratchFolder,
     library: WrittenLibrary,
-    opening: Opening,
-    in_company_deadline: Deadline,
+    pacing: Pacing,
     opened: Mutex<Vec<PathBuf>>,
     open: InFlight,
     is_lost: AtomicBool,
@@ -51,13 +50,21 @@ pub(crate) enum Opening {
     TimingOutInCompanyWithin(Duration),
 }
 
-impl Opening {
-    fn longest_in_company(self) -> Duration {
-        match self {
-            Self::InCompanyWithin(longest) => longest,
-            Self::Immediately | Self::After(_) | Self::TimingOutInCompanyWithin(_) => {
-                Duration::ZERO
-            }
+#[derive(Clone, Copy)]
+enum Pacing {
+    Immediately,
+    After(Duration),
+    UntilInCompany(Deadline),
+    HoldingEachOpenForCompany(Duration),
+}
+
+impl Pacing {
+    fn of(opening: Opening) -> Self {
+        match opening {
+            Opening::Immediately => Self::Immediately,
+            Opening::After(latency) => Self::After(latency),
+            Opening::InCompanyWithin(longest) => Self::UntilInCompany(Deadline::after(longest)),
+            Opening::TimingOutInCompanyWithin(longest) => Self::HoldingEachOpenForCompany(longest),
         }
     }
 }
@@ -89,8 +96,7 @@ impl TreeOfFolder {
         Arc::new(Self {
             scratch,
             library,
-            opening,
-            in_company_deadline: Deadline::after(opening.longest_in_company()),
+            pacing: Pacing::of(opening),
             opened: Mutex::new(Vec::new()),
             open: InFlight::new(),
             is_lost: AtomicBool::new(false),
@@ -141,18 +147,17 @@ impl TreeOfFolder {
     }
 
     fn wait_to_open(&self) -> io::Result<()> {
-        match self.opening {
-            Opening::Immediately => Ok(()),
-            Opening::After(latency) => {
+        match self.pacing {
+            Pacing::Immediately => Ok(()),
+            Pacing::After(latency) => {
                 thread::sleep(latency);
                 Ok(())
             }
-            Opening::InCompanyWithin(_) => {
-                self.open
-                    .wait_until_most_at_once_reaches(A_PAIR, self.in_company_deadline);
+            Pacing::UntilInCompany(deadline) => {
+                self.open.wait_until_most_at_once_reaches(A_PAIR, deadline);
                 Ok(())
             }
-            Opening::TimingOutInCompanyWithin(longest) => {
+            Pacing::HoldingEachOpenForCompany(longest) => {
                 self.open.wait_for_company(Deadline::after(longest));
                 if self.open.has_company() {
                     Err(io::ErrorKind::TimedOut.into())
