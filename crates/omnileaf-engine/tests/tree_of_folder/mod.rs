@@ -10,30 +10,30 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         Arc, Mutex,
-        atomic::{AtomicBool, AtomicUsize, Ordering},
+        atomic::{AtomicBool, Ordering},
     },
     thread,
-    time::{Duration, Instant, SystemTime},
+    time::{Duration, SystemTime},
 };
 
 use omnileaf_engine::OpenTree;
 use omnileaf_formats::{Details, Entry, LocalStorage, Storage};
 use omnileaf_testkit::{
-    GENERATED_LIBRARY_NAME, GeneratedLibrary, SAMPLE_LIBRARY_NAME, write_generated_library,
-    write_sample_library,
+    GENERATED_LIBRARY_NAME, GeneratedLibrary, InFlight, SAMPLE_LIBRARY_NAME,
+    write_generated_library, write_sample_library,
 };
 
 use crate::support::ScratchFolder;
 
 const ARCHIVE_EXTENSION: &str = "cbz";
+const A_PAIR: u64 = 2;
 
 pub(crate) struct TreeOfFolder {
     pub(crate) scratch: ScratchFolder,
     library: WrittenLibrary,
     opening: Opening,
     opened: Mutex<Vec<PathBuf>>,
-    open_now: AtomicUsize,
-    most_open_at_once: AtomicUsize,
+    open: InFlight,
     is_lost: AtomicBool,
 }
 
@@ -79,8 +79,7 @@ impl TreeOfFolder {
             library,
             opening,
             opened: Mutex::new(Vec::new()),
-            open_now: AtomicUsize::new(0),
-            most_open_at_once: AtomicUsize::new(0),
+            open: InFlight::new(),
             is_lost: AtomicBool::new(false),
         })
     }
@@ -119,28 +118,13 @@ impl TreeOfFolder {
         std::mem::take(&mut self.opened.lock().unwrap())
     }
 
-    pub(crate) fn take_most_open_at_once(&self) -> usize {
-        self.most_open_at_once.swap(0, Ordering::SeqCst)
+    pub(crate) fn take_most_open_at_once(&self) -> u64 {
+        self.open.take_most_at_once()
     }
 
     pub(crate) fn opener(self: &Arc<Self>) -> OpenTree {
         let tree = Arc::clone(self);
         Arc::new(move |_| Arc::clone(&tree) as Arc<dyn Storage>)
-    }
-
-    fn has_opened_two_at_once(&self) -> bool {
-        self.most_open_at_once.load(Ordering::SeqCst) > 1
-    }
-
-    fn has_company(&self) -> bool {
-        self.open_now.load(Ordering::SeqCst) > 1
-    }
-
-    fn wait_until(longest: Duration, is_done: impl Fn() -> bool) {
-        let deadline = Instant::now() + longest;
-        while !is_done() && Instant::now() < deadline {
-            thread::yield_now();
-        }
     }
 
     fn wait_to_open(&self) -> io::Result<()> {
@@ -151,12 +135,12 @@ impl TreeOfFolder {
                 Ok(())
             }
             Opening::InCompanyWithin(longest) => {
-                Self::wait_until(longest, || self.has_opened_two_at_once());
+                self.open.wait_until_most_at_once_reaches(A_PAIR, longest);
                 Ok(())
             }
             Opening::TimingOutInCompanyWithin(longest) => {
-                Self::wait_until(longest, || self.has_company());
-                if self.has_company() {
+                self.open.wait_for_company(longest);
+                if self.open.has_company() {
                     Err(io::ErrorKind::TimedOut.into())
                 } else {
                     Ok(())
@@ -185,13 +169,9 @@ impl Storage for TreeOfFolder {
 
     fn open(&self, file: &Path) -> io::Result<File> {
         self.opened.lock().unwrap().push(file.to_path_buf());
-        let now = self.open_now.fetch_add(1, Ordering::SeqCst) + 1;
-        self.most_open_at_once.fetch_max(now, Ordering::SeqCst);
-        let opened = self
-            .wait_to_open()
+        let _open = self.open.enter();
+        self.wait_to_open()
             .and_then(|()| self.on_device(file))
-            .and_then(|on_device| LocalStorage.open(&on_device));
-        self.open_now.fetch_sub(1, Ordering::SeqCst);
-        opened
+            .and_then(|on_device| LocalStorage.open(&on_device))
     }
 }

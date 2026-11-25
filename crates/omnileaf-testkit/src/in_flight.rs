@@ -49,6 +49,11 @@ impl InFlight {
         self.most_weight.load(Ordering::SeqCst)
     }
 
+    pub fn take_most_at_once(&self) -> u64 {
+        self.most_weight
+            .swap(self.weight.load(Ordering::SeqCst), Ordering::SeqCst)
+    }
+
     #[must_use]
     pub fn has_company(&self) -> bool {
         self.holders.load(Ordering::SeqCst) > 1
@@ -98,6 +103,31 @@ mod tests {
         drop(first);
         drop(second);
         let _third = in_flight.enter();
+
+        assert_eq!(in_flight.most_at_once(), A_PAIR);
+    }
+
+    #[test]
+    fn starts_counting_the_most_at_once_afresh_after_it_is_taken() {
+        let in_flight = InFlight::new();
+        let first = in_flight.enter();
+        let second = in_flight.enter();
+        drop(first);
+        drop(second);
+
+        let taken = in_flight.take_most_at_once();
+        let _entered = in_flight.enter();
+
+        assert_eq!((taken, in_flight.most_at_once()), (A_PAIR, 1));
+    }
+
+    #[test]
+    fn keeps_counting_what_is_still_in_flight_after_the_most_at_once_is_taken() {
+        let in_flight = InFlight::new();
+        let _first = in_flight.enter();
+        let _second = in_flight.enter();
+
+        in_flight.take_most_at_once();
 
         assert_eq!(in_flight.most_at_once(), A_PAIR);
     }
