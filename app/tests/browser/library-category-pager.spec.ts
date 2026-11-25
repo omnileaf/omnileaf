@@ -43,6 +43,8 @@ const SCROLLED_FAR_PX = 3000;
 const SCROLL_TOLERANCE_PX = 2;
 const BLANK_INSET_PX = 8;
 const SAME_ROW_PX = 1;
+const TOUCH = { pointerType: "touch", pointerId: 7, isPrimary: true } as const;
+const LAST_FRAME_BEFORE_END_MS = 1;
 
 interface Library {
   readonly all: ReturnType<typeof sampleSeries>;
@@ -151,13 +153,13 @@ interface RowSpan {
   readonly right: number;
 }
 
-async function firstRowOf(covers: Locator): Promise<RowSpan> {
-  const boxes = await covers.evaluateAll((items) =>
-    items.map((item) => {
-      const { left, right, top } = item.getBoundingClientRect();
-      return { left, right, top };
-    }),
-  );
+interface CoverBox {
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
+}
+
+function firstRowIn(boxes: readonly CoverBox[]): RowSpan {
   const first = boxes[0];
   if (first === undefined) {
     throw new Error("no covers are drawn");
@@ -171,9 +173,21 @@ async function firstRowOf(covers: Locator): Promise<RowSpan> {
   };
 }
 
+async function firstRowOf(covers: Locator): Promise<RowSpan> {
+  return firstRowIn(
+    await covers.evaluateAll((items) =>
+      items.map((item) => {
+        const { left, right, top } = item.getBoundingClientRect();
+        return { left, right, top };
+      }),
+    ),
+  );
+}
+
 interface Drag {
   readonly to: (x: number) => Promise<void>;
   readonly release: () => Promise<void>;
+  readonly finger: () => Point;
 }
 
 interface Point {
@@ -234,10 +248,10 @@ async function blankBelow(page: Page, emptyState: Locator): Promise<Spot> {
 }
 
 async function beginDragAt(from: DragTarget, start: Point): Promise<Drag> {
-  const touch = { pointerType: "touch", pointerId: 7, isPrimary: true };
   let reached = 0;
+  const finger = () => ({ x: start.x + reached, y: start.y });
   await from.dispatchEvent("pointerdown", {
-    ...touch,
+    ...TOUCH,
     clientX: start.x,
     clientY: start.y,
   });
@@ -246,20 +260,64 @@ async function beginDragAt(from: DragTarget, start: Point): Promise<Drag> {
       for (let step = 1; step <= DRAG_STEPS; step += 1) {
         reached = reached + (x - reached) / (DRAG_STEPS - step + 1);
         await from.dispatchEvent("pointermove", {
-          ...touch,
-          clientX: start.x + reached,
-          clientY: start.y,
+          ...TOUCH,
+          clientX: finger().x,
+          clientY: finger().y,
         });
       }
     },
     release: async () => {
       await from.dispatchEvent("pointerup", {
-        ...touch,
-        clientX: start.x + reached,
-        clientY: start.y,
+        ...TOUCH,
+        clientX: finger().x,
+        clientY: finger().y,
       });
     },
+    finger,
   };
+}
+
+async function releaseToSettleEnd(
+  page: Page,
+  drag: Drag,
+  incoming: Locator,
+): Promise<RowSpan> {
+  const covers = await incoming.elementHandles();
+  const boxes = await pagerTrack(page).evaluate(
+    (track, { touch, at, coming, beforeEnd }) => {
+      track.dispatchEvent(
+        new PointerEvent("pointerup", {
+          ...touch,
+          bubbles: true,
+          clientX: at.x,
+          clientY: at.y,
+        }),
+      );
+      const [settling] = track.getAnimations();
+      const end = settling?.effect?.getComputedTiming().endTime;
+      if (settling === undefined || typeof end !== "number") {
+        throw new Error("the swipe settles without sliding");
+      }
+      settling.pause();
+      settling.currentTime = end - beforeEnd;
+      const settled = coming.map((cover) => {
+        if (!(cover instanceof Element)) {
+          throw new Error("a cover is not drawn as an element");
+        }
+        const { left, right, top } = cover.getBoundingClientRect();
+        return { left, right, top };
+      });
+      settling.finish();
+      return settled;
+    },
+    {
+      touch: TOUCH,
+      at: drag.finger(),
+      coming: covers,
+      beforeEnd: LAST_FRAME_BEFORE_END_MS,
+    },
+  );
+  return firstRowIn(boxes);
 }
 
 async function scrolledBy(page: Page): Promise<number> {
@@ -899,7 +957,11 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
       );
       const chosen = await firstRowOf(chosenCovers(page));
       const beside = await firstRowOf(besideCovers(page, incomingTitle));
-      await drag.release();
+      const atSettleEnd = await releaseToSettleEnd(
+        page,
+        drag,
+        besideCovers(page, incomingTitle),
+      );
       await expectChosen(page, lands);
       await expect(chosenCovers(page)).toHaveCount(incoming.length);
       await expect(pagerTrack(page)).toHaveCSS("translate", "none");
@@ -910,9 +972,15 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
       expect(atRest.right).toBeCloseTo(column.x + column.width - rightInset, 0);
       expect(chosen.left).toBeCloseTo(atRest.left + by, 0);
       expect(chosen.right).toBeCloseTo(atRest.right + by, 0);
+      expect(beside.right - beside.left).toBeCloseTo(
+        atRest.right - atRest.left,
+        0,
+      );
       expect(
         onRight.left - leftInset - (onLeft.right + rightInset),
       ).toBeCloseTo(gap, 0);
+      expect(atSettleEnd.left).toBeCloseTo(atRest.left, 0);
+      expect(atSettleEnd.right).toBeCloseTo(atRest.right, 0);
       expect(settled.left).toBeCloseTo(atRest.left, 0);
       expect(settled.right).toBeCloseTo(atRest.right, 0);
     });
