@@ -2,7 +2,7 @@
   import { onMount, type Snippet, tick } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
-  import { shownScaleOf } from "#lib/page/shown-scale.ts";
+  import { laidOutSize, measurableScaleOf } from "#lib/page/shown-scale.ts";
 
   import { columnsOf, optionId, type Reveal } from "./grid-keys";
   import { rowWindow, type Seen } from "./row-window";
@@ -184,11 +184,10 @@
     next: Element | null,
     scale: number,
   ): number {
-    const top = item.getBoundingClientRect().top;
+    const box = item.getBoundingClientRect();
     return next === null
-      ? item.getBoundingClientRect().height / scale +
-          rowGapOf(item.parentElement)
-      : (next.getBoundingClientRect().top - top) / scale;
+      ? laidOutSize(box.height, scale) + rowGapOf(item.parentElement)
+      : laidOutSize(next.getBoundingClientRect().top - box.top, scale);
   }
 
   function measuredHeadingStride(
@@ -236,20 +235,23 @@
   }
 
   async function look(): Promise<void> {
+    const scale = list === null ? undefined : measurableScaleOf(list);
+    if (scale === undefined) {
+      return;
+    }
     for (let pass = 0; pass < MOST_LOOKS_IN_A_FRAME; pass += 1) {
-      if (!(await lookOnce())) {
+      if (!(await lookOnce(scale))) {
         return;
       }
     }
   }
 
-  async function lookOnce(): Promise<boolean> {
+  async function lookOnce(scale: number): Promise<boolean> {
     if (frame === null || list === null) {
       return false;
     }
     const shownFrame = frame;
     const grid = list;
-    const scale = shownScaleOf(grid);
     const top = -shownFrame.getBoundingClientRect().top / scale;
     seen = { top, bottom: top + window.innerHeight / scale };
     const latest = measured(grid, scale);
@@ -258,7 +260,9 @@
       onColumns?.(latest.columns);
     }
     await tick();
-    return shownFrame.isConnected && (await remeasureRows(shownFrame, grid));
+    return (
+      shownFrame.isConnected && (await remeasureRows(shownFrame, grid, scale))
+    );
   }
 
   function drawnSizeOf(
@@ -271,12 +275,14 @@
       return strideFrom(row, next, scale);
     }
     return index === count - 1
-      ? row.getBoundingClientRect().height / scale
+      ? laidOutSize(row.getBoundingClientRect().height, scale)
       : undefined;
   }
 
-  function drawnRowSizes(grid: HTMLUListElement): ReadonlyMap<string, number> {
-    const scale = shownScaleOf(grid);
+  function drawnRowSizes(
+    grid: HTMLUListElement,
+    scale: number,
+  ): ReadonlyMap<string, number> {
     return new Map(
       [...grid.children].flatMap((row, offset) => {
         const item = drawnItems[offset];
@@ -288,10 +294,10 @@
     );
   }
 
-  function sizingOf(grid: HTMLUListElement): Sizing {
+  function sizingOf(grid: HTMLUListElement, scale: number): Sizing {
     const style = getComputedStyle(grid);
     return {
-      inlineSize: grid.getBoundingClientRect().width,
+      inlineSize: laidOutSize(grid.getBoundingClientRect().width, scale),
       fontSize: style.fontSize,
       textScale: style.getPropertyValue("--text-scale"),
     };
@@ -309,14 +315,15 @@
   async function remeasureRows(
     shownFrame: HTMLDivElement,
     grid: HTMLUListElement,
+    scale: number,
   ): Promise<boolean> {
     if (heights === undefined) {
       return false;
     }
-    const sizing = sizingOf(grid);
+    const sizing = sizingOf(grid, scale);
     const isResized = !isSameSizing(sizing, sizedFor);
     const kept = isResized ? new Map<string, number>() : rowSizes;
-    const changes = [...drawnRowSizes(grid)].filter(
+    const changes = [...drawnRowSizes(grid, scale)].filter(
       ([itemKey, size]) => kept.get(itemKey) !== size,
     );
     if (!isResized && changes.length === 0) {
@@ -363,6 +370,26 @@
     };
   }
 
+  function scrollNear(
+    index: number,
+    at: Measure,
+    shownFrame: HTMLDivElement,
+  ): void {
+    const scroller = scrollerOf(shownFrame);
+    const scale = measurableScaleOf(shownFrame);
+    const scrollerScale = measurableScaleOf(scroller);
+    if (scale === undefined || scrollerScale === undefined) {
+      return;
+    }
+    const view = scroller.getBoundingClientRect();
+    const place = placeOf(index, at);
+    const rowTop = shownFrame.getBoundingClientRect().top + place.top * scale;
+    const below = rowTop + place.size * scale - view.bottom;
+    const shownDistance =
+      rowTop < view.top ? rowTop - view.top : Math.max(0, below);
+    scroller.scrollBy({ top: shownDistance / scrollerScale });
+  }
+
   async function revealItem(index: number): Promise<HTMLElement | undefined> {
     if (frame === null || list === null) {
       return undefined;
@@ -370,14 +397,7 @@
     const grid = list;
     const isDrawn = index >= drawn.start && index < drawn.end;
     if (measure !== undefined && !isDrawn) {
-      const scroller = scrollerOf(frame);
-      const view = scroller.getBoundingClientRect();
-      const place = placeOf(index, measure);
-      const rowTop = frame.getBoundingClientRect().top + place.top;
-      const below = rowTop + place.size - view.bottom;
-      scroller.scrollBy({
-        top: rowTop < view.top ? rowTop - view.top : Math.max(0, below),
-      });
+      scrollNear(index, measure, frame);
       await look();
     }
     if (!grid.isConnected) {

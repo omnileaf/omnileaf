@@ -5,6 +5,7 @@ import { render } from "vitest-browser-svelte";
 import "../../app.css";
 
 import type { Reveal } from "./grid-keys";
+import { drawnAt, scaledDown } from "./scaled-down";
 import VirtualGrid from "./VirtualGrid.svelte";
 
 interface Sample {
@@ -16,7 +17,6 @@ const TEN_THOUSAND = 10_000;
 const COLUMNS = 4;
 const LABEL = "Samples";
 const FRAMES_TO_SETTLE = 3;
-const SHOWN_SCALE = 0.5;
 
 const cell = createRawSnippet((sample: () => Sample) => ({
   render: () => `<p class="block-row">${sample().name}</p>`,
@@ -36,17 +36,6 @@ function samples(count: number): Sample[] {
 afterEach(() => {
   window.scrollTo(0, 0);
 });
-
-function scaledDown(): HTMLDivElement {
-  const holder = document.createElement("div");
-  holder.style.transform = `scale(${String(SHOWN_SCALE)})`;
-  holder.style.transformOrigin = "0 0";
-  document.body.append(holder);
-  onTestFinished(() => {
-    holder.remove();
-  });
-  return holder;
-}
 
 async function renderGrid(
   count: number,
@@ -925,16 +914,86 @@ test("makes room for single-column rows at their laid out heights while drawn sc
   expect(frame.offsetHeight).toBe(mixedTopOf(rows));
 });
 
-test("lays out every row on screen while drawn scaled down", async () => {
+test("lays out every row on screen while drawn scaled down and scrolled partway", async () => {
   const { list } = await renderGrid(TEN_THOUSAND, {
     cell: shortCell,
     baseElement: scaledDown(),
   });
   await settled();
 
-  const last = list.getByRole("listitem").elements().at(-1);
+  const frame = list.element().parentElement;
+  window.scrollTo(0, (frame?.getBoundingClientRect().height ?? 0) / 2);
+  await settled();
 
-  expect(last?.getBoundingClientRect().bottom).toBeGreaterThanOrEqual(
+  const drawn = list.getByRole("listitem").elements();
+  expect(drawn.at(0)?.getBoundingClientRect().top).toBeLessThanOrEqual(0);
+  expect(drawn.at(-1)?.getBoundingClientRect().bottom).toBeGreaterThanOrEqual(
     window.innerHeight,
   );
+});
+
+test("keeps the measured heights of its rows and their place once drawn at full size again", async () => {
+  const holder = scaledDown();
+  const { frame } = await renderRows({
+    items: samples(3000),
+    cell: mixedCell,
+    baseElement: holder,
+  });
+  for (let step = 0; step < FRAMES_SCROLLED; step += 1) {
+    window.scrollBy(0, SCROLL_STEP);
+    await nextFrame();
+  }
+  await settled();
+  const scrolledTo = window.scrollY;
+  const room = frame.offsetHeight;
+
+  drawnAt(holder, "none");
+  window.dispatchEvent(new Event("resize"));
+  await settled();
+
+  expect(frame.offsetHeight).toBe(room);
+  expect(window.scrollY).toBe(scrolledTo);
+});
+
+test("brings a row far down into view when revealed while drawn scaled down in its scroller", async () => {
+  const scroller = appendScroller();
+  let reveal: Reveal | undefined;
+  await renderRuns((ready) => {
+    reveal = ready;
+  }, scaledDown(scroller));
+  const far = 3000;
+
+  const revealed = await reveal?.(far);
+
+  expect(revealed?.textContent).toBe(`Sample ${String(far + 1)}`);
+  const view = scroller.getBoundingClientRect();
+  const box = revealed?.getBoundingClientRect();
+  expect(box?.top).toBeGreaterThanOrEqual(view.top);
+  expect(box?.bottom).toBeLessThanOrEqual(view.bottom);
+});
+
+test("lays out its rows once drawn at a size again after being drawn at none", async () => {
+  const holder = scaledDown();
+  drawnAt(holder, "scale(0)");
+  await render(
+    VirtualGrid<Sample>,
+    {
+      items: samples(TEN_THOUSAND),
+      key: (sample: Sample) => sample.id,
+      label: LABEL,
+      isComplete: true,
+      cell: shortCell,
+      class: "grid-cols-4 gap-lg",
+    },
+    { baseElement: holder },
+  );
+  await settled();
+
+  drawnAt(holder, "none");
+  window.dispatchEvent(new Event("resize"));
+
+  const frame = holder.querySelector(".virtual-rows");
+  await expect
+    .poll(() => frame?.getBoundingClientRect().height)
+    .toBeGreaterThan(window.innerHeight);
 });
