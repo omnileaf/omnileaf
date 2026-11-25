@@ -73,7 +73,7 @@
   import type { EditedSeries } from "#lib/series/edited-series.ts";
   import SeriesBand from "#lib/series/SeriesBand.svelte";
   import SeriesBar from "#lib/series/SeriesBar.svelte";
-  import { watchTitleUnderBar } from "#lib/series/title-under-bar.ts";
+  import { watchTitleUnderBar } from "#lib/page/title-under-bar.ts";
   import SeriesTitleBar from "#lib/series/SeriesTitleBar.svelte";
   import {
     standInBook,

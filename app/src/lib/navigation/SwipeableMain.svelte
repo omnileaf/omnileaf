@@ -6,6 +6,7 @@
   import {
     afterNavigate,
     beforeNavigate,
+    type AfterNavigate,
     type NavigationType,
     onNavigate,
   } from "$app/navigation";
@@ -14,6 +15,7 @@
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { watchScrolled } from "#lib/page/scrolled.ts";
 
   import AndroidBackLayers from "./AndroidBackLayers.svelte";
   import { AndroidBackPreview } from "./android-back-preview.svelte";
@@ -21,7 +23,13 @@
   import { previewBackGestures } from "./back-preview";
   import { wayBackFrom } from "./back-link";
   import { backSwipeEdge, directionOf } from "./back-swipe";
-  import { holdScrollTop } from "./hold-scroll";
+  import {
+    holdScrollPlace,
+    holdScrollTop,
+    placeOf,
+    type ScrollPlace,
+  } from "./hold-scroll";
+  import { ScrollMemory } from "./scroll-memory";
   import { focusArrival } from "./page-heading";
   import { getPreviousScreens } from "./previous-screens";
   import ScreenBehindSwipe from "./ScreenBehindSwipe.svelte";
@@ -55,7 +63,9 @@
     goBack,
   });
 
+  let isScrolled = $state(false);
   let stopHoldingScroll: (() => void) | undefined;
+  const scrollMemory = new ScrollMemory();
   const screenShown = $derived(
     `${page.url.pathname} ${language.resolved} ${width.current}`,
   );
@@ -102,14 +112,20 @@
     };
   }
 
-  beforeNavigate(({ complete }) => {
+  beforeNavigate(({ from, to, complete }) => {
     androidBack.navigationStarted();
-    if ((isIos || isAndroid) && swiped.element !== undefined) {
-      previousScreens.keep(page.url.pathname, swiped.element);
-    }
     complete.catch(() => {
       androidBack.navigationStopped();
     });
+    if (swiped.element === undefined) {
+      return;
+    }
+    if (from !== null) {
+      scrollMemory.leave(from.url, placeOf(swiped.element, to?.url));
+    }
+    if (isIos || isAndroid) {
+      previousScreens.keep(page.url.pathname, swiped.element);
+    }
   });
 
   onNavigate(({ type, from }) => {
@@ -125,16 +141,41 @@
     return (type !== "enter" && !backGoesUp.isPassingThrough) || isProblem;
   }
 
-  afterNavigate(({ type }) => {
-    const landedOn = previousScreens.landedOn(page.url.pathname);
-    if (isArrival(type)) {
-      focusArrival({ preventScroll: landedOn !== undefined });
-    }
+  function isNewScreen({ from, to }: AfterNavigate): boolean {
+    return from?.url.pathname !== to?.url.pathname;
+  }
+
+  function placeScroll(
+    navigation: AfterNavigate,
+    landedOn: number | undefined,
+    restored: ScrollPlace | undefined,
+  ): void {
     stopHoldingScroll?.();
-    stopHoldingScroll =
-      landedOn === undefined || swiped.element === undefined
-        ? undefined
-        : holdScrollTop(swiped.element, landedOn.scrollTop);
+    stopHoldingScroll = undefined;
+    const main = swiped.element;
+    if (main === undefined) {
+      return;
+    }
+    if (landedOn !== undefined) {
+      stopHoldingScroll = holdScrollTop(main, landedOn);
+    } else if (restored !== undefined) {
+      stopHoldingScroll = holdScrollPlace(main, restored);
+    } else if (isNewScreen(navigation)) {
+      main.scrollTop = 0;
+    }
+  }
+
+  afterNavigate((navigation) => {
+    const { type, to } = navigation;
+    const landedOn = previousScreens.landedOn(page.url.pathname)?.scrollTop;
+    const restored =
+      to === null ? undefined : scrollMemory.placeToRestore(type, to.url);
+    if (isArrival(type)) {
+      focusArrival({
+        preventScroll: landedOn !== undefined || restored !== undefined,
+      });
+    }
+    placeScroll(navigation, landedOn, restored);
     swiped.arrived();
     androidBack.navigationArrived();
     previousScreens.forgetAllButAbove(page.url.pathname);
@@ -146,6 +187,16 @@
 
   $effect(() => {
     swiped.allowFor(screenShown, edgeIn);
+  });
+
+  $effect(() => {
+    const main = swiped.element;
+    if (!isAndroid || main === undefined) {
+      return;
+    }
+    return watchScrolled(main, (scrolled) => {
+      isScrolled = scrolled;
+    });
   });
 
   onMount(() => {
@@ -191,6 +242,17 @@
     androidBack.mainTransform !== undefined && "bg-background",
   ]}
 >
+  {#if isAndroid && !isFullScreen}
+    <div
+      aria-hidden="true"
+      data-status-bar-surface
+      class={[
+        "sticky -inset-bs-page-top z-series-bar -ms-gutter -me-page-end -mbs-page-top mbe-title-gap shrink-0 block-safe-top motion-safe:transition-colors motion-safe:duration-fade max-medium:-ms-page-start",
+        isScrolled ? "bg-background" : "bg-transparent",
+        "over-hero:bg-transparent",
+      ]}
+    ></div>
+  {/if}
   <PageNoticeSlot />
   {@render children()}
 </main>

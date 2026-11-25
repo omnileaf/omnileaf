@@ -20,7 +20,12 @@
     hasTopTabBar,
     isPhone,
   } from "#lib/page/platform.ts";
-  import { backIcon, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
+  import { watchTitleUnderBar } from "#lib/page/title-under-bar.ts";
+  import {
+    ANDROID_PINNED_BAR,
+    backIcon,
+    NATIVE_TOP_BAR,
+  } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { barChip } from "#lib/series/series-chip.ts";
@@ -62,6 +67,20 @@
   const isIosPhone = $derived(
     platform === "ios" && isPhone(platform, width.current),
   );
+  const hasAndroidTopBar = $derived(
+    platform === "android" && !showsSectionsBeside(width.current),
+  );
+  let barHeight = $state(0);
+  let isTitleUnderBar = $state(false);
+
+  $effect(() => {
+    if (!hasAndroidTopBar || barHeight === 0) {
+      return;
+    }
+    return watchTitleUnderBar(barHeight, (isUnder) => {
+      isTitleUnderBar = isUnder;
+    });
+  });
 
   const backLabel = $derived(m.back_to({ page: parent.title }));
   const isNested = $derived(parent.route !== SETTINGS_ROUTE);
@@ -164,9 +183,46 @@
       {title}
     </h1>
   </header>
+{:else if hasAndroidTopBar}
+  <header
+    bind:clientHeight={barHeight}
+    data-title-bar
+    class={cn(
+      ANDROID_PINNED_BAR,
+      NATIVE_TOP_BAR.edge,
+      isTitleUnderBar ? NATIVE_TOP_BAR.scrolled : "border-transparent",
+    )}
+  >
+    <Tooltip label={backLabel}>
+      {#snippet child({ props })}
+        <a
+          {...props}
+          href={resolve(parent.route)}
+          data-back-link
+          aria-label={backLabel}
+          class="native-target ms-xs flex shrink-0 items-center justify-center rounded-full text-native-on-top-bar block-native-button inline-native-button hover:bg-hover active:bg-pressed"
+        >
+          <Icon name="arrow-left" size={ARROW_SIZE} class="rtl:-scale-x-100" />
+        </a>
+      {/snippet}
+    </Tooltip>
+    <span
+      aria-hidden="true"
+      class={[
+        "pointer-events-none flex-1 truncate ps-xs pe-sm min-inline-none motion-safe:transition-opacity motion-safe:duration-fade",
+        NATIVE_TOP_BAR.barTitle,
+        isTitleUnderBar ? "opacity-100" : "opacity-0",
+      ]}
+    >
+      {title}
+    </span>
+  </header>
+  <h1 tabindex="-1" class={["pbe-md wrap-anywhere", PHONE_TITLE]}>
+    {title}
+  </h1>
 {:else if !hasTitleBar}
   <header
-    class="flex flex-col items-start android:max-medium:-ms-md android:max-medium:-me-md touch:max-medium:-mbs-sm touch:medium:max-expanded:-mbs-lg desktop:max-medium:-mbs-md"
+    class="flex flex-col items-start touch:max-medium:-mbs-sm touch:medium:max-expanded:-mbs-lg desktop:max-medium:-mbs-md"
   >
     <Tooltip label={backLabel}>
       {#snippet child({ props })}
@@ -181,7 +237,7 @@
             "desktop:two-pane:hidden",
             "desktop:-ms-xs desktop:rounded-row desktop:ps-2xs desktop:pe-sm desktop:text-label desktop:font-semibold desktop:text-accent desktop:block-2xl",
             "ios:max-medium:-ms-xs ios:max-medium:rounded-row ios:max-medium:px-sm ios:max-medium:text-back-link ios:max-medium:font-medium ios:max-medium:text-accent ios:max-medium:min-block-touch-target",
-            "android:native-target android:justify-center android:rounded-full android:block-native-button android:inline-native-button android:max-medium:ms-xs android:max-medium:mbs-xs",
+            "android:native-target android:justify-center android:rounded-full android:block-native-button android:inline-native-button",
             "ios:medium:justify-center ios:medium:rounded-full ios:medium:block-touch-target ios:medium:inline-touch-target",
             "android:medium:ms-xs! touch:medium:-ms-md",
           ]}
@@ -213,7 +269,7 @@
     <h1
       tabindex="-1"
       class={[
-        "mbs-xs wrap-anywhere android:max-medium:mbs-lg android:max-medium:self-stretch android:max-medium:px-md android:max-medium:pbe-md two-pane:mbs-none",
+        "mbs-xs wrap-anywhere android:pbe-md android:font-regular android:tracking-normal two-pane:mbs-none",
         titleLook,
       ]}
     >
