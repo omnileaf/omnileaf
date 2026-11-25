@@ -10,6 +10,7 @@ import {
   filtersOn,
   NEW_LIBRARY_LISTING,
 } from "../../src/lib/library/library-listing.ts";
+import { LIBRARY_TAB_KEY } from "../../src/lib/library/library-tab.svelte.ts";
 import {
   CommandFailure,
   commandsAsked,
@@ -94,7 +95,23 @@ function libraryHeading(page: Page) {
 }
 
 async function waitForAnswers(page: Page): Promise<void> {
-  await expect.poll(async () => (await commandsAsked(page)).unanswered).toBe(0);
+  await waitForAnswersBut(page, 0);
+}
+
+async function waitForAnswersBut(page: Page, held: number): Promise<void> {
+  await expect
+    .poll(async () => (await commandsAsked(page)).unanswered)
+    .toBe(held);
+}
+
+async function openOnStoredTab(page: Page, tab: string): Promise<void> {
+  await page.addInitScript(
+    ([key, chosen]) => {
+      localStorage.setItem(key, chosen);
+    },
+    [LIBRARY_TAB_KEY, tab] as const,
+  );
+  await page.goto("/");
 }
 
 async function noteEveryLibraryEmptyShown(page: Page): Promise<void> {
@@ -457,5 +474,98 @@ test.describe("when counting a category fails", { tag: "@native" }, () => {
         name: english.library_clear_all_filters,
       }),
     ).toBeVisible();
+  });
+});
+
+test.describe(
+  "while asking whether the library holds anything",
+  { tag: "@native" },
+  () => {
+    let releases: (() => void)[] = [];
+    const holding = backendHolding([]);
+
+    test.use({
+      backend: {
+        ...holding,
+        librarySeriesCount: async (filter) => {
+          if (filtersOn(filter) === 0) {
+            await new Promise<void>((release) => {
+              releases.push(release);
+            });
+          }
+          return 0;
+        },
+      },
+    });
+
+    test.beforeEach(() => {
+      releases = [];
+    });
+
+    function releaseEveryCount(): void {
+      for (const release of releases.splice(0)) {
+        release();
+      }
+    }
+
+    test("says nothing of an empty category until it knows the library is empty, then says that", async ({
+      page,
+    }) => {
+      await openOnStoredTab(page, "test");
+      await expect.poll(() => releases.length).toBeGreaterThan(0);
+      await waitForAnswersBut(page, releases.length);
+
+      await expect(emptyCategory(page, "Test")).toHaveCount(0);
+      await expect(noMatches(page)).toHaveCount(0);
+      releaseEveryCount();
+
+      await expect(
+        page.getByRole("region", { name: english.library_empty }),
+      ).toBeVisible();
+      await expect(emptyCategory(page, "Test")).toHaveCount(0);
+    });
+
+    test("says nothing of filters until it knows the library is empty, then says that", async ({
+      page,
+    }) => {
+      storedListing = UNREAD_ONLY;
+      await page.goto("/");
+      await expect.poll(() => releases.length).toBeGreaterThan(0);
+      await waitForAnswersBut(page, releases.length);
+
+      await expect(noMatches(page)).toHaveCount(0);
+      releaseEveryCount();
+
+      await expect(
+        page.getByRole("region", { name: english.library_empty }),
+      ).toBeVisible();
+      await expect(noMatches(page)).toHaveCount(0);
+    });
+  },
+);
+
+test.describe("when the library changes", { tag: "@native" }, () => {
+  const shelf: WireSeries[] = [];
+
+  test.use({ backend: backendHolding(shelf) });
+
+  test.beforeEach(() => {
+    shelf.splice(0, shelf.length, ...LIBRARY);
+  });
+
+  test("says the library is empty once its last series goes under a filter", async ({
+    page,
+  }) => {
+    storedListing = UNREAD_ONLY;
+    await page.goto("/");
+    await expect(noMatches(page)).toBeVisible();
+
+    shelf.splice(0);
+    await emitFakeEvent(page, "library-changed");
+
+    await expect(
+      page.getByRole("region", { name: english.library_empty }),
+    ).toBeVisible();
+    await expect(noMatches(page)).toHaveCount(0);
   });
 });

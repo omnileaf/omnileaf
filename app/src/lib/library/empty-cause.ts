@@ -19,17 +19,13 @@ export interface ListedSeries {
 }
 
 export interface EmptyList extends ListedSeries {
-  readonly isLibraryEmpty: boolean;
+  readonly libraryCount: TabCount;
   readonly listedTabCount: TabCount;
 }
 
 const EMPTY_LIBRARY: EmptyCause = { kind: "library" };
 const FILTERED_OUT: EmptyCause = { kind: "filters" };
 const COUNTING: EmptyCause = { kind: "counting" };
-
-function wholeLibraryCauseOf(list: EmptyList): EmptyCause {
-  return list.isFilterOn ? FILTERED_OUT : EMPTY_LIBRARY;
-}
 
 function tabCauseOf(tab: EmptyTab, list: EmptyList): EmptyCause {
   if (!list.isFilterOn) {
@@ -48,23 +44,37 @@ function tabCauseOf(tab: EmptyTab, list: EmptyList): EmptyCause {
   }
 }
 
-export function emptyCauseOf(list: EmptyList): EmptyCause {
+function narrowedCauseOf(list: EmptyList): EmptyCause {
   const { listedTab } = list;
-  if (list.isLibraryEmpty) {
-    return EMPTY_LIBRARY;
-  }
   if (listedTab === undefined) {
-    return wholeLibraryCauseOf(list);
+    return FILTERED_OUT;
   }
   switch (listedTab.id.kind) {
     case "all":
-      return wholeLibraryCauseOf(list);
+      return FILTERED_OUT;
     case "newChapters":
       return tabCauseOf({ kind: "newChapters" }, list);
     case "category":
       return tabCauseOf({ kind: "category", name: listedTab.name }, list);
     default:
       return assertNever(listedTab.id);
+  }
+}
+
+export function emptyCauseOf(list: EmptyList): EmptyCause {
+  if (!narrowsLibrary(list)) {
+    return EMPTY_LIBRARY;
+  }
+  const library = list.libraryCount;
+  switch (library.kind) {
+    case "counting":
+      return COUNTING;
+    case "counted":
+      return library.count === 0 ? EMPTY_LIBRARY : narrowedCauseOf(list);
+    case "failed":
+      return narrowedCauseOf(list);
+    default:
+      return assertNever(library);
   }
 }
 

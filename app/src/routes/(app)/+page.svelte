@@ -498,24 +498,33 @@
   const listedTabKey = $derived(
     listedTab === undefined ? ALL_SERIES : tabKey(listedTab.id),
   );
-  const isListFiltered = $derived(narrowsLibrary({ listedTab, isFilterOn }));
 
   const listsNothing = $derived(
     library.list.kind === "loaded" && library.list.items.length === 0,
   );
-  let holdsNoSeries = $state(false);
+  const libraryCount = new LibrarySeriesCount(
+    countOf(ALL_TAB, NEW_LIBRARY_LISTING),
+    (error) => {
+      reportError(error);
+    },
+  );
   const listedTabCount = new LibrarySeriesCount(
     () => countOf(listedTab?.id ?? ALL_TAB, NEW_LIBRARY_LISTING)(),
     (error) => {
       reportError(error);
     },
   );
+  const emptyListCounts = [libraryCount, listedTabCount];
+  const asksLibraryCount = $derived(
+    listsNothing && narrowsLibrary({ listedTab, isFilterOn }),
+  );
+  const asksTabCount = $derived(listsNothing && listedTabKey !== ALL_SERIES);
   const emptyCause = $derived(
     listsNothing
       ? emptyCauseOf({
           listedTab,
           isFilterOn,
-          isLibraryEmpty: holdsNoSeries,
+          libraryCount: libraryCount.reading,
           listedTabCount: listedTabCount.reading,
         })
       : undefined,
@@ -635,28 +644,24 @@
     });
   });
 
-  $effect(() => {
-    holdsNoSeries = false;
-    if (!listsNothing || !isListFiltered) {
-      return;
-    }
-    void commands
-      .librarySeriesCount(NEW_LIBRARY_LISTING.filter)
-      .then((result) => {
-        holdsNoSeries = result.status === "ok" && result.data === 0;
+  function countOnlyWhileAsked(
+    count: LibrarySeriesCount,
+    isAsked: () => boolean,
+  ): void {
+    $effect.pre(() => {
+      const asked = isAsked();
+      untrack(() => {
+        if (asked) {
+          void count.load();
+        } else {
+          count.clear();
+        }
       });
-  });
-
-  $effect.pre(() => {
-    const asksTabCount = listsNothing && listedTabKey !== ALL_SERIES;
-    untrack(() => {
-      if (asksTabCount) {
-        void listedTabCount.load();
-      } else {
-        listedTabCount.clear();
-      }
     });
-  });
+  }
+
+  countOnlyWhileAsked(libraryCount, () => asksLibraryCount);
+  countOnlyWhileAsked(listedTabCount, () => asksTabCount);
 
   const listingShown = $derived(
     chosenListing === undefined
@@ -997,8 +1002,10 @@
       if (countsSeries) {
         void seriesCount.load();
       }
-      if (listedTabCount.reading.kind !== "counting") {
-        void listedTabCount.refresh();
+      for (const count of emptyListCounts) {
+        if (count.reading.kind !== "counting") {
+          void count.refresh();
+        }
       }
       pages.refreshBeside();
     }, reportFailure);

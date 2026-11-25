@@ -10,6 +10,7 @@ import {
   keepsListChrome,
   narrowsLibrary,
 } from "./empty-cause.ts";
+import type { TabCount } from "./library-series-count.svelte.ts";
 import type { ArrangedTab } from "./library-tabs.ts";
 
 const ALL: ArrangedTab = { id: { kind: "all" }, name: "All", isHidden: false };
@@ -32,9 +33,10 @@ const NOTHING_NEW: EmptyCause = { kind: "tab", tab: { kind: "newChapters" } };
 const NOTHING_KNOWN: EmptyList = {
   listedTab: ALL,
   isFilterOn: false,
-  isLibraryEmpty: false,
+  libraryCount: { kind: "counted", count: 6 },
   listedTabCount: { kind: "counting" },
 };
+const EMPTY_LIBRARY: TabCount = { kind: "counted", count: 0 };
 
 function filteredTest(listedTabCount: EmptyList["listedTabCount"]): EmptyList {
   return {
@@ -46,13 +48,52 @@ function filteredTest(listedTabCount: EmptyList["listedTabCount"]): EmptyList {
 }
 
 test("blames an empty library, whatever tab or filter is on", () => {
-  const list = { ...filteredTest({ kind: "counting" }), isLibraryEmpty: true };
+  const lists = [
+    { ...filteredTest({ kind: "counting" }), libraryCount: EMPTY_LIBRARY },
+    { ...NOTHING_KNOWN, listedTab: TEST, libraryCount: EMPTY_LIBRARY },
+    { ...NOTHING_KNOWN, isFilterOn: true, libraryCount: EMPTY_LIBRARY },
+  ];
+
+  expect(lists.map(emptyCauseOf)).toEqual([
+    { kind: "library" },
+    { kind: "library" },
+    { kind: "library" },
+  ]);
+});
+
+test("blames an empty library when All lists nothing with no filter on, without counting it", () => {
+  const list: EmptyList = {
+    ...NOTHING_KNOWN,
+    libraryCount: { kind: "counting" },
+  };
 
   expect(emptyCauseOf(list)).toEqual({ kind: "library" });
 });
 
-test("blames an empty library when All lists nothing with no filter on", () => {
-  expect(emptyCauseOf(NOTHING_KNOWN)).toEqual({ kind: "library" });
+test("blames nothing while the library's series are still being counted under a tab or a filter", () => {
+  const counting: TabCount = { kind: "counting" };
+  const lists = [
+    { ...NOTHING_KNOWN, listedTab: TEST, libraryCount: counting },
+    { ...NOTHING_KNOWN, listedTab: NEW_CHAPTERS, libraryCount: counting },
+    { ...NOTHING_KNOWN, isFilterOn: true, libraryCount: counting },
+    { ...filteredTest({ kind: "counted", count: 2 }), libraryCount: counting },
+  ];
+
+  expect(lists.map(emptyCauseOf)).toEqual([
+    { kind: "counting" },
+    { kind: "counting" },
+    { kind: "counting" },
+    { kind: "counting" },
+  ]);
+});
+
+test("blames the tab or the filters when the library could not be counted", () => {
+  const failed: TabCount = { kind: "failed" };
+
+  expect([
+    emptyCauseOf({ ...NOTHING_KNOWN, listedTab: TEST, libraryCount: failed }),
+    emptyCauseOf({ ...NOTHING_KNOWN, isFilterOn: true, libraryCount: failed }),
+  ]).toEqual([EMPTY_TEST, { kind: "filters" }]);
 });
 
 test("blames an empty library when no tab is listed and no filter is on", () => {
