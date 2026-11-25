@@ -129,12 +129,18 @@
   });
 
   onMount(() => {
-    if (isAndroid) {
-      previewBackGestures((progress) => {
-        backProgress = progress;
-      });
-    }
+    const stopPreviewing = isAndroid
+      ? previewBackGestures(
+          (progress) => {
+            backProgress = progress;
+          },
+          () =>
+            location.pathname === page.url.pathname &&
+            location.search === page.url.search,
+        )
+      : undefined;
     return () => {
+      stopPreviewing?.();
       stopHoldingScroll?.();
     };
   });
