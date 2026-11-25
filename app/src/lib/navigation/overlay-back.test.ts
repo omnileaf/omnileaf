@@ -130,3 +130,21 @@ test("holds nothing where the platform does not follow the page's history", () =
   expect(page.entries).toEqual({ pushed: 0, backed: 0 });
   expect(told.count).toBe(0);
 });
+
+test("holds a new entry only once its own step back for the last overlay has landed", () => {
+  const { overlays, page } = overlayBack();
+  let closed = 0;
+  const releaseSheet = overlays.hold(() => undefined);
+  releaseSheet();
+
+  overlays.hold(() => {
+    closed += 1;
+  });
+  const pushedWhileStepping = page.entries.pushed;
+  page.goBack();
+  const pushedOnceLanded = page.entries.pushed;
+  page.goBack();
+
+  expect([pushedWhileStepping, pushedOnceLanded]).toEqual([1, 2]);
+  expect(closed).toBe(1);
+});

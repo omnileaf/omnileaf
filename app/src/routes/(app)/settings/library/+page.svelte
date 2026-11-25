@@ -11,7 +11,7 @@
   } from "#lib/ipc/bindings.ts";
   import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import LibraryFolderSettings from "#lib/library/LibraryFolderSettings.svelte";
   import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -35,7 +35,7 @@
   const screenshotMode = getScreenshotMode();
   const notices = getNotices();
   const scheduledRescans = getScheduledRescansSetting();
-  const android = new AndroidPhone();
+  const android = androidListLook();
 
   const TREATMENT_LABELS = {
     show: m.adult_content_show,

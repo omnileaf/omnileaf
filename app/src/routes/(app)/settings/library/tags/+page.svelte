@@ -9,7 +9,7 @@
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { reportFailure } from "#lib/errors/report-failure.ts";
   import { commands, type LibraryTag } from "#lib/ipc/bindings.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import RenameTagDialog from "#lib/library/RenameTagDialog.svelte";
@@ -27,7 +27,7 @@
   const ROW_BUTTON =
     "transition-control block-touch-target inline-touch-target hover:bg-hover active:bg-pressed ios:rounded-ios-button desktop:rounded-shadcn-control desktop:block-compact-button desktop:inline-compact-button";
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const ios = new IosPhone();
   const swipe = new RowSwipe((side) => side === "towardStart");
   const notices = getNotices();
@@ -101,7 +101,7 @@
   />
   <div
     class={[
-      "mbs-pane-gap flex flex-col android:max-medium:mbs-none",
+      "mbs-pane-gap flex flex-col android:mbs-none",
       android.isOn ? "gap-none" : "gap-sm",
     ]}
   >

@@ -317,6 +317,22 @@ test.describe(
       await expect(bookCheckbox(page, 1)).toHaveCount(0);
     });
 
+    test("ends picking on Android's back and stays on the series", async ({
+      page,
+      platform,
+    }) => {
+      test.skip(platform !== "android", "Android's back gesture");
+      await openSeries(page);
+      const series = page.url();
+      await startPickingFrom(page, 1);
+      await expect(bookCheckbox(page, 1)).toHaveCount(1);
+
+      await page.goBack();
+
+      await expect(bookCheckbox(page, 1)).toHaveCount(0);
+      expect(page.url()).toBe(series);
+    });
+
     test("lays Android's contextual bar over the top app bar, covering the status bar, without moving the page", async ({
       page,
       platform,
@@ -405,6 +421,7 @@ test.describe(
 
         await expect(bookCheckbox(page, 1)).toHaveCount(0);
         await expect(navigation(page)).toBeVisible();
+        await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`, "u"));
       });
     }
 

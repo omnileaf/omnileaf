@@ -2857,3 +2857,15 @@ test("keeps the sample library's covers flat on android and stacks them elsewher
 
   expect(stacked).toEqual([false, true, true, true, true]);
 });
+
+test("counts the volumes and chapters of each sample series by how its books are numbered", async () => {
+  const { backend } = backendFor();
+
+  const { series } = await backend.librarySeries(null, NEW_LIBRARY_LISTING);
+
+  expect(
+    series.every((one) => one.volumeCount + one.chapterCount <= one.bookCount),
+  ).toBe(true);
+  expect(series.some((one) => one.volumeCount > 0)).toBe(true);
+  expect(series.some((one) => one.chapterCount > 0)).toBe(true);
+});
