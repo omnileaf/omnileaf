@@ -55,14 +55,12 @@ impl Drop for Held<'_> {
 #[cfg(test)]
 mod tests {
     use std::{
-        sync::{
-            Arc,
-            atomic::{AtomicU64, Ordering},
-            mpsc,
-        },
+        sync::{Arc, mpsc},
         thread,
         time::Duration,
     };
+
+    use omnileaf_testkit::{InFlight, yield_times};
 
     use super::*;
 
@@ -74,25 +72,20 @@ mod tests {
     const LONG_ENOUGH_TO_GET_IN: Duration = Duration::from_millis(200);
 
     fn most_units_held_at_once(semaphore: &WeightedSemaphore, weights: &[u64]) -> u64 {
-        let held = AtomicU64::new(0);
-        let most_held = AtomicU64::new(0);
+        let held = InFlight::new();
 
         thread::scope(|scope| {
             for &units in weights {
-                let (held, most_held) = (&held, &most_held);
+                let held = &held;
                 scope.spawn(move || {
                     let _units = semaphore.hold(units);
-                    let now = held.fetch_add(units, Ordering::SeqCst) + units;
-                    most_held.fetch_max(now, Ordering::SeqCst);
-                    for _ in 0..WORK_STEPS {
-                        thread::yield_now();
-                    }
-                    held.fetch_sub(units, Ordering::SeqCst);
+                    let _held = held.enter_weighted(units);
+                    yield_times(WORK_STEPS);
                 });
             }
         });
 
-        most_held.load(Ordering::SeqCst)
+        held.most_at_once()
     }
 
     #[test]

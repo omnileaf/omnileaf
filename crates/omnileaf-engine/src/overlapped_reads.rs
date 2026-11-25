@@ -94,6 +94,8 @@ impl<'books, T> Queue<'books, T> {
 mod tests {
     use std::time::{Duration, Instant};
 
+    use omnileaf_testkit::{InFlight, wait_until, yield_times};
+
     use super::*;
 
     const BOOKS: usize = 100;
@@ -112,19 +114,6 @@ mod tests {
         }
     }
 
-    fn work(steps: usize) {
-        for _ in 0..steps {
-            thread::yield_now();
-        }
-    }
-
-    fn wait_until(is_done: impl Fn() -> bool) {
-        let deadline = Instant::now() + LONGEST_WAIT;
-        while !is_done() && Instant::now() < deadline {
-            thread::yield_now();
-        }
-    }
-
     #[test]
     fn hands_back_each_read_in_the_order_of_the_books_whatever_order_they_finish_in() {
         let books: Vec<usize> = (0..BOOKS).collect();
@@ -132,7 +121,7 @@ mod tests {
 
         let read = read_at_most(&books, SMALL_BOUND, |&book| {
             if book == FIRST_BOOK {
-                wait_until(|| finished.load(Ordering::SeqCst) > 0);
+                wait_until(LONGEST_WAIT, || finished.load(Ordering::SeqCst) > 0);
             }
             finished.fetch_add(1, Ordering::SeqCst);
             book * 2
@@ -144,20 +133,17 @@ mod tests {
     #[test]
     fn reads_no_more_books_at_once_than_its_bound() {
         let books: Vec<usize> = (0..BOOKS).collect();
-        let reading = AtomicUsize::new(0);
-        let most_at_once = AtomicUsize::new(0);
+        let reading = InFlight::new();
 
         let read = read_at_most(&books, SMALL_BOUND, |_| {
-            let now = reading.fetch_add(1, Ordering::SeqCst) + 1;
-            most_at_once.fetch_max(now, Ordering::SeqCst);
-            work(WORK_STEPS);
-            reading.fetch_sub(1, Ordering::SeqCst);
+            let _reading = reading.enter();
+            yield_times(WORK_STEPS);
         });
 
         assert_eq!(read.len(), BOOKS);
-        let most_at_once = most_at_once.load(Ordering::SeqCst);
+        let most_at_once = reading.most_at_once();
         assert!(
-            most_at_once <= SMALL_BOUND.get(),
+            most_at_once <= SMALL_BOUND.get() as u64,
             "read {most_at_once} at once"
         );
     }
@@ -226,7 +212,7 @@ mod tests {
                     let _tell_the_others = FlagOnDrop(&has_fallen_over);
                     panic!("a reader fell over");
                 }
-                wait_until(|| has_fallen_over.load(Ordering::SeqCst));
+                wait_until(LONGEST_WAIT, || has_fallen_over.load(Ordering::SeqCst));
                 reads.fetch_add(1, Ordering::SeqCst);
             })
         });
