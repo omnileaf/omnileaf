@@ -1,5 +1,7 @@
 import { on } from "svelte/events";
 
+import { shownScaleOf } from "#lib/page/shown-scale.ts";
+
 const USER_INPUTS = ["pointerdown", "wheel", "keydown"] as const;
 const SCROLL_SLACK_PX = 1;
 const ANCHOR = "a[href]";
@@ -86,10 +88,6 @@ function anchorIn(
     inView.at(0) ??
     null
   );
-}
-
-function shownScaleOf(screen: HTMLElement): number {
-  return new DOMMatrixReadOnly(getComputedStyle(screen).transform).d;
 }
 
 function shownOffsetOf(link: HTMLAnchorElement, screen: HTMLElement): number {
