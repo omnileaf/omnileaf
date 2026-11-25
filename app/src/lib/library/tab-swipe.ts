@@ -43,14 +43,25 @@ export function tabSwipedTo({
 
 export function settlesAt({
   moved,
-  width,
+  travel,
   step,
 }: {
   moved: number;
-  width: number;
+  travel: number;
   step: -1 | 0 | 1;
 }): number {
-  return step === 0 ? 0 : Math.sign(moved) * width;
+  return step === 0 ? 0 : Math.sign(moved) * travel;
+}
+
+const NO_GAP = "normal";
+
+function gapBetweenPagesOf(track: HTMLElement): number {
+  const { columnGap } = getComputedStyle(track);
+  return columnGap === NO_GAP ? 0 : Number.parseFloat(columnGap);
+}
+
+function travelOf(track: HTMLElement): number {
+  return track.clientWidth + gapBetweenPagesOf(track);
 }
 
 const EDGE_PX = 24;
@@ -219,11 +230,10 @@ export function swipesBetweenTabs({
         finish();
         return;
       }
-      const width = moving.clientWidth;
       void settle(
         moving,
         moved,
-        settlesAt({ moved, width, step: committed }),
+        settlesAt({ moved, travel: travelOf(moving), step: committed }),
       ).then((isFinished) => {
         if (isFinished) {
           finish();

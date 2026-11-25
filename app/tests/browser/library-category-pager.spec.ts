@@ -345,6 +345,8 @@ for (const platform of PLATFORMS) {
       skipUnlessPhone(page, testInfo.project.use.hasTouch);
       await openLibrary(page);
       const track = await boxOf(pagerTrack(page));
+      const besideStart =
+        track.x + track.width + (await lengthOf(page, "--spacing-pager-gap"));
 
       const drag = await beginDrag(page, seriesList(page));
       await drag.to(-SWIPE_PX / 2);
@@ -353,8 +355,8 @@ for (const platform of PLATFORMS) {
       const further = await boxOf(pageBeside(page));
       await drag.release();
 
-      expect(halfway.x).toBeCloseTo(track.x + track.width - SWIPE_PX / 2, 0);
-      expect(further.x).toBeCloseTo(track.x + track.width - SWIPE_PX, 0);
+      expect(halfway.x).toBeCloseTo(besideStart - SWIPE_PX / 2, 0);
+      expect(further.x).toBeCloseTo(besideStart - SWIPE_PX, 0);
       expect(further.width).toBeCloseTo(track.width, 0);
     });
 
