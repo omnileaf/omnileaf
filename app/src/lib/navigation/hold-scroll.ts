@@ -159,24 +159,25 @@ export function holdScrollPlace(
   screen: HTMLElement,
   place: ScrollPlace,
 ): () => void {
-  let placedAt = screen.scrollTop;
+  let placed = { top: screen.scrollTop, height: screen.scrollHeight };
   const anchoring = screen.style.overflowAnchor;
   screen.style.overflowAnchor = "none";
+
+  function reachPlace(): void {
+    scrollToPlace(screen, place);
+    placed = { top: screen.scrollTop, height: screen.scrollHeight };
+  }
+
   const stopWatching = on(screen, "scroll", () => {
-    if (Math.abs(screen.scrollTop - placedAt) > SCROLL_SLACK_PX) {
+    if (screen.scrollHeight !== placed.height) {
+      reachPlace();
+    } else if (Math.abs(screen.scrollTop - placed.top) > SCROLL_SLACK_PX) {
       stop();
     }
   });
-  const stop = holdWhileContentResizes(
-    screen,
-    () => {
-      scrollToPlace(screen, place);
-      placedAt = screen.scrollTop;
-    },
-    () => {
-      stopWatching();
-      screen.style.overflowAnchor = anchoring;
-    },
-  );
+  const stop = holdWhileContentResizes(screen, reachPlace, () => {
+    stopWatching();
+    screen.style.overflowAnchor = anchoring;
+  });
   return stop;
 }

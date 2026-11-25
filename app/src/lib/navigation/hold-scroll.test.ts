@@ -47,6 +47,11 @@ function screenShowingSeriesTwice(): {
   return { screen, lower };
 }
 
+async function framesDrawn(): Promise<void> {
+  await new Promise(requestAnimationFrame);
+  await new Promise(requestAnimationFrame);
+}
+
 function linkTopWithin(screen: HTMLElement, link: Element): number {
   return link.getBoundingClientRect().top - screen.getBoundingClientRect().top;
 }
@@ -86,6 +91,20 @@ test("remembers a screen left while shown scaled down at its unscaled place", ()
   const left = placeOf(screen, undefined);
 
   expect(left.anchor?.offset).toBeCloseTo(LOWER_LINK_TOP - SHOWN_LOWER_LINK_AT);
+});
+
+test("keeps the place when the screen moves as its content changes height", async () => {
+  const { screen } = screenShowingSeriesTwice();
+  screen.scrollTop = SHOWN_LOWER_LINK_AT;
+  const left = placeOf(screen, undefined);
+  screen.scrollTop = 0;
+  stops.push(holdScrollPlace(screen, left));
+
+  screen.append(gap());
+  screen.scrollTop = 0;
+  await framesDrawn();
+
+  expect(screen.scrollTop).toBe(SHOWN_LOWER_LINK_AT);
 });
 
 test("goes back to the saved scroll position when no link shows the saved address", () => {
