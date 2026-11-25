@@ -81,6 +81,7 @@
 
 <header
   bind:clientHeight={height}
+  data-hero-bar
   class={[
     "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end flex items-center gap-sm ps-series-bar-start pe-series-bar-end motion-safe:transition-colors motion-safe:duration-fade while-picking:invisible",
     barBlock,
