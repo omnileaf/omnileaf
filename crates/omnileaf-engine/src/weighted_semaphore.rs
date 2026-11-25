@@ -60,7 +60,7 @@ mod tests {
         time::Duration,
     };
 
-    use omnileaf_testkit::{InFlight, yield_times};
+    use omnileaf_testkit::{GENEROUS_WAIT, InFlight, yield_times};
 
     use super::*;
 
@@ -68,7 +68,6 @@ mod tests {
     const MOST_OF_IT: u64 = 6;
     const HOLDERS: u64 = 8;
     const WORK_STEPS: usize = 1000;
-    const LONGEST_WAIT: Duration = Duration::from_secs(5);
     const LONG_ENOUGH_TO_GET_IN: Duration = Duration::from_millis(200);
 
     fn most_units_held_at_once(semaphore: &WeightedSemaphore, weights: &[u64]) -> u64 {
@@ -131,7 +130,7 @@ mod tests {
         let got_in_early = has_got_in.recv_timeout(LONG_ENOUGH_TO_GET_IN).is_ok();
         drop(first);
         assert!(!got_in_early);
-        assert!(has_got_in.recv_timeout(LONGEST_WAIT).is_ok());
+        assert!(has_got_in.recv_timeout(GENEROUS_WAIT).is_ok());
     }
 
     #[test]
@@ -140,7 +139,7 @@ mod tests {
 
         let has_got_in = holding_in_the_background(&semaphore, TOTAL + 1);
 
-        assert!(has_got_in.recv_timeout(LONGEST_WAIT).is_ok());
+        assert!(has_got_in.recv_timeout(GENEROUS_WAIT).is_ok());
     }
 
     #[test]
@@ -153,6 +152,6 @@ mod tests {
         let got_in_early = has_got_in.recv_timeout(LONG_ENOUGH_TO_GET_IN).is_ok();
         drop(all);
         assert!(!got_in_early);
-        assert!(has_got_in.recv_timeout(LONGEST_WAIT).is_ok());
+        assert!(has_got_in.recv_timeout(GENEROUS_WAIT).is_ok());
     }
 }
