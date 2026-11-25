@@ -4,6 +4,7 @@ import type { BackSwipe, SeriesDetails } from "../../src/lib/ipc/bindings.ts";
 import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
 import { emitFakeEvent, type FakeChannel } from "./fake-backend.ts";
 import { sampleLibraryOn } from "./screens.ts";
+import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 import {
   DEFAULT_BACKEND,
@@ -37,6 +38,7 @@ const CREDITED_SERIES = `/series/${sampleSeriesId(4)}`;
 const SERIES_DOWN = 250;
 const LIBRARY_DOWN = 1200;
 const SCROLL_SLACK_PX = 2;
+const LONG_LIBRARY = sampleSeries(400);
 
 const SPRING_BACK_SETTLED_MS = 200;
 const PAUSED_AFTER_MS = 1000;
@@ -616,6 +618,52 @@ test.describe("going back to a list scrolled down", () => {
         .toBeLessThanOrEqual(SCROLL_SLACK_PX);
     });
   }
+
+  test.describe("with a library long enough for a fast-scroll handle", () => {
+    test.use({
+      backend: {
+        ...sampleLibraryOn("android"),
+        librarySeries: pagedSeries(() => LONG_LIBRARY),
+        librarySeriesCount: () => LONG_LIBRARY.length,
+        watchBackSwipes: (channel) => {
+          gestures = channel;
+          return null;
+        },
+      },
+    });
+
+    test("keeps the fast-scroll handle where it was, going back to the Library", async ({
+      page,
+    }) => {
+      await page.setViewportSize(PHONE);
+      await page.goto(LIBRARY);
+      await headingOf(page);
+      await scrollListDown(page, LIBRARY_DOWN);
+      const handle = page.locator("[data-fast-scroll-handle]");
+      await expect(handle).toBeVisible();
+      const leftAt = await handle.boundingBox();
+      await openInApp(page, "/history");
+      await pauseTheClock(page);
+      await gesture(start());
+      await gesture(swipe(0.6));
+
+      await page.goBack();
+
+      await expect(page).toHaveURL(LIBRARY);
+      await page.clock.runFor(COMMIT_PLAYED_MS);
+      await expectNoPreviewLeft(page);
+      await page.clock.resume();
+      await expect
+        .poll(async () => {
+          const box = await handle.boundingBox();
+          return Math.max(
+            Math.abs((box?.x ?? 0) - (leftAt?.x ?? 0)),
+            Math.abs((box?.y ?? 0) - (leftAt?.y ?? 0)),
+          );
+        })
+        .toBeLessThanOrEqual(SCROLL_SLACK_PX);
+    });
+  });
 });
 
 test.describe("going back to a page that takes a while to load", () => {
