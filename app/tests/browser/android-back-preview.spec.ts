@@ -519,6 +519,15 @@ test.describe("going back to a list scrolled down", () => {
     });
   }
 
+  async function linkDrawnInView(page: Page): Promise<LinkInView> {
+    await expect.poll(() => firstLinkInView(page)).toBeDefined();
+    const link = await firstLinkInView(page);
+    if (link === undefined) {
+      throw new Error("no link stayed in view");
+    }
+    return link;
+  }
+
   function offsetOfLink(page: Page, href: string): Promise<number> {
     return page.getByRole("main").evaluate((main, wanted) => {
       const shown = main.getBoundingClientRect();
@@ -581,7 +590,7 @@ test.describe("going back to a list scrolled down", () => {
       await page.goto(LIBRARY);
       const heading = await headingOf(page);
       const leftAt = await scrollListDown(page, LIBRARY_DOWN);
-      const shownLink = await firstLinkInView(page);
+      const shownLink = await linkDrawnInView(page);
       await way.open(page);
       await expect(page).not.toHaveURL(LIBRARY);
       await pauseTheClock(page);
@@ -598,12 +607,10 @@ test.describe("going back to a list scrolled down", () => {
       await page.clock.runFor(COMMIT_PLAYED_MS);
       await expectNoPreviewLeft(page);
       await page.clock.resume();
-      expect(shownLink).toBeDefined();
       await expect
         .poll(async () =>
           Math.abs(
-            (await offsetOfLink(page, shownLink?.href ?? "")) -
-              (shownLink?.offset ?? 0),
+            (await offsetOfLink(page, shownLink.href)) - shownLink.offset,
           ),
         )
         .toBeLessThanOrEqual(SCROLL_SLACK_PX);
