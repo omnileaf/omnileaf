@@ -219,14 +219,14 @@ mod tests {
             mpsc,
         },
         thread,
-        time::{Duration, Instant},
+        time::Duration,
     };
 
     use omnileaf_db::catalog::RootKind;
     use omnileaf_formats::{Entry, LocalStorage, Storage};
     use omnileaf_testkit::{
-        GENERATED_LIBRARY_NAME, GeneratedLibrary, PageShape, ScratchFolder, page_png,
-        write_generated_library,
+        GENERATED_LIBRARY_NAME, GeneratedLibrary, InFlight, PageShape, ScratchFolder, page_png,
+        wait_until, write_generated_library,
     };
 
     use crate::{file_type::HiddenFileTypes, library_layout::BookForm};
@@ -257,52 +257,77 @@ mod tests {
     const IMAGE_FOLDER_BOOKS: usize = 8;
     const LISTED_BYTES: u64 = 100;
     const BOOKS_THE_BUDGET_HOLDS: u64 = 2;
+    const A_PAIR: u64 = 2;
+    const A_THIRD_OPEN: u64 = BOOKS_THE_BUDGET_HOLDS + 1;
     const WAIT_FOR_COMPANY: Duration = Duration::from_secs(2);
+    const WAIT_FOR_A_PEER: Duration = Duration::from_millis(50);
     const WAIT_FOR_A_SECOND_OPEN: Duration = Duration::from_millis(100);
     const UNLISTED_FILES: usize = 4;
     const WAIT_FOR_A_THIRD_OPEN: Duration = Duration::from_millis(300);
 
-    #[derive(Clone, Copy)]
-    enum InCompany {
-        Opens,
-        TimesOut,
+    #[derive(Debug)]
+    struct Rooted(PathBuf);
+
+    impl Rooted {
+        fn in_scratch(scratch: &ScratchFolder) -> Self {
+            Self(scratch.path().to_path_buf())
+        }
+    }
+
+    impl Storage for Rooted {
+        fn entries(&self, folder: &Path) -> io::Result<Vec<Entry>> {
+            LocalStorage.entries(&self.0.join(folder))
+        }
+
+        fn details(&self, path: &Path) -> io::Result<Details> {
+            LocalStorage.details(&self.0.join(path))
+        }
+
+        fn open(&self, file: &Path) -> io::Result<File> {
+            LocalStorage.open(&self.0.join(file))
+        }
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    enum Pacing {
+        Immediately,
+        UntilMostAtOnce { at_once: u64, longest: Duration },
+        UntilCompany { longest: Duration },
     }
 
     #[derive(Debug)]
-    struct OpensInCompany {
-        root: PathBuf,
-        company: usize,
-        longest: Duration,
+    struct PacedStorage {
+        rooted: Rooted,
+        pacing: Pacing,
         times_out_in_company: bool,
         is_hanging: AtomicBool,
-        open_now: AtomicUsize,
-        most_open_at_once: AtomicUsize,
-        opened: Mutex<Vec<(PathBuf, usize)>>,
+        in_flight: InFlight,
+        opened: Mutex<Vec<(PathBuf, u64)>>,
     }
 
-    impl OpensInCompany {
-        fn waiting_for(scratch: &ScratchFolder, company: usize, longest: Duration) -> Arc<Self> {
-            Self::new(scratch, company, longest, InCompany::Opens)
+    impl PacedStorage {
+        fn unpaced(scratch: &ScratchFolder) -> Arc<Self> {
+            Self::new(scratch, Pacing::Immediately, false)
+        }
+
+        fn waiting_for(scratch: &ScratchFolder, at_once: u64, longest: Duration) -> Arc<Self> {
+            Self::new(scratch, Pacing::UntilMostAtOnce { at_once, longest }, false)
         }
 
         fn timing_out_in_company(scratch: &ScratchFolder) -> Arc<Self> {
-            Self::new(scratch, 2, WAIT_FOR_COMPANY, InCompany::TimesOut)
+            let pacing = Pacing::UntilCompany {
+                longest: WAIT_FOR_A_PEER,
+            };
+            Self::new(scratch, pacing, true)
         }
 
-        fn new(
-            scratch: &ScratchFolder,
-            company: usize,
-            longest: Duration,
-            in_company: InCompany,
-        ) -> Arc<Self> {
+        fn new(scratch: &ScratchFolder, pacing: Pacing, times_out_in_company: bool) -> Arc<Self> {
             Arc::new(Self {
-                root: scratch.path().to_path_buf(),
-                company,
-                longest,
-                times_out_in_company: matches!(in_company, InCompany::TimesOut),
+                rooted: Rooted::in_scratch(scratch),
+                pacing,
+                times_out_in_company,
                 is_hanging: AtomicBool::new(false),
-                open_now: AtomicUsize::new(0),
-                most_open_at_once: AtomicUsize::new(0),
+                in_flight: InFlight::new(),
                 opened: Mutex::new(Vec::new()),
             })
         }
@@ -311,39 +336,55 @@ mod tests {
             self.is_hanging.store(true, Ordering::SeqCst);
         }
 
-        fn most_open_at_once(&self) -> usize {
-            self.most_open_at_once.load(Ordering::SeqCst)
+        fn most_open_at_once(&self) -> u64 {
+            self.in_flight.most_at_once()
         }
 
-        fn take_opened(&self) -> Vec<(PathBuf, usize)> {
+        fn has_opened(&self) -> bool {
+            !self.opened.lock().unwrap().is_empty()
+        }
+
+        fn take_opened(&self) -> Vec<(PathBuf, u64)> {
             mem::take(&mut self.opened.lock().unwrap())
+        }
+
+        fn wait_to_open(&self) {
+            match self.pacing {
+                Pacing::Immediately => {}
+                Pacing::UntilMostAtOnce { at_once, longest } => {
+                    self.in_flight
+                        .wait_until_most_at_once_reaches(at_once, longest);
+                }
+                Pacing::UntilCompany { longest } => {
+                    self.in_flight.wait_for_company(longest);
+                }
+            }
         }
     }
 
-    impl Storage for OpensInCompany {
+    impl Storage for PacedStorage {
         fn entries(&self, folder: &Path) -> io::Result<Vec<Entry>> {
-            LocalStorage.entries(&self.root.join(folder))
+            self.rooted.entries(folder)
         }
 
         fn details(&self, path: &Path) -> io::Result<Details> {
-            LocalStorage.details(&self.root.join(path))
+            self.rooted.details(path)
         }
 
         fn open(&self, file: &Path) -> io::Result<File> {
-            let now = self.open_now.fetch_add(1, Ordering::SeqCst) + 1;
-            self.most_open_at_once.fetch_max(now, Ordering::SeqCst);
-            self.opened.lock().unwrap().push((file.to_path_buf(), now));
-            wait_until_within(self.longest, || self.most_open_at_once() >= self.company);
-            let has_company = self.open_now.load(Ordering::SeqCst) > 1;
-            let opened = if self.is_hanging.load(Ordering::SeqCst)
-                || (self.times_out_in_company && has_company)
+            let entered = self.in_flight.enter();
+            self.opened
+                .lock()
+                .unwrap()
+                .push((file.to_path_buf(), entered.in_flight_at_entry()));
+            self.wait_to_open();
+            if self.is_hanging.load(Ordering::SeqCst)
+                || (self.times_out_in_company && self.in_flight.has_company())
             {
                 Err(io::ErrorKind::TimedOut.into())
             } else {
-                LocalStorage.open(&self.root.join(file))
-            };
-            self.open_now.fetch_sub(1, Ordering::SeqCst);
-            opened
+                self.rooted.open(file)
+            }
         }
     }
 
@@ -376,17 +417,17 @@ mod tests {
 
     #[derive(Debug)]
     struct ChangingSinceRecognised {
-        root: PathBuf,
+        rooted: Rooted,
         lookups: AtomicUsize,
     }
 
     impl Storage for ChangingSinceRecognised {
         fn entries(&self, folder: &Path) -> io::Result<Vec<Entry>> {
-            LocalStorage.entries(&self.root.join(folder))
+            self.rooted.entries(folder)
         }
 
         fn details(&self, path: &Path) -> io::Result<Details> {
-            let details = LocalStorage.details(&self.root.join(path))?;
+            let details = self.rooted.details(path)?;
             Ok(
                 match (self.lookups.fetch_add(1, Ordering::SeqCst), details) {
                     (0, details) | (_, details @ Details::Folder { .. }) => details,
@@ -399,41 +440,7 @@ mod tests {
         }
 
         fn open(&self, file: &Path) -> io::Result<File> {
-            LocalStorage.open(&self.root.join(file))
-        }
-    }
-
-    #[derive(Debug)]
-    struct WatchedStorage {
-        root: PathBuf,
-        opens: AtomicUsize,
-    }
-
-    impl WatchedStorage {
-        fn rooted_in(scratch: &ScratchFolder) -> Arc<Self> {
-            Arc::new(Self {
-                root: scratch.path().to_path_buf(),
-                opens: AtomicUsize::new(0),
-            })
-        }
-
-        fn has_opened(&self) -> bool {
-            self.opens.load(Ordering::SeqCst) > 0
-        }
-    }
-
-    impl Storage for WatchedStorage {
-        fn entries(&self, folder: &Path) -> io::Result<Vec<Entry>> {
-            LocalStorage.entries(&self.root.join(folder))
-        }
-
-        fn details(&self, path: &Path) -> io::Result<Details> {
-            LocalStorage.details(&self.root.join(path))
-        }
-
-        fn open(&self, file: &Path) -> io::Result<File> {
-            self.opens.fetch_add(1, Ordering::SeqCst);
-            LocalStorage.open(&self.root.join(file))
+            self.rooted.open(file)
         }
     }
 
@@ -467,18 +474,6 @@ mod tests {
         }
     }
 
-    fn wait_until(is_done: impl Fn() -> bool) -> bool {
-        wait_until_within(LONGEST_WAIT, is_done)
-    }
-
-    fn wait_until_within(longest: Duration, is_done: impl Fn() -> bool) -> bool {
-        let deadline = Instant::now() + longest;
-        while !is_done() && Instant::now() < deadline {
-            thread::yield_now();
-        }
-        is_done()
-    }
-
     fn budgeted_reader(storage: Arc<dyn Storage>, bytes: &Arc<ByteBudget>) -> BookReader {
         BookReader::sharing(
             target_over(storage),
@@ -491,7 +486,7 @@ mod tests {
     fn takes_a_book_s_listed_bytes_from_the_budget_before_opening_it() {
         let scratch = ScratchFolder::new("scan-bytes-before-open");
         let book = one_archive(&scratch);
-        let storage = WatchedStorage::rooted_in(&scratch);
+        let storage = PacedStorage::unpaced(&scratch);
         let bytes = Arc::new(ByteBudget::new(listed_bytes(&book)));
         let reader = budgeted_reader(storage.clone(), &bytes);
         let held = bytes.hold_for(book.form);
@@ -499,7 +494,7 @@ mod tests {
 
         thread::spawn(move || done.send(reader.read_each(&[book])).unwrap());
 
-        let opened_while_held = wait_until_within(LONG_ENOUGH_TO_PARSE, || storage.has_opened());
+        let opened_while_held = wait_until(LONG_ENOUGH_TO_PARSE, || storage.has_opened());
         drop(held);
         let read = finished.recv_timeout(LONGEST_WAIT).unwrap();
         assert!(!opened_while_held);
@@ -511,7 +506,7 @@ mod tests {
         let scratch = ScratchFolder::new("scan-bytes-oversized");
         let book = one_archive(&scratch);
         let bytes = Arc::new(ByteBudget::new(listed_bytes(&book) - 1));
-        let reader = budgeted_reader(WatchedStorage::rooted_in(&scratch), &bytes);
+        let reader = budgeted_reader(PacedStorage::unpaced(&scratch), &bytes);
         let (done, finished) = mpsc::channel();
 
         thread::spawn(move || done.send(reader.read_each(&[book])).unwrap());
@@ -524,7 +519,7 @@ mod tests {
     fn opens_archives_at_once_on_one_permit() {
         let scratch = ScratchFolder::new("scan-archives-in-company");
         let books = archives(&scratch);
-        let storage = OpensInCompany::waiting_for(&scratch, 2, WAIT_FOR_COMPANY);
+        let storage = PacedStorage::waiting_for(&scratch, A_PAIR, WAIT_FOR_COMPANY);
         let reader = BookReader::sharing(
             target_over(storage.clone()),
             Arc::new(DecodePermits::new(1)),
@@ -543,7 +538,7 @@ mod tests {
         let books: Vec<FoundBook> = (1..=IMAGE_FOLDER_BOOKS)
             .map(|chapter| image_folder(&scratch, chapter))
             .collect();
-        let storage = OpensInCompany::waiting_for(&scratch, 2, WAIT_FOR_COMPANY);
+        let storage = PacedStorage::waiting_for(&scratch, A_PAIR, WAIT_FOR_COMPANY);
         let reader = BookReader::sharing(
             target_over(storage.clone()),
             Arc::new(DecodePermits::new(1)),
@@ -566,7 +561,7 @@ mod tests {
                 ..book
             })
             .collect();
-        let storage = OpensInCompany::waiting_for(&scratch, 3, WAIT_FOR_A_THIRD_OPEN);
+        let storage = PacedStorage::waiting_for(&scratch, A_THIRD_OPEN, WAIT_FOR_A_THIRD_OPEN);
         let reader = budgeted_reader(
             storage.clone(),
             &Arc::new(ByteBudget::new(LISTED_BYTES * BOOKS_THE_BUDGET_HOLDS)),
@@ -575,18 +570,15 @@ mod tests {
         let read = reader.read_each(&books);
 
         assert!(read.iter().all(Result::is_ok), "{read:?}");
-        assert_eq!(
-            storage.most_open_at_once(),
-            usize::try_from(BOOKS_THE_BUDGET_HOLDS).unwrap()
-        );
+        assert_eq!(storage.most_open_at_once(), BOOKS_THE_BUDGET_HOLDS);
     }
 
     fn reader_after_a_timeout_in_company(
         scratch: &ScratchFolder,
-    ) -> (Arc<OpensInCompany>, BookReader, Vec<FoundBook>) {
+    ) -> (Arc<PacedStorage>, BookReader, Vec<FoundBook>) {
         let books = archives_of(scratch, TWO_BATCHES);
         let (first, second) = books.split_at(BOOKS_PER_TEST_BATCH);
-        let storage = OpensInCompany::timing_out_in_company(scratch);
+        let storage = PacedStorage::timing_out_in_company(scratch);
         let reader = BookReader::sharing(
             target_over(storage.clone()),
             Arc::new(DecodePermits::new(1)),
@@ -652,7 +644,7 @@ mod tests {
         let folders: Vec<FoundBook> = (1..=IMAGE_FOLDER_BOOKS)
             .map(|chapter| image_folder(&scratch, chapter))
             .collect();
-        let storage = OpensInCompany::waiting_for(&scratch, 2, WAIT_FOR_A_SECOND_OPEN);
+        let storage = PacedStorage::waiting_for(&scratch, A_PAIR, WAIT_FOR_A_SECOND_OPEN);
         let reader = budgeted_reader(
             storage.clone(),
             &Arc::new(ByteBudget::new(TEST_BYTE_BUDGET)),
@@ -674,7 +666,7 @@ mod tests {
         let book = one_archive(&scratch);
         let size = fs::metadata(scratch.path().join(&book.path)).unwrap().len();
         let reader = BookReader::new(target_over(Arc::new(ChangingSinceRecognised {
-            root: scratch.path().to_path_buf(),
+            rooted: Rooted::in_scratch(&scratch),
             lookups: AtomicUsize::new(0),
         })));
 
@@ -692,7 +684,7 @@ mod tests {
         let book = image_folder(&scratch, 1);
         let decodes = Arc::new(DecodePermits::new(1));
         let reader = BookReader::sharing(
-            target_over(WatchedStorage::rooted_in(&scratch)),
+            target_over(PacedStorage::unpaced(&scratch)),
             Arc::clone(&decodes),
             Arc::new(ByteBudget::new(TEST_BYTE_BUDGET)),
         );
@@ -714,7 +706,7 @@ mod tests {
     fn opens_an_archive_before_its_decode_permit_and_parses_it_while_holding_one() {
         let scratch = ScratchFolder::new("scan-archive-permit-scope");
         let book = one_archive(&scratch);
-        let storage = WatchedStorage::rooted_in(&scratch);
+        let storage = PacedStorage::unpaced(&scratch);
         let decodes = Arc::new(DecodePermits::new(1));
         let reader = BookReader::sharing(
             target_over(storage.clone()),
@@ -727,7 +719,7 @@ mod tests {
         thread::scope(|scope| {
             scope.spawn(|| done.send(reader.read_each(&[book])).unwrap());
 
-            let has_opened = wait_until(|| storage.has_opened());
+            let has_opened = wait_until(LONGEST_WAIT, || storage.has_opened());
             let read_while_held = finished.recv_timeout(LONG_ENOUGH_TO_PARSE).ok();
             drop(held);
 
