@@ -568,4 +568,18 @@ test.describe("when the library changes", { tag: "@native" }, () => {
     ).toBeVisible();
     await expect(noMatches(page)).toHaveCount(0);
   });
+
+  test("says a category has nothing in it once its last series goes under a filter", async ({
+    page,
+  }) => {
+    storedListing = UNREAD_ONLY;
+    await openOn(page, "Manga");
+    await expect(noMatches(page)).toBeVisible();
+
+    shelf.splice(0, shelf.length, ...LIBRARY.slice(MANGA.length));
+    await emitFakeEvent(page, "library-changed");
+
+    await expect(emptyCategory(page, "Manga")).toBeVisible();
+    await expect(noMatches(page)).toHaveCount(0);
+  });
 });
