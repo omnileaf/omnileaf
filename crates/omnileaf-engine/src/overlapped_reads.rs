@@ -142,7 +142,9 @@ impl<'books, T> Queue<'books, T> {
 mod tests {
     use std::{cell::RefCell, sync::Arc, thread::ThreadId};
 
-    use omnileaf_testkit::{Deadline, GENEROUS_WAIT, InFlight, wait_until, yield_times};
+    use omnileaf_testkit::{
+        Deadline, GENEROUS_WAIT, InFlight, wait_until, wait_until_deadline, yield_times,
+    };
 
     use super::*;
 
@@ -231,12 +233,11 @@ mod tests {
     fn reads_as_many_books_at_once_as_its_bound() {
         let books: Vec<usize> = (0..SMALL_BOUND.get()).collect();
         let started = AtomicUsize::new(0);
+        let deadline = Deadline::after(GENEROUS_WAIT);
 
         let saw_every_read_start = read_unbroken(&books, SMALL_BOUND, |_| {
             started.fetch_add(1, Ordering::SeqCst);
-            wait_until(GENEROUS_WAIT, || {
-                started.load(Ordering::SeqCst) == books.len()
-            })
+            wait_until_deadline(deadline, || started.load(Ordering::SeqCst) == books.len())
         });
 
         assert_eq!(saw_every_read_start, vec![true; SMALL_BOUND.get()]);
@@ -254,6 +255,7 @@ mod tests {
         let reading = InFlight::new();
         let slow_reader_has_ended = Arc::new(AtomicBool::new(false));
         let slow_reader_is_claimed = AtomicBool::new(false);
+        let deadline = Deadline::after(GENEROUS_WAIT);
         let overlap = Overlap {
             at_once,
             is_slow: |seen: &Seen| seen.is_slow,
@@ -272,14 +274,9 @@ mod tests {
             };
             if is_slow {
                 raise_when_this_thread_ends(&slow_reader_has_ended);
-                reading.wait_until_most_at_once_reaches(
-                    at_once.get() as u64,
-                    Deadline::after(GENEROUS_WAIT),
-                );
+                reading.wait_until_most_at_once_reaches(at_once.get() as u64, deadline);
             } else {
-                wait_until(GENEROUS_WAIT, || {
-                    slow_reader_has_ended.load(Ordering::SeqCst)
-                });
+                wait_until_deadline(deadline, || slow_reader_has_ended.load(Ordering::SeqCst));
             }
             seen
         })
@@ -291,9 +288,12 @@ mod tests {
 
         let Overlapped { read, .. } = read_with_an_extra_reader_slow(&books, SMALL_BOUND);
 
-        let overlapped_after_slow: Vec<usize> = read
+        let entered_after_slow: Vec<&Seen> =
+            read.iter().filter(|seen| seen.entered_after_slow).collect();
+        assert!(!entered_after_slow.is_empty());
+        let overlapped_after_slow: Vec<usize> = entered_after_slow
             .iter()
-            .filter(|seen| seen.entered_after_slow && seen.in_flight_at_entry > 1)
+            .filter(|seen| seen.in_flight_at_entry > 1)
             .map(|seen| seen.book)
             .collect();
         assert_eq!(overlapped_after_slow, Vec::<usize>::new());
@@ -388,6 +388,7 @@ mod tests {
         let fallen_reader_has_ended = Arc::new(AtomicBool::new(false));
         let fallen_reader_is_claimed = AtomicBool::new(false);
         let reads = AtomicUsize::new(0);
+        let deadline = Deadline::after(GENEROUS_WAIT);
 
         let outcome = panic::catch_unwind(|| {
             read_unbroken(&books, SMALL_BOUND, |_| {
@@ -395,9 +396,7 @@ mod tests {
                     raise_when_this_thread_ends(&fallen_reader_has_ended);
                     panic!("a reader fell over");
                 }
-                wait_until(GENEROUS_WAIT, || {
-                    fallen_reader_has_ended.load(Ordering::SeqCst)
-                });
+                wait_until_deadline(deadline, || fallen_reader_has_ended.load(Ordering::SeqCst));
                 reads.fetch_add(1, Ordering::SeqCst);
             })
         });
