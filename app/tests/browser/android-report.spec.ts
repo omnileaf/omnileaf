@@ -4,6 +4,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  MEDIUM_MIN_WIDTH,
   test,
   tokenColour,
 } from "./fixtures.ts";
@@ -21,6 +22,8 @@ const ROWS = [
 const WAYS = ["Open on GitHub", "Copy report", "Save as a file"] as const;
 
 const TAB_STOPS_AT_MOST = 20;
+
+const TABLET = { width: MEDIUM_MIN_WIDTH + 100, height: 1000 };
 
 async function focusByKeyboard(page: Page, target: Locator): Promise<void> {
   await page
@@ -153,5 +156,54 @@ test.describe(
         await tokenColour(page, "--color-accent"),
       );
     });
+  },
+);
+
+test.describe(
+  "Report a problem on an Android tablet",
+  { tag: "@native" },
+  () => {
+    test.use({ viewport: TABLET });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's tablet look");
+    });
+
+    test("plates the reply email's card like the rows above it", async ({
+      page,
+    }) => {
+      await page.goto("/settings/about/report");
+      const card = page
+        .getByRole("textbox", { name: "Email for a reply (optional)" })
+        .locator("xpath=..");
+
+      await expect(card).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--native-color-card"),
+      );
+    });
+
+    for (const group of ["What's included", "Other ways to send it"]) {
+      test(`keeps ${group} as rows with tiled icons and a line between them`, async ({
+        page,
+      }) => {
+        await page.goto("/settings/about/report");
+        const list = page
+          .getByRole("region", { name: group })
+          .getByRole("list");
+
+        await expect(
+          list.getByRole("listitem").first().locator("span[aria-hidden]"),
+        ).toHaveCSS("border-top-width", "1px");
+        await expect(list.getByRole("listitem").first()).toHaveCSS(
+          "border-bottom-width",
+          "1px",
+        );
+        await expect(list.getByRole("listitem").last()).toHaveCSS(
+          "border-bottom-width",
+          "0px",
+        );
+      });
+    }
   },
 );
