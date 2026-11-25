@@ -351,3 +351,31 @@ test.describe("History loading on an Android phone", { tag: "@native" }, () => {
     expect(cover.height).toBeCloseTo(COVER_HEIGHT, 0);
   });
 });
+
+test.describe("Empty History on an Android phone", { tag: "@native" }, () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      readingHistory: () => ({ entries: [], next: null }),
+    },
+  });
+
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "android", "Android's empty History");
+  });
+
+  test("makes Go to the library the filled button", async ({ page }) => {
+    await openHistory(page);
+    const action = page.getByRole("link", { name: "Go to the library" });
+
+    const colours = await action.evaluate((link) => {
+      const style = getComputedStyle(link);
+      return [style.backgroundColor, style.color];
+    });
+
+    expect(colours).toEqual([
+      await tokenColour(page, "--native-color-button-primary"),
+      await tokenColour(page, "--native-color-on-button-primary"),
+    ]);
+  });
+});
