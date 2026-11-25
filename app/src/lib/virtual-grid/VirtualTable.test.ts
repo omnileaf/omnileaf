@@ -1,9 +1,10 @@
 import { createRawSnippet } from "svelte";
-import { afterEach, expect, onTestFinished, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import { drawnAt, scaledDown } from "./scaled-down";
 import VirtualTable from "./VirtualTable.svelte";
 
 interface Sample {
@@ -13,7 +14,6 @@ interface Sample {
 
 const TEN_THOUSAND = 10_000;
 const LABEL = "Samples";
-const SHOWN_SCALE = 0.5;
 const ROW_HEIGHT = 40;
 
 const head = createRawSnippet(() => ({
@@ -44,17 +44,6 @@ const fixedRow = createRawSnippet(
       `<tr aria-rowindex="${String(rowIndex())}" style="block-size: ${String(ROW_HEIGHT)}px"><td>${sample().name}</td></tr>`,
   }),
 );
-
-function scaledDown(): HTMLDivElement {
-  const holder = document.createElement("div");
-  holder.style.transform = `scale(${String(SHOWN_SCALE)})`;
-  holder.style.transformOrigin = "0 0";
-  document.body.append(holder);
-  onTestFinished(() => {
-    holder.remove();
-  });
-  return holder;
-}
 
 async function renderTable(
   count: number,
@@ -181,17 +170,37 @@ test("makes room for every row at its laid out height while drawn scaled down", 
   expect(body?.offsetHeight).toBe(TEN_THOUSAND * ROW_HEIGHT);
 });
 
-test("lays out every row on screen while drawn scaled down", async () => {
+test("lays out every row on screen while drawn scaled down and scrolled partway", async () => {
   const table = await renderTable(TEN_THOUSAND, {
     row: fixedRow,
     baseElement: scaledDown(),
   });
   await nextFrame();
+
+  window.scrollTo(0, table.getBoundingClientRect().height / 2);
+  await nextFrame();
   await nextFrame();
 
-  const last = bodyRows(table).at(-1);
-
-  expect(last?.getBoundingClientRect().bottom).toBeGreaterThanOrEqual(
+  const drawn = bodyRows(table);
+  expect(drawn.at(0)?.getBoundingClientRect().top).toBeLessThanOrEqual(0);
+  expect(drawn.at(-1)?.getBoundingClientRect().bottom).toBeGreaterThanOrEqual(
     window.innerHeight,
   );
+});
+
+test("lays out its rows once drawn at a size again after being drawn at none", async () => {
+  const holder = scaledDown();
+  drawnAt(holder, "scale(0)");
+  const table = await renderTable(TEN_THOUSAND, {
+    row: fixedRow,
+    baseElement: holder,
+  });
+  await nextFrame();
+
+  drawnAt(holder, "none");
+  window.dispatchEvent(new Event("resize"));
+
+  await expect
+    .poll(() => table.tBodies.item(0)?.offsetHeight)
+    .toBe(TEN_THOUSAND * ROW_HEIGHT);
 });
