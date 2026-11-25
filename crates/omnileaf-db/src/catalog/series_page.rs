@@ -127,6 +127,8 @@ pub struct SeriesSummary {
     pub id: SeriesId,
     pub title: String,
     pub book_count: u32,
+    pub volume_count: u32,
+    pub chapter_count: u32,
     pub unread_count: u32,
     pub added_at_ms: i64,
     pub cover: Option<Cover>,
