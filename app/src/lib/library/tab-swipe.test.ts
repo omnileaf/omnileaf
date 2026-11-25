@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { isAcross, settlesAt, tabSwipedTo } from "./tab-swipe";
 
 const WIDTH = 400;
-const TRAVEL = 416;
+const STRIDE = "100% + 1rem";
 
 test("moves to the next tab on a swipe towards the start past a quarter of the width", () => {
   expect(
@@ -38,13 +38,13 @@ test("takes a drag as a swipe across only once it runs mostly sideways", () => {
   expect(isAcross({ x: 4, y: 0 })).toBe(false);
 });
 
-test("settles a committed swipe a whole page's travel on, in the direction it was dragged", () => {
+test("settles a committed swipe one page stride on, in the direction it was dragged", () => {
   expect([
-    settlesAt({ moved: -120, travel: TRAVEL, step: 1 }),
-    settlesAt({ moved: 120, travel: TRAVEL, step: -1 }),
-  ]).toEqual([-TRAVEL, TRAVEL]);
+    settlesAt({ moved: -120, stride: STRIDE, step: 1 }),
+    settlesAt({ moved: 120, stride: STRIDE, step: -1 }),
+  ]).toEqual([`calc(-1 * (${STRIDE}))`, `calc(1 * (${STRIDE}))`]);
 });
 
 test("settles a swipe that does not commit back where it began", () => {
-  expect(settlesAt({ moved: -40, travel: TRAVEL, step: 0 })).toBe(0);
+  expect(settlesAt({ moved: -40, stride: STRIDE, step: 0 })).toBe("0px");
 });

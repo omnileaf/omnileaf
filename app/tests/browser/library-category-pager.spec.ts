@@ -45,6 +45,7 @@ const BLANK_INSET_PX = 8;
 const SAME_ROW_PX = 1;
 const TOUCH = { pointerType: "touch", pointerId: 7, isPrimary: true } as const;
 const LAST_FRAME_BEFORE_END_MS = 1;
+const FRACTIONAL_TRIM_PX = 0.4;
 
 interface Library {
   readonly all: ReturnType<typeof sampleSeries>;
@@ -275,6 +276,11 @@ async function beginDragAt(from: DragTarget, start: Point): Promise<Drag> {
     },
     finger,
   };
+}
+
+/** WebKit resolves a translate percentage against the box snapped to device pixels, so a settled slide can sit a fraction of a device pixel off the laid-out place. */
+async function halfADevicePixel(page: Page): Promise<number> {
+  return page.evaluate(() => 1 / (2 * window.devicePixelRatio));
 }
 
 async function releaseToSettleEnd(
@@ -884,6 +890,37 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
 
     expect(covers.left).toBeCloseTo(column.x + gutter, 0);
     expect(covers.right).toBeCloseTo(column.x + column.width - gutter, 0);
+  });
+
+  test("lands the incoming category without a jump when the pager is a fraction of a pixel wide", async ({
+    page,
+  }, testInfo) => {
+    skipUnlessPhone(page, testInfo.project.use.hasTouch);
+    await openLibrary(page);
+    await expect(chosenCovers(page)).toHaveCount(EVERY_SERIES.length);
+    await pagerTrack(page).evaluate((track, trim) => {
+      track.style.inlineSize = `${String(track.getBoundingClientRect().width - trim)}px`;
+    }, FRACTIONAL_TRIM_PX);
+    const incomingTitle = MANGA[0]?.title ?? "";
+    const unseenJump = await halfADevicePixel(page);
+
+    const drag = await beginDrag(page, seriesList(page));
+    await drag.to(-SWIPE_PX);
+    await expect(besideCovers(page, incomingTitle)).toHaveCount(MANGA.length);
+    const atSettleEnd = await releaseToSettleEnd(
+      page,
+      drag,
+      besideCovers(page, incomingTitle),
+    );
+    await expectChosen(page, "Manga");
+    await expect(chosenCovers(page)).toHaveCount(MANGA.length);
+    await expect(pagerTrack(page)).toHaveCSS("translate", "none");
+    const settled = await firstRowOf(chosenCovers(page));
+
+    expect(Math.abs(atSettleEnd.left - settled.left)).toBeLessThan(unseenJump);
+    expect(Math.abs(atSettleEnd.right - settled.right)).toBeLessThan(
+      unseenJump,
+    );
   });
 
   for (const {

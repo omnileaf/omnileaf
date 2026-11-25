@@ -165,7 +165,7 @@
   const FILTER_PANEL_ID = "library-filter";
   const ALL_TAB: LibraryTabId = { kind: "all" };
   const BESIDE_PHONE_TABS = 1;
-  const PAGE_STRIDE = "(100% + var(--spacing-pager-gap))";
+  const PAGE_STRIDE = "100% + var(--spacing-pager-gap)";
   const PAGE_INSET = "pe-page-end max-medium:ps-page-start medium:ps-gutter";
   const PAGE_BLEED = "-me-page-end max-medium:-ms-page-start medium:-ms-gutter";
 
@@ -1240,6 +1240,7 @@
         settlesSmoothly: () =>
           pagesBesideChosen > 0 && animations.moves("navigation"),
         track: () => pager,
+        stride: PAGE_STRIDE,
       })}
     class={[
       "flex flex-1 flex-col",
@@ -1351,7 +1352,7 @@
             "mbs-lg flex flex-1 flex-col overflow-x-clip medium:mbs-xl",
           ]}
         >
-          <div bind:this={pager} class="relative flex-1 gap-x-pager-gap">
+          <div bind:this={pager} class="relative flex-1">
             {#if groups.length > 0}
               <div
                 class={[
@@ -1383,7 +1384,7 @@
                     : "invisible absolute inset-bs-none overflow-clip block-full inline-full in-data-swiping:visible"}
                   style:inset-inline-start={isChosen
                     ? undefined
-                    : `calc(${String(slot.offset)} * ${PAGE_STRIDE})`}
+                    : `calc(${String(slot.offset)} * (${PAGE_STRIDE}))`}
                 >
                   <div
                     class={isChosen
