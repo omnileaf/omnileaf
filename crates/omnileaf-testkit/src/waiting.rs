@@ -79,7 +79,7 @@ mod tests {
     }
 
     #[test]
-    fn waits_on_one_deadline_for_every_waiter_sharing_it() {
+    fn returns_at_once_from_every_wait_once_the_deadline_has_passed() {
         let deadline = Deadline::after(NO_WAIT);
         let started = Instant::now();
 
