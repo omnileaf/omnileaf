@@ -1,5 +1,6 @@
 import type { ElementHandle, Locator, Page } from "@playwright/test";
 
+import english from "../../messages/en.json" with { type: "json" };
 import {
   DEFAULT_LIBRARY_VIEW,
   type LibraryCategory,
@@ -106,10 +107,14 @@ async function expectChosen(page: Page, name: string): Promise<void> {
   await expect(chosenTab(page, name)).toHaveAttribute("aria-selected", "true");
 }
 
-async function openEmptyTab(page: Page, name: string): Promise<void> {
+async function openEmptyTab(
+  page: Page,
+  name: string,
+  emptyState: Locator,
+): Promise<void> {
   await openLibrary(page);
   await chosenTab(page, name).click();
-  await expect(noMatches(page)).toBeVisible();
+  await expect(emptyState).toBeVisible();
 }
 
 function seriesList(page: Page) {
@@ -121,7 +126,17 @@ function continueRow(page: Page) {
 }
 
 function noMatches(page: Page) {
-  return page.getByRole("region", { name: "No series match these filters" });
+  return page.getByRole("region", { name: english.library_no_matches_title });
+}
+
+function nothingNew(page: Page) {
+  return page.getByRole("region", { name: english.library_new_chapters_empty });
+}
+
+function emptyCategory(page: Page, name: string) {
+  return page.getByRole("region", {
+    name: english.library_category_empty.replace("{name}", name),
+  });
 }
 
 function pageBeside(page: Page) {
@@ -733,8 +748,8 @@ for (const platform of PLATFORMS) {
       test(`moves from New chapters with nothing new to the tab ${way} it`, async ({
         page,
       }) => {
-        await openEmptyTab(page, "New chapters");
-        const blank = await blankBelow(page, noMatches(page));
+        await openEmptyTab(page, "New chapters", nothingNew(page));
+        const blank = await blankBelow(page, nothingNew(page));
 
         const drag = await beginDragAt(blank.target, blank.at);
         await drag.to(by);
@@ -745,12 +760,12 @@ for (const platform of PLATFORMS) {
     }
 
     test("leaves the empty tab in place under the finger", async ({ page }) => {
-      await openEmptyTab(page, "New chapters");
-      const before = await boxOf(noMatches(page));
+      await openEmptyTab(page, "New chapters", nothingNew(page));
+      const before = await boxOf(nothingNew(page));
 
-      const drag = await beginDrag(page, noMatches(page));
+      const drag = await beginDrag(page, nothingNew(page));
       await drag.to(-SWIPE_PX);
-      const during = await boxOf(noMatches(page));
+      const during = await boxOf(nothingNew(page));
       const swiping = await page.locator("[data-swiping]").count();
       await drag.release();
 
@@ -761,8 +776,8 @@ for (const platform of PLATFORMS) {
     test("keeps sideways drags on an empty tab for the swipe", async ({
       page,
     }) => {
-      await openEmptyTab(page, "New chapters");
-      const blank = await blankBelow(page, noMatches(page));
+      await openEmptyTab(page, "New chapters", nothingNew(page));
+      const blank = await blankBelow(page, nothingNew(page));
 
       const touchActions = await blank.target.evaluate((spot) => {
         const actions: string[] = [];
@@ -782,8 +797,8 @@ for (const platform of PLATFORMS) {
     test("moves from an empty category to the tab before it", async ({
       page,
     }) => {
-      await openEmptyTab(page, "Comics");
-      const blank = await blankBelow(page, noMatches(page));
+      await openEmptyTab(page, "Comics", emptyCategory(page, "Comics"));
+      const blank = await blankBelow(page, emptyCategory(page, "Comics"));
 
       const drag = await beginDragAt(blank.target, blank.at);
       await drag.to(SWIPE_PX);
@@ -806,7 +821,7 @@ for (const platform of PLATFORMS) {
       await drag.release();
 
       await expectChosen(page, "New chapters");
-      await expect(noMatches(page)).toBeVisible();
+      await expect(nothingNew(page)).toBeVisible();
     });
   });
 
