@@ -5,12 +5,14 @@ import {
   type PreviewScheduler,
 } from "./android-back-preview.svelte";
 import { ANDROID_BACK_MOTION, type BackGestureAt } from "./back-preview";
+import type { ScreenCopy } from "./previous-screens";
 
 const ANDROID_SPRING_SETTLES_MS = 180;
 const DRAWING_THE_PAGE_BEHIND_MS = 300;
 const AREA = { left: 0, top: 0, width: 400, height: 800 };
-const LOOK = { isMotionReduced: () => false };
+const LOOK = { isMotionReduced: () => false, pageBehind: () => undefined };
 const COPY = { content: {} as HTMLElement, scrollTop: 0 };
+const OTHER_COPY = { content: {} as HTMLElement, scrollTop: 1 };
 
 function screen(): HTMLElement {
   return { getBoundingClientRect: () => AREA } as unknown as HTMLElement;
@@ -258,4 +260,26 @@ test("takes away a commit whose navigation is stopped before the page behind arr
 
   expect(preview.phase).toBe("resting");
   expect(preview.commit).toBeUndefined();
+});
+
+test("keeps the page behind it found when the gesture started", () => {
+  let found: ScreenCopy | undefined = COPY;
+  const preview = new AndroidBackPreview({ ...LOOK, pageBehind: () => found });
+  swipedTo(preview, 0.5);
+  found = OTHER_COPY;
+
+  preview.follow({ kind: "moved", at: at(0.6) }, screen());
+
+  expect(preview.behind).toBe(COPY);
+});
+
+test("finds the page behind again when the next gesture starts", () => {
+  let found: ScreenCopy | undefined = COPY;
+  const preview = new AndroidBackPreview({ ...LOOK, pageBehind: () => found });
+  swipedTo(preview, 0.5);
+  found = OTHER_COPY;
+
+  preview.follow({ kind: "started", at: at(0) }, screen());
+
+  expect(preview.behind).toBe(OTHER_COPY);
 });

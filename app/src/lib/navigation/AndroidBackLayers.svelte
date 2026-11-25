@@ -1,15 +1,9 @@
 <script lang="ts">
   import { ANDROID_BACK_TRANSITIONS, placedTransform } from "./back-preview";
   import type { AndroidBackPreview } from "./android-back-preview.svelte";
-  import { areaStyle, type ScreenCopy, showCopy } from "./previous-screens";
+  import { areaStyle, showCopy } from "./previous-screens";
 
-  let {
-    preview,
-    behind,
-  }: {
-    preview: AndroidBackPreview;
-    behind: ScreenCopy | undefined;
-  } = $props();
+  let { preview }: { preview: AndroidBackPreview } = $props();
 
   const frame = $derived(preview.frame);
   const isCancelling = $derived(preview.phase === "cancelling");
@@ -37,8 +31,8 @@
         : undefined}
       style:border-radius="{preview.cornerPx}px"
     >
-      {#if behind !== undefined}
-        <div class="contents" {@attach showCopy(behind)}></div>
+      {#if preview.behind !== undefined}
+        <div class="contents" {@attach showCopy(preview.behind)}></div>
       {/if}
     </div>
     <div

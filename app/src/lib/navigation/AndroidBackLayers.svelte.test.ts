@@ -12,7 +12,7 @@ const SCRIM_SHOWN = "1";
 const GONE = "opacity: 0;";
 const EMPHASIZED_JOINT = { x: 0.166666, y: 0.4 };
 const COPY = { content: document.createElement("div"), scrollTop: 0 };
-const LOOK = { isMotionReduced: () => false };
+const LOOK = { isMotionReduced: () => false, pageBehind: () => undefined };
 
 function at(progress: number): BackGestureAt {
   return { progress, edge: "left", touchY: 0.5, cornerPx: 0 };
@@ -27,10 +27,7 @@ function pageOnScreen(): HTMLElement {
 }
 
 async function shownWith(preview: AndroidBackPreview): Promise<Element> {
-  const screen = await render(AndroidBackLayers, {
-    preview,
-    behind: undefined,
-  });
+  const screen = await render(AndroidBackLayers, { preview });
   return screen.container;
 }
 

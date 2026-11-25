@@ -31,3 +31,10 @@ export function waysBackFrom({
   ways.delete(pathname);
   return ways;
 }
+
+export function entryBehind(
+  pathname: string,
+  entries: readonly string[],
+): string | undefined {
+  return entriesBehind(pathname, entries).at(-1);
+}

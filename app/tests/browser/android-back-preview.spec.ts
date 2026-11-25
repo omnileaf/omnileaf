@@ -243,6 +243,26 @@ test("lets the page leave and settles the page behind in its place once back goe
   await expectNoPreviewLeft(page);
 });
 
+test("shows the page before the one gone back to behind a second gesture that starts as the leave plays", async ({
+  page,
+}) => {
+  await openPrivacyFromSettings(page);
+  await openInApp(page, PERMISSIONS);
+  await pauseTheClock(page);
+  await gesture(start());
+  await gesture(swipe(1));
+  await page.goBack();
+  await expect(page).toHaveURL(PRIVACY);
+  await expect(page.locator("[data-leaving-screen]")).toBeAttached();
+
+  await gesture(start());
+  await gesture(swipe(0.5));
+
+  await expect(page.locator("[data-previous-screen] h1").first()).toHaveText(
+    SETTINGS_TITLE,
+  );
+});
+
 test("neither shrinks nor moves the page when reduced motion is on", async ({
   page,
 }) => {
@@ -616,6 +636,26 @@ test.describe("going back to a page that takes a while to load", () => {
     await expect(page.locator("[data-leaving-screen]")).toBeAttached();
     await page.clock.runFor(PAST_THE_COMMIT_MS);
     await expectNoPreviewLeft(page);
+  });
+
+  test("shows the page before the one being gone back to behind a gesture that starts while it loads", async ({
+    page,
+  }) => {
+    await openPrivacyFromSettings(page);
+    await openInApp(page, PERMISSIONS);
+    await pauseTheClock(page);
+    await gesture(start());
+    await gesture(swipe(0.6));
+    reads.isHolding = true;
+    await page.goBack();
+    await expect.poll(() => reads.waiting.length).toBeGreaterThan(0);
+
+    await gesture(start());
+    await gesture(swipe(0.3));
+
+    await expect(page.locator("[data-previous-screen] h1").first()).toHaveText(
+      SETTINGS_TITLE,
+    );
   });
 
   test("follows a gesture that starts while the page behind loads, and plays no leave for the first one", async ({

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { ENTRIES_KEPT_BEHIND, waysBackFrom } from "./ways-back";
+import { entryBehind, ENTRIES_KEPT_BEHIND, waysBackFrom } from "./ways-back";
 
 const SERIES = ["/series/a", "/series/b", "/series/c", "/series/d"];
 
@@ -36,4 +36,22 @@ test("keeps the pages above the shown page and the page its back link leads to",
   expect([...ways].sort()).toEqual(
     ["/", "/series/a", "/settings", "/settings/privacy"].sort(),
   );
+});
+
+test("finds the entry just behind the page shown or being gone to", () => {
+  const entries = [
+    "/settings",
+    "/settings/privacy",
+    "/settings/privacy/permissions",
+  ];
+
+  const behind = entryBehind("/settings/privacy", entries);
+
+  expect(behind).toBe("/settings");
+});
+
+test("finds no entry behind a page that history does not hold", () => {
+  const behind = entryBehind("/history", ["/", "/series/a"]);
+
+  expect(behind).toBeUndefined();
 });

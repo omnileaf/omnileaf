@@ -10,7 +10,7 @@
     type NavigationType,
     onNavigate,
   } from "$app/navigation";
-  import { page } from "$app/state";
+  import { navigating, page } from "$app/state";
   import type { SwipeEdge } from "#lib/ipc/bindings.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
@@ -34,7 +34,7 @@
   import { getPreviousScreens } from "./previous-screens";
   import ScreenBehindSwipe from "./ScreenBehindSwipe.svelte";
   import { SwipedScreen } from "./swiped-screen.svelte";
-  import { waysBackFrom } from "./ways-back";
+  import { entryBehind, waysBackFrom } from "./ways-back";
 
   const SWITCH = '[role="switch"]';
 
@@ -52,6 +52,11 @@
 
   const androidBack = new AndroidBackPreview({
     isMotionReduced: () => prefersReducedMotion.current,
+    pageBehind: () => {
+      const shown = navigating.to?.url ?? page.url;
+      const behind = entryBehind(shown.pathname, backGoesUp.entries);
+      return behind === undefined ? undefined : previousScreens.of(behind);
+    },
   });
 
   const language = getLanguageSetting();
@@ -75,16 +80,6 @@
     const link = wayBackFrom(screen);
     return link === undefined ? undefined : new URL(link.href).pathname;
   }
-
-  const androidPageBehind = $derived.by(() => {
-    if (androidBack.area === undefined) {
-      return undefined;
-    }
-    const entryBehind = backGoesUp.entries.at(-2);
-    return entryBehind === undefined
-      ? undefined
-      : previousScreens.of(entryBehind);
-  });
 
   function goBack(): boolean {
     const link =
@@ -235,7 +230,7 @@
   <ScreenBehindSwipe {...swiped.behind} />
 {/if}
 {#if isAndroid}
-  <AndroidBackLayers preview={androidBack} behind={androidPageBehind} />
+  <AndroidBackLayers preview={androidBack} />
 {/if}
 <main
   bind:this={swiped.element}

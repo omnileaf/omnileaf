@@ -30,8 +30,9 @@ type Motion =
   | { readonly kind: "cancelling" }
   | { readonly kind: "committing"; readonly commit: Commit };
 
-interface PreviewLook {
+interface PreviewContext {
   readonly isMotionReduced: () => boolean;
+  readonly pageBehind: () => ScreenCopy | undefined;
 }
 
 export interface PreviewScheduler {
@@ -61,9 +62,10 @@ const CANCELLING: Motion = { kind: "cancelling" };
 export class AndroidBackPreview {
   #motion: Motion = $state(RESTING);
   #area: ScreenArea | undefined = $state();
+  #behind: ScreenCopy | undefined = $state.raw();
   #start: BackGestureAt | undefined = $state();
   #now: BackGestureAt | undefined = $state();
-  readonly #look: PreviewLook;
+  readonly #look: PreviewContext;
   readonly #scheduler: PreviewScheduler;
   #stopSettling: (() => void) | undefined;
   #pendingFrames: readonly (() => void)[] = [];
@@ -71,7 +73,7 @@ export class AndroidBackPreview {
   #gesturesBeforeNavigating: number | undefined;
 
   constructor(
-    look: PreviewLook,
+    look: PreviewContext,
     scheduler: PreviewScheduler = BROWSER_SCHEDULER,
   ) {
     this.#look = look;
@@ -84,6 +86,10 @@ export class AndroidBackPreview {
 
   get area(): ScreenArea | undefined {
     return this.#area;
+  }
+
+  get behind(): ScreenCopy | undefined {
+    return this.#behind;
   }
 
   get commit(): Commit | undefined {
@@ -222,6 +228,7 @@ export class AndroidBackPreview {
     this.#gesturesStarted += 1;
     this.#stopTimers();
     this.#area ??= screen.getBoundingClientRect();
+    this.#behind = this.#look.pageBehind();
     this.#start = at;
     this.#now = at;
     this.#motion = FOLLOWING;
@@ -303,5 +310,6 @@ export class AndroidBackPreview {
     this.#start = undefined;
     this.#now = undefined;
     this.#area = undefined;
+    this.#behind = undefined;
   }
 }
