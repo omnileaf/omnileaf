@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import type { BackSwipe, SeriesDetails } from "../../src/lib/ipc/bindings.ts";
 import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
@@ -30,7 +30,12 @@ const LIGHT_SCRIM = "rgba(0, 0, 0, 0.2)";
 const PRIVACY_ONLY_TEXT = "Crash reports";
 const PHONE = { width: 412, height: 700 };
 const VOLUMES_SERIES = `/series/${sampleSeriesId(21)}`;
+const VOLUME_PAGE = `${VOLUMES_SERIES}/volume/2`;
+const SEARCH = "/search?q=Sample";
+const LIBRARY = "/";
+const CREDITED_SERIES = `/series/${sampleSeriesId(4)}`;
 const SERIES_DOWN = 250;
+const LIBRARY_DOWN = 1200;
 const SCROLL_SLACK_PX = 2;
 
 const SPRING_BACK_SETTLED_MS = 200;
@@ -380,54 +385,170 @@ test.describe("going back to a list scrolled down", () => {
       .evaluate((copy) => copy.scrollTop);
   }
 
-  async function scrollListDown(page: Page): Promise<number> {
+  async function scrollListDown(
+    page: Page,
+    down: number = SERIES_DOWN,
+  ): Promise<number> {
     await expect
       .poll(() =>
         page.getByRole("main").evaluate((main, top) => {
           main.scrollTo({ top });
           return main.scrollTop;
-        }, SERIES_DOWN),
+        }, down),
       )
-      .toBeGreaterThanOrEqual(SERIES_DOWN - SCROLL_SLACK_PX);
+      .toBeGreaterThanOrEqual(down - SCROLL_SLACK_PX);
     return scrollTopOf(page);
   }
 
-  async function expectScrolledTo(page: Page, top: number): Promise<void> {
-    await expect
-      .poll(async () => Math.abs((await scrollTopOf(page)) - top))
-      .toBeLessThanOrEqual(SCROLL_SLACK_PX);
+  async function clickInPlace(link: Locator): Promise<void> {
+    await link.evaluate((element) => {
+      if (element instanceof HTMLElement) {
+        element.click();
+      }
+    });
   }
 
-  test("shows the list behind where it was left, plays the leave and lands the list there", async ({
-    page,
-  }) => {
-    await page.setViewportSize(PHONE);
-    await page.goto(VOLUMES_SERIES);
-    const leftAt = await scrollListDown(page);
-    await page
-      .getByRole("main")
-      .getByRole("link", { name: /^Volume 2/ })
-      .first()
-      .evaluate((link) => {
-        if (link instanceof HTMLElement) {
-          link.click();
-        }
+  async function openSeriesInView(page: Page): Promise<void> {
+    await page.getByRole("main").evaluate((main) => {
+      const shown = main.getBoundingClientRect();
+      const link = [
+        ...main.querySelectorAll<HTMLAnchorElement>("a[href^='/series/']"),
+      ].find((candidate) => {
+        const box = candidate.getBoundingClientRect();
+        return (
+          box.top > shown.top + shown.height / 3 && box.bottom < shown.bottom
+        );
       });
-    await expect(page).toHaveURL(/\/volume\/2$/);
-    await pauseTheClock(page);
-    await gesture(start());
-    await gesture(swipe(0.6));
-    await expect.poll(() => scrollTopBehind(page)).toBe(leftAt);
+      if (link === undefined) {
+        throw new Error("no series in view");
+      }
+      link.click();
+    });
+  }
 
-    await page.goBack();
+  async function openCreatorFromSeries(page: Page): Promise<void> {
+    await openInApp(page, CREDITED_SERIES);
+    await clickInPlace(
+      page.getByRole("main").locator("a[href^='/creator/']").first(),
+    );
+    await expect(page).toHaveURL(/\/creator\//);
+  }
 
-    await expect(page).toHaveURL(VOLUMES_SERIES);
-    await expect(page.locator("[data-leaving-screen]")).toBeAttached();
-    await expectScrolledTo(page, leftAt);
-    await page.clock.runFor(COMMIT_PLAYED_MS);
-    await expectNoPreviewLeft(page);
-    await expectScrolledTo(page, leftAt);
-  });
+  async function headingOf(page: Page): Promise<string> {
+    const heading = page.getByRole("main").locator("h1").first();
+    await expect(heading).toBeVisible();
+    return ((await heading.textContent()) ?? "").trim();
+  }
+
+  interface LinkInView {
+    readonly href: string;
+    readonly offset: number;
+  }
+
+  function firstLinkInView(page: Page): Promise<LinkInView | undefined> {
+    return page.getByRole("main").evaluate((main) => {
+      const shown = main.getBoundingClientRect();
+      const isPinned = (link: Element): boolean => {
+        for (
+          let at: Element | null = link;
+          at !== null && at !== main;
+          at = at.parentElement
+        ) {
+          if (["sticky", "fixed"].includes(getComputedStyle(at).position)) {
+            return true;
+          }
+        }
+        return false;
+      };
+      const link = [...main.querySelectorAll("a[href]")].find((candidate) => {
+        const box = candidate.getBoundingClientRect();
+        return (
+          box.height > 0 &&
+          box.top >= shown.top &&
+          box.bottom <= shown.bottom &&
+          !isPinned(candidate)
+        );
+      });
+      return link === undefined
+        ? undefined
+        : {
+            href: link.getAttribute("href") ?? "",
+            offset: link.getBoundingClientRect().top - shown.top,
+          };
+    });
+  }
+
+  function offsetOfLink(page: Page, href: string): Promise<number> {
+    return page.getByRole("main").evaluate((main, wanted) => {
+      const shown = main.getBoundingClientRect();
+      const offsets = [...main.querySelectorAll("a[href]")]
+        .filter((link) => link.getAttribute("href") === wanted)
+        .map((link) => link.getBoundingClientRect().top - shown.top);
+      return offsets.reduce(
+        (nearest, offset) =>
+          Math.abs(offset) < Math.abs(nearest) ? offset : nearest,
+        Number.POSITIVE_INFINITY,
+      );
+    }, href);
+  }
+
+  for (const way of [
+    { path: "a series", open: openSeriesInView },
+    {
+      path: "a volume",
+      open: (page: Page) => openInApp(page, VOLUME_PAGE),
+    },
+    {
+      path: "History and on to a series",
+      open: async (page: Page) => {
+        await openInApp(page, "/history");
+        await openInApp(page, VOLUMES_SERIES);
+      },
+    },
+    {
+      path: "search results and on to a series",
+      open: async (page: Page) => {
+        await openInApp(page, SEARCH);
+        await openInApp(page, VOLUMES_SERIES);
+      },
+    },
+    { path: "a series and on to a creator", open: openCreatorFromSeries },
+  ]) {
+    test(`shows the Library behind, where it was left, going back from ${way.path} opened from it`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(PHONE);
+      await page.goto(LIBRARY);
+      const heading = await headingOf(page);
+      const leftAt = await scrollListDown(page, LIBRARY_DOWN);
+      const shownLink = await firstLinkInView(page);
+      await way.open(page);
+      await expect(page).not.toHaveURL(LIBRARY);
+      await pauseTheClock(page);
+      await gesture(start());
+      await gesture(swipe(0.6));
+      await expect(
+        page.locator("[data-previous-screen] h1").first(),
+      ).toHaveText(heading);
+      await expect.poll(() => scrollTopBehind(page)).toBe(leftAt);
+
+      await page.goBack();
+
+      await expect(page).toHaveURL(LIBRARY);
+      await page.clock.runFor(COMMIT_PLAYED_MS);
+      await expectNoPreviewLeft(page);
+      await page.clock.resume();
+      expect(shownLink).toBeDefined();
+      await expect
+        .poll(async () =>
+          Math.abs(
+            (await offsetOfLink(page, shownLink?.href ?? "")) -
+              (shownLink?.offset ?? 0),
+          ),
+        )
+        .toBeLessThanOrEqual(SCROLL_SLACK_PX);
+    });
+  }
 });
 
 test.describe("going back to a page that takes a while to load", () => {
