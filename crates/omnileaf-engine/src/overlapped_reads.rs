@@ -142,7 +142,7 @@ impl<'books, T> Queue<'books, T> {
 mod tests {
     use std::{cell::RefCell, sync::Arc, thread::ThreadId};
 
-    use omnileaf_testkit::{GENEROUS_WAIT, InFlight, wait_until, yield_times};
+    use omnileaf_testkit::{Deadline, GENEROUS_WAIT, InFlight, wait_until, yield_times};
 
     use super::*;
 
@@ -272,7 +272,10 @@ mod tests {
             };
             if is_slow {
                 raise_when_this_thread_ends(&slow_reader_has_ended);
-                reading.wait_until_most_at_once_reaches(at_once.get() as u64, GENEROUS_WAIT);
+                reading.wait_until_most_at_once_reaches(
+                    at_once.get() as u64,
+                    Deadline::after(GENEROUS_WAIT),
+                );
             } else {
                 wait_until(GENEROUS_WAIT, || {
                     slow_reader_has_ended.load(Ordering::SeqCst)

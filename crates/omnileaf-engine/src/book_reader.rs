@@ -234,7 +234,7 @@ mod tests {
     use omnileaf_db::catalog::RootKind;
     use omnileaf_formats::{Entry, LocalStorage, Storage};
     use omnileaf_testkit::{
-        GENERATED_LIBRARY_NAME, GENEROUS_WAIT, GeneratedLibrary, InFlight, PageShape,
+        Deadline, GENERATED_LIBRARY_NAME, GENEROUS_WAIT, GeneratedLibrary, InFlight, PageShape,
         ScratchFolder, page_png, wait_until, write_generated_library,
     };
 
@@ -384,10 +384,10 @@ mod tests {
                 Pacing::Immediately => {}
                 Pacing::UntilMostAtOnce { at_once, longest } => {
                     self.in_flight
-                        .wait_until_most_at_once_reaches(at_once, longest);
+                        .wait_until_most_at_once_reaches(at_once, Deadline::after(longest));
                 }
                 Pacing::UntilCompany { longest } => {
-                    self.in_flight.wait_for_company(longest);
+                    self.in_flight.wait_for_company(Deadline::after(longest));
                 }
             }
         }

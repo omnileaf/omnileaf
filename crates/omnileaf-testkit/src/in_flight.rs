@@ -1,9 +1,6 @@
-use std::{
-    sync::atomic::{AtomicU64, AtomicUsize, Ordering},
-    time::Duration,
-};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
-use crate::waiting::wait_until;
+use crate::waiting::{Deadline, wait_until_deadline};
 
 #[derive(Debug, Default)]
 pub struct InFlight {
@@ -59,12 +56,12 @@ impl InFlight {
         self.holders.load(Ordering::SeqCst) > 1
     }
 
-    pub fn wait_for_company(&self, longest: Duration) -> bool {
-        wait_until(longest, || self.has_company())
+    pub fn wait_for_company(&self, deadline: Deadline) -> bool {
+        wait_until_deadline(deadline, || self.has_company())
     }
 
-    pub fn wait_until_most_at_once_reaches(&self, at_once: u64, longest: Duration) -> bool {
-        wait_until(longest, || self.most_at_once() >= at_once)
+    pub fn wait_until_most_at_once_reaches(&self, at_once: u64, deadline: Deadline) -> bool {
+        wait_until_deadline(deadline, || self.most_at_once() >= at_once)
     }
 }
 
@@ -86,10 +83,10 @@ impl Drop for Entered<'_> {
 
 #[cfg(test)]
 mod tests {
-    use std::{sync::atomic::AtomicBool, thread};
+    use std::{sync::atomic::AtomicBool, thread, time::Duration};
 
     use super::*;
-    use crate::waiting::GENEROUS_WAIT;
+    use crate::waiting::{GENEROUS_WAIT, wait_until};
 
     const NO_WAIT: Duration = Duration::ZERO;
     const A_PAIR: u64 = 2;
@@ -181,7 +178,7 @@ mod tests {
                 let _second = in_flight.enter();
                 wait_until(GENEROUS_WAIT, || company_was_seen.load(Ordering::SeqCst));
             });
-            let had_company = in_flight.wait_for_company(GENEROUS_WAIT);
+            let had_company = in_flight.wait_for_company(Deadline::after(GENEROUS_WAIT));
             company_was_seen.store(true, Ordering::SeqCst);
             had_company
         });
@@ -200,7 +197,8 @@ mod tests {
                 let _second = in_flight.enter();
                 wait_until(GENEROUS_WAIT, || crowd_was_seen.load(Ordering::SeqCst));
             });
-            let reached = in_flight.wait_until_most_at_once_reaches(A_PAIR, GENEROUS_WAIT);
+            let reached =
+                in_flight.wait_until_most_at_once_reaches(A_PAIR, Deadline::after(GENEROUS_WAIT));
             crowd_was_seen.store(true, Ordering::SeqCst);
             reached
         });
@@ -213,7 +211,7 @@ mod tests {
         let in_flight = InFlight::new();
         let _alone = in_flight.enter();
 
-        let had_company = in_flight.wait_for_company(NO_WAIT);
+        let had_company = in_flight.wait_for_company(Deadline::after(NO_WAIT));
 
         assert!(!had_company);
     }
@@ -223,7 +221,7 @@ mod tests {
         let in_flight = InFlight::new();
         let _alone = in_flight.enter();
 
-        let reached = in_flight.wait_until_most_at_once_reaches(A_PAIR, NO_WAIT);
+        let reached = in_flight.wait_until_most_at_once_reaches(A_PAIR, Deadline::after(NO_WAIT));
 
         assert!(!reached);
     }

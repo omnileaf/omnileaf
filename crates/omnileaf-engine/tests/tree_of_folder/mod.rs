@@ -19,7 +19,7 @@ use std::{
 use omnileaf_engine::OpenTree;
 use omnileaf_formats::{Details, Entry, LocalStorage, Storage};
 use omnileaf_testkit::{
-    GENERATED_LIBRARY_NAME, GeneratedLibrary, InFlight, SAMPLE_LIBRARY_NAME,
+    Deadline, GENERATED_LIBRARY_NAME, GeneratedLibrary, InFlight, SAMPLE_LIBRARY_NAME,
     write_generated_library, write_sample_library,
 };
 
@@ -135,11 +135,12 @@ impl TreeOfFolder {
                 Ok(())
             }
             Opening::InCompanyWithin(longest) => {
-                self.open.wait_until_most_at_once_reaches(A_PAIR, longest);
+                self.open
+                    .wait_until_most_at_once_reaches(A_PAIR, Deadline::after(longest));
                 Ok(())
             }
             Opening::TimingOutInCompanyWithin(longest) => {
-                self.open.wait_for_company(longest);
+                self.open.wait_for_company(Deadline::after(longest));
                 if self.open.has_company() {
                     Err(io::ErrorKind::TimedOut.into())
                 } else {
