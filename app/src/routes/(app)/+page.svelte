@@ -1012,8 +1012,8 @@
       if (countsSeries) {
         void seriesCount.load();
       }
-      for (const { count } of emptyListCounts) {
-        if (count.reading.kind !== "counting") {
+      for (const { count, askedFor } of emptyListCounts) {
+        if (askedFor() !== undefined) {
           void count.refresh();
         }
       }

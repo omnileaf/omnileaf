@@ -650,3 +650,63 @@ test.describe("an empty category's Add series", { tag: "@native" }, () => {
     expect(addSeries).toEqual(addFolder);
   });
 });
+
+test.describe(
+  "when the library changes while a category is being counted",
+  { tag: "@native" },
+  () => {
+    let inTest: readonly WireSeries[] = [];
+    let releases: (() => void)[] = [];
+    let unfilteredCounts = 0;
+    const holding = backendHolding(LIBRARY);
+
+    test.use({
+      backend: {
+        ...holding,
+        categorySeries: (category, after, listing) =>
+          category === "test"
+            ? pagedSeries(() => letThrough(inTest, listing.filter))(
+                after,
+                listing,
+              )
+            : holding.categorySeries(category, after, listing),
+        categorySeriesCount: async (category, filter) => {
+          if (category !== "test") {
+            return holding.categorySeriesCount(category, filter);
+          }
+          const counted = letThrough(inTest, filter).length;
+          if (filtersOn(filter) === 0 && ++unfilteredCounts === 1) {
+            await new Promise<void>((release) => {
+              releases.push(release);
+            });
+          }
+          return counted;
+        },
+      },
+    });
+
+    test.beforeEach(() => {
+      inTest = [];
+      releases = [];
+      unfilteredCounts = 0;
+    });
+
+    test("says no series match once a series lands in the category while its count was on its way", async ({
+      page,
+    }) => {
+      storedListing = UNREAD_ONLY;
+      await openOn(page, "Test");
+      await expect.poll(() => releases.length).toBe(1);
+      inTest = LIBRARY.slice(0, 1);
+
+      await emitFakeEvent(page, "library-changed");
+      await waitForAnswersBut(page, releases.length);
+      for (const release of releases.splice(0)) {
+        release();
+      }
+
+      await expect(noMatches(page)).toBeVisible();
+      await expect(emptyCategory(page, "Test")).toHaveCount(0);
+    });
+  },
+);
