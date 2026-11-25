@@ -12,7 +12,9 @@
   } from "$app/navigation";
   import { navigating, page } from "$app/state";
   import type { SwipeEdge } from "#lib/ipc/bindings.ts";
+  import { reportFailure } from "#lib/errors/report-failure.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
+  import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { watchScrolled } from "#lib/page/scrolled.ts";
@@ -71,6 +73,7 @@
 
   let isScrolled = $state(false);
   let stopHoldingScroll: (() => void) | undefined;
+  let hasArrivedInShell = false;
   const scrollMemory = new ScrollMemory();
   const screenShown = $derived(
     `${page.url.pathname} ${language.resolved} ${width.current}`,
@@ -163,6 +166,19 @@
     }
   }
 
+  function forgetScreensNoWayBackReaches(): void {
+    previousScreens.forgetAllBut(
+      waysBackFrom({
+        pathname: page.url.pathname,
+        entries: backGoesUp.entries,
+        backPath:
+          swiped.element === undefined
+            ? undefined
+            : backPathFrom(swiped.element),
+      }),
+    );
+  }
+
   afterNavigate((navigation) => {
     const { type, to } = navigation;
     const landedOn = previousScreens.landedOn(page.url.pathname)?.scrollTop;
@@ -176,16 +192,12 @@
     placeScroll(navigation, landedOn, restored);
     swiped.arrived();
     androidBack.navigationArrived();
-    previousScreens.forgetAllBut(
-      waysBackFrom({
-        pathname: page.url.pathname,
-        entries: backGoesUp.entries,
-        backPath:
-          swiped.element === undefined
-            ? undefined
-            : backPathFrom(swiped.element),
-      }),
-    );
+    if (hasArrivedInShell) {
+      forgetScreensNoWayBackReaches();
+    } else {
+      previousScreens.forgetAll();
+    }
+    hasArrivedInShell = true;
   });
 
   function edgeIn(main: HTMLElement): SwipeEdge | null {
@@ -219,9 +231,13 @@
             location.search === page.url.search,
         )
       : undefined;
+    const stopListening = listenForLibraryChanges(() => {
+      previousScreens.forgetAll();
+    }, reportFailure);
     return () => {
       stopPreviewing?.();
       stopHoldingScroll?.();
+      stopListening();
     };
   });
 </script>

@@ -2,7 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import type { BackSwipe, SeriesDetails } from "../../src/lib/ipc/bindings.ts";
 import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
-import type { FakeChannel } from "./fake-backend.ts";
+import { emitFakeEvent, type FakeChannel } from "./fake-backend.ts";
 import { sampleLibraryOn } from "./screens.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 import {
@@ -511,6 +511,25 @@ test.describe("going back to a list scrolled down", () => {
       );
     }, href);
   }
+
+  test("shows no Library behind once the library has changed since it was left", async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE);
+    await page.goto(LIBRARY);
+    await headingOf(page);
+    await scrollListDown(page, LIBRARY_DOWN);
+    await openSeriesInView(page);
+    await expect(page).not.toHaveURL(LIBRARY);
+    await headingOf(page);
+
+    await emitFakeEvent(page, "library-changed");
+    await gesture(start());
+    await gesture(swipe(0.5));
+
+    await expect(page.locator("[data-previous-screen]")).toBeVisible();
+    await expect(page.locator("[data-previous-screen] h1")).toHaveCount(0);
+  });
 
   for (const way of [
     { path: "a series", open: openSeriesInView },

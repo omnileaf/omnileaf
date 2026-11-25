@@ -1,7 +1,10 @@
 import type { Page } from "@playwright/test";
 
 import type { BackSwipe, SwipeEdge } from "../../src/lib/ipc/bindings.ts";
-import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
+import {
+  sampleBookId,
+  sampleSeriesId,
+} from "../../src/lib/sample-library/sample-library.ts";
 import type { FakeChannel } from "./fake-backend.ts";
 import { sampleLibraryOn } from "./screens.ts";
 import {
@@ -28,6 +31,7 @@ const PSEUDO_LOCALE_MARK = "⟦";
 const PHONE = { width: 390, height: 844 };
 const CREDITED_SERIES = `/series/${sampleSeriesId(4)}`;
 const CREDITED_TITLE = "Sample Series 04";
+const CREDITED_BOOK = `/read/${sampleBookId(4, 3)}`;
 
 let swipes: FakeChannel<BackSwipe> | undefined;
 const allowedEdges: (SwipeEdge | null)[] = [];
@@ -475,6 +479,17 @@ test.describe("a screen whose way back is not above it", () => {
     },
   });
 
+  async function followLink(page: Page, href: string): Promise<void> {
+    await page.evaluate((to) => {
+      const link = document.createElement("a");
+      link.href = to;
+      document.body.append(link);
+      link.click();
+      link.remove();
+    }, href);
+    await expect(page).toHaveURL(href);
+  }
+
   async function openFromScreen(page: Page, href: string): Promise<void> {
     await page.getByRole("main").locator(`a[href^="${href}"]`).first().click();
     await expect(page).toHaveURL(new RegExp(href));
@@ -492,6 +507,26 @@ test.describe("a screen whose way back is not above it", () => {
     await expect(previousScreen(page).locator("h1").first()).toHaveText(
       "Library",
     );
+  });
+
+  test("shows no Library behind a series come back to from the reader", async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE);
+    await page.goto("/");
+    await expect(heading(page, "Library")).toBeVisible();
+    await followLink(page, CREDITED_SERIES);
+    await followLink(page, CREDITED_BOOK);
+    await page
+      .getByRole("link", { name: `Back to ${CREDITED_TITLE}`, exact: true })
+      .click();
+    await expect(heading(page, CREDITED_TITLE)).toBeVisible();
+    await expect.poll(lastAllowedEdge).toBe("left");
+
+    await swipe({ kind: "moved", progress: 0.5 });
+
+    await expect(page.locator("[data-previous-screen]")).toBeAttached();
+    await expect(previousScreen(page).locator("h1")).toHaveCount(0);
   });
 
   test("shows the series behind a creator opened from it", async ({ page }) => {
