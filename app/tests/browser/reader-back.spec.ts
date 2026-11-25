@@ -81,7 +81,7 @@ function openFromHistory(
   return openFrom(page, platform, HISTORY);
 }
 
-async function followInApp(page: Page, path: string): Promise<void> {
+async function clickLinkTo(page: Page, path: string): Promise<void> {
   await page.evaluate((href) => {
     const link = document.createElement("a");
     link.href = href;
@@ -89,7 +89,27 @@ async function followInApp(page: Page, path: string): Promise<void> {
     link.click();
     link.remove();
   }, path);
+}
+
+async function followInApp(page: Page, path: string): Promise<void> {
+  await clickLinkTo(page, path);
   await expect(page).toHaveURL(path);
+}
+
+async function holdHistoryBacks(page: Page): Promise<JSHandle<() => void>> {
+  return page.evaluateHandle(() => {
+    const goBack = history.back.bind(history);
+    const held: (() => void)[] = [];
+    history.back = () => {
+      held.push(goBack);
+    };
+    return () => {
+      history.back = goBack;
+      for (const back of held.splice(0)) {
+        back();
+      }
+    };
+  });
 }
 
 async function openLibrary(page: Page): Promise<void> {
@@ -323,6 +343,31 @@ test.describe(
       await selectASeries(page);
 
       await followInApp(page, READER);
+      await page.goBack();
+      await expect(page).toHaveURL(LIBRARY);
+      await page.goBack();
+
+      expect(page.url()).toBe("about:blank");
+    });
+
+    test("leaves no extra Back step under a book linked to while the last selection's step back is on its way", async ({
+      page,
+    }) => {
+      await selectASeries(page);
+      const releaseBacks = await holdHistoryBacks(page);
+      await page.getByRole("button", { name: "Cancel selecting" }).click();
+      await expect(page.getByText("1 selected")).toHaveCount(0);
+      await selectByLongPress(
+        page,
+        page.getByRole("list", { name: "Series" }).getByRole("listitem").nth(1),
+      );
+      await expect(page.getByText("1 selected").first()).toBeVisible();
+
+      await clickLinkTo(page, READER);
+      await releaseBacks.evaluate((release) => {
+        release();
+      });
+      await expect(page).toHaveURL(READER);
       await page.goBack();
       await expect(page).toHaveURL(LIBRARY);
       await page.goBack();

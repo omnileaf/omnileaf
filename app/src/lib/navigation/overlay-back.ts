@@ -67,8 +67,8 @@ export class OverlayBack {
     };
   }
 
-  holdsEntries(): boolean {
-    return this.#held.some((entry) => isGiveable(entry));
+  mustGiveBackBeforeLeaving(): boolean {
+    return this.#ownPops > 0 || this.#held.some((entry) => isGiveable(entry));
   }
 
   giveBack(): Promise<void> {
@@ -179,7 +179,7 @@ export function giveBackOverlayEntriesBeforeLinkTo(routeId: PageRouteId): void {
     if (
       type !== "link" ||
       to?.route.id !== routeId ||
-      !overlays.holdsEntries()
+      !overlays.mustGiveBackBeforeLeaving()
     ) {
       return;
     }

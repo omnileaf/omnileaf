@@ -171,26 +171,42 @@ test("gives an entry back only once when its overlay closes afterwards", async (
   expect(page.listening()).toBe(0);
 });
 
-test("holds an entry only while an overlay is open and has not given it back", () => {
+test("must give back before leaving only while an overlay is open or its entry's step back is on its way", () => {
   const { overlays, page } = overlayBack();
-  const before = overlays.holdsEntries();
+  const before = overlays.mustGiveBackBeforeLeaving();
 
   const release = overlays.hold(() => undefined);
-  const whileOpen = overlays.holdsEntries();
+  const whileOpen = overlays.mustGiveBackBeforeLeaving();
   void overlays.giveBack();
-  const afterGivingBack = overlays.holdsEntries();
+  const whileSteppingBack = overlays.mustGiveBackBeforeLeaving();
   page.goBack();
+  const onceLanded = overlays.mustGiveBackBeforeLeaving();
   release();
 
-  expect([before, whileOpen, afterGivingBack]).toEqual([false, true, false]);
+  expect([before, whileOpen, whileSteppingBack, onceLanded]).toEqual([
+    false,
+    true,
+    true,
+    false,
+  ]);
 });
 
-test("holds no entry when the page does not follow history for back", () => {
+test("never must give back when the page does not follow history for back", () => {
   const { overlays } = overlayBack(false);
 
   overlays.hold(() => undefined);
 
-  expect(overlays.holdsEntries()).toBe(false);
+  expect(overlays.mustGiveBackBeforeLeaving()).toBe(false);
+});
+
+test("must give back before leaving while its own step back is on its way and an overlay waits for its entry", () => {
+  const { overlays } = overlayBack();
+  const releaseSheet = overlays.hold(() => undefined);
+  releaseSheet();
+
+  overlays.hold(() => undefined);
+
+  expect(overlays.mustGiveBackBeforeLeaving()).toBe(true);
 });
 
 test("holds a new entry only once its own step back for the last overlay has landed", () => {
