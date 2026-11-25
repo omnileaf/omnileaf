@@ -5,7 +5,7 @@
   import { Button, type ButtonLook } from "#lib/components/ui/button/index.ts";
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
-  import { phoneAction } from "#lib/page/action-group.ts";
+  import { type ActionLook, actionLookOn } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { EMPTY_MAIN_ACTION } from "#lib/page/empty-action.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -44,6 +44,8 @@
     "list-row": `${ROW_FOCUS_RING} justify-start gap-native-row-gap ps-native-row-start pe-native-row-end text-accent text-native-row-title/native-row-title font-native-row-title tracking-native-row-title min-block-native-row inline-full`,
   } satisfies Record<Placement, string>;
 
+  const ANDROID_LIST_ROW = "rounded-none font-regular text-foreground";
+
   const ICON_SIZE = 16;
   const LIST_ROW_ICON_SIZE = 22;
 
@@ -61,10 +63,22 @@
   const isInHeading = $derived(placement === "page-heading");
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const phone = $derived(
+  const placedFit = $derived.by(() => {
+    if (placement !== "list-row") {
+      return `font-semibold ${PLACEMENTS[placement]}`;
+    }
+    return android.isOn
+      ? `${PLACEMENTS[placement]} ${ANDROID_LIST_ROW}`
+      : PLACEMENTS[placement];
+  });
+  const placed = $derived<ActionLook>({
+    button: { look: LOOKS[placement] },
+    fit: placedFit,
+  });
+  const shown = $derived(
     placement === "empty-state"
-      ? phoneAction(platform, width.current, "main")
-      : undefined,
+      ? actionLookOn(platform, width.current, "main", placed)
+      : placed,
   );
 </script>
 
@@ -80,20 +94,10 @@
   {#snippet child({ props })}
     <Button
       {...props}
-      {...phone === undefined
-        ? { look: LOOKS[placement] }
-        : { variant: phone.variant, size: phone.size }}
+      {...shown.button}
       class={[
         "inline-flex shrink-0 items-center justify-center disabled:opacity-60",
-        phone === undefined
-          ? [
-              placement !== "list-row" && "font-semibold",
-              PLACEMENTS[placement],
-              placement === "list-row" &&
-                android.isOn &&
-                "rounded-none font-regular text-foreground",
-            ]
-          : phone.fit,
+        shown.fit,
       ]}
     >
       {#if placement === "list-row" && android.isOn}
