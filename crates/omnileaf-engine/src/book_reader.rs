@@ -80,7 +80,8 @@ impl BookReader {
     fn read_each(&self, batch: &[FoundBook]) -> Vec<Result<ScannedBook, UnreadableBook>> {
         let at_once = self.books_read_at_once();
         let mut read = read_at_most(batch, at_once, |found| self.read_found_book(found));
-        if at_once > ONE_AT_A_TIME {
+        let has_company = at_once.get().min(batch.len()) > ONE_AT_A_TIME.get();
+        if has_company {
             self.read_again_what_timed_out(batch, &mut read);
         }
         for (found, book) in batch.iter().zip(&read) {
@@ -628,6 +629,24 @@ mod tests {
         let mut books: Vec<PathBuf> = second.into_iter().map(|book| book.path).collect();
         books.sort();
         assert_eq!(opened, books);
+    }
+
+    #[test]
+    fn opens_a_lone_book_once_when_its_open_times_out() {
+        let scratch = ScratchFolder::new("scan-lone-book-times-out");
+        let book = one_archive(&scratch);
+        let storage = PacedStorage::unpaced(&scratch);
+        storage.hang();
+        let reader = BookReader::new(target_over(storage.clone()));
+
+        let read = reader.read_each(&[book]);
+
+        assert!(
+            read.iter()
+                .all(|book| book.as_ref().is_err_and(UnreadableBook::has_timed_out)),
+            "{read:?}"
+        );
+        assert_eq!(storage.take_opened().len(), 1);
     }
 
     #[test]
