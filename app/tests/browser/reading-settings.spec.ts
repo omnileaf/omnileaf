@@ -51,6 +51,24 @@ test("lists Reader among the settings sections and titles its page Reader", asyn
   ).toBeVisible();
 });
 
+test(
+  "describes the reading mode select with how Automatic picks a mode",
+  { tag: "@native" },
+  async ({ page, platform }) => {
+    test.skip(platform === "android", "Android's choice dialog");
+    await page.goto("/settings/reading");
+
+    const mode = page.getByRole("combobox", {
+      name: "Reading mode",
+      exact: true,
+    });
+
+    await expect(mode).toHaveAccessibleDescription(
+      "Automatic picks paged or long strip from the details and the pages.",
+    );
+  },
+);
+
 test("sets its cards 24px apart, the first 8px under the intro", async ({
   page,
 }) => {
