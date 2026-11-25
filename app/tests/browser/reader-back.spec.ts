@@ -26,6 +26,7 @@ const APPEARANCE = "/settings/appearance";
 const BOOK_THAT_CANNOT_BE_READ = sampleBookId(4, 3);
 const SEARCH_WITH_QUERY = "/search?q=Sample";
 const TABLET = { width: 820, height: 1180 };
+const LONG_PRESS_MS = 800;
 
 async function pressLink(
   link: Locator,
@@ -90,6 +91,33 @@ async function followInApp(page: Page, path: string): Promise<void> {
 async function openLibrary(page: Page): Promise<void> {
   await page.goto(LIBRARY);
   await expect(page.getByRole("list", { name: "Series" })).toBeVisible();
+}
+
+async function selectASeries(page: Page): Promise<void> {
+  await page.clock.install();
+  await openLibrary(page);
+  const card = page
+    .getByRole("list", { name: "Series" })
+    .getByRole("listitem")
+    .nth(1);
+  const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
+  await card.getByRole("link").first().dispatchEvent("pointerdown", touch);
+  await page.clock.runFor(LONG_PRESS_MS);
+  const picked = card.getByRole("checkbox");
+  await picked.dispatchEvent("pointerup", touch);
+  await picked.dispatchEvent("click");
+  await expect(page.getByText("1 selected").first()).toBeVisible();
+}
+
+async function openFromQuickOpen(page: Page): Promise<void> {
+  await page.keyboard.press("Control+k");
+  const quickOpen = page.getByRole("dialog", { name: "Quick open" });
+  await quickOpen.locator("input").fill(SERIES_TITLE);
+  await quickOpen
+    .getByRole("option", { name: new RegExp(SERIES_TITLE) })
+    .first()
+    .click();
+  await expect(page).toHaveURL(ANY_READER);
 }
 
 async function openFromSeriesPage(page: Page): Promise<void> {
@@ -304,6 +332,32 @@ test.describe(
       await page.goBack();
 
       await expect(page).not.toHaveURL(READER);
+    });
+
+    test("leaves no selection step under a book linked to while series are selected", async ({
+      page,
+    }) => {
+      await selectASeries(page);
+
+      await followInApp(page, READER);
+      await page.goBack();
+      await expect(page).toHaveURL(LIBRARY);
+      await page.goBack();
+
+      expect(page.url()).toBe("about:blank");
+    });
+
+    test("leaves no selection or Quick open step under a book opened from Quick open while series are selected", async ({
+      page,
+    }) => {
+      await selectASeries(page);
+
+      await openFromQuickOpen(page);
+      await page.goBack();
+      await expect(page).toHaveURL(LIBRARY);
+      await page.goBack();
+
+      expect(page.url()).toBe("about:blank");
     });
   },
 );
