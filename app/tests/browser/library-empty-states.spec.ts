@@ -242,6 +242,24 @@ test.describe("the library's empty states", { tag: "@native" }, () => {
       });
     }
 
+    test("opens All without selecting when the filter leaves nothing there, so the filters can be cleared", async ({
+      page,
+    }) => {
+      storedListing = UNREAD_ONLY;
+      await openOn(page, "Test");
+      await emptyCategory(page, "Test")
+        .getByRole("button", { name: ADD_SERIES })
+        .click();
+
+      await noMatches(page)
+        .getByRole("button", { name: english.library_clear_all_filters })
+        .click();
+
+      const series = page.getByRole("list", { name: "Series" });
+      await expect(series.getByRole("listitem")).toHaveCount(LIBRARY.length);
+      await expect(series.getByRole("checkbox")).toHaveCount(0);
+    });
+
     test("starts selecting on All without saying on the way that the library is empty", async ({
       page,
     }) => {
@@ -707,6 +725,32 @@ test.describe(
 
       await expect(noMatches(page)).toBeVisible();
       await expect(emptyCategory(page, "Test")).toHaveCount(0);
+    });
+  },
+);
+
+test.describe(
+  "Add series under a filter that leaves series on All",
+  { tag: "@native" },
+  () => {
+    test.use({
+      backend: {
+        ...backendHolding(LIBRARY),
+        librarySeries: pagedSeries(() => LIBRARY),
+      },
+    });
+
+    test("starts selecting on All", async ({ page }) => {
+      storedListing = UNREAD_ONLY;
+      await openOn(page, "Test");
+
+      await emptyCategory(page, "Test")
+        .getByRole("button", { name: ADD_SERIES })
+        .click();
+
+      await expect(
+        page.getByRole("list", { name: "Series" }).getByRole("checkbox"),
+      ).toHaveCount(LIBRARY.length);
     });
   },
 );

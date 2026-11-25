@@ -879,6 +879,30 @@
     });
   }
 
+  let selectsOnceAllLists = $state(false);
+
+  function addSeries(): void {
+    chooseTab(ALL_SERIES);
+    selectsOnceAllLists = true;
+  }
+
+  $effect.pre(() => {
+    if (!selectsOnceAllLists) {
+      return;
+    }
+    const isOnAll = chosenTabKey === ALL_SERIES;
+    if (isOnAll && listedTabKey !== ALL_SERIES) {
+      return;
+    }
+    const startsSelecting = isOnAll && !listsNothing;
+    untrack(() => {
+      selectsOnceAllLists = false;
+      if (startsSelecting) {
+        selection.begin();
+      }
+    });
+  });
+
   function selectEverySeries(): void {
     if (loaded !== undefined) {
       selection.pickAll(
@@ -1404,13 +1428,7 @@
         onDismissed={returnFocusFromNotice}
       />
       {#if emptyCause?.kind === "tab"}
-        <EmptyTab
-          tab={emptyCause.tab}
-          onAddSeries={() => {
-            chooseTab(ALL_SERIES);
-            selection.begin();
-          }}
-        />
+        <EmptyTab tab={emptyCause.tab} onAddSeries={addSeries} />
       {:else if emptyCause?.kind === "filters" && chosenListing !== undefined}
         <NoMatches
           filter={chosenListing.filter}
