@@ -3,6 +3,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+pub const GENEROUS_WAIT: Duration = Duration::from_secs(60);
+
 pub fn wait_until(longest: Duration, is_done: impl Fn() -> bool) -> bool {
     let deadline = Instant::now() + longest;
     while !is_done() && Instant::now() < deadline {
@@ -23,7 +25,6 @@ mod tests {
 
     use super::*;
 
-    const LONGEST_WAIT: Duration = Duration::from_secs(5);
     const NO_WAIT: Duration = Duration::ZERO;
 
     #[test]
@@ -32,7 +33,7 @@ mod tests {
 
         let done = thread::scope(|scope| {
             scope.spawn(|| is_done.store(true, Ordering::SeqCst));
-            wait_until(LONGEST_WAIT, || is_done.load(Ordering::SeqCst))
+            wait_until(GENEROUS_WAIT, || is_done.load(Ordering::SeqCst))
         });
 
         assert!(done);

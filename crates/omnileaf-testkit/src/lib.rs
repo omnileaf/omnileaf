@@ -42,4 +42,4 @@ pub use scratch_folder::ScratchFolder;
 pub use speed_trial::{Pass, Sampling, SpeedTrial, Statistic, TIMED_PASSES, TrialOutcome};
 pub use strip::strip_jpeg;
 pub use timing_budget::{BUDGET_SLACK_VARIABLE, InvalidBudgetSlack, TimingBudget};
-pub use waiting::{wait_until, yield_times};
+pub use waiting::{GENEROUS_WAIT, wait_until, yield_times};

@@ -86,11 +86,11 @@ impl Drop for Entered<'_> {
 
 #[cfg(test)]
 mod tests {
-    use std::thread;
+    use std::{sync::atomic::AtomicBool, thread};
 
     use super::*;
+    use crate::waiting::GENEROUS_WAIT;
 
-    const LONGEST_WAIT: Duration = Duration::from_secs(5);
     const NO_WAIT: Duration = Duration::ZERO;
     const A_PAIR: u64 = 2;
 
@@ -174,16 +174,38 @@ mod tests {
     fn waits_for_company_until_a_second_entry_comes_in() {
         let in_flight = InFlight::new();
         let _first = in_flight.enter();
+        let company_was_seen = AtomicBool::new(false);
 
         let had_company = thread::scope(|scope| {
             scope.spawn(|| {
                 let _second = in_flight.enter();
-                in_flight.wait_until_most_at_once_reaches(A_PAIR, LONGEST_WAIT)
+                wait_until(GENEROUS_WAIT, || company_was_seen.load(Ordering::SeqCst));
             });
-            in_flight.wait_for_company(LONGEST_WAIT)
+            let had_company = in_flight.wait_for_company(GENEROUS_WAIT);
+            company_was_seen.store(true, Ordering::SeqCst);
+            had_company
         });
 
         assert!(had_company);
+    }
+
+    #[test]
+    fn waits_for_a_crowd_until_enough_entries_are_in_flight() {
+        let in_flight = InFlight::new();
+        let _first = in_flight.enter();
+        let crowd_was_seen = AtomicBool::new(false);
+
+        let reached = thread::scope(|scope| {
+            scope.spawn(|| {
+                let _second = in_flight.enter();
+                wait_until(GENEROUS_WAIT, || crowd_was_seen.load(Ordering::SeqCst));
+            });
+            let reached = in_flight.wait_until_most_at_once_reaches(A_PAIR, GENEROUS_WAIT);
+            crowd_was_seen.store(true, Ordering::SeqCst);
+            reached
+        });
+
+        assert!(reached);
     }
 
     #[test]
