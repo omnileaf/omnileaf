@@ -8,6 +8,7 @@ const LINK_HEIGHT_PX = 40;
 const GAP_PX = 1000;
 const LOWER_LINK_TOP = LINK_HEIGHT_PX + GAP_PX;
 const SHOWN_LOWER_LINK_AT = 900;
+const SHOWN_SCALE = 0.5;
 
 const stops: (() => void)[] = [];
 
@@ -60,6 +61,31 @@ test("brings back the link nearest where it was left when the screen shows the s
 
   expect(left.anchor?.offset).toBe(LOWER_LINK_TOP - SHOWN_LOWER_LINK_AT);
   expect(linkTopWithin(screen, lower)).toBe(left.anchor?.offset);
+});
+
+test("brings the link back to where it was left while the screen is shown scaled down", () => {
+  const { screen, lower } = screenShowingSeriesTwice();
+  screen.scrollTop = SHOWN_LOWER_LINK_AT;
+  const left = placeOf(screen, undefined);
+  screen.scrollTop = 0;
+  screen.style.transform = `scale(${String(SHOWN_SCALE)})`;
+
+  stops.push(holdScrollPlace(screen, left));
+
+  expect(screen.scrollTop).toBe(SHOWN_LOWER_LINK_AT);
+  expect(linkTopWithin(screen, lower)).toBeCloseTo(
+    (LOWER_LINK_TOP - SHOWN_LOWER_LINK_AT) * SHOWN_SCALE,
+  );
+});
+
+test("remembers a screen left while shown scaled down at its unscaled place", () => {
+  const { screen } = screenShowingSeriesTwice();
+  screen.scrollTop = SHOWN_LOWER_LINK_AT;
+  screen.style.transform = `scale(${String(SHOWN_SCALE)})`;
+
+  const left = placeOf(screen, undefined);
+
+  expect(left.anchor?.offset).toBeCloseTo(LOWER_LINK_TOP - SHOWN_LOWER_LINK_AT);
 });
 
 test("goes back to the saved scroll position when no link shows the saved address", () => {

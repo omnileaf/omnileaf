@@ -88,11 +88,21 @@ function anchorIn(
   );
 }
 
+function shownScaleOf(screen: HTMLElement): number {
+  return new DOMMatrixReadOnly(getComputedStyle(screen).transform).d;
+}
+
+function shownOffsetOf(link: HTMLAnchorElement, screen: HTMLElement): number {
+  return (
+    (link.getBoundingClientRect().top - screen.getBoundingClientRect().top) /
+    shownScaleOf(screen)
+  );
+}
+
 export function placeOf(
   screen: HTMLElement,
   leavingFor: URL | undefined,
 ): ScrollPlace {
-  const shownTop = screen.getBoundingClientRect().top;
   const anchor = anchorIn(screen, leavingFor);
   return {
     top: screen.scrollTop,
@@ -101,17 +111,13 @@ export function placeOf(
         ? undefined
         : {
             href: anchor.getAttribute("href") ?? "",
-            offset: anchor.getBoundingClientRect().top - shownTop,
+            offset: shownOffsetOf(anchor, screen),
           },
   };
 }
 
 function contentTopOf(link: HTMLAnchorElement, screen: HTMLElement): number {
-  return (
-    link.getBoundingClientRect().top -
-    screen.getBoundingClientRect().top +
-    screen.scrollTop
-  );
+  return shownOffsetOf(link, screen) + screen.scrollTop;
 }
 
 function anchorOf(
