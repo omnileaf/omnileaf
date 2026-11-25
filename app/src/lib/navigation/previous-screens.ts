@@ -53,9 +53,9 @@ export class PreviousScreens {
     return isLanding ? this.of(pathname) : undefined;
   }
 
-  forgetAllButAbove(pathname: string): void {
+  forgetAllBut(waysBack: ReadonlySet<string>): void {
     for (const kept of this.#copies.keys()) {
-      if (!pathname.startsWith(`${kept}/`)) {
+      if (!waysBack.has(kept)) {
         this.#copies.delete(kept);
       }
     }

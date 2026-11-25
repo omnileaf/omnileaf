@@ -34,6 +34,7 @@
   import { getPreviousScreens } from "./previous-screens";
   import ScreenBehindSwipe from "./ScreenBehindSwipe.svelte";
   import { SwipedScreen } from "./swiped-screen.svelte";
+  import { wayUp } from "./up-history";
 
   const SWITCH = '[role="switch"]';
 
@@ -76,12 +77,24 @@
   }
 
   const androidPageBehind = $derived.by(() => {
-    if (androidBack.area === undefined || swiped.element === undefined) {
+    if (androidBack.area === undefined) {
       return undefined;
     }
-    const backPath = backPathFrom(swiped.element);
-    return backPath === undefined ? undefined : previousScreens.of(backPath);
+    const entryBehind = backGoesUp.entries.at(-2);
+    return entryBehind === undefined
+      ? undefined
+      : previousScreens.of(entryBehind);
   });
+
+  function waysBackFrom(pathname: string): ReadonlySet<string> {
+    const backPath =
+      swiped.element === undefined ? undefined : backPathFrom(swiped.element);
+    return new Set([
+      ...wayUp(pathname),
+      ...backGoesUp.entries,
+      ...(backPath === undefined ? [] : [backPath]),
+    ]);
+  }
 
   function goBack(): boolean {
     const link =
@@ -178,7 +191,7 @@
     placeScroll(navigation, landedOn, restored);
     swiped.arrived();
     androidBack.navigationArrived();
-    previousScreens.forgetAllButAbove(page.url.pathname);
+    previousScreens.forgetAllBut(waysBackFrom(page.url.pathname));
   });
 
   function edgeIn(main: HTMLElement): SwipeEdge | null {
