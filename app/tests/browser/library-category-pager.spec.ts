@@ -826,39 +826,68 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
     expect(covers.right).toBeCloseTo(column.x + column.width - gutter, 0);
   });
 
-  for (const { way, from, listed, by, incoming } of [
+  for (const {
+    way,
+    from,
+    listed,
+    by,
+    incoming,
+    lands,
+    dir,
+    layout,
+    padding,
+  } of (
+    [
+      {
+        dir: "ltr",
+        layout: "",
+        forward: -SWIPE_PX,
+        padding: { left: "--spacing-page-start", right: "--spacing-page-end" },
+      },
+      {
+        dir: "rtl",
+        layout: " in a right-to-left layout",
+        forward: SWIPE_PX,
+        padding: { left: "--spacing-page-end", right: "--spacing-page-start" },
+      },
+    ] as const
+  ).flatMap((direction) => [
     {
+      ...direction,
       way: "after",
       from: "All",
       listed: EVERY_SERIES,
-      by: -SWIPE_PX,
+      by: direction.forward,
       incoming: MANGA,
+      lands: "Manga",
     },
     {
+      ...direction,
       way: "before",
       from: "Manga",
       listed: MANGA,
-      by: SWIPE_PX,
+      by: -direction.forward,
       incoming: EVERY_SERIES,
+      lands: "All",
     },
-  ]) {
-    test(`keeps both pages' side padding with a gap between them while the category ${way} comes in`, async ({
+  ])) {
+    test(`keeps both pages' side padding with a gap between them while the category ${way} comes in${layout}`, async ({
       page,
     }, testInfo) => {
       skipUnlessPhone(page, testInfo.project.use.hasTouch);
       await openLibrary(page);
+      await page.evaluate((textDirection) => {
+        document.documentElement.dir = textDirection;
+      }, dir);
       await chosenTab(page, from).click();
-      await expect(chosenTab(page, from)).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
+      await expectChosen(page, from);
       await expect(chosenCovers(page)).toHaveCount(listed.length);
       const incomingTitle = incoming[0]?.title ?? "";
       const column = await boxOf(page.getByRole("main"));
       const gap = await lengthOf(page, "--spacing-pager-gap");
+      const leftInset = await lengthOf(page, padding.left);
+      const rightInset = await lengthOf(page, padding.right);
       const atRest = await firstRowOf(chosenCovers(page));
-      const leftInset = atRest.left - column.x;
-      const rightInset = column.x + column.width - atRest.right;
 
       const drag = await beginDrag(page, seriesList(page));
       await drag.to(by);
@@ -871,13 +900,21 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
       const chosen = await firstRowOf(chosenCovers(page));
       const beside = await firstRowOf(besideCovers(page, incomingTitle));
       await drag.release();
+      await expectChosen(page, lands);
+      await expect(chosenCovers(page)).toHaveCount(incoming.length);
+      await expect(pagerTrack(page)).toHaveCSS("translate", "none");
+      const settled = await firstRowOf(chosenCovers(page));
 
       const [onLeft, onRight] = by < 0 ? [chosen, beside] : [beside, chosen];
+      expect(atRest.left).toBeCloseTo(column.x + leftInset, 0);
+      expect(atRest.right).toBeCloseTo(column.x + column.width - rightInset, 0);
       expect(chosen.left).toBeCloseTo(atRest.left + by, 0);
       expect(chosen.right).toBeCloseTo(atRest.right + by, 0);
       expect(
         onRight.left - leftInset - (onLeft.right + rightInset),
       ).toBeCloseTo(gap, 0);
+      expect(settled.left).toBeCloseTo(atRest.left, 0);
+      expect(settled.right).toBeCloseTo(atRest.right, 0);
     });
   }
 });
