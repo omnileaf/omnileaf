@@ -1,5 +1,5 @@
 import type { ItemLook } from "#lib/components/ui/item/index.ts";
-import { GROUP_PLATE } from "#lib/page/plates.ts";
+import { PLATED_LIST } from "#lib/page/plates.ts";
 import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
 
 export type AboutLook = "phone" | "pane" | "android";
@@ -18,7 +18,7 @@ export const ROW_ICON_SIZES = {
   android: 24,
 } satisfies Record<AboutLook, number>;
 
-const CARD_LIST = `divide-y divide-border overflow-hidden rounded-list border border-border bg-card ${GROUP_PLATE}`;
+const CARD_LIST = `rounded-list ${PLATED_LIST}`;
 
 export const ROW_LISTS = {
   phone: CARD_LIST,

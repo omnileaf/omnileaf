@@ -1,5 +1,5 @@
 import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
-import { CARD_PLATE, GROUP_PLATE } from "#lib/page/plates.ts";
+import { CARD_PLATE, PLATED_LIST } from "#lib/page/plates.ts";
 import {
   FLUSH_LIST,
   FLUSH_LIST_HEADING,
@@ -14,7 +14,7 @@ export const ICON_TILE =
 
 export const REPORT_LISTS = {
   flush: FLUSH_LIST,
-  card: `flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card ${GROUP_PLATE}`,
+  card: `flex flex-col rounded-card ${PLATED_LIST}`,
 } satisfies Record<ReportRowsLook, string>;
 
 export const REPORT_HEADINGS = {
