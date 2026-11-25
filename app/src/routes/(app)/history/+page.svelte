@@ -55,7 +55,7 @@
   let { data }: PageProps = $props();
 
   const ANDROID_HISTORY_SEARCH_BAR =
-    "-ms-page-start -me-page-end px-sm block-native-search-view-bar";
+    "-ms-page-start -me-page-end -mbs-title-gap mbe-2xs px-sm block-native-top-bar";
   const ICON_SIZE = 18;
   const FIELD_ICON_SIZE = 16;
   const SKELETON_ROWS = 6;
