@@ -70,6 +70,31 @@ function isAtEdge(x: number): boolean {
   return x < EDGE_PX || x > document.documentElement.clientWidth - EDGE_PX;
 }
 
+const SCROLLING_OVERFLOWS: ReadonlySet<string> = new Set(["auto", "scroll"]);
+
+function scrollsSideways(element: Element): boolean {
+  return (
+    element.scrollWidth > element.clientWidth &&
+    SCROLLING_OVERFLOWS.has(getComputedStyle(element).overflowX)
+  );
+}
+
+function startsOnSidewaysScroller(
+  target: EventTarget | null,
+  area: HTMLElement,
+): boolean {
+  for (
+    let element = target instanceof Element ? target : null;
+    element !== null && element !== area;
+    element = element.parentElement
+  ) {
+    if (scrollsSideways(element)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export interface TabSwipe {
   readonly onSwipe: (step: 1 | -1) => void;
   readonly canStep: (step: 1 | -1) => boolean;
@@ -135,7 +160,8 @@ export function swipesBetweenTabs({
       if (
         isSettling ||
         event.pointerType !== "touch" ||
-        isAtEdge(event.clientX)
+        isAtEdge(event.clientX) ||
+        startsOnSidewaysScroller(event.target, area)
       ) {
         return;
       }

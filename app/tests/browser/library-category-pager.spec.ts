@@ -1,10 +1,11 @@
 import type { ElementHandle, Locator, Page } from "@playwright/test";
 
-import type {
-  LibraryCategory,
-  LibraryListing,
-  LibraryTab,
-  Platform,
+import {
+  DEFAULT_LIBRARY_VIEW,
+  type LibraryCategory,
+  type LibraryListing,
+  type LibraryTab,
+  type Platform,
 } from "../../src/lib/ipc/bindings.ts";
 import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 import type { FakeBackend } from "./fake-backend.ts";
@@ -18,6 +19,7 @@ import {
   test,
   viewportOf,
 } from "./fixtures.ts";
+import { entry } from "./history-entries.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const EVERY_SERIES = sampleSeries(12);
@@ -74,6 +76,13 @@ const NEW_CHAPTERS_SHOWN: readonly LibraryTab[] = [
   { id: { kind: "all" }, isHidden: false },
   { id: { kind: "newChapters" }, isHidden: false },
 ];
+const UNFINISHED = Array.from({ length: 5 }, (_, index) =>
+  entry(index + 1, "2026-10-08T20:00:00Z", {
+    state: "page",
+    page: 10,
+    pageCount: 40,
+  }),
+);
 const UNREAD_ONLY: LibraryListing = {
   ...NEW_LIBRARY_LISTING,
   filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
@@ -99,6 +108,10 @@ async function openEmptyTab(page: Page, name: string): Promise<void> {
 
 function seriesList(page: Page) {
   return page.getByRole("list", { name: "Series" });
+}
+
+function continueRow(page: Page) {
+  return page.getByRole("region", { name: "Continue reading" });
 }
 
 function noMatches(page: Page) {
@@ -533,6 +546,51 @@ test.describe("each category's scroll position", () => {
 });
 
 for (const platform of PLATFORMS) {
+  test.describe(`scrolling the Continue reading row on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...backendWith(SMALL, platform),
+        libraryView: () => ({
+          ...DEFAULT_LIBRARY_VIEW,
+          showsContinueRow: true,
+        }),
+        readingHistory: (_after, of) => ({
+          entries: of.kind === "unfinished" ? [...UNFINISHED] : [],
+          next: null,
+        }),
+      },
+    });
+
+    test("keeps a sideways drag on the row for the row, not the tabs", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessPhone(page, testInfo.project.use.hasTouch);
+      await openLibrary(page);
+      const cards = continueRow(page).getByRole("list");
+      await expect(cards.getByRole("listitem")).toHaveCount(UNFINISHED.length);
+      expect(
+        await cards.evaluate((row) => row.scrollWidth > row.clientWidth),
+      ).toBe(true);
+
+      const drag = await beginDrag(page, cards);
+      await drag.to(-SWIPE_PX);
+      const swiping = await page.locator("[data-swiping]").count();
+      const moved = await pagerTrack(page).evaluate(
+        (track) => getComputedStyle(track).translate,
+      );
+      await drag.release();
+
+      expect(swiping).toBe(0);
+      expect(moved).toBe("none");
+      await expect
+        .poll(() =>
+          pagerTrack(page).evaluate((track) => track.getAnimations().length),
+        )
+        .toBe(0);
+      await expectChosen(page, "All");
+    });
+  });
+
   test.describe(`swiping from a tab that lists nothing on ${platform}`, () => {
     test.use({
       backend: {
