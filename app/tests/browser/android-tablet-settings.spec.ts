@@ -17,6 +17,8 @@ const TWO_PANES = { width: 1280, height: 800 };
 const STATUS_BAR = 24;
 const TOP_APP_BAR = 64;
 const BELOW_LINE = 4;
+const LIST_PANE = 360;
+const ROW = 56;
 
 const SETTINGS_PAGES = [
   "/settings",
@@ -174,6 +176,60 @@ test.describe(
           .getByRole("navigation", { name: "Settings sections" })
           .getByRole("link", { name: "Accessibility" }),
       ).toBeVisible();
+    });
+
+    test("lays the list of sections out as the kit's 360px pane of pill rows", async ({
+      page,
+    }) => {
+      await page.setViewportSize(TWO_PANES);
+      await page.goto("/settings/general");
+      const sections = page.getByRole("navigation", {
+        name: "Settings sections",
+      });
+      const open = sections.getByRole("link", { name: "General" });
+      const idle = sections.getByRole("link", { name: "Appearance" });
+
+      expect((await boxOf(sections)).width).toBe(LIST_PANE);
+      await expect(sections).toHaveCSS("padding", "8px 12px");
+      const openRow = await boxOf(open);
+      expect(openRow.height).toBeGreaterThanOrEqual(ROW);
+      const radius = await open.evaluate((row) =>
+        Number.parseFloat(getComputedStyle(row).borderTopLeftRadius),
+      );
+      expect(radius).toBeGreaterThanOrEqual(openRow.height / 2);
+      await expect(open).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--native-color-tab-pill"),
+      );
+      await expect(open).toHaveCSS(
+        "color",
+        await tokenColour(page, "--native-color-on-tab-pill"),
+      );
+      await expect(open.locator("svg")).toHaveCSS(
+        "color",
+        await tokenColour(page, "--native-color-on-tab-pill"),
+      );
+      await expect(idle.locator("svg")).toHaveCSS(
+        "color",
+        await tokenColour(page, "--color-muted"),
+      );
+    });
+
+    test("rings the section row that keyboard focus reaches", async ({
+      page,
+    }) => {
+      await page.setViewportSize(TWO_PANES);
+      await page.goto("/settings/general");
+      const appearance = page
+        .getByRole("navigation", { name: "Settings sections" })
+        .getByRole("link", { name: "Appearance" });
+
+      await appearance.focus();
+      await page.keyboard.press("Shift+Tab");
+      await page.keyboard.press("Tab");
+
+      await expect(appearance).toBeFocused();
+      await expect(appearance).not.toHaveCSS("outline-style", "none");
     });
 
     for (const { route, heading } of LIST_HEADINGS) {
