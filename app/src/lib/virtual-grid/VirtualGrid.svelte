@@ -2,6 +2,8 @@
   import { onMount, type Snippet, tick } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { shownScaleOf } from "#lib/page/shown-scale.ts";
+
   import { columnsOf, optionId, type Reveal } from "./grid-keys";
   import { rowWindow, type Seen } from "./row-window";
   import { scrollerOf } from "./scroller";
@@ -152,15 +154,20 @@
     return { at, listed };
   }
 
-  function measured(grid: HTMLUListElement): Measure | undefined {
-    const rows = measuredRows(grid);
+  function measured(
+    grid: HTMLUListElement,
+    scale: number,
+  ): Measure | undefined {
+    const rows = measuredRows(grid, scale);
     if (rows === undefined) {
       return undefined;
     }
     return {
       ...rows,
       headingStride:
-        measuredHeadingStride(grid) ?? measure?.headingStride ?? rows.rowStride,
+        measuredHeadingStride(grid, scale) ??
+        measure?.headingStride ??
+        rows.rowStride,
     };
   }
 
@@ -172,18 +179,26 @@
     return Number.isNaN(rowGap) ? 0 : rowGap;
   }
 
-  function strideFrom(item: Element, next: Element | null): number {
+  function strideFrom(
+    item: Element,
+    next: Element | null,
+    scale: number,
+  ): number {
     const top = item.getBoundingClientRect().top;
     return next === null
-      ? item.getBoundingClientRect().height + rowGapOf(item.parentElement)
-      : next.getBoundingClientRect().top - top;
+      ? item.getBoundingClientRect().height / scale +
+          rowGapOf(item.parentElement)
+      : (next.getBoundingClientRect().top - top) / scale;
   }
 
-  function measuredHeadingStride(grid: HTMLUListElement): number | undefined {
+  function measuredHeadingStride(
+    grid: HTMLUListElement,
+    scale: number,
+  ): number | undefined {
     const heading = grid.querySelector(":scope > [data-heading]");
     return heading === null
       ? undefined
-      : strideFrom(heading, heading.nextElementSibling);
+      : strideFrom(heading, heading.nextElementSibling, scale);
   }
 
   function rowAfter(first: Element, columns: number): Element | null {
@@ -196,6 +211,7 @@
 
   function measuredRows(
     grid: HTMLUListElement,
+    scale: number,
   ): Pick<Measure, "columns" | "rowStride"> | undefined {
     const columns = columnsOf(grid);
     const rows = [...grid.querySelectorAll(":scope > :not([data-heading])")];
@@ -209,14 +225,14 @@
     if (measuredPair !== undefined) {
       return {
         columns,
-        rowStride: strideFrom(measuredPair.row, measuredPair.next),
+        rowStride: strideFrom(measuredPair.row, measuredPair.next, scale),
       };
     }
     const isPartDrawn = grid.childElementCount < count;
     if (isPartDrawn && measure?.columns === columns) {
       return measure;
     }
-    return { columns, rowStride: strideFrom(first, null) };
+    return { columns, rowStride: strideFrom(first, null, scale) };
   }
 
   async function look(): Promise<void> {
@@ -233,9 +249,10 @@
     }
     const shownFrame = frame;
     const grid = list;
-    const top = -shownFrame.getBoundingClientRect().top;
-    seen = { top, bottom: top + window.innerHeight };
-    const latest = measured(grid);
+    const scale = shownScaleOf(grid);
+    const top = -shownFrame.getBoundingClientRect().top / scale;
+    seen = { top, bottom: top + window.innerHeight / scale };
+    const latest = measured(grid, scale);
     if (latest !== undefined && !isSameMeasure(latest, measure)) {
       measure = latest;
       onColumns?.(latest.columns);
@@ -244,19 +261,26 @@
     return shownFrame.isConnected && (await remeasureRows(shownFrame, grid));
   }
 
-  function drawnSizeOf(row: Element, index: number): number | undefined {
+  function drawnSizeOf(
+    row: Element,
+    index: number,
+    scale: number,
+  ): number | undefined {
     const next = row.nextElementSibling;
     if (next !== null) {
-      return strideFrom(row, next);
+      return strideFrom(row, next, scale);
     }
-    return index === count - 1 ? row.getBoundingClientRect().height : undefined;
+    return index === count - 1
+      ? row.getBoundingClientRect().height / scale
+      : undefined;
   }
 
   function drawnRowSizes(grid: HTMLUListElement): ReadonlyMap<string, number> {
+    const scale = shownScaleOf(grid);
     return new Map(
       [...grid.children].flatMap((row, offset) => {
         const item = drawnItems[offset];
-        const size = drawnSizeOf(row, drawn.start + offset);
+        const size = drawnSizeOf(row, drawn.start + offset, scale);
         return item === undefined || size === undefined
           ? []
           : [[key(item), size] as const];

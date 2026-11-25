@@ -16,6 +16,7 @@ const TEN_THOUSAND = 10_000;
 const COLUMNS = 4;
 const LABEL = "Samples";
 const FRAMES_TO_SETTLE = 3;
+const SHOWN_SCALE = 0.5;
 
 const cell = createRawSnippet((sample: () => Sample) => ({
   render: () => `<p class="block-row">${sample().name}</p>`,
@@ -36,6 +37,17 @@ afterEach(() => {
   window.scrollTo(0, 0);
 });
 
+function scaledDown(): HTMLDivElement {
+  const holder = document.createElement("div");
+  holder.style.transform = `scale(${String(SHOWN_SCALE)})`;
+  holder.style.transformOrigin = "0 0";
+  document.body.append(holder);
+  onTestFinished(() => {
+    holder.remove();
+  });
+  return holder;
+}
+
 async function renderGrid(
   count: number,
   options: {
@@ -43,20 +55,25 @@ async function renderGrid(
     total?: number;
     onNearEnd?: () => void;
     cell?: typeof cell;
+    baseElement?: HTMLElement;
   } = {},
 ) {
-  const screen = await render(VirtualGrid<Sample>, {
-    items: samples(count),
-    key: (sample: Sample) => sample.id,
-    label: LABEL,
-    isComplete: options.isComplete ?? true,
-    ...(options.total === undefined ? {} : { total: options.total }),
-    ...(options.onNearEnd === undefined
-      ? {}
-      : { onNearEnd: options.onNearEnd }),
-    cell: options.cell ?? cell,
-    class: "grid-cols-4 gap-lg",
-  });
+  const screen = await render(
+    VirtualGrid<Sample>,
+    {
+      items: samples(count),
+      key: (sample: Sample) => sample.id,
+      label: LABEL,
+      isComplete: options.isComplete ?? true,
+      ...(options.total === undefined ? {} : { total: options.total }),
+      ...(options.onNearEnd === undefined
+        ? {}
+        : { onNearEnd: options.onNearEnd }),
+      cell: options.cell ?? cell,
+      class: "grid-cols-4 gap-lg",
+    },
+    { baseElement: options.baseElement ?? document.body },
+  );
   const list = screen.getByRole("list", { name: LABEL });
   await expect.element(list.getByRole("listitem").first()).toBeVisible();
   return { screen, list };
@@ -879,4 +896,45 @@ test("tells its one column once while scrolling through rows of different height
 
   expect(frame.getBoundingClientRect().top).toBeLessThan(0);
   expect(told.mock.calls).toEqual([[1]]);
+});
+
+test("makes room for every row at its laid out size while drawn scaled down", async () => {
+  const { list } = await renderGrid(TEN_THOUSAND, {
+    cell: shortCell,
+    baseElement: scaledDown(),
+  });
+  await settled();
+  const rowGap = Number.parseFloat(getComputedStyle(list.element()).rowGap);
+
+  const frame = list.element().parentElement;
+
+  expect(frame?.offsetHeight).toBe(
+    (TEN_THOUSAND / COLUMNS) * (SHORT_ROW + rowGap),
+  );
+});
+
+test("makes room for single-column rows at their laid out heights while drawn scaled down", async () => {
+  const rows = 9;
+
+  const { frame } = await renderRows({
+    items: samples(rows),
+    cell: mixedCell,
+    baseElement: scaledDown(),
+  });
+
+  expect(frame.offsetHeight).toBe(mixedTopOf(rows));
+});
+
+test("lays out every row on screen while drawn scaled down", async () => {
+  const { list } = await renderGrid(TEN_THOUSAND, {
+    cell: shortCell,
+    baseElement: scaledDown(),
+  });
+  await settled();
+
+  const last = list.getByRole("listitem").elements().at(-1);
+
+  expect(last?.getBoundingClientRect().bottom).toBeGreaterThanOrEqual(
+    window.innerHeight,
+  );
 });
