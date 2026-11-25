@@ -260,13 +260,14 @@ mod tests {
         };
 
         read_at_most(books, &overlap, |&book| {
+            let entered_after_slow = slow_reader_has_ended.load(Ordering::SeqCst);
             let entered = reading.enter();
             let is_slow = is_an_extra_reader() && is_first_to_claim(&slow_reader_is_claimed);
             let seen = Seen {
                 book,
                 is_slow,
                 in_flight_at_entry: entered.in_flight_at_entry(),
-                entered_after_slow: slow_reader_has_ended.load(Ordering::SeqCst),
+                entered_after_slow,
                 thread: thread::current().id(),
             };
             if is_slow {
