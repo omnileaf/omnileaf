@@ -114,7 +114,7 @@ The `portable` group holds the Rust checks whose answer is the same everywhere, 
 
 - formatting of the workspace and of the fuzz crate, and clippy over the fuzz crate;
 - the WebAssembly build of `omnileaf-sync-proto`;
-- `cargo deny`: every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories;
+- `cargo deny`: every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io (apart from a Tauri revision pinned in `[patch.crates-io]` while a fix waits for a release), and have no open security advisories;
 - `cargo xtask policy`, the content policy check below;
 - `cargo xtask licences --check`, the licence catalogue check below;
 - `cargo xtask vendor-check`, which checks offline that every file under `vendor/` sits in the pinned libarchive folder and matches its `MANIFEST` hash, so vendored files are never edited by hand; CI also runs `cargo xtask vendor-check --upstream`, which downloads the pinned tarball and compares the files with it, on `main` and whenever `vendor/` changes;

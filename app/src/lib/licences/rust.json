@@ -202,14 +202,6 @@
     },
     {
       "name": "base64",
-      "version": "0.22.1",
-      "licence": "MIT OR Apache-2.0",
-      "texts": [
-        29
-      ]
-    },
-    {
-      "name": "base64",
       "version": "0.23.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
@@ -218,7 +210,7 @@
     },
     {
       "name": "bit-set",
-      "version": "0.8.0",
+      "version": "0.11.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         31
@@ -226,7 +218,7 @@
     },
     {
       "name": "bit-vec",
-      "version": "0.8.0",
+      "version": "0.10.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         31
@@ -259,6 +251,14 @@
     {
       "name": "block-buffer",
       "version": "0.10.4",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        32
+      ]
+    },
+    {
+      "name": "block-buffer",
+      "version": "0.12.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         32
@@ -363,7 +363,7 @@
     },
     {
       "name": "cargo-platform",
-      "version": "0.1.9",
+      "version": "0.3.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         34
@@ -371,7 +371,7 @@
     },
     {
       "name": "cargo_metadata",
-      "version": "0.19.2",
+      "version": "0.23.1",
       "licence": "MIT",
       "texts": [
         125
@@ -426,6 +426,14 @@
       ]
     },
     {
+      "name": "const-oid",
+      "version": "0.10.2",
+      "licence": "Apache-2.0 OR MIT",
+      "texts": [
+        32
+      ]
+    },
+    {
       "name": "constant_time_eq",
       "version": "0.4.2",
       "licence": "CC0-1.0 OR MIT-0 OR Apache-2.0",
@@ -443,7 +451,7 @@
     },
     {
       "name": "cookie",
-      "version": "0.18.2",
+      "version": "0.18.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         22
@@ -546,8 +554,16 @@
       ]
     },
     {
+      "name": "crypto-common",
+      "version": "0.2.2",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        32
+      ]
+    },
+    {
       "name": "cssparser",
-      "version": "0.37.0",
+      "version": "0.38.0",
       "licence": "MPL-2.0",
       "texts": [
         146
@@ -658,6 +674,14 @@
       ]
     },
     {
+      "name": "digest",
+      "version": "0.11.3",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        32
+      ]
+    },
+    {
       "name": "dirs",
       "version": "7.0.0",
       "licence": "MIT OR Apache-2.0",
@@ -723,7 +747,7 @@
     },
     {
       "name": "dom_query",
-      "version": "0.28.0",
+      "version": "0.29.0",
       "licence": "MIT",
       "texts": [
         120
@@ -988,7 +1012,7 @@
     },
     {
       "name": "form_urlencoded",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         29
@@ -1308,7 +1332,7 @@
     },
     {
       "name": "html5ever",
-      "version": "0.39.0",
+      "version": "0.40.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         29
@@ -1344,6 +1368,14 @@
       "licence": "MIT OR Apache-2.0",
       "texts": [
         29
+      ]
+    },
+    {
+      "name": "hybrid-array",
+      "version": "0.4.15",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        32
       ]
     },
     {
@@ -1951,7 +1983,7 @@
     },
     {
       "name": "markup5ever",
-      "version": "0.39.0",
+      "version": "0.40.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         29
@@ -2015,7 +2047,7 @@
     },
     {
       "name": "muda",
-      "version": "0.20.0",
+      "version": "0.21.2",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         29
@@ -2398,8 +2430,24 @@
       ]
     },
     {
+      "name": "phf",
+      "version": "0.14.0",
+      "licence": "MIT",
+      "texts": [
+        131
+      ]
+    },
+    {
       "name": "phf_generator",
       "version": "0.13.1",
+      "licence": "MIT",
+      "texts": [
+        131
+      ]
+    },
+    {
+      "name": "phf_generator",
+      "version": "0.14.0",
       "licence": "MIT",
       "texts": [
         131
@@ -2414,8 +2462,24 @@
       ]
     },
     {
+      "name": "phf_macros",
+      "version": "0.14.0",
+      "licence": "MIT",
+      "texts": [
+        131
+      ]
+    },
+    {
       "name": "phf_shared",
       "version": "0.13.1",
+      "licence": "MIT",
+      "texts": [
+        131
+      ]
+    },
+    {
+      "name": "phf_shared",
+      "version": "0.14.0",
       "licence": "MIT",
       "texts": [
         131
@@ -2819,7 +2883,7 @@
     },
     {
       "name": "selectors",
-      "version": "0.38.0",
+      "version": "0.41.0",
       "licence": "MPL-2.0",
       "texts": [
         147
@@ -2931,7 +2995,7 @@
     },
     {
       "name": "servo_arc",
-      "version": "0.4.3",
+      "version": "0.5.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         29
@@ -2948,6 +3012,14 @@
     {
       "name": "sha2",
       "version": "0.10.9",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        32
+      ]
+    },
+    {
+      "name": "sha2",
+      "version": "0.11.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         32
@@ -3099,7 +3171,7 @@
     },
     {
       "name": "string_cache",
-      "version": "0.9.0",
+      "version": "0.11.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         29
@@ -3187,7 +3259,7 @@
     },
     {
       "name": "tauri",
-      "version": "2.12.3",
+      "version": "2.12.7",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         43
@@ -3195,7 +3267,7 @@
     },
     {
       "name": "tauri-codegen",
-      "version": "2.7.4",
+      "version": "2.7.6",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         43
@@ -3203,7 +3275,7 @@
     },
     {
       "name": "tauri-macros",
-      "version": "2.7.4",
+      "version": "2.7.6",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         43
@@ -3251,7 +3323,7 @@
     },
     {
       "name": "tauri-runtime",
-      "version": "2.12.1",
+      "version": "2.12.4",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         43
@@ -3259,7 +3331,7 @@
     },
     {
       "name": "tauri-runtime-wry",
-      "version": "2.12.1",
+      "version": "2.12.5",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         43
@@ -3283,7 +3355,7 @@
     },
     {
       "name": "tauri-utils",
-      "version": "2.10.2",
+      "version": "2.10.4",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         43
@@ -3572,7 +3644,7 @@
     },
     {
       "name": "tray-icon",
-      "version": "0.25.1",
+      "version": "0.26.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         29
@@ -3662,7 +3734,7 @@
     },
     {
       "name": "url",
-      "version": "2.5.8",
+      "version": "2.5.9",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         29
@@ -3783,7 +3855,7 @@
     },
     {
       "name": "web_atoms",
-      "version": "0.2.6",
+      "version": "0.3.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         29
@@ -3959,7 +4031,7 @@
     },
     {
       "name": "windows-sys",
-      "version": "0.59.0",
+      "version": "0.52.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         7
@@ -4071,7 +4143,7 @@
     },
     {
       "name": "wry",
-      "version": "0.57.0",
+      "version": "0.57.3",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         29
