@@ -35,7 +35,6 @@
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import {
     ANDROID_CHOICE_CARD,
-    FLUSH_FOOTER,
     FLUSH_NOTE,
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -238,9 +237,6 @@
         chosen={shownOpensOn}
         onChoose={chooseOpensOn}
       />
-      <p class={FLUSH_FOOTER}>
-        {m.library_opens_on_help()}
-      </p>
     </div>
   {:else if isAndroid}
     <section class={["mbs-lg", ANDROID_CHOICE_CARD]}>
@@ -248,14 +244,13 @@
         bleed=""
         title={m.library_opens_on()}
         value={opensOnLabel}
-        help={m.library_opens_on_help()}
         choices={opensOnChoices}
         chosen={shownOpensOn}
         onChoose={chooseOpensOn}
       />
     </section>
   {:else if ios.isOn}
-    <div class="mbs-lg flex flex-col gap-sm">
+    <div class="mbs-lg">
       <GroupedChoiceRow
         title={m.library_opens_on()}
         value={opensOnLabel}
@@ -263,14 +258,9 @@
         chosen={shownOpensOn}
         onChoose={chooseOpensOn}
       />
-      <p class="px-sm text-native-list-sub/native-list-sub text-muted">
-        {m.library_opens_on_help()}
-      </p>
     </div>
   {:else}
-    <section
-      class="mbs-lg flex flex-col gap-sm rounded-card border border-border bg-card p-md"
-    >
+    <section class="mbs-lg rounded-card border border-border bg-card p-md">
       <div
         class="flex flex-col gap-sm desktop:medium:grid desktop:medium:grid-cols-setting-grid desktop:medium:items-center desktop:medium:gap-x-md"
       >
@@ -286,7 +276,6 @@
           onChoose={chooseOpensOn}
         />
       </div>
-      <p class="text-detail text-muted">{m.library_opens_on_help()}</p>
     </section>
   {/if}
   <NewCategoryDialog
