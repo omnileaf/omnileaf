@@ -1,28 +1,19 @@
 import type { Locator, Page } from "@playwright/test";
 
 import english from "../../messages/en.json" with { type: "json" };
-import type {
-  LibraryCategory,
-  LibraryListing,
-} from "../../src/lib/ipc/bindings.ts";
-import {
-  filtersOn,
-  NEW_LIBRARY_LISTING,
-} from "../../src/lib/library/library-listing.ts";
+import { filtersOn } from "../../src/lib/library/library-listing.ts";
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  emptyCategory,
+  MANGA_AND_TEST,
+  noMatches,
+  UNREAD_ONLY,
+} from "./library-empty.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
 const NOTE_TO_ACTION = 16;
 const LIBRARY = sampleSeries(3);
-const CATEGORIES = [
-  { id: "manga", name: "Manga" },
-  { id: "test", name: "Test" },
-] as LibraryCategory[];
-const UNREAD_ONLY: LibraryListing = {
-  ...NEW_LIBRARY_LISTING,
-  filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
-};
 
 interface EmptyScreen {
   readonly name: string;
@@ -49,7 +40,7 @@ const WITH_AN_EMPTY_CATEGORY: FakeBackend = {
   ...DEFAULT_BACKEND,
   librarySeries: () => ({ series: [...LIBRARY], next: null }),
   librarySeriesCount: () => LIBRARY.length,
-  libraryCategories: () => [...CATEGORIES],
+  libraryCategories: () => [...MANGA_AND_TEST],
   libraryTabs: () => [
     { id: { kind: "all" }, isHidden: false },
     { id: { kind: "category", id: "manga" }, isHidden: false },
@@ -115,20 +106,18 @@ const SCREENS: readonly EmptyScreen[] = [
     open: openLibraryOnTest,
     backend: WITH_AN_EMPTY_CATEGORY,
     action: (page) =>
-      page
-        .getByRole("region", {
-          name: english.library_category_empty.replace("{name}", "Test"),
-        })
-        .getByRole("button", { name: english.library_add_series }),
+      emptyCategory(page, "Test").getByRole("button", {
+        name: english.library_add_series,
+      }),
   },
   {
     name: "a library filtered to nothing",
     open: goTo("/"),
     backend: FILTERED_TO_NOTHING,
     action: (page) =>
-      page
-        .getByRole("region", { name: english.library_no_matches_title })
-        .getByRole("button", { name: english.library_clear_all_filters }),
+      noMatches(page).getByRole("button", {
+        name: english.library_clear_all_filters,
+      }),
   },
 ];
 

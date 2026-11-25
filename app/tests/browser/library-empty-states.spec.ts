@@ -2,7 +2,6 @@ import type { Locator, Page } from "@playwright/test";
 
 import english from "../../messages/en.json" with { type: "json" };
 import type {
-  LibraryCategory,
   LibraryFilter,
   LibraryListing,
 } from "../../src/lib/ipc/bindings.ts";
@@ -23,6 +22,13 @@ import {
   expect,
   test,
 } from "./fixtures.ts";
+import {
+  emptyCategory,
+  MANGA_AND_TEST,
+  noMatches,
+  nothingNew,
+  UNREAD_ONLY,
+} from "./library-empty.ts";
 import { openSortAndFilter } from "./library-controls.ts";
 import {
   pagedSeries,
@@ -32,14 +38,6 @@ import {
 
 const LIBRARY = sampleSeries(6);
 const MANGA = LIBRARY.slice(0, 3);
-const CATEGORIES = [
-  { id: "manga", name: "Manga" },
-  { id: "test", name: "Test" },
-] as LibraryCategory[];
-const UNREAD_ONLY: LibraryListing = {
-  ...NEW_LIBRARY_LISTING,
-  filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
-};
 
 const ADD_SERIES = english.library_add_series;
 
@@ -60,7 +58,7 @@ function backendHolding(library: readonly WireSeries[]): FakeBackend {
     librarySeries: (after, listing) =>
       pagedSeries(() => letThrough(library, listing.filter))(after, listing),
     librarySeriesCount: (filter) => letThrough(library, filter).length,
-    libraryCategories: () => [...CATEGORIES],
+    libraryCategories: () => [...MANGA_AND_TEST],
     libraryTabs: () => [
       { id: { kind: "all" }, isHidden: false },
       { id: { kind: "newChapters" }, isHidden: false },
@@ -84,10 +82,6 @@ function backendHolding(library: readonly WireSeries[]): FakeBackend {
 
 function tabs(page: Page) {
   return page.getByRole("tablist", { name: "Categories" });
-}
-
-function noMatches(page: Page) {
-  return page.getByRole("region", { name: english.library_no_matches_title });
 }
 
 function libraryHeading(page: Page) {
@@ -132,16 +126,6 @@ function libraryEmptyShown(page: Page): Promise<number> {
       (window as Window & { libraryEmptyShown?: string[] }).libraryEmptyShown
         ?.length ?? 0,
   );
-}
-
-function nothingNew(page: Page) {
-  return page.getByRole("region", { name: english.library_new_chapters_empty });
-}
-
-function emptyCategory(page: Page, name: string) {
-  return page.getByRole("region", {
-    name: english.library_category_empty.replace("{name}", name),
-  });
 }
 
 async function chooseUnreadOnly(page: Page): Promise<void> {

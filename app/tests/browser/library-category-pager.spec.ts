@@ -1,14 +1,11 @@
 import type { ElementHandle, Locator, Page } from "@playwright/test";
 
-import english from "../../messages/en.json" with { type: "json" };
 import {
   DEFAULT_LIBRARY_VIEW,
   type LibraryCategory,
-  type LibraryListing,
   type LibraryTab,
   type Platform,
 } from "../../src/lib/ipc/bindings.ts";
-import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -21,6 +18,12 @@ import {
   test,
   viewportOf,
 } from "./fixtures.ts";
+import {
+  emptyCategory,
+  noMatches,
+  nothingNew,
+  UNREAD_ONLY,
+} from "./library-empty.ts";
 import { entry } from "./history-entries.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
@@ -90,10 +93,6 @@ const UNFINISHED = Array.from({ length: 5 }, (_, index) =>
     pageCount: 40,
   }),
 );
-const UNREAD_ONLY: LibraryListing = {
-  ...NEW_LIBRARY_LISTING,
-  filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
-};
 
 function tabs(page: Page) {
   return page.getByRole("tablist", { name: "Categories" });
@@ -123,20 +122,6 @@ function seriesList(page: Page) {
 
 function continueRow(page: Page) {
   return page.getByRole("region", { name: "Continue reading" });
-}
-
-function noMatches(page: Page) {
-  return page.getByRole("region", { name: english.library_no_matches_title });
-}
-
-function nothingNew(page: Page) {
-  return page.getByRole("region", { name: english.library_new_chapters_empty });
-}
-
-function emptyCategory(page: Page, name: string) {
-  return page.getByRole("region", {
-    name: english.library_category_empty.replace("{name}", name),
-  });
 }
 
 function pageBeside(page: Page) {
