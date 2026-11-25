@@ -127,6 +127,17 @@ function emptyCategory(page: Page, name: string) {
   });
 }
 
+async function chooseUnreadOnly(page: Page): Promise<void> {
+  const segment = page.getByRole("radio", { name: "Unread", exact: true });
+  const readState = page.getByRole("combobox", { name: "Read state" });
+  await expect(segment.or(readState)).toBeVisible();
+  if (await readState.isVisible()) {
+    await readState.selectOption({ label: "Unread" });
+  } else {
+    await segment.click();
+  }
+}
+
 async function openOn(page: Page, tab: string): Promise<void> {
   await page.goto("/");
   await tabs(page).getByRole("tab", { name: tab }).click();
@@ -398,14 +409,13 @@ test.describe(
       });
 
       await openSortAndFilter(page);
-      await page.getByRole("radio", { name: "Unread", exact: true }).click();
+      await chooseUnreadOnly(page);
       await expect.poll(() => filteredReads).toBeGreaterThan(0);
-      await page.evaluate(
-        () =>
-          new Promise((drawn) => {
-            requestAnimationFrame(() => requestAnimationFrame(drawn));
-          }),
-      );
+      await expect
+        .poll(
+          async () => (await commandsAsked(page)).unanswered - releases.length,
+        )
+        .toBe(0);
 
       expect(
         await page.evaluate(
