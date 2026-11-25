@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { CircleAlert, Copy, ExternalLink, Globe, Save } from "@lucide/svelte";
+  import { CircleAlert, Copy, Globe, Save } from "@lucide/svelte";
+  import type { Component } from "svelte";
 
-  import AboutButtonRow from "#lib/about/AboutButtonRow.svelte";
   import { Alert, AlertTitle } from "#lib/components/ui/alert/index.ts";
-  import { Button } from "#lib/components/ui/button/index.ts";
-  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { IconName } from "#lib/icons/names.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import CardWayRow from "./CardWayRow.svelte";
+  import FlushWayRow from "./FlushWayRow.svelte";
+  import type { WayRowProps } from "./report-row-props.ts";
   import {
     CurrentReportRowsLook,
-    ICON_TILE,
     REPORT_HEADINGS,
     REPORT_LISTS,
-    TILE_ICON_SIZE,
+    type ReportRowsLook,
   } from "./report-rows-look.ts";
   import type { ReportSharing, ShareWay } from "./report-sharing.svelte";
   import { failureMessage } from "./share-failure";
@@ -51,6 +51,11 @@
     opensBrowser: false,
   };
 
+  const WAY_ROWS = {
+    flush: FlushWayRow,
+    card: CardWayRow,
+  } satisfies Record<ReportRowsLook, Component<WayRowProps>>;
+
   let { sharing, canSave }: { sharing: ReportSharing; canSave: boolean } =
     $props();
 
@@ -61,6 +66,7 @@
 
   const headingId = $props.id();
   const rowsLook = new CurrentReportRowsLook();
+  const WayRow = $derived(WAY_ROWS[rowsLook.current]);
 
   function shareBy(way: ShareWay): void {
     void sharing.share(way);
@@ -76,48 +82,17 @@
     {m.report_other_ways_to_send()}
   </h2>
   <ul class={REPORT_LISTS[rowsLook.current]}>
-    {#each ways as { way, icon: Icon, iconName, label, opensBrowser } (way)}
+    {#each ways as { way, icon, iconName, label, opensBrowser } (way)}
       <li>
-        {#if rowsLook.current === "flush"}
-          <AboutButtonRow
-            icon={Icon}
-            {iconName}
-            label={label()}
-            look="android"
-            class={ROW_FOCUS_RING}
-            {opensBrowser}
-            onPress={() => {
-              shareBy(way);
-            }}
-          />
-        {:else}
-          <Button
-            type="button"
-            look="row"
-            class={[
-              "gap-md px-lg py-md inline-full min-block-touch-target",
-              ROW_FOCUS_RING,
-            ]}
-            onclick={() => {
-              shareBy(way);
-            }}
-          >
-            <span aria-hidden="true" class={ICON_TILE}>
-              <Icon size={TILE_ICON_SIZE} />
-            </span>
-            <span class="flex-1 font-medium expanded:font-semibold"
-              >{label()}</span
-            >
-            {#if opensBrowser}
-              <ExternalLink
-                role="img"
-                aria-label={m.about_opens_in_browser()}
-                size={TILE_ICON_SIZE}
-                class="shrink-0 text-muted"
-              />
-            {/if}
-          </Button>
-        {/if}
+        <WayRow
+          {icon}
+          {iconName}
+          label={label()}
+          {opensBrowser}
+          onPress={() => {
+            shareBy(way);
+          }}
+        />
       </li>
     {/each}
   </ul>
