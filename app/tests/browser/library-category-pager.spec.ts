@@ -147,8 +147,8 @@ function skipUnlessPhone(page: Page, hasTouch: boolean | undefined): void {
 }
 
 interface RowSpan {
-  readonly start: number;
-  readonly end: number;
+  readonly left: number;
+  readonly right: number;
 }
 
 async function firstRowOf(covers: Locator): Promise<RowSpan> {
@@ -166,8 +166,8 @@ async function firstRowOf(covers: Locator): Promise<RowSpan> {
     ({ top }) => Math.abs(top - first.top) < SAME_ROW_PX,
   );
   return {
-    start: Math.min(...row.map(({ left }) => left)),
-    end: Math.max(...row.map(({ right }) => right)),
+    left: Math.min(...row.map(({ left }) => left)),
+    right: Math.max(...row.map(({ right }) => right)),
   };
 }
 
@@ -804,8 +804,8 @@ test.describe("on tablets and desktops", () => {
     const swiping = await firstRowOf(chosenCovers(page));
     await drag.release();
 
-    expect(swiping.start).toBeCloseTo(atRest.start - SWIPE_PX, 0);
-    expect(swiping.end).toBeCloseTo(atRest.end - SWIPE_PX, 0);
+    expect(swiping.left).toBeCloseTo(atRest.left - SWIPE_PX, 0);
+    expect(swiping.right).toBeCloseTo(atRest.right - SWIPE_PX, 0);
   });
 });
 
@@ -822,8 +822,8 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
 
     const covers = await firstRowOf(chosenCovers(page));
 
-    expect(covers.start).toBeCloseTo(column.x + gutter, 0);
-    expect(covers.end).toBeCloseTo(column.x + column.width - gutter, 0);
+    expect(covers.left).toBeCloseTo(column.x + gutter, 0);
+    expect(covers.right).toBeCloseTo(column.x + column.width - gutter, 0);
   });
 
   for (const { way, from, listed, by, incoming } of [
@@ -857,8 +857,8 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
       const column = await boxOf(page.getByRole("main"));
       const gap = await lengthOf(page, "--spacing-pager-gap");
       const atRest = await firstRowOf(chosenCovers(page));
-      const startInset = atRest.start - column.x;
-      const endInset = column.x + column.width - atRest.end;
+      const leftInset = atRest.left - column.x;
+      const rightInset = column.x + column.width - atRest.right;
 
       const drag = await beginDrag(page, seriesList(page));
       await drag.to(by);
@@ -872,11 +872,11 @@ test.describe("each category as a page of its own", { tag: "@native" }, () => {
       const beside = await firstRowOf(besideCovers(page, incomingTitle));
       await drag.release();
 
-      const [leading, trailing] = by < 0 ? [chosen, beside] : [beside, chosen];
-      expect(chosen.start).toBeCloseTo(atRest.start + by, 0);
-      expect(chosen.end).toBeCloseTo(atRest.end + by, 0);
+      const [onLeft, onRight] = by < 0 ? [chosen, beside] : [beside, chosen];
+      expect(chosen.left).toBeCloseTo(atRest.left + by, 0);
+      expect(chosen.right).toBeCloseTo(atRest.right + by, 0);
       expect(
-        trailing.start - startInset - (leading.end + endInset),
+        onRight.left - leftInset - (onLeft.right + rightInset),
       ).toBeCloseTo(gap, 0);
     });
   }
