@@ -21,7 +21,7 @@ use crate::{
     device_class::{IS_MOBILE, MEBIBYTE},
     file_stamp::{FileStamp, page_bytes},
     library_layout::{FoundBook, folder_name},
-    overlapped_reads::read_at_most,
+    overlapped_reads::{Overlap, Overlapped, read_at_most},
     placement::{Placement, place_book},
     saturating_u32::saturating_u32,
     scan_target::Target,
@@ -42,6 +42,10 @@ const MEBIBYTES_THAT_NEVER_LIMIT_A_DESKTOP: u64 = 64 * 1024;
 const ONE_AT_A_TIME: NonZeroUsize = NonZeroUsize::MIN;
 /// One archive at a time, since a phone's OS ends an app holding too much memory while an archive's index and comic details are decoded.
 const ARCHIVES_PARSED_AT_ONCE: usize = 1;
+
+fn is_timed_out(book: &Result<ScannedBook, UnreadableBook>) -> bool {
+    book.as_ref().is_err_and(UnreadableBook::has_timed_out)
+}
 
 #[derive(Clone)]
 pub(crate) struct BookReader {
@@ -78,12 +82,15 @@ impl BookReader {
     }
 
     fn read_each(&self, batch: &[FoundBook]) -> Vec<Result<ScannedBook, UnreadableBook>> {
-        let at_once = self.books_read_at_once();
-        let mut read = read_at_most(batch, at_once, |found| self.read_found_book(found));
-        let has_company = at_once.get().min(batch.len()) > ONE_AT_A_TIME.get();
-        if has_company {
-            self.read_again_what_timed_out(batch, &mut read);
-        }
+        let overlap = Overlap {
+            at_once: self.books_read_at_once(),
+            is_slow: is_timed_out,
+        };
+        let Overlapped {
+            mut read,
+            in_company,
+        } = read_at_most(batch, &overlap, |found| self.read_found_book(found));
+        self.read_again_what_timed_out(batch, &mut read, in_company);
         for (found, book) in batch.iter().zip(&read) {
             if let Err(error) = book
                 && !error.is_hidden()
@@ -107,9 +114,10 @@ impl BookReader {
         &self,
         batch: &[FoundBook],
         read: &mut [Result<ScannedBook, UnreadableBook>],
+        in_company: usize,
     ) {
-        for (found, book) in batch.iter().zip(read) {
-            if book.as_ref().is_err_and(UnreadableBook::has_timed_out) {
+        for (found, book) in batch.iter().zip(read).take(in_company) {
+            if is_timed_out(book) {
                 self.has_timed_out.store(true, Ordering::Relaxed);
                 *book = self.read_found_book(found);
             }
@@ -262,6 +270,13 @@ mod tests {
     const A_THIRD_OPEN: u64 = BOOKS_THE_BUDGET_HOLDS + 1;
     const WAIT_FOR_COMPANY: Duration = Duration::from_secs(2);
     const WAIT_FOR_A_PEER: Duration = Duration::from_millis(50);
+    const WAITING_FOR_A_PEER: Pacing = Pacing::UntilCompany {
+        longest: WAIT_FOR_A_PEER,
+    };
+    const WAITING_FOR_EVERY_READER: Pacing = Pacing::UntilMostAtOnce {
+        at_once: BOOKS_READ_AT_ONCE.get() as u64,
+        longest: WAIT_FOR_COMPANY,
+    };
     const WAIT_FOR_A_SECOND_OPEN: Duration = Duration::from_millis(100);
     const UNLISTED_FILES: usize = 4;
     const WAIT_FOR_A_THIRD_OPEN: Duration = Duration::from_millis(300);
@@ -297,13 +312,21 @@ mod tests {
     }
 
     #[derive(Debug)]
+    struct Opened {
+        path: PathBuf,
+        in_flight_at_entry: u64,
+        after_a_timeout: bool,
+    }
+
+    #[derive(Debug)]
     struct PacedStorage {
         rooted: Rooted,
         pacing: Pacing,
         times_out_in_company: bool,
         is_hanging: AtomicBool,
+        has_timed_out: AtomicBool,
         in_flight: InFlight,
-        opened: Mutex<Vec<(PathBuf, u64)>>,
+        opened: Mutex<Vec<Opened>>,
     }
 
     impl PacedStorage {
@@ -315,10 +338,7 @@ mod tests {
             Self::new(scratch, Pacing::UntilMostAtOnce { at_once, longest }, false)
         }
 
-        fn timing_out_in_company(scratch: &ScratchFolder) -> Arc<Self> {
-            let pacing = Pacing::UntilCompany {
-                longest: WAIT_FOR_A_PEER,
-            };
+        fn timing_out_in_company(scratch: &ScratchFolder, pacing: Pacing) -> Arc<Self> {
             Self::new(scratch, pacing, true)
         }
 
@@ -328,6 +348,7 @@ mod tests {
                 pacing,
                 times_out_in_company,
                 is_hanging: AtomicBool::new(false),
+                has_timed_out: AtomicBool::new(false),
                 in_flight: InFlight::new(),
                 opened: Mutex::new(Vec::new()),
             })
@@ -345,7 +366,7 @@ mod tests {
             !self.opened.lock().unwrap().is_empty()
         }
 
-        fn take_opened(&self) -> Vec<(PathBuf, u64)> {
+        fn take_opened(&self) -> Vec<Opened> {
             mem::take(&mut self.opened.lock().unwrap())
         }
 
@@ -374,14 +395,16 @@ mod tests {
 
         fn open(&self, file: &Path) -> io::Result<File> {
             let entered = self.in_flight.enter();
-            self.opened
-                .lock()
-                .unwrap()
-                .push((file.to_path_buf(), entered.in_flight_at_entry()));
+            self.opened.lock().unwrap().push(Opened {
+                path: file.to_path_buf(),
+                in_flight_at_entry: entered.in_flight_at_entry(),
+                after_a_timeout: self.has_timed_out.load(Ordering::SeqCst),
+            });
             self.wait_to_open();
             if self.is_hanging.load(Ordering::SeqCst)
                 || (self.times_out_in_company && self.in_flight.has_company())
             {
+                self.has_timed_out.store(true, Ordering::SeqCst);
                 Err(io::ErrorKind::TimedOut.into())
             } else {
                 self.rooted.open(file)
@@ -579,7 +602,7 @@ mod tests {
     ) -> (Arc<PacedStorage>, BookReader, Vec<FoundBook>) {
         let books = archives_of(scratch, TWO_BATCHES);
         let (first, second) = books.split_at(BOOKS_PER_TEST_BATCH);
-        let storage = PacedStorage::timing_out_in_company(scratch);
+        let storage = PacedStorage::timing_out_in_company(scratch, WAITING_FOR_A_PEER);
         let reader = BookReader::sharing(
             target_over(storage.clone()),
             Arc::new(DecodePermits::new(1)),
@@ -602,7 +625,7 @@ mod tests {
         let most_open_at_once = storage
             .take_opened()
             .into_iter()
-            .map(|(_, open_at_once)| open_at_once)
+            .map(|opened| opened.in_flight_at_entry)
             .max();
         assert_eq!(most_open_at_once, Some(1));
     }
@@ -623,12 +646,56 @@ mod tests {
         let mut opened: Vec<PathBuf> = storage
             .take_opened()
             .into_iter()
-            .map(|(path, _)| path)
+            .map(|opened| opened.path)
             .collect();
         opened.sort();
         let mut books: Vec<PathBuf> = second.into_iter().map(|book| book.path).collect();
         books.sort();
         assert_eq!(opened, books);
+    }
+
+    #[test]
+    fn opens_every_book_after_the_first_timeout_alone_within_one_batch() {
+        let scratch = ScratchFolder::new("scan-alone-after-timeout-in-a-batch");
+        let books = archives_of(&scratch, TWO_BATCHES);
+        let storage = PacedStorage::timing_out_in_company(&scratch, WAITING_FOR_EVERY_READER);
+        let reader = BookReader::new(target_over(storage.clone()));
+
+        let read = reader.read_each(&books);
+
+        assert!(read.iter().all(Result::is_ok), "{read:?}");
+        let overlapped_after_a_timeout: Vec<PathBuf> = storage
+            .take_opened()
+            .into_iter()
+            .filter(|opened| opened.after_a_timeout && opened.in_flight_at_entry > 1)
+            .map(|opened| opened.path)
+            .collect();
+        assert_eq!(overlapped_after_a_timeout, Vec::<PathBuf>::new());
+    }
+
+    #[test]
+    fn keeps_the_books_of_a_batch_in_order_when_an_open_times_out() {
+        let scratch = ScratchFolder::new("scan-order-after-timeout-in-a-batch");
+        let books = archives_of(&scratch, TWO_BATCHES);
+        let storage = PacedStorage::timing_out_in_company(&scratch, WAITING_FOR_EVERY_READER);
+        let reader = BookReader::new(target_over(storage));
+
+        let read = reader.read_each(&books);
+
+        let read_locations: Vec<PathBuf> = read
+            .into_iter()
+            .map(|book| book.unwrap().file.location)
+            .collect();
+        let book_locations: Vec<PathBuf> = books
+            .iter()
+            .map(|book| {
+                book.path
+                    .strip_prefix(GENERATED_LIBRARY_NAME)
+                    .unwrap()
+                    .to_path_buf()
+            })
+            .collect();
+        assert_eq!(read_locations, book_locations);
     }
 
     #[test]
