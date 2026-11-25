@@ -41,7 +41,9 @@ export function tabSwipedTo({
   return stepOf(moved, direction);
 }
 
-const STAYS_PUT = "0px";
+export function pagesAlong(count: number, stride: string): string {
+  return `calc(${String(count)} * (${stride}))`;
+}
 
 export function settlesAt({
   moved,
@@ -52,9 +54,7 @@ export function settlesAt({
   stride: string;
   step: -1 | 0 | 1;
 }): string {
-  return step === 0
-    ? STAYS_PUT
-    : `calc(${String(Math.sign(moved))} * (${stride}))`;
+  return pagesAlong(step === 0 ? 0 : Math.sign(moved), stride);
 }
 
 const EDGE_PX = 24;

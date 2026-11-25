@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { isAcross, settlesAt, tabSwipedTo } from "./tab-swipe";
+import { isAcross, pagesAlong, settlesAt, tabSwipedTo } from "./tab-swipe";
 
 const WIDTH = 400;
 const STRIDE = "100% + 1rem";
@@ -42,9 +42,18 @@ test("settles a committed swipe one page stride on, in the direction it was drag
   expect([
     settlesAt({ moved: -120, stride: STRIDE, step: 1 }),
     settlesAt({ moved: 120, stride: STRIDE, step: -1 }),
-  ]).toEqual([`calc(-1 * (${STRIDE}))`, `calc(1 * (${STRIDE}))`]);
+  ]).toEqual([pagesAlong(-1, STRIDE), pagesAlong(1, STRIDE)]);
 });
 
 test("settles a swipe that does not commit back where it began", () => {
-  expect(settlesAt({ moved: -40, stride: STRIDE, step: 0 })).toBe("0px");
+  expect(settlesAt({ moved: -40, stride: STRIDE, step: 0 })).toBe(
+    pagesAlong(0, STRIDE),
+  );
+});
+
+test("lays pages a whole number of strides along, either way", () => {
+  expect([pagesAlong(2, STRIDE), pagesAlong(-1, STRIDE)]).toEqual([
+    `calc(2 * (${STRIDE}))`,
+    `calc(-1 * (${STRIDE}))`,
+  ]);
 });

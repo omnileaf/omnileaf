@@ -93,7 +93,7 @@
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
   import SeriesGroup from "#lib/library/SeriesGroup.svelte";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
-  import { swipesBetweenTabs } from "#lib/library/tab-swipe.ts";
+  import { pagesAlong, swipesBetweenTabs } from "#lib/library/tab-swipe.ts";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
   import type { EditedSeries } from "#lib/series/edited-series.ts";
@@ -1384,7 +1384,7 @@
                     : "invisible absolute inset-bs-none overflow-clip block-full inline-full in-data-swiping:visible"}
                   style:inset-inline-start={isChosen
                     ? undefined
-                    : `calc(${String(slot.offset)} * (${PAGE_STRIDE}))`}
+                    : pagesAlong(slot.offset, PAGE_STRIDE)}
                 >
                   <div
                     class={isChosen
