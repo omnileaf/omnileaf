@@ -86,12 +86,18 @@ function chosenTab(page: Page, name: string) {
   return tabs(page).getByRole("tab", { name });
 }
 
-function seriesList(page: Page) {
-  return page.getByRole("list", { name: "Series" });
+async function expectChosen(page: Page, name: string): Promise<void> {
+  await expect(chosenTab(page, name)).toHaveAttribute("aria-selected", "true");
 }
 
-function emptyTab(page: Page) {
-  return page.getByRole("main").getByRole("region");
+async function openEmptyTab(page: Page, name: string): Promise<void> {
+  await openLibrary(page);
+  await chosenTab(page, name).click();
+  await expect(noMatches(page)).toBeVisible();
+}
+
+function seriesList(page: Page) {
+  return page.getByRole("list", { name: "Series" });
 }
 
 function noMatches(page: Page) {
@@ -499,30 +505,23 @@ for (const platform of PLATFORMS) {
       test(`moves from New chapters with nothing new to the tab ${way} it`, async ({
         page,
       }) => {
-        await openLibrary(page);
-        await chosenTab(page, "New chapters").click();
-        await expect(emptyTab(page)).toBeVisible();
+        await openEmptyTab(page, "New chapters");
 
-        const drag = await beginDrag(page, emptyTab(page));
+        const drag = await beginDrag(page, noMatches(page));
         await drag.to(by);
         await drag.release();
 
-        await expect(chosenTab(page, lands)).toHaveAttribute(
-          "aria-selected",
-          "true",
-        );
+        await expectChosen(page, lands);
       });
     }
 
     test("leaves the empty tab in place under the finger", async ({ page }) => {
-      await openLibrary(page);
-      await chosenTab(page, "New chapters").click();
-      await expect(emptyTab(page)).toBeVisible();
-      const before = await boxOf(emptyTab(page));
+      await openEmptyTab(page, "New chapters");
+      const before = await boxOf(noMatches(page));
 
-      const drag = await beginDrag(page, emptyTab(page));
+      const drag = await beginDrag(page, noMatches(page));
       await drag.to(-SWIPE_PX);
-      const during = await boxOf(emptyTab(page));
+      const during = await boxOf(noMatches(page));
       const swiping = await page.locator("[data-swiping]").count();
       await drag.release();
 
@@ -537,7 +536,7 @@ for (const platform of PLATFORMS) {
 
       await chosenTab(page, "New chapters").click();
 
-      await expect(emptyTab(page).locator("xpath=..")).toHaveCSS(
+      await expect(noMatches(page).locator("xpath=..")).toHaveCSS(
         "touch-action",
         "pan-y",
       );
@@ -546,34 +545,13 @@ for (const platform of PLATFORMS) {
     test("moves from an empty category to the tab before it", async ({
       page,
     }) => {
-      await openLibrary(page);
-      await chosenTab(page, "Comics").click();
-      await expect(emptyTab(page)).toBeVisible();
+      await openEmptyTab(page, "Comics");
 
-      const drag = await beginDrag(page, emptyTab(page));
+      const drag = await beginDrag(page, noMatches(page));
       await drag.to(SWIPE_PX);
       await drag.release();
 
-      await expect(chosenTab(page, "Manga")).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
-    });
-
-    test("holds at the last tab when it lists nothing", async ({ page }) => {
-      await openLibrary(page);
-      await chosenTab(page, "Comics").click();
-      await expect(emptyTab(page)).toBeVisible();
-
-      const drag = await beginDrag(page, emptyTab(page));
-      await drag.to(-SWIPE_PX);
-      await drag.release();
-
-      await expect(chosenTab(page, "Comics")).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
-      await expect(emptyTab(page)).toBeVisible();
+      await expectChosen(page, "Manga");
     });
 
     test("moves from the covers onto New chapters with nothing new", async ({
@@ -589,11 +567,8 @@ for (const platform of PLATFORMS) {
       await drag.to(SWIPE_PX);
       await drag.release();
 
-      await expect(chosenTab(page, "New chapters")).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
-      await expect(emptyTab(page)).toBeVisible();
+      await expectChosen(page, "New chapters");
+      await expect(noMatches(page)).toBeVisible();
     });
   });
 
@@ -618,10 +593,7 @@ for (const platform of PLATFORMS) {
       await drag.to(-SWIPE_PX);
       await drag.release();
 
-      await expect(chosenTab(page, "Manga")).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
+      await expectChosen(page, "Manga");
     });
   });
 }
