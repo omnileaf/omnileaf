@@ -403,12 +403,13 @@ mod tests {
         }
 
         fn open(&self, file: &Path) -> io::Result<File> {
+            let after_a_timeout = self.has_timed_out.load(Ordering::SeqCst);
             let entered = self.in_flight.enter();
             let position = self.opens_started.fetch_add(1, Ordering::SeqCst);
             self.opened.lock().unwrap().push(Opened {
                 path: file.to_path_buf(),
                 in_flight_at_entry: entered.in_flight_at_entry(),
-                after_a_timeout: self.has_timed_out.load(Ordering::SeqCst),
+                after_a_timeout,
             });
             self.wait_to_open();
             if self.is_hanging.load(Ordering::SeqCst) || position < self.opens_that_time_out {
