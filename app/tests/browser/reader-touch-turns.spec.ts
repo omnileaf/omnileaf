@@ -4,6 +4,7 @@ import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { fakeProtocolRoute } from "./fake-backend.ts";
 import {
   BOOK_ID,
+  BOOK_SERIES_ID,
   BOOK_TITLE,
   NEXT_BOOK,
   NOT_STARTED,
@@ -980,6 +981,7 @@ test.describe("at the end of a book", { tag: "@native" }, () => {
     startPage: PAGE_COUNT - 1,
   } as const;
   const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
+  const SERIES_PAGE = new RegExp(`/series/${BOOK_SERIES_ID}$`);
   const SKIP_UP_NEXT_KEY = "omnileaf.skipUpNext";
   const FINISHED = `${BOOK_TITLE} finished`;
   const ZOOMED_DRAG_PX = -150;
@@ -1127,6 +1129,61 @@ test.describe("at the end of a book", { tag: "@native" }, () => {
       await expect.poll(() => slidesRunning(page)).toBe(0);
       return page.context().newCDPSession(page);
     }
+
+    async function dragFrom(
+      page: Page,
+      session: CDPSession,
+      start: Locator,
+    ): Promise<void> {
+      const from = await centreOf(start);
+      await fingerDown(session, from);
+      await moveFinger(
+        session,
+        from,
+        movedBy(from, { x: ZOOMED_DRAG_PX, y: 0 }),
+      );
+      await liftFinger(session);
+      await expect.poll(() => slidesRunning(page)).toBeLessThanOrEqual(1);
+    }
+
+    test("turns on with a touch drag that starts on its card", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+
+      await dragFrom(
+        page,
+        session,
+        page.getByRole("heading", { level: 2, name: "Up next" }),
+      );
+
+      await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    });
+
+    test("turns on rather than presses a button a touch drag starts on", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+
+      await dragFrom(
+        page,
+        session,
+        page.getByRole("link", { name: "Back to the series" }),
+      );
+
+      await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    });
+
+    test("presses a button on a touch tap", async ({ page }) => {
+      const session = await openUpNext(page);
+
+      await tap(
+        session,
+        await centreOf(page.getByRole("link", { name: "Back to the series" })),
+      );
+
+      await expect(page).toHaveURL(SERIES_PAGE);
+    });
 
     test("does not zoom on a double tap", async ({ page }) => {
       const session = await openUpNext(page);
