@@ -55,11 +55,15 @@
   const headingId = $props.id();
 
   let changesRead = untrack(() => libraryChanges);
+  let countsAsked = 0;
 
-  function recount(): void {
-    void countSeries().then((result) => {
+  async function recount(): Promise<void> {
+    countsAsked += 1;
+    const asked = countsAsked;
+    const result = await countSeries();
+    if (asked === countsAsked) {
       count = result.status === "ok" ? result.data : undefined;
-    });
+    }
   }
 
   $effect(() => {
@@ -68,7 +72,7 @@
     }
     untrack(() => {
       void list.start();
-      recount();
+      void recount();
     });
   });
 
@@ -79,7 +83,7 @@
     changesRead = libraryChanges;
     untrack(() => {
       void list.load();
-      recount();
+      void recount();
     });
   });
 </script>
