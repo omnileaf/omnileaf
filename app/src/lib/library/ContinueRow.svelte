@@ -1,13 +1,16 @@
 <script lang="ts">
   import { ChevronLeft, ChevronRight, Play } from "@lucide/svelte";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   import { resolve } from "$app/paths";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { reportFailure } from "#lib/errors/report-failure.ts";
-  import { historyList } from "#lib/history/history-list.svelte.ts";
+  import {
+    historyList,
+    type KeptHistory,
+  } from "#lib/history/history-list.svelte.ts";
   import SessionProgress from "#lib/history/SessionProgress.svelte";
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
@@ -26,9 +29,18 @@
   const PLAY_ICON_SIZE = 16;
   const EDGE_SLACK_PX = 1;
 
-  let { usesStandIns }: { usesStandIns: boolean } = $props();
+  let {
+    usesStandIns,
+    kept,
+    keeps,
+  }: {
+    usesStandIns: boolean;
+    kept?: KeptHistory | undefined;
+    keeps?: ((keep: () => KeptHistory | undefined) => () => void) | undefined;
+  } = $props();
 
-  const books = historyList(() => ({ kind: "unfinished" }));
+  const keptAtStart = untrack(() => kept);
+  const books = historyList(() => ({ kind: "unfinished" }), keptAtStart);
   const headingId = $props.id();
   let list: HTMLUListElement | undefined = $state();
   let isAtStart = $state(true);
@@ -90,8 +102,10 @@
     }
   });
 
+  $effect(() => keeps?.(() => books.keptThrough(0)));
+
   onMount(() => {
-    void books.start();
+    void (keptAtStart === undefined ? books.start() : books.load());
     return listenForLibraryChanges(() => {
       void books.load();
     }, reportFailure);
