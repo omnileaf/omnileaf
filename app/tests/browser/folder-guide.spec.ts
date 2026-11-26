@@ -109,9 +109,11 @@ test("lists the naming rules under Folders and Files, each with its example name
   await expect(files.getByRole("listitem").last()).toHaveText(
     /^\s*Details inside a file\s+ComicInfo\.xml\s+Come before any name\.\s*$/,
   );
-  await expect(files.locator("code").first()).toHaveText(
-    "Volume 1 · Vol. 01 · v01",
-  );
+  await expect(files.getByRole("listitem").first().locator("code")).toHaveText([
+    "Volume 1",
+    "Vol. 01",
+    "v01",
+  ]);
 });
 
 test("keeps the guide inside a small phone at the largest text", async ({

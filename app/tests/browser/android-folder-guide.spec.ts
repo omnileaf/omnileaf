@@ -14,6 +14,8 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 
+const BAR_BACK_START = 8;
+const BAR_TITLE_START = 52;
 const CARD_INSET = 32;
 const DEPTH_STEP = 20;
 const ICON_SIZE = 24;
@@ -137,7 +139,8 @@ test.describe(
       await expect(
         page.getByRole("heading", { name: "How folders are read" }),
       ).toHaveCount(1);
-      expect(titleBox.x).toBeGreaterThan(back.x + back.width - 1);
+      expect(back.x).toBeCloseTo(BAR_BACK_START, 0);
+      expect(titleBox.x).toBeCloseTo(BAR_TITLE_START, 0);
       expect(titleBox.y + titleBox.height / 2).toBeCloseTo(
         back.y + back.height / 2,
         0,
@@ -324,17 +327,29 @@ test.describe(
       );
     });
 
-    test("separates several example names with middle dots", async ({
+    test("gives each example name its own code, the middle dots between them hidden from screen readers", async ({
       page,
     }) => {
       await openGuide(page);
+      const volume = rule(page, "Files", "Volume");
 
-      await expect(rule(page, "Files", "Volume").locator("code")).toHaveText(
-        "Volume 1 · Vol. 01 · v01",
+      await expect(volume.locator("code")).toHaveText([
+        "Volume 1",
+        "Vol. 01",
+        "v01",
+      ]);
+      await expect(volume.locator("[data-slot=item-description]")).toHaveText(
+        /^\s*Volume 1·? Vol\. 01·? v01\s*$/,
       );
-      await expect(rule(page, "Files", "Chapter").locator("code")).toHaveText(
-        "Chapter 12 · Ch. 12 · c012",
-      );
+      await expect(volume.getByText("·", { exact: true })).toHaveCount(2);
+      for (const dot of await volume.getByText("·", { exact: true }).all()) {
+        await expect(dot).toHaveAttribute("aria-hidden", "true");
+      }
+      await expect(rule(page, "Files", "Chapter").locator("code")).toHaveText([
+        "Chapter 12",
+        "Ch. 12",
+        "c012",
+      ]);
       await expect(
         rule(page, "Files", "Details inside a file").locator("code"),
       ).toHaveText("ComicInfo.xml");

@@ -13,12 +13,12 @@
   } from "#lib/components/ui/table/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import ExampleNames from "./ExampleNames.svelte";
   import {
     ENTRY_ICONS,
     type EntryKind,
     EXAMPLE_FOLDER,
     FOLDER_INDENTS,
-    NAME_SEPARATOR,
     NAMING_RULES,
   } from "./folder-guide.ts";
 
@@ -126,12 +126,10 @@
                 <div class="flex flex-col gap-2xs min-inline-none">
                   <span class="text-small font-medium">{rule.title()}</span>
                   {#if rule.names.length > 0}
-                    <code
-                      translate="no"
-                      class="font-mono text-detail wrap-anywhere"
-                    >
-                      {rule.names.join(NAME_SEPARATOR)}
-                    </code>
+                    <ExampleNames
+                      names={rule.names}
+                      class="text-detail wrap-anywhere"
+                    />
                   {/if}
                   {#if rule.note !== undefined}
                     <span class="text-small text-muted">{rule.note()}</span>

@@ -13,7 +13,6 @@
 
   import {
     ENTRY_ICONS,
-    NAME_SEPARATOR,
     NAMING_RULES,
     takesThreeLines,
   } from "./folder-guide.ts";
@@ -22,6 +21,7 @@
     type NativeGuideLook,
     RULE_NAMES_TYPE,
   } from "./folder-guide-looks.ts";
+  import ExampleNames from "./ExampleNames.svelte";
   import FolderGuideTree from "./FolderGuideTree.svelte";
 
   let {
@@ -57,9 +57,7 @@
                 <ItemTitle>{rule.title()}</ItemTitle>
                 {#if rule.names.length > 0}
                   <ItemDescription>
-                    <code translate="no" class={RULE_NAMES_TYPE}>
-                      {rule.names.join(NAME_SEPARATOR)}
-                    </code>
+                    <ExampleNames names={rule.names} class={RULE_NAMES_TYPE} />
                   </ItemDescription>
                 {/if}
                 {#if rule.note !== undefined}

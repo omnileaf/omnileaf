@@ -102,7 +102,7 @@ export interface NamingRuleGroup {
   readonly rules: readonly NamingRule[];
 }
 
-export const NAME_SEPARATOR = " · ";
+export const NAME_SEPARATOR = "·";
 
 export const NAMING_RULES: readonly NamingRuleGroup[] = [
   {
