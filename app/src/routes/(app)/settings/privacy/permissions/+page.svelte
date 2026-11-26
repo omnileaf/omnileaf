@@ -16,7 +16,7 @@
   import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
-  import { GROUP_PLATE } from "#lib/page/plates.ts";
+  import { PLATED_LIST } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
     foldersDescription,
@@ -159,12 +159,7 @@
   <ul
     data-settings-group
     aria-label={m.permissions_title()}
-    class={android.isOn
-      ? FLUSH_LIST
-      : [
-          "divide-y divide-border overflow-hidden rounded-list border border-border bg-card",
-          GROUP_PLATE,
-        ]}
+    class={android.isOn ? FLUSH_LIST : ["rounded-list", PLATED_LIST]}
   >
     {#each rows as row (row.label)}
       <li class={android.isOn ? ANDROID_ROW : ROW}>

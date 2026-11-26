@@ -10,8 +10,12 @@ import {
   DEFAULT_BACKEND,
   expect,
   fakeAppInfo,
+  MEDIUM_MIN_WIDTH,
+  tabTo,
   test,
   testOnlyInItsWebview,
+  tokenColour,
+  viewportOf,
 } from "./fixtures.ts";
 
 const UNCHECKED: UpdateStatus = {
@@ -181,6 +185,24 @@ test.describe("Check for updates on About in an Android build with the check", (
       expect(await accessibilityViolations(page)).toEqual([]);
     });
   }
+
+  test("rings the row in the accent like a Settings row when the keyboard reaches it", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "Android phones only",
+    );
+    await page.goto("/settings/about");
+
+    await tabTo(page, checkRow(page));
+
+    await expect(checkRow(page)).toHaveCSS("outline-style", "solid");
+    await expect(checkRow(page)).toHaveCSS(
+      "outline-color",
+      await tokenColour(page, "--color-accent"),
+    );
+  });
 });
 
 test.describe("About in a build without the check", () => {

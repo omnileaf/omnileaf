@@ -1,8 +1,7 @@
-import type { Locator, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 export const BUTTON_HEIGHT = 32;
 export const NO_SHADOW = /^(none|(rgba\(0, 0, 0, 0\) 0px 0px 0px 0px(, )?)+)$/;
-const MOST_TABS = 40;
 
 interface ThemeLook {
   readonly card: string;
@@ -51,16 +50,4 @@ export async function colourOf(page: Page, value: string): Promise<string> {
     probe.remove();
     return drawn;
   }, value);
-}
-
-export async function tabTo(page: Page, target: Locator): Promise<void> {
-  for (let tab = 0; tab < MOST_TABS; tab += 1) {
-    await page.keyboard.press("Tab");
-    if (
-      await target.evaluate((element) => element === document.activeElement)
-    ) {
-      return;
-    }
-  }
-  throw new Error("Tab never reached the control");
 }

@@ -24,7 +24,7 @@
     icon: Glyph;
     iconName: IconName;
     label: string;
-    hint: string | undefined;
+    hint?: string | undefined;
     hintKind?: HintKind | undefined;
     look: AboutLook;
   } = $props();
@@ -47,7 +47,9 @@
     <ItemDescription
       dir={isAddress ? "ltr" : undefined}
       translate={isAddress ? "no" : undefined}
-      class="text-footnote android:max-medium:text-native-row-subtitle/native-row-subtitle"
+      class={look === "android"
+        ? "text-native-row-subtitle/native-row-subtitle"
+        : "text-footnote"}
     >
       {hint}
     </ItemDescription>

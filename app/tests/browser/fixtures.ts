@@ -50,6 +50,7 @@ const LONG_PRESS_TOUCH = {
 };
 export const EXPANDED_MIN_WIDTH = 840;
 export const LARGE_MIN_WIDTH = 1200;
+const MOST_TABS = 40;
 
 export function fakeAppInfo(platform: Platform): AppInfo {
   return {
@@ -502,6 +503,18 @@ export async function leaveAndComeBack(page: Page): Promise<void> {
       document.dispatchEvent(new Event("visibilitychange"));
     }
   });
+}
+
+export async function tabTo(page: Page, target: Locator): Promise<void> {
+  for (let tab = 0; tab < MOST_TABS; tab += 1) {
+    await page.keyboard.press("Tab");
+    if (
+      await target.evaluate((element) => element === document.activeElement)
+    ) {
+      return;
+    }
+  }
+  throw new Error("Tab never reached the control");
 }
 
 export async function boxOf(locator: Locator): Promise<Box> {

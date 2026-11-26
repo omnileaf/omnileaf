@@ -4,6 +4,7 @@ import {
   boxOf,
   expect,
   sidewaysOverflow,
+  tabTo,
   test,
   testOnlyInItsWebview,
   tokenColour,
@@ -20,7 +21,6 @@ const ROW_GAP = "10px";
 const MARK_SIZE = 16;
 const MARK_TO_WORDS = "6px";
 const DOT_SIZE = 4.8;
-const TAB_STOPS_AT_MOST = 40;
 const TITLE_TYPE = { fontSize: "13px", fontWeight: "510", lineHeight: "16px" };
 const SUB_TYPE = { fontSize: "11px", lineHeight: "14px" };
 const HEADING_TYPE = {
@@ -60,18 +60,6 @@ function endingWith(value: string): RegExp {
   return new RegExp(
     `${value.replaceAll(/[$()*+.?[\\\]^{|}]/g, String.raw`\$&`)}$`,
   );
-}
-
-async function focusByKeyboard(page: Page, target: Locator): Promise<void> {
-  for (let presses = 0; presses < TAB_STOPS_AT_MOST; presses += 1) {
-    if (
-      await target.evaluate((element) => element === document.activeElement)
-    ) {
-      return;
-    }
-    await page.keyboard.press("Tab");
-  }
-  await expect(target).toBeFocused();
 }
 
 async function holdOn(page: Page, locator: Locator): Promise<void> {
@@ -226,7 +214,7 @@ test.describe("a group of radio buttons on the General page", () => {
         }
       }, contrast);
       const radio = page.getByRole("radio", { name: "Library" });
-      await focusByKeyboard(page, radio);
+      await tabTo(page, radio);
 
       await expect(markOf(radio)).toHaveCSS("outline-style", "solid");
       const mark = markOf(radio);
