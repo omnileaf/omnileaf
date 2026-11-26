@@ -89,12 +89,14 @@
         >
           <span
             class="font-medium expanded:font-semibold android:text-body android:font-regular"
-            >{madeAt.format(report.madeAtMs)}</span
           >
+            {madeAt.format(report.madeAtMs)}
+          </span>
           <span
             class="text-detail text-muted android:text-native-row-subtitle/native-row-subtitle"
-            >{reportLine(report)}</span
           >
+            {reportLine(report)}
+          </span>
         </li>
       {/each}
     </ul>

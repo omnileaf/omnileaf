@@ -1,0 +1,72 @@
+<script lang="ts">
+  import { ANDROID_BACK_TRANSITIONS, placedTransform } from "./back-preview";
+  import type { AndroidBackPreview } from "./android-back-preview.svelte";
+  import { areaStyle, showCopy } from "./previous-screens";
+
+  let { preview }: { preview: AndroidBackPreview } = $props();
+
+  const frame = $derived(preview.frame);
+  const isCancelling = $derived(preview.phase === "cancelling");
+  const leavingCopy = $derived(preview.commit?.copy);
+  const enteringPlace = $derived(
+    (isCancelling ? preview.restingFrame : frame)?.entering,
+  );
+</script>
+
+{#if preview.area !== undefined && frame !== undefined && (preview.phase === "following" || isCancelling)}
+  <div
+    aria-hidden="true"
+    inert
+    data-previous-screen
+    class="pointer-events-none fixed overflow-hidden"
+    style={areaStyle(preview.area)}
+  >
+    <div
+      class="flex flex-col overflow-hidden bg-background block-full inline-full"
+      style:transform={enteringPlace === undefined
+        ? undefined
+        : placedTransform(enteringPlace)}
+      style:transition={isCancelling
+        ? ANDROID_BACK_TRANSITIONS.springBack
+        : undefined}
+      style:border-radius="{preview.cornerPx}px"
+    >
+      {#if preview.behind !== undefined}
+        <div class="contents" {@attach showCopy(preview.behind)}></div>
+      {/if}
+    </div>
+    <div
+      class="absolute inset-none bg-native-back-preview-scrim"
+      style:opacity={frame.scrimOpacity}
+    ></div>
+  </div>
+{/if}
+{#if preview.area !== undefined && preview.commit !== undefined}
+  {@const leaving = preview.commit}
+  <div
+    aria-hidden="true"
+    inert
+    data-leaving-screen
+    class="pointer-events-none fixed z-notice overflow-hidden"
+    style={areaStyle(preview.area)}
+  >
+    <div
+      class="absolute inset-none bg-native-back-preview-scrim"
+      style:opacity={leaving.isPlaying ? 0 : leaving.scrimOpacity}
+      style:transition={ANDROID_BACK_TRANSITIONS.leavingScrim}
+    ></div>
+    <div
+      class="flex flex-col overflow-hidden bg-background block-full inline-full"
+      style:transform={placedTransform(
+        leaving.isPlaying ? leaving.to : leaving.from,
+      )}
+      style:opacity={leaving.isPlaying ? 0 : 1}
+      style:border-radius="{preview.cornerPx}px"
+      style:transition={ANDROID_BACK_TRANSITIONS.leaving}
+    >
+      {#if leavingCopy !== undefined}
+        <div class="contents" {@attach showCopy(leavingCopy)}></div>
+      {/if}
+    </div>
+  </div>
+{/if}

@@ -14,7 +14,7 @@
     aria-label={m.series_folder()}
     class="shrink-0 block-native-series-icon inline-native-series-icon"
   />
-  <span class="truncate font-mono text-native-series-path/native-series-path"
-    >{folder}</span
-  >
+  <span class="truncate font-mono text-native-series-path/native-series-path">
+    {folder}
+  </span>
 </p>

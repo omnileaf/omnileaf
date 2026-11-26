@@ -61,15 +61,18 @@
       href={wayBack.fallbackHref}
       aria-hidden="true"
       tabindex="-1"
-      class={seriesName}>{inLibraryPlace.seriesTitle}</a
+      class={seriesName}
     >
+      {inLibraryPlace.seriesTitle}
+    </a>
     <Breadcrumb class="hidden text-small expanded:block">
       <BreadcrumbItem class="min-inline-none">
         <a
           href={wayBack.fallbackHref}
           class="block truncate text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
-          >{inLibraryPlace.seriesTitle}</a
         >
+          {inLibraryPlace.seriesTitle}
+        </a>
       </BreadcrumbItem>
       <BreadcrumbSeparator class="text-muted" />
       <BreadcrumbItem class="min-inline-none">

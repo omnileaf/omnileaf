@@ -5,8 +5,8 @@
 </script>
 
 <Empty>
-  <EmptyMedia data-testid="art"
-    ><Search size={24} aria-hidden="true" /></EmptyMedia
-  >
+  <EmptyMedia data-testid="art">
+    <Search size={24} aria-hidden="true" />
+  </EmptyMedia>
   <EmptyTitle>No matches</EmptyTitle>
 </Empty>

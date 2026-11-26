@@ -42,9 +42,9 @@
     {@const Icon = isCopied ? Check : Copy}
     <Icon size={iconSize} class="shrink-0" />
   {/if}
-  <span class={[hidesLabel && "sr-only"]}
-    >{isCopied ? labels.copied : labels.copy}</span
-  >
+  <span class={[hidesLabel && "sr-only"]}>
+    {isCopied ? labels.copied : labels.copy}
+  </span>
 </Button>
 <span role="status" class="sr-only">
   {#if isCopied}

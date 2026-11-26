@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { PreviousScreens } from "./previous-screens";
+import { areaStyle, PreviousScreens } from "./previous-screens";
 
 function screenSaying(text: string): HTMLElement {
   const screen = document.createElement("main");
@@ -8,18 +8,18 @@ function screenSaying(text: string): HTMLElement {
   return screen;
 }
 
-test("keeps the screens a back link can lead up to", () => {
+test("keeps the screens a way back can lead to", () => {
   const screens = new PreviousScreens();
-  screens.keep("/settings", screenSaying("Settings"));
-  screens.keep("/settings/privacy", screenSaying("Privacy"));
+  screens.keep("/", screenSaying("Library"));
+  screens.keep("/history", screenSaying("History"));
 
-  screens.forgetAllButAbove("/settings/privacy/screenshot-mode");
+  screens.forgetAllBut(new Set(["/", "/history", "/series/1"]));
 
-  expect(screens.of("/settings")?.content.textContent).toBe("Settings");
-  expect(screens.of("/settings/privacy")?.content.textContent).toBe("Privacy");
+  expect(screens.of("/")?.content.textContent).toBe("Library");
+  expect(screens.of("/history")?.content.textContent).toBe("History");
 });
 
-test("forgets the screens no back link leads up to", () => {
+test("forgets the screens no way back leads to", () => {
   const screens = new PreviousScreens();
   screens.keep("/", screenSaying("Library"));
   screens.keep("/history", screenSaying("History"));
@@ -28,9 +28,9 @@ test("forgets the screens no back link leads up to", () => {
     screenSaying("Screenshot mode"),
   );
 
-  screens.forgetAllButAbove("/settings/privacy");
+  screens.forgetAllBut(new Set(["/", "/settings", "/settings/privacy"]));
 
-  expect(screens.of("/")).toBeUndefined();
+  expect(screens.of("/")?.content.textContent).toBe("Library");
   expect(screens.of("/history")).toBeUndefined();
   expect(screens.of("/settings/privacy/screenshot-mode")).toBeUndefined();
 });
@@ -63,4 +63,20 @@ test("lands nowhere later once the swipe's navigation went nowhere", () => {
   const landed = screens.landedOn("/series/1");
 
   expect(landed).toBeUndefined();
+});
+
+test("places a layer over the area a screen took", () => {
+  const layer = document.createElement("div");
+
+  layer.setAttribute(
+    "style",
+    areaStyle({ left: 1, top: 2, width: 30, height: 40 }),
+  );
+
+  expect([
+    layer.style.left,
+    layer.style.top,
+    layer.style.width,
+    layer.style.height,
+  ]).toEqual(["1px", "2px", "30px", "40px"]);
 });

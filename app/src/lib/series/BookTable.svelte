@@ -242,8 +242,9 @@
                 isPicked ? "text-foreground" : "text-muted",
               ]}
             >
-              <span class="sr-only">{m.series_book_added({ date: added })}</span
-              >
+              <span class="sr-only">
+                {m.series_book_added({ date: added })}
+              </span>
               <span aria-hidden="true">{added}</span>
             </TableCell>
             <TableCell

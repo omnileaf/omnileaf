@@ -268,8 +268,9 @@
         <a
           href={seriesHref}
           class="-my-xs block truncate py-xs text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
-          >{seriesTitle}</a
         >
+          {seriesTitle}
+        </a>
       </BreadcrumbItem>
       <BreadcrumbSeparator class="text-muted" />
       <BreadcrumbItem class="min-inline-none">
@@ -292,9 +293,9 @@
                   isJumpOpen && "bg-hover",
                 )}
               >
-                <span class="truncate max-inline-reader-crumb-book"
-                  >{bookTitle}</span
-                >
+                <span class="truncate max-inline-reader-crumb-book">
+                  {bookTitle}
+                </span>
                 <ChevronDown
                   size={JUMP_ICON_SIZE}
                   aria-hidden="true"

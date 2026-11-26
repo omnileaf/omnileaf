@@ -1,5 +1,7 @@
 import { on } from "svelte/events";
 
+import { shownScaleOf } from "#lib/page/shown-scale.ts";
+
 const USER_INPUTS = ["pointerdown", "wheel", "keydown"] as const;
 const SCROLL_SLACK_PX = 1;
 const ANCHOR = "a[href]";
@@ -88,11 +90,17 @@ function anchorIn(
   );
 }
 
+function shownOffsetOf(link: HTMLAnchorElement, screen: HTMLElement): number {
+  return (
+    (link.getBoundingClientRect().top - screen.getBoundingClientRect().top) /
+    shownScaleOf(screen)
+  );
+}
+
 export function placeOf(
   screen: HTMLElement,
   leavingFor: URL | undefined,
 ): ScrollPlace {
-  const shownTop = screen.getBoundingClientRect().top;
   const anchor = anchorIn(screen, leavingFor);
   return {
     top: screen.scrollTop,
@@ -101,17 +109,13 @@ export function placeOf(
         ? undefined
         : {
             href: anchor.getAttribute("href") ?? "",
-            offset: anchor.getBoundingClientRect().top - shownTop,
+            offset: shownOffsetOf(anchor, screen),
           },
   };
 }
 
 function contentTopOf(link: HTMLAnchorElement, screen: HTMLElement): number {
-  return (
-    link.getBoundingClientRect().top -
-    screen.getBoundingClientRect().top +
-    screen.scrollTop
-  );
+  return shownOffsetOf(link, screen) + screen.scrollTop;
 }
 
 function anchorOf(
@@ -149,6 +153,18 @@ function scrollToPlace(screen: HTMLElement, place: ScrollPlace): void {
   screen.scrollTop = contentTopOf(link, screen) - anchor.offset;
 }
 
+/** WebKit clamps the scroll position while a batch of DOM changes shrinks the content mid-task, and fires the scroll event only once the content has grown back. */
+function isClampedByRemovedContent(
+  changes: readonly MutationRecord[],
+  screen: HTMLElement,
+  placedAt: number,
+): boolean {
+  return (
+    changes.some((change) => change.removedNodes.length > 0) &&
+    screen.scrollTop < placedAt - SCROLL_SLACK_PX
+  );
+}
+
 export function holdScrollPlace(
   screen: HTMLElement,
   place: ScrollPlace,
@@ -156,21 +172,36 @@ export function holdScrollPlace(
   let placedAt = screen.scrollTop;
   const anchoring = screen.style.overflowAnchor;
   screen.style.overflowAnchor = "none";
+
+  function reachPlace(): void {
+    scrollToPlace(screen, place);
+    placedAt = screen.scrollTop;
+  }
+
+  function isClampedBelowPlace(): boolean {
+    return (
+      screen.scrollHeight - screen.clientHeight < placedAt - SCROLL_SLACK_PX
+    );
+  }
+
+  const clampWatcher = new MutationObserver((changes) => {
+    if (isClampedByRemovedContent(changes, screen, placedAt)) {
+      reachPlace();
+    }
+  });
+  clampWatcher.observe(screen, { childList: true, subtree: true });
   const stopWatching = on(screen, "scroll", () => {
+    if (isClampedBelowPlace()) {
+      return;
+    }
     if (Math.abs(screen.scrollTop - placedAt) > SCROLL_SLACK_PX) {
       stop();
     }
   });
-  const stop = holdWhileContentResizes(
-    screen,
-    () => {
-      scrollToPlace(screen, place);
-      placedAt = screen.scrollTop;
-    },
-    () => {
-      stopWatching();
-      screen.style.overflowAnchor = anchoring;
-    },
-  );
+  const stop = holdWhileContentResizes(screen, reachPlace, () => {
+    clampWatcher.disconnect();
+    stopWatching();
+    screen.style.overflowAnchor = anchoring;
+  });
   return stop;
 }

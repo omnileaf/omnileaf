@@ -220,14 +220,18 @@
             ios.isOn &&
               "text-native-row-title/native-row-title tracking-native-row-title",
             !android.isOn && !ios.isOn && "font-medium",
-          ]}>{tab.name}</span
+          ]}
         >
+          {tab.name}
+        </span>
         <span
           class={[
             "text-muted",
             android.isOn || ios.isOn ? ROW_SUBTITLE_TYPE : "text-detail",
-          ]}>{detailOf(tab)}</span
+          ]}
         >
+          {detailOf(tab)}
+        </span>
       </span>
       {#if tab.isHidden}
         <span

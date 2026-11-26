@@ -173,8 +173,9 @@
                 >
                   <span
                     class="flex-1 truncate text-native-row-title/native-row-title"
-                    >{tag.name}</span
                   >
+                    {tag.name}
+                  </span>
                   <span class="shrink-0 text-muted">
                     {m.library_series_count({ count: tag.seriesCount })}
                   </span>
@@ -200,8 +201,10 @@
                   class={[
                     "truncate",
                     android.isOn ? "text-body" : "font-medium",
-                  ]}>{tag.name}</span
+                  ]}
                 >
+                  {tag.name}
+                </span>
                 <span
                   class={[
                     "text-muted",

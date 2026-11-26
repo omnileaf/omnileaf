@@ -34,7 +34,7 @@
     },
     {
       "name": "@lucide/svelte",
-      "version": "1.72.0",
+      "version": "1.76.0",
       "licence": "ISC",
       "texts": [
         2
@@ -50,7 +50,7 @@
     },
     {
       "name": "@sveltejs/kit",
-      "version": "3.2.0",
+      "version": "3.4.0",
       "licence": "MIT",
       "texts": [
         4
@@ -58,7 +58,7 @@
     },
     {
       "name": "@tauri-apps/api",
-      "version": "2.12.4",
+      "version": "2.12.5",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         5,
@@ -139,7 +139,7 @@
     },
     {
       "name": "svelte",
-      "version": "5.57.3",
+      "version": "5.58.0",
       "licence": "MIT",
       "texts": [
         15
