@@ -51,38 +51,32 @@ test.describe(
       test.skip(platform !== "android", "Android's navigation bar");
     });
 
-    test("is a switch in Settings › Advanced, off until turned on", async ({
+    test("is a switch in Settings › Advanced, off until turned on, that says what each tap does", async ({
       page,
     }) => {
       await page.goto("/settings");
 
       await page.getByRole("link", { name: /^Advanced/ }).click();
       const choice = page.getByRole("switch", {
-        name: "Tap the open tab again",
+        name: "Tap the open tab to go back",
       });
 
       await expect(choice).not.toBeChecked();
-      await expect(
-        page.getByText(
-          "Off, tapping the open tab does nothing. Back still goes one step.",
-        ),
-      ).toBeVisible();
+      await expect(choice).toContainText(
+        "Once to the top, again to the section’s first page.",
+      );
     });
 
-    test("says the first tap scrolls to the top and the next goes to the first page once it is on", async ({
-      page,
-    }) => {
+    test("adds no note under the switch, on or off", async ({ page }) => {
       await page.goto("/settings/advanced");
+      const choice = page.getByRole("switch", {
+        name: "Tap the open tab to go back",
+      });
 
-      await page
-        .getByRole("switch", { name: "Tap the open tab again" })
-        .click();
+      await choice.click();
 
-      await expect(
-        page.getByText(
-          "On, one tap scrolls the page to the top, and the next goes to the section’s first page.",
-        ),
-      ).toBeVisible();
+      await expect(choice).toBeChecked();
+      await expect(page.getByText(/^(On|Off), tap/)).toHaveCount(0);
     });
 
     test("keeps the switch on in Settings › Advanced for someone who turned it on", async ({
@@ -93,7 +87,7 @@ test.describe(
       await page.goto("/settings/advanced");
 
       await expect(
-        page.getByRole("switch", { name: "Tap the open tab again" }),
+        page.getByRole("switch", { name: "Tap the open tab to go back" }),
       ).toBeChecked();
     });
 

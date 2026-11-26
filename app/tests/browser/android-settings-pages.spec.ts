@@ -61,7 +61,7 @@ const PAGE_STARTS: readonly PageStart[] = [
   },
   {
     route: "/settings/advanced/animations",
-    first: (page) => page.getByText(/^All four are on until you turn them off/),
+    first: (page) => page.getByText(/^With one off, those things appear/),
   },
   {
     route: "/settings/library/folders",

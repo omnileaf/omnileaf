@@ -154,14 +154,14 @@ test.describe(
       ).toBeVisible();
     });
 
-    test("leaves Tap the open tab again out, since only phones' tab bars take it", async ({
+    test("leaves Tap the open tab to go back out, since only phones' tab bars take it", async ({
       page,
     }) => {
       await openOnTablet(page, "/settings/advanced");
 
       await expect(page.getByRole("heading", { name: "Undo" })).toBeVisible();
       await expect(
-        page.getByText("Tap the open tab again", { exact: true }),
+        page.getByText("Tap the open tab to go back", { exact: true }),
       ).toHaveCount(0);
     });
 
