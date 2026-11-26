@@ -212,7 +212,7 @@ const SPACED_GROUPINGS: readonly {
   groupBy: Exclude<LibraryGrouping, "none">;
   first: string;
   next: string;
-  backend: FakeBackend;
+  backend: Partial<FakeBackend>;
 }[] = [
   {
     groupBy: "creator",
