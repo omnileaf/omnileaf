@@ -18,11 +18,14 @@ const FIRST_TITLE = LIBRARY[0]?.title ?? "";
 const BADGE_HEIGHT_PX = 20;
 
 const IOS_BADGE = {
-  light: { fill: "rgb(155, 44, 44)", label: "rgb(255, 255, 255)" },
-  dark: { fill: "rgb(240, 140, 140)", label: "rgb(42, 14, 14)" },
+  light: { fill: "rgb(47, 111, 79)", label: "rgb(255, 255, 255)" },
+  dark: { fill: "rgb(127, 203, 157)", label: "rgb(15, 36, 24)" },
 };
 
 const BOARD_BADGE_WEIGHT = "590";
+
+const RIM = "0px 0px 0px 1px";
+const CLEAR = "rgba(0, 0, 0, 0)";
 
 function showing(platform: Platform): { backend: typeof DEFAULT_BACKEND } {
   return {
@@ -33,6 +36,25 @@ function showing(platform: Platform): { backend: typeof DEFAULT_BACKEND } {
       librarySeriesCount: () => LIBRARY.length,
     },
   };
+}
+
+function rimColour(badge: Locator): Promise<string | undefined> {
+  return badge.evaluate(
+    (element, { rim, clear }) =>
+      getComputedStyle(element)
+        .boxShadow.split(/,(?![^(]*\))/)
+        .map((layer) => layer.trim())
+        .find((layer) => layer.endsWith(rim) && !layer.startsWith(clear))
+        ?.slice(0, -rim.length)
+        .trim(),
+    { rim: RIM, clear: CLEAR },
+  );
+}
+
+async function expectBackgroundRim(page: Page, badge: Locator): Promise<void> {
+  expect(await rimColour(badge)).toBe(
+    await tokenColour(page, "--color-background"),
+  );
 }
 
 async function openLibrary(page: Page): Promise<Locator> {
@@ -52,13 +74,21 @@ for (const scheme of ["light", "dark"] as const) {
       );
     });
 
-    test("fills with the red badge colour and writes its count in the colour made for it", async ({
+    test("fills with the accent and writes its count in the accent's text colour", async ({
       page,
     }) => {
       const badge = await openLibrary(page);
 
       await expect(badge).toHaveCSS("background-color", IOS_BADGE[scheme].fill);
       await expect(badge).toHaveCSS("color", IOS_BADGE[scheme].label);
+    });
+
+    test("rims itself so it shows on a cover of its own colour", async ({
+      page,
+    }) => {
+      const badge = await openLibrary(page);
+
+      await expectBackgroundRim(page, badge);
     });
 
     test("sets its count in semibold tabular numerals", async ({ page }) => {
@@ -91,7 +121,7 @@ for (const scheme of ["light", "dark"] as const) {
     test("keeps the accent badge", async ({ page }) => {
       test.skip(
         viewportOf(page).width < MEDIUM_MIN_WIDTH,
-        "iPhones draw the red badge",
+        "iPhones draw their own badge",
       );
       const badge = await openLibrary(page);
 
@@ -109,7 +139,7 @@ for (const scheme of ["light", "dark"] as const) {
   test.describe(`the cover count badge on Android in ${scheme}`, () => {
     test.use({ colorScheme: scheme, ...showing("android") });
 
-    test("fills with the red bar badge colour and writes its count in the colour made for it", async ({
+    test("fills with the accent and writes its count in the accent's text colour", async ({
       page,
     }) => {
       test.skip(
@@ -120,12 +150,13 @@ for (const scheme of ["light", "dark"] as const) {
 
       await expect(badge).toHaveCSS(
         "background-color",
-        await tokenColour(page, "--native-color-bar-badge"),
+        await tokenColour(page, "--native-color-button-primary"),
       );
       await expect(badge).toHaveCSS(
         "color",
-        await tokenColour(page, "--native-color-on-bar-badge"),
+        await tokenColour(page, "--native-color-on-button-primary"),
       );
+      await expectBackgroundRim(page, badge);
     });
   });
 }
