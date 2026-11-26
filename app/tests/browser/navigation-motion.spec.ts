@@ -62,6 +62,8 @@ const TAP_MS = 50;
 const MOVE_MS = 300;
 const FRAME_MS = 16;
 const FINGER_PRESS_MS = [350, 450, 1000] as const;
+const LATE_FIRST_FRAME_TURN_DEG = 5;
+const BLOCKED_FRAME_MS = 80;
 const NEEDLE_OUT_DEG = 30;
 const NEEDLE_BACK_DEG = -8;
 const CLOCK_BACK_DEG = -50;
@@ -394,6 +396,77 @@ async function heldWhile(
   await act();
   await settle(navigation(page));
   return held.jsonValue();
+}
+
+interface FirstPaintedMove {
+  readonly rotate: number;
+  readonly pillGrowMs: number;
+}
+
+async function firstPaintedMoveAfterABlockedFrame(
+  page: Page,
+  label: string,
+): Promise<FirstPaintedMove> {
+  const link = tab(page, label);
+  const first = await link.evaluateHandle((root, blockMs) => {
+    const icon = root.querySelector('[data-slot="navigation-icon"]');
+    const pill = root.querySelector('[data-slot="navigation-pill"]');
+    if (icon === null || pill === null) {
+      throw new Error("the tab has no icon or pill");
+    }
+    const found: { painted: FirstPaintedMove | undefined } = {
+      painted: undefined,
+    };
+    let isBlockOver = false;
+    const blockOnceChosen = new MutationObserver(() => {
+      if (root.getAttribute("aria-current") !== "page") {
+        return;
+      }
+      blockOnceChosen.disconnect();
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const until = performance.now() + blockMs;
+          while (performance.now() < until) {
+            icon.getAnimations();
+          }
+          isBlockOver = true;
+        });
+      });
+    });
+    blockOnceChosen.observe(root, {
+      attributes: true,
+      attributeFilter: ["aria-current"],
+    });
+    const watch = () => {
+      const grow = pill
+        .getAnimations()
+        .find(
+          (animation) =>
+            animation instanceof CSSAnimation &&
+            animation.animationName === "pill-grow",
+        );
+      if (!isBlockOver || grow === undefined) {
+        requestAnimationFrame(watch);
+        return;
+      }
+      const rotate = getComputedStyle(icon).rotate;
+      found.painted = {
+        rotate: rotate === "none" ? 0 : parseFloat(rotate),
+        pillGrowMs: Number(grow.currentTime),
+      };
+    };
+    requestAnimationFrame(watch);
+    return found;
+  }, BLOCKED_FRAME_MS);
+  await link.click();
+  await expect
+    .poll(() => first.evaluate(({ painted }) => painted !== undefined))
+    .toBe(true);
+  const { painted } = await first.jsonValue();
+  if (painted === undefined) {
+    throw new Error("the tab never moved");
+  }
+  return painted;
 }
 
 function heldPresses(page: Page): Locator {
@@ -924,6 +997,22 @@ test.describe("on Android", () => {
 
     expect(held).toEqual([]);
     await expect(tab(page, "Library")).toHaveAttribute("aria-current", "page");
+  });
+
+  test("starts the new tab's motion only once the new page has painted", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
+    await page.goto("/");
+    await settle(navigation(page));
+
+    const first = await firstPaintedMoveAfterABlockedFrame(page, "Browse");
+
+    expect(Math.abs(first.rotate)).toBeLessThan(LATE_FIRST_FRAME_TURN_DEG);
+    expect(first.pillGrowMs).toBeLessThanOrEqual(FRAME_MS);
   });
 
   for (const { label, move, from, peaks, largestStep } of [

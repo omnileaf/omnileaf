@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { type Snippet, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { resolve } from "$app/paths";
@@ -47,16 +47,32 @@
   let navigation: HTMLElement | undefined = $state();
   let arriving: Section | undefined = $state();
   let heldPress: Section | undefined = $state();
+  let stillShown: Section | undefined = $state();
+  const shown = $derived(stillShown ?? current);
   let previous: Section | undefined;
   let pressedTab: Section | undefined;
   let isPressRouted = false;
 
   $effect(() => {
-    if (previous !== undefined && previous !== current) {
-      arriving = current;
-      releasePressUnless(current);
+    const next = current;
+    const leaving = previous;
+    previous = next;
+    if (leaving === undefined || leaving === next) {
+      return;
     }
-    previous = current;
+    untrack(() => {
+      stillShown ??= leaving;
+      releasePressUnless(next);
+    });
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        stillShown = undefined;
+        arriving = next;
+      });
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
   });
 
   $effect(() => {
@@ -182,6 +198,7 @@
     ></li>
     {#each DESTINATIONS as destination (destination.section)}
       {@const isSelected = destination.section === current}
+      {@const isShown = destination.section === shown}
       {@const isWayBack = isCollapsed && isSelected}
       {@const isArriving = destination.section === arriving}
       {@const isAtSideEnd = destination.section === SIDE_END_SECTION}
@@ -246,19 +263,19 @@
                     "absolute inset-none rounded-full bg-accent-soft transition-opacity expanded:hidden desktop-shell:hidden motion-navigation:duration-fade motion-navigation:ease-out",
                     "android:motion-navigation:duration-grow android:motion-navigation:ease-emphasized",
                     look.tone,
-                    !isSelected && "opacity-0",
+                    !isShown && "opacity-0",
                     isArriving && "android:motion-navigation:animate-pill-grow",
                   ]}
                 ></span>
                 <NavigationIcon
                   section={destination.section}
-                  {isSelected}
+                  isSelected={isShown}
                   {isArriving}
                   size={ICON_SIZE}
                   class={[
                     "relative macos:inactive:text-muted desktop-shell:block-sidebar-icon desktop-shell:inline-sidebar-icon",
                     look.icon,
-                    isSelected && look.currentIcon,
+                    isShown && look.currentIcon,
                     isArriving &&
                       "ios:max-medium:motion-navigation:animate-nav-pop",
                   ]}
