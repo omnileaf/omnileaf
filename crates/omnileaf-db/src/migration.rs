@@ -107,6 +107,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0071_remember_where_each_emptied_series_was"),
     migration!("0072_count_the_volumes_and_chapters_of_each_series"),
     migration!("0073_show_the_volume_and_chapter_counts_on_covers_in_the_library_view"),
+    migration!("0073_count_the_categories_of_each_series"),
 ];
 
 pub(crate) fn pending(
