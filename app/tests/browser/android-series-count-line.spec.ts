@@ -6,19 +6,15 @@ import {
 } from "../../src/lib/ipc/bindings.ts";
 import { expect, test } from "./fixtures.ts";
 import { sampleLibraryOn, serveSampleArt } from "./screens.ts";
-import { choose, openViewOptions } from "./view-options.ts";
+import {
+  choose,
+  openViewOptions,
+  VIEW_WITH_COUNTS_UNDER_COVERS,
+} from "./view-options.ts";
 
 const COUNTS_SWITCH = "Volumes and chapters";
 
 let storedView: LibraryView = DEFAULT_LIBRARY_VIEW;
-
-const WITH_COUNTS: LibraryView = {
-  ...DEFAULT_LIBRARY_VIEW,
-  onCovers: {
-    ...DEFAULT_LIBRARY_VIEW.onCovers,
-    showsVolumeAndChapterCounts: true,
-  },
-};
 
 function seriesTile(page: Page, title: string) {
   return page
@@ -51,7 +47,7 @@ test.describe(
     test("counts volumes and chapters as the folder has them", async ({
       page,
     }) => {
-      storedView = WITH_COUNTS;
+      storedView = VIEW_WITH_COUNTS_UNDER_COVERS;
       await page.goto("/");
 
       await expect(seriesTile(page, "Sample Series 01")).toContainText(
@@ -104,7 +100,7 @@ test.describe(
 
     for (const [state, view] of [
       ["off", DEFAULT_LIBRARY_VIEW],
-      ["on", WITH_COUNTS],
+      ["on", VIEW_WITH_COUNTS_UNDER_COVERS],
     ] as const) {
       test(`keeps the counts in each list row while the option is ${state}`, async ({
         page,
