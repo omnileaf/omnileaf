@@ -126,6 +126,7 @@
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import type { ListState } from "#lib/paging/paged-list.svelte.ts";
   import { holdScrollTop } from "#lib/navigation/hold-scroll.ts";
+  import { sendingNewest } from "#lib/navigation/newest-call.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { isPhone, isPointer, phoneOf } from "#lib/page/platform.ts";
@@ -835,6 +836,8 @@
     }
   }
 
+  const reloadGroupNamesSoon = sendingNewest<undefined>(reloadGroupNames);
+
   async function loadFolders(): Promise<void> {
     folders = (await readAllFolders(commands.libraryFolders)) ?? folders;
   }
@@ -1075,7 +1078,7 @@
       libraryChanges += 1;
       void loadMissingFolders();
       void loadCategories();
-      void reloadGroupNames();
+      reloadGroupNamesSoon(undefined);
       void loadFilterChoices();
       if (chosenListing === undefined) {
         return;

@@ -244,6 +244,7 @@ test("moves a series given a category elsewhere out of No category once the libr
 
   await expect(coversIn(group(page, "Comics"))).toHaveCount(3);
   await expect(group(page, "Comics")).toContainText("3 series");
+  await group(page, "No category").scrollIntoViewIfNeeded();
   await expect(group(page, "No category")).toContainText("5 series");
   await expect(
     coversIn(group(page, "No category")).filter({

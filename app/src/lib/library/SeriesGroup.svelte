@@ -7,6 +7,8 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { ROW_SUBTITLE_MUTED_TYPE } from "#lib/components/ui/item/looks.ts";
   import type { IpcError } from "#lib/ipc/bindings.ts";
+  import { sendingNewest } from "#lib/navigation/newest-call.ts";
+  import { whileNear } from "#lib/paging/in-view.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { AndroidPhone } from "./android-phone.svelte";
@@ -56,6 +58,11 @@
 
   let changesRead = untrack(() => libraryChanges);
   let countsAsked = 0;
+  let isNear = false;
+  let isStale = false;
+  const isShown = $derived(
+    list.list.kind === "loaded" && list.list.items.length > 0,
+  );
 
   async function recount(): Promise<void> {
     countsAsked += 1;
@@ -66,11 +73,24 @@
     }
   }
 
+  const reloadSoon = sendingNewest<undefined>(async () => {
+    await Promise.all([list.load(), recount()]);
+  });
+
+  function followNearness(isNowNear: boolean): void {
+    isNear = isNowNear;
+    if (isNear && isStale) {
+      isStale = false;
+      reloadSoon(undefined);
+    }
+  }
+
   $effect(() => {
     if (listed === undefined) {
       return;
     }
     untrack(() => {
+      isStale = false;
       void list.start();
       void recount();
     });
@@ -82,14 +102,18 @@
     }
     changesRead = libraryChanges;
     untrack(() => {
-      void list.load();
-      void recount();
+      if (isNear || !isShown) {
+        reloadSoon(undefined);
+      } else {
+        isStale = true;
+      }
     });
   });
 </script>
 
-{#if list.list.kind === "loaded" && list.list.items.length > 0}
+{#if list.list.kind === "loaded" && isShown}
   <section
+    {@attach whileNear(followNearness)}
     aria-labelledby={headingId}
     class={["flex flex-col", !android.isOn && "gap-md"]}
   >
