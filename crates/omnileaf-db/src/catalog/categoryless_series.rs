@@ -6,6 +6,7 @@ use crate::{
         cursor::Position,
         gathering::sorted_directions,
         page::{Page, PageRequest},
+        series_count::series_count,
         series_listing::{
             FilterParams, SeriesFilter, SeriesListing, SeriesOrder, SortDirection,
             counted_conditions,
@@ -19,9 +20,10 @@ use crate::{
     },
 };
 
-macro_rules! series_in_a_category {
+macro_rules! kept_categories_of_series {
     () => {
-        "SELECT series_local_id FROM series_kept_categories WHERE kept > 0"
+        "(SELECT kept FROM series_kept_categories
+            WHERE series_kept_categories.series_local_id = series.local_id)"
     };
 }
 
@@ -35,43 +37,43 @@ macro_rules! in_no_category_candidates {
 }
 
 const BY_TITLE: Directions<TitlePlace> = directions! {
-    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
-    condition: " AND series.local_id NOT IN in_a_category",
+    with: "",
+    condition: concat!(" AND ", kept_categories_of_series!(), " = 0"),
     key: "title_key",
     sort_position: title_place,
 };
 
 const BY_DATE_ADDED: Directions<Position> = directions! {
-    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
-    condition: " AND series.local_id NOT IN in_a_category",
+    with: "",
+    condition: concat!(" AND ", kept_categories_of_series!(), " = 0"),
     key: "added_at_ms",
     sort_position: added_place,
 };
 
 const BY_LAST_READ: Directions<Position> = directions! {
-    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
-    condition: " AND series.local_id NOT IN in_a_category",
+    with: "",
+    condition: concat!(" AND ", kept_categories_of_series!(), " = 0"),
     key: "last_read_at_ms",
     sort_position: last_read_place,
 };
 
 const BY_LAST_UPDATED: Directions<Position> = directions! {
-    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
-    condition: " AND series.local_id NOT IN in_a_category",
+    with: "",
+    condition: concat!(" AND ", kept_categories_of_series!(), " = 0"),
     key: "updated_at_ms",
     sort_position: last_updated_place,
 };
 
 const BY_UNREAD_COUNT: Directions<Position> = directions! {
-    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
-    condition: " AND series.local_id NOT IN in_a_category",
+    with: "",
+    condition: concat!(" AND ", kept_categories_of_series!(), " = 0"),
     key: "unread_count",
     sort_position: unread_count_place,
 };
 
 const BY_TIME_LEFT: Directions<Position> = directions! {
-    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
-    condition: " AND series.local_id NOT IN in_a_category",
+    with: "",
+    condition: concat!(" AND ", kept_categories_of_series!(), " = 0"),
     key: "time_left_key",
     sort_position: time_left_place,
 };
@@ -112,7 +114,6 @@ const BY_TIME_LEFT_SORTED: Directions<Position> = sorted_directions! {
     sort_position: time_left_place,
 };
 
-/// Sorting the series in no category beats walking each stage up to about this many, since a walk passes every categorised series on the way.
 const FEW_IN_NO_CATEGORY: i64 = 1_500;
 
 const IN_NO_CATEGORY_ARE_FEW: &str = "SELECT count(*) < :few FROM (
@@ -124,14 +125,16 @@ const FEW_SERIES_IN_NO_CATEGORY: &str = concat!(
     counted_conditions!()
 );
 
-const SERIES_IN_NO_CATEGORY: &str = concat!(
-    "SELECT count(*) FROM series
-    WHERE reading_stage IN (:unstarted, :in_progress, :finished)
-        AND local_id NOT IN (",
-    series_in_a_category!(),
-    ")",
+const SERIES_IN_A_CATEGORY: &str = concat!(
+    "SELECT count(*) FROM series_kept_categories INDEXED BY series_in_a_category
+        CROSS JOIN series ON series.local_id = series_kept_categories.series_local_id
+        WHERE series_kept_categories.kept > 0
+            AND series.reading_stage IN (:unstarted, :in_progress, :finished)",
     counted_conditions!()
 );
+
+const SHARE_IN_NO_CATEGORY: &str =
+    "SELECT count(*) FILTER (WHERE kept = 0), count(*) FROM series_kept_categories";
 
 fn listing_toward<'a, P>(
     few: bool,
@@ -204,14 +207,20 @@ pub fn categoryless_series_count(
     connection: &Connection,
     filter: &SeriesFilter,
 ) -> Result<u32, Error> {
-    let counted = if in_no_category_are_few(connection)? {
-        FEW_SERIES_IN_NO_CATEGORY
-    } else {
-        SERIES_IN_NO_CATEGORY
-    };
+    let (in_none, every): (u32, u32) = connection
+        .prepare_cached(SHARE_IN_NO_CATEGORY)?
+        .query_row([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+    if in_none <= every - in_none {
+        return counted(connection, FEW_SERIES_IN_NO_CATEGORY, filter);
+    }
+    let in_a_category = counted(connection, SERIES_IN_A_CATEGORY, filter)?;
+    Ok(series_count(connection, filter)?.saturating_sub(in_a_category))
+}
+
+fn counted(connection: &Connection, query: &str, filter: &SeriesFilter) -> Result<u32, Error> {
     let filter = FilterParams::of(filter);
     Ok(connection
-        .prepare_cached(counted)?
+        .prepare_cached(query)?
         .query_row(filter.named().as_slice(), |row| row.get(0))?)
 }
 
@@ -288,6 +297,19 @@ mod tests {
                 "{plan:?}"
             );
         }
+    }
+
+    #[test]
+    fn counts_the_categorised_series_from_their_own_index() {
+        let scratch = ScratchLibrary::new("categorised-series-count-plan");
+
+        let plan = scratch.query_plan(SERIES_IN_A_CATEGORY);
+
+        assert!(
+            plan.iter()
+                .any(|step| step.contains("INDEX series_in_a_category")),
+            "{plan:?}"
+        );
     }
 
     #[derive(Clone, Debug)]

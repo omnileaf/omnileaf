@@ -397,12 +397,16 @@ async fn reads_each_page_and_count_of_a_category_of_a_hundredth_or_a_tenth_of_10
 }
 
 const SHELF: &str = "Shelf";
-const CATEGORISED_SHARES: [Categorised; 2] =
-    [Categorised::EveryTenth, Categorised::AllButEveryHundredth];
+const CATEGORISED_SHARES: [Categorised; 3] = [
+    Categorised::EveryTenth,
+    Categorised::AllButEverySixth,
+    Categorised::AllButEveryHundredth,
+];
 
 #[derive(Clone, Copy, Debug)]
 enum Categorised {
     EveryTenth,
+    AllButEverySixth,
     AllButEveryHundredth,
 }
 
@@ -410,6 +414,7 @@ impl Categorised {
     const fn condition(self) -> &'static str {
         match self {
             Self::EveryTenth => "added_at_ms % 10 = 0",
+            Self::AllButEverySixth => "added_at_ms % 6 != 0",
             Self::AllButEveryHundredth => "added_at_ms % 100 != 0",
         }
     }
@@ -421,10 +426,10 @@ impl Categorised {
     reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
-async fn reads_each_page_and_count_of_the_series_in_no_category_with_a_tenth_or_all_but_a_hundredth_of_10_000_in_one_within_4_ms_at_p95()
+async fn reads_each_page_and_count_of_the_series_in_no_category_with_a_tenth_five_sixths_or_all_but_a_hundredth_of_10_000_in_one_within_4_ms_at_p95()
  {
     let trial = trial_within(
-        "a page of 100 or a count of the series in no category, with a tenth or all but a hundredth of 10,000 series in one",
+        "a page of 100 or a count of the series in no category, with a tenth, five sixths or all but a hundredth of 10,000 series in one",
         CROWDED_BUDGET,
     );
 

@@ -14,6 +14,8 @@ SELECT series.local_id, (
 
 CREATE INDEX series_in_no_category ON series_kept_categories (series_local_id) WHERE kept = 0;
 
+CREATE INDEX series_in_a_category ON series_kept_categories (series_local_id) WHERE kept > 0;
+
 CREATE TRIGGER series_kept_categories_after_series_insert AFTER INSERT ON series
 BEGIN
     INSERT OR REPLACE INTO series_kept_categories (series_local_id, kept)
