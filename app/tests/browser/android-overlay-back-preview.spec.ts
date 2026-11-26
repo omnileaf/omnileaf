@@ -13,6 +13,7 @@ import {
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
 
+const PHONE = { width: 412, height: 700 };
 const LIBRARY = sampleSeries(6);
 const SCREEN_CORNER_PX = 32;
 const HALFWAY = 0.5;
@@ -22,6 +23,7 @@ let gestures: FakeChannel<BackSwipe> | undefined;
 
 test.use({
   platform: "android",
+  viewport: PHONE,
   backend: {
     ...DEFAULT_BACKEND,
     appInfo: () => fakeAppInfo("android"),
