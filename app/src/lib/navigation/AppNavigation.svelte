@@ -196,6 +196,10 @@
         <Tooltip
           label={isFolded ? destination.label() : undefined}
           side={document.documentElement.dir === "rtl" ? "left" : "right"}
+          onclick={isSelected && !isWayBack ? onOpenTabTap : undefined}
+          onpointerup={() => {
+            holdPressUntilChosen(destination.section);
+          }}
         >
           {#snippet child({ props })}
             <a
@@ -204,11 +208,6 @@
               aria-current={isSelected && !isWayBack ? "page" : undefined}
               aria-label={isWayBack ? m.search_back() : undefined}
               data-back-link={isWayBack || undefined}
-              onclick={isSelected && !isWayBack ? onOpenTabTap : undefined}
-              onpointerup={() => {
-                holdPressUntilChosen(destination.section);
-              }}
-              onpointercancel={releaseUnusedPress}
               class={[
                 "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label windows:focus-visible:ring-1 windows:focus-visible:ring-native-focus-ring-inner windows:focus-visible:focus-ring desktop-shell:flex-row desktop-shell:gap-sm desktop-shell:rounded-sidebar-row desktop-shell:px-sm desktop-shell:py-none desktop-shell:block-sidebar-row desktop-shell:min-block-sidebar-row sidebar-hidden:justify-center sidebar-hidden:px-none",
                 look.tab,

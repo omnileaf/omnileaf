@@ -45,6 +45,7 @@ const ONE_TOOTH_DEG = 60;
 const REST_TOLERANCE = 0.01;
 const VISIBLY_MOVED = 0.05;
 const PRESS_FRAMES = 4;
+const LONG_PRESS_MS = 800;
 const FINGER = { pointerType: "touch", isPrimary: true } as const;
 const HAND_OVER_FRAMES = 40;
 
@@ -296,6 +297,13 @@ function showsAPill({ isPressed, isHeld, isTinted, pill }: PillFrame): boolean {
 
 function heldPresses(page: Page): Locator {
   return navigation(page).locator("[data-held-press]");
+}
+
+async function longPress(page: Page, target: Locator): Promise<void> {
+  await target.dispatchEvent("pointerdown", FINGER);
+  await page.clock.runFor(LONG_PRESS_MS);
+  await target.dispatchEvent("pointerup", FINGER);
+  await target.dispatchEvent("click");
 }
 
 async function turnNavigationMotionOff(page: Page): Promise<void> {
@@ -743,6 +751,29 @@ test.describe("on Android", () => {
     await settle(navigation(page));
 
     await expect(heldPresses(page)).toHaveCount(0);
+  });
+
+  test("leaves no grey after a long press that shows the tab's name", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
+    await page.addInitScript(() => {
+      localStorage.setItem("omnileaf.sidebar", "hidden");
+    });
+    await page.goto("/");
+    await settle(navigation(page));
+    await page.clock.install();
+
+    await longPress(page, tab(page, "History"));
+
+    await expect(
+      page.getByText("History", { exact: true }).last(),
+    ).toBeVisible();
+    await expect(heldPresses(page)).toHaveCount(0);
+    await expect(tab(page, "Library")).toHaveAttribute("aria-current", "page");
   });
 
   test("leaves no grey on a tab overtaken by a second tap", async ({
