@@ -402,7 +402,7 @@ async fn removes_a_category_and_keeps_its_series_in_the_library() {
 
     assert_eq!(
         labelled.library.categories().await.unwrap(),
-        [other.clone()]
+        std::slice::from_ref(&other)
     );
     assert_eq!(labelled.titles_in(&shelf.id).await, Vec::<String>::new());
     assert_eq!(labelled.titles_in(&other.id).await, labelled.titles(1));
