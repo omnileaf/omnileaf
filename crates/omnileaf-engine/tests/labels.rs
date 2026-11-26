@@ -6,7 +6,8 @@
 mod support;
 
 use omnileaf_engine::{
-    CategoryId, LabelChanges, Library, LibraryCategory, LibraryListing, LibraryTag, SeriesId,
+    CategoryId, CategoryRename, LabelChanges, Library, LibraryCategory, LibraryListing, LibraryTag,
+    SeriesId,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -300,6 +301,136 @@ async fn tells_how_many_of_the_series_asked_hold_each_category_and_tag() {
         [("storms", 1)]
     );
     assert!(labels.keeps_labels);
+}
+
+fn names(categories: &[LibraryCategory]) -> Vec<&str> {
+    categories
+        .iter()
+        .map(|category| category.name.as_str())
+        .collect()
+}
+
+#[tokio::test]
+async fn renames_a_category_keeping_its_series_and_its_place() {
+    let labelled = Labelled::open("labels-category-rename").await;
+    labelled.label(2, creating("Sample Shelf")).await;
+    labelled.label(1, creating("Other Name")).await;
+    let shelf = labelled.category("Sample Shelf").await;
+
+    let renamed = labelled
+        .library
+        .rename_library_category(shelf.id.clone(), "  Plan to read ".to_owned())
+        .await
+        .unwrap();
+
+    let categories = labelled.library.categories().await.unwrap();
+    assert_eq!(renamed, CategoryRename::Renamed);
+    assert_eq!(names(&categories), ["Plan to read", "Other Name"]);
+    assert_eq!(categories[0].id, shelf.id);
+    assert_eq!(labelled.titles_in(&shelf.id).await, labelled.titles(2));
+}
+
+#[tokio::test]
+async fn refuses_to_rename_a_category_to_another_category_s_name_or_to_nothing() {
+    let labelled = Labelled::open("labels-category-rename-refused").await;
+    labelled.label(2, creating("Sample Shelf")).await;
+    labelled.label(1, creating("Other Name")).await;
+    let shelf = labelled.category("Sample Shelf").await;
+
+    let taken = labelled
+        .library
+        .rename_library_category(shelf.id.clone(), "OTHER name".to_owned())
+        .await
+        .unwrap();
+    let empty = labelled
+        .library
+        .rename_library_category(shelf.id.clone(), "   ".to_owned())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (taken, empty),
+        (CategoryRename::NameTaken, CategoryRename::NameEmpty)
+    );
+    assert_eq!(
+        names(&labelled.library.categories().await.unwrap()),
+        ["Sample Shelf", "Other Name"]
+    );
+}
+
+#[tokio::test]
+async fn says_a_category_that_has_gone_is_gone_instead_of_renaming_it() {
+    let labelled = Labelled::open("labels-category-rename-gone").await;
+    labelled.label(1, creating("Sample Shelf")).await;
+    let shelf = labelled.category("Sample Shelf").await;
+    labelled
+        .library
+        .remove_library_category(shelf.id.clone())
+        .await
+        .unwrap();
+
+    let renamed = labelled
+        .library
+        .rename_library_category(shelf.id, "Plan to read".to_owned())
+        .await
+        .unwrap();
+
+    assert_eq!(renamed, CategoryRename::Gone);
+    assert_eq!(labelled.library.categories().await.unwrap(), Vec::new());
+}
+
+#[tokio::test]
+async fn removes_a_category_and_keeps_its_series_in_the_library() {
+    let labelled = Labelled::open("labels-category-remove").await;
+    labelled.label(2, creating("Sample Shelf")).await;
+    labelled.label(1, creating("Other Name")).await;
+    let shelf = labelled.category("Sample Shelf").await;
+    let other = labelled.category("Other Name").await;
+    let library_before = labelled
+        .library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .len();
+
+    labelled
+        .library
+        .remove_library_category(shelf.id.clone())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        labelled.library.categories().await.unwrap(),
+        [other.clone()]
+    );
+    assert_eq!(labelled.titles_in(&shelf.id).await, Vec::<String>::new());
+    assert_eq!(labelled.titles_in(&other.id).await, labelled.titles(1));
+    assert_eq!(
+        labelled
+            .library
+            .series(LibraryListing::default(), None)
+            .await
+            .unwrap()
+            .series
+            .len(),
+        library_before
+    );
+}
+
+#[tokio::test]
+async fn removes_nothing_for_a_category_the_library_does_not_keep() {
+    let labelled = Labelled::open("labels-category-remove-unknown").await;
+    labelled.label(1, creating("Sample Shelf")).await;
+    let before = labelled.library.categories().await.unwrap();
+
+    labelled
+        .library
+        .remove_library_category(CategoryId::from("not-a-category".to_owned()))
+        .await
+        .unwrap();
+
+    assert_eq!(labelled.library.categories().await.unwrap(), before);
 }
 
 #[tokio::test]
