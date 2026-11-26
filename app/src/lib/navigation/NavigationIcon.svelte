@@ -80,6 +80,12 @@
   const FILL_FADE =
     "transition-paint motion-navigation:duration-fade motion-navigation:ease-out";
   const MOVES_ABOUT_CENTRE = "origin-center";
+  const MOVES: Record<Section, string> = {
+    library: "icon-moves:motion-navigation:animate-book-open",
+    browse: "icon-moves:motion-navigation:animate-needle-swing",
+    history: "icon-moves:motion-navigation:animate-hands-sweep",
+    settings: "icon-moves:motion-navigation:animate-gear-turn",
+  };
 
   const SHAPES: Record<Section, Snippet<[boolean]>> = {
     library,
@@ -92,12 +98,7 @@
 </script>
 
 {#snippet library(filled: boolean)}
-  <g
-    class={[
-      MOVES_ABOUT_CENTRE,
-      isArriving && "icon-moves:motion-navigation:animate-book-open",
-    ]}
-  >
+  <g class={[MOVES_ABOUT_CENTRE, isArriving && MOVES.library]}>
     <path
       d="M12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4a5 5 0 0 1 4 2z"
       fill={filled ? "currentColor" : "transparent"}
@@ -131,7 +132,7 @@
       FILL_FADE,
       MOVES_ABOUT_CENTRE,
       filled && [HOLE, "fill-icon-hole"],
-      isArriving && "icon-moves:motion-navigation:animate-needle-swing",
+      isArriving && MOVES.browse,
     ]}
   />
 {/snippet}
@@ -153,18 +154,13 @@
       FILL_FADE,
       MOVES_ABOUT_CENTRE,
       filled && HOLE,
-      isArriving && "icon-moves:motion-navigation:animate-hands-sweep",
+      isArriving && MOVES.history,
     ]}
   />
 {/snippet}
 
 {#snippet settings(filled: boolean)}
-  <g
-    class={[
-      MOVES_ABOUT_CENTRE,
-      isArriving && "icon-moves:motion-navigation:animate-gear-turn",
-    ]}
-  >
+  <g class={[MOVES_ABOUT_CENTRE, isArriving && MOVES.settings]}>
     <path
       d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
       fill={filled ? "currentColor" : "transparent"}
