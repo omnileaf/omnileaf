@@ -25,13 +25,13 @@
   import { previewBackGestures } from "./back-preview";
   import { wayBackFrom } from "./back-link";
   import { backSwipeEdge, directionOf } from "./back-swipe";
-  import { willScreenTakeBack } from "./back-within-screen";
   import {
     holdScrollPlace,
     holdScrollTop,
     placeOf,
     type ScrollPlace,
   } from "./hold-scroll";
+  import { isLeavingGuarded } from "./leave-guard";
   import { willOverlayTakeBack } from "./overlay-back";
   import { ScrollMemory } from "./scroll-memory";
   import { focusArrival } from "./page-heading";
@@ -231,7 +231,7 @@
           () =>
             location.pathname === page.url.pathname &&
             location.search === page.url.search,
-          () => willScreenTakeBack() || willOverlayTakeBack(),
+          () => willOverlayTakeBack() || isLeavingGuarded(),
         )
       : undefined;
     const stopListening = listenForLibraryChanges(() => {
