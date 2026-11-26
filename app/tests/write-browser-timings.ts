@@ -7,7 +7,11 @@ import kept from "./browser-timings.json" with { type: "json" };
 import { mergeTimings, testDurations } from "./shard-test-list.ts";
 
 const TIMINGS = new URL("browser-timings.json", import.meta.url);
-const NARROWING_VARIABLES = ["PLAYWRIGHT_GROUP", "PLAYWRIGHT_SHARD"];
+const NARROWING_VARIABLES = [
+  "PLAYWRIGHT_GROUP",
+  "PLAYWRIGHT_SHARD",
+  "PLAYWRIGHT_SCREENS",
+];
 const playwrightArguments = process.argv.slice(2);
 const isNarrowed =
   playwrightArguments.length > 0 ||

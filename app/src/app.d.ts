@@ -1,4 +1,5 @@
 import type { FirstLaunchStep } from "#lib/first-launch/steps.ts";
+import type { OriginPage } from "#lib/reader/reader-way-back.ts";
 
 declare global {
   interface ImportMetaEnv {
@@ -13,6 +14,7 @@ declare global {
       folderGuide?: boolean;
       readerOpensAtEnd?: boolean;
       readerJumped?: boolean;
+      readerOrigin?: OriginPage | null;
       libraryTag?: string;
     }
   }

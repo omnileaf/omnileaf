@@ -81,6 +81,9 @@
         <RadioGroupItem
           value={choice.value}
           aria-labelledby="{id}-{choice.value}-label"
+          aria-describedby={choice.hint === undefined
+            ? undefined
+            : `${id}-${choice.value}-hint`}
           class={look.row}
         >
           <span
@@ -103,7 +106,9 @@
               {choice.label}
             </span>
             {#if choice.hint !== undefined}
-              <span class={look.hint}>{choice.hint}</span>
+              <span id="{id}-{choice.value}-hint" class={look.hint}>
+                {choice.hint}
+              </span>
             {/if}
           </span>
         </RadioGroupItem>

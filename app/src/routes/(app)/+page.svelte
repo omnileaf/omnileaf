@@ -1059,7 +1059,7 @@
   <IosLabelSeriesSheet
     bind:isOpen={isLabelling}
     series={labelled}
-    startsAtTags={labelsFrom === "tags"}
+    from={labelsFrom}
     onApplied={endSelecting}
     onApplyFailed={sayLabelsFailed}
     onError={reportFailure}
@@ -1068,7 +1068,7 @@
   <LabelSeriesDialog
     bind:isOpen={isLabelling}
     series={labelled}
-    startsAtTags={labelsFrom === "tags"}
+    from={labelsFrom}
     onApplied={endSelecting}
     onApplyFailed={sayLabelsFailed}
     onError={reportFailure}

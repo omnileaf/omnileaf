@@ -39,6 +39,9 @@ jobs:
       site: ${{ steps.areas.outputs.site }}
       vendor: ${{ steps.areas.outputs.vendor }}
       admin: ${{ steps.areas.outputs.admin }}
+      dependencies: ${{ steps.areas.outputs.dependencies }}
+      browser-suite: ${{ steps.suite.outputs.suite }}
+      screens: ${{ steps.suite.outputs.screens }}
     steps:
       - name: Read the pull request's labels as they are now
         id: labels
@@ -75,6 +78,36 @@ jobs:
         run: |
           areas=$(cargo xtask changes ${BASE:+--base "$BASE"})
           echo "$areas" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Choose how much of the browser suite this run needs
+        id: suite
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          LABELS: ${{ steps.labels.outputs.labels }}
+          BROWSER_SETUP: ${{ steps.areas.outputs.browser-setup }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          pull_requests_above() {
+            heads=$(gh api --paginate -X GET "repos/$GITHUB_REPOSITORY/pulls" -f state=open -f base="$HEAD_BRANCH" -f per_page=100 --jq '.[].head.repo.full_name') || return 1
+            grep -cxF "$GITHUB_REPOSITORY" <<< "$heads" || true
+          }
+          suite=whole
+          screens=
+          if [ "$EVENT" = pull_request ] && ! jq -e 'index("full-browser-tests")' <<< "$LABELS" > /dev/null; then
+            screens=phone,desktop
+            if [ "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY" ] && [ "$BROWSER_SETUP" = false ]; then
+              if above=$(pull_requests_above); then
+                if [ "$above" -gt 0 ]; then
+                  suite=touched
+                fi
+              else
+                echo "::warning::Could not list the pull requests above this one, so the whole browser suite runs"
+              fi
+            fi
+          fi
+          printf 'suite=%s\nscreens=%s\n' "$suite" "$screens" | tee -a "$GITHUB_OUTPUT"
 
   changelog:
     name: changelog
@@ -263,8 +296,15 @@ jobs:
         with:
           tool: cargo-deny@0.20.2,cargo-about@0.9.2
 
-      - name: Run the gate
-        run: cargo xtask check --only portable
+      - name: Run the gate, leaving out the advisory check on a pull request that changes no dependency list
+        env:
+          SKIP_ADVISORIES: ${{ github.event_name == 'pull_request' && needs.changes.outputs.dependencies == 'false' }}
+        run: |
+          skip=()
+          if [ "$SKIP_ADVISORIES" = true ]; then
+            skip=(--skip advisories)
+          fi
+          cargo xtask check --only portable "${skip[@]}"
 
       - name: Compare the vendored sources with their upstream tarball
         if: needs.changes.outputs.vendor != 'false'
@@ -483,6 +523,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 2
           persist-credentials: false
 
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
@@ -491,24 +532,6 @@ jobs:
         with:
           node-version-file: .node-version
           cache: ${{ needs.changes.outputs.app != 'false' && 'pnpm' || '' }}
-
-      - name: Share the browser tests out across shards
-        id: shards
-        env:
-          IS_APP_CHANGED: ${{ needs.changes.outputs.app != 'false' }}
-          IS_SITE_CHANGED: ${{ needs.changes.outputs.site != 'false' }}
-          REST_SHARDS: 36
-          SCREENS_SHARDS: 12
-        run: |
-          shards=$(jq -nc \
-            --argjson isAppChanged "$IS_APP_CHANGED" \
-            --argjson isSiteChanged "$IS_SITE_CHANGED" \
-            --argjson rest "$REST_SHARDS" \
-            --argjson screens "$SCREENS_SHARDS" \
-            'def shards($group; $of): [range(1; $of + 1) | {group: $group, shard: ., of: $of}];
-            (if $isAppChanged then shards("rest"; $rest) + shards("screens"; $screens) + shards("speed"; 1) else [] end)
-            + (if $isSiteChanged then shards("site"; 1) else [] end)')
-          echo "shards=$shards" >> "$GITHUB_OUTPUT"
 
       - name: Install interface dependencies
         if: needs.changes.outputs.app != 'false'
@@ -521,14 +544,33 @@ jobs:
           VITE_KIT_PAGE: "on"
         run: pnpm --dir app build
 
-      - name: List each group's tests
+      - name: List each group's tests, only the ones a change touches in a pull request under another
         if: needs.changes.outputs.app != 'false'
         working-directory: app
+        env:
+          PLAYWRIGHT_SCREENS: ${{ needs.changes.outputs.screens }}
+          BROWSER_SUITE: ${{ needs.changes.outputs.browser-suite }}
         run: |
           mkdir -p browser-test-lists
+          only_changed=()
+          if [ "$BROWSER_SUITE" = touched ]; then
+            only_changed=(--only-changed=HEAD^1)
+          fi
           for group in rest screens; do
-            PLAYWRIGHT_GROUP=$group pnpm exec playwright test --list --reporter=json > "browser-test-lists/$group.json"
+            PLAYWRIGHT_GROUP=$group pnpm exec playwright test --list --reporter=json "${only_changed[@]}" > "browser-test-lists/$group.json"
           done
+
+      - name: Share the browser tests out across shards
+        id: shards
+        working-directory: app
+        env:
+          IS_APP_CHANGED: ${{ needs.changes.outputs.app != 'false' }}
+          IS_SITE_CHANGED: ${{ needs.changes.outputs.site != 'false' }}
+          BROWSER_SUITE: ${{ needs.changes.outputs.browser-suite }}
+          PLAYWRIGHT_SCREENS: ${{ needs.changes.outputs.screens }}
+        run: |
+          shards=$(node tests/write-shard-matrix.ts browser-test-lists)
+          echo "shards=$shards" | tee -a "$GITHUB_OUTPUT"
 
       - name: Keep the build for the shards
         if: needs.changes.outputs.app != 'false'
@@ -616,7 +658,7 @@ jobs:
   browser:
     name: browser tests (${{ matrix.group }} ${{ matrix.shard }}/${{ matrix.of }})
     needs: [changes, browser-build, browser-packages]
-    if: ${{ !cancelled() && needs.browser-build.result == 'success' }}
+    if: ${{ !cancelled() && needs.browser-build.result == 'success' && needs.browser-build.outputs.shards != '[]' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
@@ -625,6 +667,7 @@ jobs:
         include: ${{ fromJSON(needs.browser-build.outputs.shards) }}
     env:
       PLAYWRIGHT_GROUP: ${{ matrix.group }}
+      PLAYWRIGHT_SCREENS: ${{ needs.changes.outputs.screens }}
       OMNILEAF_APP_BUILT: "on"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -719,7 +762,11 @@ jobs:
       - name: Pass only when the build and every shard passed, or none were needed
         env:
           RESULTS: ${{ needs.browser-build.result }}/${{ needs.browser.result }}
-        run: test "$RESULTS" = success/success || test "$RESULTS" = skipped/skipped
+          SHARDS: ${{ needs.browser-build.outputs.shards }}
+        run: |
+          test "$RESULTS" = success/success \
+            || test "$RESULTS" = skipped/skipped \
+            || { test "$RESULTS" = success/skipped && test "$SHARDS" = '[]'; }
 
   android:
     name: android

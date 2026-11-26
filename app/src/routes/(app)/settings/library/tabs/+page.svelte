@@ -1,9 +1,6 @@
 <script lang="ts">
-  import { Plus } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  import { Button } from "#lib/components/ui/button/index.ts";
-  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import { reportFailure } from "#lib/errors/report-failure.ts";
   import {
@@ -39,10 +36,6 @@
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
-  const ICON_SIZE = 16;
-  const NEW_CATEGORY_ICON_SIZE = 20;
-  const ANDROID_NEW_CATEGORY =
-    "native-target my-sm gap-sm self-start rounded-full px-lg text-native-row-subtitle/native-row-subtitle font-medium text-muted block-native-button";
   const android = androidListLook();
   const ios = new IosPhone();
 
@@ -197,36 +190,12 @@
       onArrange={(next: readonly ArrangedTab[]) => {
         void arrange(next);
       }}
-    />
-    {#if keepsLabels}
-      <div
-        data-settings-end
-        class={["flex flex-wrap gap-sm", !android.isOn && "mbs-sm"]}
-      >
-        <Button
-          type="button"
-          look="outline"
-          class={[
-            "flex items-center font-medium",
-            android.isOn
-              ? ANDROID_NEW_CATEGORY
-              : "gap-xs rounded-full px-md min-block-pointer-button touch:min-block-touch-target",
-          ]}
-          onclick={() => {
+      onNewCategory={keepsLabels
+        ? () => {
             isNaming = true;
-          }}
-        >
-          {#if android.isOn}
-            <Icon name="plus" size={NEW_CATEGORY_ICON_SIZE} />
-          {:else}
-            <Plus size={ICON_SIZE} aria-hidden="true" />
-          {/if}
-          {isMac
-            ? m.library_tabs_new_category_mac()
-            : m.library_tabs_new_category()}
-        </Button>
-      </div>
-    {/if}
+          }
+        : undefined}
+    />
   </div>
   {#if android.isOn}
     <div data-settings-group class="flex flex-col">

@@ -25,11 +25,13 @@
   let {
     isOpen,
     isInLibrary,
+    backLabel,
     platform,
     onClose,
   }: {
     isOpen: boolean;
     isInLibrary: boolean;
+    backLabel: string;
     platform: Platform;
     onClose: () => void;
   } = $props();
@@ -65,9 +67,7 @@
       { label: m.reader_full_screen(), keys: ["F"] },
       { label: m.reader_leave_full_screen(), keys: [m.reader_key_esc()] },
       {
-        label: isInLibrary
-          ? m.reader_back_to_the_series()
-          : m.reader_back_label(),
+        label: backLabel,
         keys: [
           m.reader_key_esc(),
           isMac ? m.reader_key_back_mac() : m.reader_key_back(),

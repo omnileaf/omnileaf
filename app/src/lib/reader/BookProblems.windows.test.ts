@@ -14,6 +14,7 @@ import { resolvedColour } from "../../../tests/components/resolved-colour";
 import BookProblem from "./BookProblem.svelte";
 import { bookIdIn } from "./opened-book.ts";
 import UnsupportedBook from "./UnsupportedBook.svelte";
+import { leavesNowhere, seriesWayBackOf } from "./way-back-for-tests";
 
 const BOOK = bookIdIn("0190a3e4-0000-8000-8000-0000000000b6");
 const SERIES = seriesIdIn("0190a3e4-0000-8000-8000-0000000000a4");
@@ -41,6 +42,8 @@ async function unreadable() {
     place: null,
     platform: "windows",
     onShowFile: undefined,
+    wayBack: seriesWayBackOf(null),
+    onBack: leavesNowhere,
   });
 }
 
@@ -60,6 +63,8 @@ function place(): BookPlace {
 async function unsupported() {
   return render(UnsupportedBook, {
     place: place(),
+    wayBack: seriesWayBackOf(place()),
+    onBack: leavesNowhere,
     file: { name: "Volume 6.cbr", fileType: "cbr" },
     platform: "windows",
     hideFilesLike: () => Promise.resolve({ status: "ok", data: "cbr" }),

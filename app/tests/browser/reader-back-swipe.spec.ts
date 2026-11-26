@@ -3,7 +3,13 @@ import type { Page } from "@playwright/test";
 import type { BackSwipe, SwipeEdge } from "../../src/lib/ipc/bindings.ts";
 import type { FakeChannel } from "./fake-backend.ts";
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
-import { NOT_STARTED, pinchTo, readerBook, servePages } from "./reader-book.ts";
+import {
+  BOOK_ID,
+  NOT_STARTED,
+  pinchTo,
+  readerBook,
+  servePages,
+} from "./reader-book.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const READER_URL = /\/read\//;
@@ -141,6 +147,31 @@ test.describe("swiping back from the reader", { tag: "@native" }, () => {
       0,
     );
     await expect(dimming(page)).toHaveCSS("opacity", "0.125");
+  });
+
+  test("brings in the search page the book was opened from, whatever it searched for", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "ios", "the edge swipe is the iPhone's");
+    await servePages(page);
+    await page.goto("/search?q=sample");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Search" }),
+    ).toBeAttached();
+    await page.evaluate((href) => {
+      const link = document.createElement("a");
+      link.href = href;
+      document.body.append(link);
+      link.click();
+      link.remove();
+    }, `/read/${BOOK_ID}`);
+    await expect(page).toHaveURL(READER_URL);
+
+    await expect.poll(() => watched.length).toBeGreaterThan(0);
+    await watched.at(-1)?.send({ kind: "moved", progress: HALFWAY });
+
+    await expect(previousScreen(page)).toContainText("Search");
   });
 
   test("lands on the series when let go past halfway", async ({

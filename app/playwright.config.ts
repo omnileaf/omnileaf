@@ -4,6 +4,7 @@ import type { Platform } from "./src/lib/ipc/bindings.ts";
 
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
 import { previewPortFromEnvironment } from "./tests/preview-port.ts";
+import { screensFromEnvironment } from "./tests/screens.ts";
 import { shardFromEnvironment } from "./tests/shard.ts";
 import {
   SCREEN_SWEEP_TAG,
@@ -46,6 +47,7 @@ const SCREEN_SWEEPS = new RegExp(`${SCREEN_SWEEP_TAG}\\b`);
 
 const shard = shardFromEnvironment(process.env.PLAYWRIGHT_SHARD);
 const group = testGroupFromEnvironment(process.env.PLAYWRIGHT_GROUP);
+const pickedScreens = screensFromEnvironment(process.env.PLAYWRIGHT_SCREENS);
 
 /** Playwright gives each shard a contiguous run of tests in project order, and WebKit takes about twice as long as Chromium, so each shard pairs a Chromium project with a WebKit one. */
 const PROJECT_ORDER = [
@@ -60,7 +62,9 @@ const PROJECT_ORDER = [
   keyof typeof SCREENS,
 ])[];
 
-const screenProjects = PROJECT_ORDER.map(([browserName, screen]) => ({
+const screenProjects = PROJECT_ORDER.filter(
+  ([, screen]) => pickedScreens?.includes(screen) ?? true,
+).map(([browserName, screen]) => ({
   name: `${browserName}-${screen}`,
   testIgnore: screen === "desktop" ? [] : [DESKTOP_ONLY_SPECS],
   ...(group === "screens" ? { grep: SCREEN_SWEEPS } : {}),

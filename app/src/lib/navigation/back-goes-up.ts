@@ -10,6 +10,7 @@ import {
 import type { ResolvedPathname } from "$app/types";
 
 import { resolvedPathOf } from "./app-path";
+import { isInAppShell } from "./sections";
 import { type HistoryMove, moveTo } from "./up-history";
 
 type Replacing = Extract<HistoryMove, { kind: "replace" }>;
@@ -123,7 +124,12 @@ export function makeBackGoUp(): BackGoesUp {
   }
 
   beforeNavigate(({ type, to, cancel }) => {
-    if (type !== "link" || to === null || to.route.id === null) {
+    if (
+      type !== "link" ||
+      to === null ||
+      to.route.id === null ||
+      !isInAppShell(to.route.id)
+    ) {
       return;
     }
     if (isMoving) {
