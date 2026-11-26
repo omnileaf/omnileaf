@@ -211,7 +211,7 @@ test.each<[ButtonLook, string]>([
     `not-disabled:not-aria-disabled:hover:tint-native-button-${variant}-hover`,
   );
   expect(classes).toContain(
-    `not-disabled:not-aria-disabled:pressed:tint-native-button-${variant}-pressed`,
+    `not-disabled:not-aria-disabled:active:tint-native-button-${variant}-pressed`,
   );
 });
 

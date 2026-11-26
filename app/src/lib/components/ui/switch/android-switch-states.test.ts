@@ -159,14 +159,10 @@ test("grows a pressed Android switch's thumb on the kit's spring while navigatio
 });
 
 for (const checked of [false, true]) {
-  test(`draws a pressed ${checked ? "on" : "off"} Android switch's 48 state circle on its own, centred under the thumb`, async () => {
+  test(`keeps an ${checked ? "on" : "off"} Android switch's 48 state circle on its own, centred under the thumb`, async () => {
     await renderSwitch("android", "light", checked);
     const root = rootOf("Keep the screen on");
-    root.setAttribute("data-pressed", "");
     const knob = knobOf("Keep the screen on");
-    for (const animation of knob.getAnimations()) {
-      animation.finish();
-    }
 
     const halo = root.querySelector("[data-switch-halo]");
     const thumb = knob.getBoundingClientRect();

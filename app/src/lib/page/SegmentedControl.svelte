@@ -76,15 +76,15 @@
   const ANDROID_SEGMENT = {
     motion: "transition-shape",
     pressed:
-      "pressed:rounded-android-sm first-of-type:pressed:rounded-s-native-segment-end last-of-type:pressed:rounded-e-native-segment-end",
+      "active:rounded-android-sm first-of-type:active:rounded-s-native-segment-end last-of-type:active:rounded-e-native-segment-end",
     focus:
       "focus-visible:outline-(length:--focus-ring-width) focus-visible:outline-(color:--focus-ring-color) focus-visible:outline-offset-(--focus-ring-offset)",
     disabled:
       "data-disabled:bg-native-control-disabled data-disabled:text-native-on-control-disabled",
     chosenLayer:
-      "pressed:tint-native-segment-selected-pressed focus-visible:tint-native-segment-selected-pressed",
+      "active:tint-native-segment-selected-pressed focus-visible:tint-native-segment-selected-pressed",
     unchosenLayer:
-      "pressed:tint-native-segment-pressed focus-visible:tint-native-segment-pressed",
+      "active:tint-native-segment-pressed focus-visible:tint-native-segment-pressed",
   };
 
   const SHARED_SEGMENT = {

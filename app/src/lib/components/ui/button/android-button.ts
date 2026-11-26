@@ -7,9 +7,9 @@ const RESTING_SHAPE = {
 } satisfies Record<ButtonSize, string>;
 
 const PRESSED_SHAPE = {
-  small: "not-disabled:not-aria-disabled:pressed:rounded-android-sm",
-  regular: "not-disabled:not-aria-disabled:pressed:rounded-android-sm",
-  large: "not-disabled:not-aria-disabled:pressed:rounded-android-md",
+  small: "not-disabled:not-aria-disabled:active:rounded-android-sm",
+  regular: "not-disabled:not-aria-disabled:active:rounded-android-sm",
+  large: "not-disabled:not-aria-disabled:active:rounded-android-md",
 } satisfies Record<ButtonSize, string>;
 
 const LABEL_ICON = {

@@ -139,7 +139,6 @@
   }
 }
 @custom-variant closed (&[data-state="closed"]);
-@custom-variant pressed (&:is(:active, [data-pressed]));
 @custom-variant ios-grouped (&:where([data-platform="ios"] [data-ground="grouped"] *));
 @custom-variant grouped (&:where([data-platform="ios"] [data-ground="grouped"] *, [data-platform="android"], [data-platform="android"] *));
 @custom-variant motion-navigation {

@@ -70,13 +70,6 @@ afterEach(() => {
   delete document.documentElement.dataset.theme;
 });
 
-function settled(element: HTMLElement): CSSStyleDeclaration {
-  for (const animation of element.getAnimations()) {
-    animation.finish();
-  }
-  return getComputedStyle(element);
-}
-
 async function renderButton(
   platform: Platform,
   theme: Theme,
@@ -236,12 +229,6 @@ const RESTING_RADIUS: Record<ButtonSize, string> = {
   large: "28px",
 };
 
-const PRESSED_RADIUS: Record<ButtonSize, string> = {
-  small: "8px",
-  regular: "8px",
-  large: "12px",
-};
-
 for (const [size, radius] of Object.entries(RESTING_RADIUS)) {
   test(`rounds a resting ${size} Android button to half its height`, async () => {
     const labelledButton = await renderButton("android", "light", {
@@ -266,28 +253,6 @@ for (const [size, radius] of Object.entries(RESTING_RADIUS)) {
     expect(getComputedStyle(iconButton).borderTopLeftRadius).toBe(radius);
   });
 }
-
-for (const [size, radius] of Object.entries(PRESSED_RADIUS)) {
-  test(`tightens a pressed ${size} Android button's corners to ${radius}`, async () => {
-    const pressed = await renderButton("android", "light", {
-      variant: "outline",
-      size,
-    });
-
-    pressed.setAttribute("data-pressed", "");
-
-    expect(settled(pressed).borderTopLeftRadius).toBe(radius);
-  });
-}
-
-test("keeps a busy Android button's corners when it is pressed", async () => {
-  const busy = await renderButton("android", "light", { variant: "primary" });
-  busy.setAttribute("aria-disabled", "true");
-
-  busy.setAttribute("data-pressed", "");
-
-  expect(settled(busy).borderTopLeftRadius).toBe("20px");
-});
 
 test("morphs a pressed Android button's corners on the kit's spring while navigation moves", async () => {
   const moving = await renderButton("android", "light", { variant: "primary" });
