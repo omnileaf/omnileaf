@@ -213,3 +213,20 @@ test("keeps nothing of a list not read yet", () => {
 
   expect(list.pagesThroughShown(1)).toBeUndefined();
 });
+
+test("keeps nothing of a list started again until its first page answers", async () => {
+  const { answer, list } = heldPages();
+  const loaded = list.load();
+  answer(0, null);
+  await loaded;
+
+  const started = list.start();
+  const keptWhileStarting = list.pagesThroughShown(1);
+  answer(1, null);
+  await started;
+
+  expect([keptWhileStarting, list.pagesThroughShown(1)]).toEqual([
+    undefined,
+    { items: [0], next: null },
+  ]);
+});

@@ -421,3 +421,20 @@ test("keeps nothing before it has shown a listing", () => {
 
   expect(pages.keep(() => 0)).toBeUndefined();
 });
+
+test("keeps nothing of a page still switching to another tab", async () => {
+  const { pages } = pagesAsked();
+  pages.show({ basis: NEW_LIBRARY_LISTING, tabs: TABS, chosen: ALL, reach: 0 });
+  await vi.waitFor(() => {
+    expect(pages.of(ALL).series.list.kind).toBe("loaded");
+  });
+
+  pages.show({
+    basis: NEW_LIBRARY_LISTING,
+    tabs: TABS,
+    chosen: NOVELS,
+    reach: 0,
+  });
+
+  expect(pages.keep(() => 0)?.pages).toEqual([]);
+});

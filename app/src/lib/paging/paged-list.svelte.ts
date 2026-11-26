@@ -48,6 +48,7 @@ export class PagedList<Item, Cursor> {
   #listsBegun = 0;
   #next: Cursor | null = null;
   #pageEnds: readonly PageEnd<Cursor>[] = [];
+  #isStarting = false;
   #loadingMore:
     { readonly list: number; readonly read: Promise<void> } | undefined;
 
@@ -65,7 +66,7 @@ export class PagedList<Item, Cursor> {
   }
 
   pagesThroughShown(itemsShown: number): KeptPages<Item, Cursor> | undefined {
-    if (this.list.kind !== "loaded") {
+    if (this.list.kind !== "loaded" || this.#isStarting) {
       return undefined;
     }
     const ending =
@@ -85,6 +86,7 @@ export class PagedList<Item, Cursor> {
   async start(): Promise<void> {
     this.#listsBegun += 1;
     this.#next = null;
+    this.#isStarting = true;
     await this.#loadAtLeast(0);
   }
 
@@ -141,6 +143,7 @@ export class PagedList<Item, Cursor> {
     const load = ++this.#latestLoad;
     const read = await this.#readFromStart(load, count);
     if (read.kind !== "superseded") {
+      this.#isStarting = false;
       this.#show(read);
     }
   }
