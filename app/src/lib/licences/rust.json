@@ -2094,14 +2094,6 @@
       ]
     },
     {
-      "name": "nix",
-      "version": "0.32.0",
-      "licence": "MIT",
-      "texts": [
-        133
-      ]
-    },
-    {
       "name": "nom",
       "version": "8.0.0",
       "licence": "MIT",
@@ -3219,7 +3211,7 @@
     },
     {
       "name": "syn",
-      "version": "3.0.6",
+      "version": "3.0.10",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         43
@@ -3774,7 +3766,7 @@
     },
     {
       "name": "uuid",
-      "version": "1.29.2",
+      "version": "1.29.3",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         29
@@ -4032,6 +4024,14 @@
     {
       "name": "windows-sys",
       "version": "0.52.0",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        7
+      ]
+    },
+    {
+      "name": "windows-sys",
+      "version": "0.59.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         7
@@ -4303,7 +4303,7 @@
     },
     {
       "name": "zip",
-      "version": "9.6.0",
+      "version": "9.8.0",
       "licence": "MIT",
       "texts": [
         130
