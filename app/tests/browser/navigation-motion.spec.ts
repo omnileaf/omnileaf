@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import type { JSHandle, Locator, Page } from "@playwright/test";
 
 import {
   boxOf,
@@ -36,6 +36,11 @@ const STILL: Motion = { transitions: [], animations: [] };
 interface StartedAnimation {
   readonly tab: string | null;
   readonly animation: string;
+}
+
+interface AnimationWatch {
+  readonly started: string[];
+  readonly ends: Promise<string>[];
 }
 
 function motionIn(locator: Locator): Promise<Motion> {
@@ -108,6 +113,48 @@ async function animationsStartedWhile(
   return started.jsonValue();
 }
 
+function watchAnimationsIn(link: Locator): Promise<JSHandle<AnimationWatch>> {
+  return link.evaluateHandle((root) => {
+    const watch: AnimationWatch = { started: [], ends: [] };
+    root.addEventListener("animationstart", (event) => {
+      if (!(event instanceof AnimationEvent)) {
+        return;
+      }
+      const name = event.animationName;
+      const running = root
+        .getAnimations({ subtree: true })
+        .find(
+          (animation) =>
+            animation instanceof CSSAnimation &&
+            animation.animationName === name,
+        );
+      if (running === undefined) {
+        return;
+      }
+      watch.started.push(name);
+      watch.ends.push(
+        running.finished.then(
+          () => `${name} finished`,
+          () => `${name} cancelled`,
+        ),
+      );
+    });
+    return watch;
+  });
+}
+
+async function expectToRunToItsEnd(
+  watch: JSHandle<AnimationWatch>,
+  animation: string,
+): Promise<void> {
+  await expect
+    .poll(() => watch.evaluate(({ started }) => started))
+    .toContain(animation);
+  expect(await watch.evaluate(({ ends }) => Promise.all(ends))).toContain(
+    `${animation} finished`,
+  );
+}
+
 async function turnTheScreen(page: Page): Promise<void> {
   const viewport = viewportOf(page);
   await page.setViewportSize({
@@ -167,6 +214,26 @@ function testMovingIcons({ belowWidth, where, icon }: IconMoveScreens): void {
   }
 
   testKeepingTheIconStill({ belowWidth, where, icon });
+}
+
+function testRunningIconMovesToTheirEnd({
+  belowWidth,
+  where,
+}: Omit<IconMoveScreens, "icon">): void {
+  for (const { label, startFrom, move } of ICON_MOVES) {
+    test(`runs the ${label} icon's move to its end when the tab is tapped`, async ({
+      page,
+    }) => {
+      test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
+      await page.goto(startFrom);
+      await settle(navigation(page));
+      const watch = await watchAnimationsIn(tab(page, label));
+
+      await tab(page, label).tap();
+
+      await expectToRunToItsEnd(watch, move);
+    });
+  }
 }
 
 function testKeepingTheIconStill({
@@ -304,25 +371,9 @@ test.describe("on Android", () => {
     icon: "[data-icon]",
   });
 
-  test("starts no animation on the icon when the tab becomes selected", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    await settle(navigation(page));
-    const historyIcon = tab(page, "History").locator("[data-icon]");
-    const started = await historyIcon.evaluateHandle((element) => {
-      const log: string[] = [];
-      element.addEventListener("animationstart", (event) => {
-        if (event instanceof AnimationEvent) {
-          log.push(event.animationName);
-        }
-      });
-      return log;
-    });
-
-    await openTabAndSettle(page, "History");
-
-    expect(await started.jsonValue()).toEqual([]);
+  testRunningIconMovesToTheirEnd({
+    belowWidth: EXPANDED_MIN_WIDTH,
+    where: "bar and rail",
   });
 
   test("fills only the selected tab's icon", async ({ page }) => {
@@ -393,6 +444,24 @@ test.describe("on iOS", () => {
     );
 
     expect(started).toContainEqual({ tab: "History", animation: ICON_POP });
+  });
+
+  test("runs the new tab's bounce to its end when the tab is tapped", async ({
+    page,
+  }) => {
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/");
+    await settle(navigation(page));
+    const watch = await watchAnimationsIn(tab(page, "History"));
+
+    await tab(page, "History").tap();
+
+    await expectToRunToItsEnd(watch, "nav-pop");
+  });
+
+  testRunningIconMovesToTheirEnd({
+    belowWidth: MEDIUM_MIN_WIDTH,
+    where: "phones",
   });
 
   testTurningTheScreen();

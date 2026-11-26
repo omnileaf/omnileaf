@@ -171,12 +171,13 @@
 {/snippet}
 
 {#if platform === "android"}
-  <Icon
-    name={SECTION_ICONS[section]}
-    filled={isSelected}
-    size={iconSize}
-    class={className}
-  />
+  <span
+    data-slot="navigation-icon"
+    aria-hidden="true"
+    class={["flex", className, isArriving && MOVES[section]]}
+  >
+    <Icon name={SECTION_ICONS[section]} filled={isSelected} size={iconSize} />
+  </span>
 {:else}
   <svg
     aria-hidden="true"
