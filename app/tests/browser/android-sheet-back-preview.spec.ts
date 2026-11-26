@@ -1,6 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { BackSwipe } from "../../src/lib/ipc/bindings.ts";
+import type {
+  BackSwipe,
+  LibraryFilterChoices,
+} from "../../src/lib/ipc/bindings.ts";
 import { easedBackProgress } from "../../src/lib/navigation/back-progress.ts";
 import type { FakeChannel } from "./fake-backend.ts";
 import {
@@ -15,6 +18,14 @@ import {
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(6);
+const MANY_CHOICES: LibraryFilterChoices = {
+  formats: ["comic", "manga", "book"],
+  languages: ["ja", "en", "fr", "de"],
+  tags: ["Slice of life", "Seinen", "Sea", "Cooking", "Travel", "School"],
+  ratesAdult: true,
+  keepsBookmarks: true,
+  smart: ["quickReads", "forgotten", "duplicates"],
+};
 const SCREEN_CORNER_PX = 32;
 const HALFWAY = 0.5;
 const FULL_PROGRESS = 1;
@@ -141,303 +152,499 @@ async function expectPageStill(page: Page): Promise<void> {
   await expect(page.locator("[data-previous-screen]")).toHaveCount(0);
 }
 
-test.describe("a bottom sheet while a back gesture is held", () => {
-  test.use({ viewport: PHONE });
+const PHONE_SIZES = [
+  PHONE,
+  { width: 390, height: 844 },
+  { width: 412, height: 915 },
+] as const;
 
-  test("shrinks 48 px narrower and 24 px shorter at full progress, about its bottom edge, the page still", async ({
-    page,
-  }) => {
-    const sheet = await openViewOptions(page);
-    const rest = await boxOf(sheet);
+for (const size of PHONE_SIZES) {
+  test.describe(`a bottom sheet while a back gesture is held on a ${String(size.width)} by ${String(size.height)} phone`, () => {
+    test.use({ viewport: size });
 
-    await gesture(started());
-    await gesture(moved(FULL_PROGRESS));
+    test("shrinks 48 px narrower and 24 px shorter at full progress, about its bottom edge, the page still", async ({
+      page,
+    }) => {
+      const sheet = await openViewOptions(page);
+      const rest = await boxOf(sheet);
 
-    await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
-    await expectPageStill(page);
-  });
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
 
-  test("shrinks by the eased share of that at half progress", async ({
-    page,
-  }) => {
-    const sheet = await openViewOptions(page);
-    const rest = await boxOf(sheet);
+      await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
+      await expectPageStill(page);
+    });
 
-    await gesture(started());
-    await gesture(moved(HALFWAY));
+    test("shrinks by the eased share of that at half progress", async ({
+      page,
+    }) => {
+      const sheet = await openViewOptions(page);
+      const rest = await boxOf(sheet);
 
-    await expectSheetShrunkBy(sheet, rest, easedBackProgress(HALFWAY));
-  });
+      await gesture(started());
+      await gesture(moved(HALFWAY));
 
-  test("shrinks its content evenly by the horizontal factor", async ({
-    page,
-  }) => {
-    const sheet = await openViewOptions(page);
-    const content = sheet.locator(":scope > *").nth(1);
-    const rest = await boxOf(content);
-    const factor = (await boxOf(sheet)).width;
+      await expectSheetShrunkBy(sheet, rest, easedBackProgress(HALFWAY));
+    });
 
-    await gesture(started());
-    await gesture(moved(FULL_PROGRESS));
+    test("shrinks its content evenly by the horizontal factor", async ({
+      page,
+    }) => {
+      const sheet = await openViewOptions(page);
+      const content = sheet.locator(":scope > *").nth(1);
+      const rest = await boxOf(content);
+      const factor = (await boxOf(sheet)).width;
 
-    await expect
-      .poll(async () => (await boxOf(content)).width / rest.width)
-      .toBeCloseTo((factor - SHRINK_WIDTH_PX) / factor, 2);
-    const shrunk = await boxOf(content);
-    expect(shrunk.height / rest.height).toBeCloseTo(
-      shrunk.width / rest.width,
-      2,
-    );
-  });
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
 
-  test("keeps every part of the sheet at its resting offset from the sheet's top, scaled by the horizontal factor", async ({
-    page,
-  }) => {
-    const sheet = await openViewOptions(page);
-    const parts = sheet.locator(":scope > *");
-    const restTop = (await boxOf(sheet)).y;
-    const restOffsets: number[] = [];
-    for (let at = 0; at < (await parts.count()); at += 1) {
-      restOffsets.push((await boxOf(parts.nth(at))).y - restTop);
-    }
-    const restWidth = (await boxOf(sheet)).width;
+      await expect
+        .poll(async () => (await boxOf(content)).width / rest.width)
+        .toBeCloseTo((factor - SHRINK_WIDTH_PX) / factor, 2);
+      const shrunk = await boxOf(content);
+      expect(shrunk.height / rest.height).toBeCloseTo(
+        shrunk.width / rest.width,
+        2,
+      );
+    });
 
-    await gesture(started());
-    await gesture(moved(FULL_PROGRESS));
+    test("keeps every part of the sheet at its resting offset from the sheet's top, scaled by the horizontal factor", async ({
+      page,
+    }) => {
+      const sheet = await openViewOptions(page);
+      const parts = sheet.locator(":scope > *");
+      const restTop = (await boxOf(sheet)).y;
+      const restOffsets: number[] = [];
+      for (let at = 0; at < (await parts.count()); at += 1) {
+        restOffsets.push((await boxOf(parts.nth(at))).y - restTop);
+      }
+      const restWidth = (await boxOf(sheet)).width;
 
-    const factor = (restWidth - SHRINK_WIDTH_PX) / restWidth;
-    await expect
-      .poll(async () => (await boxOf(sheet)).width)
-      .toBeCloseTo(restWidth - SHRINK_WIDTH_PX, 0);
-    const heldTop = (await boxOf(sheet)).y;
-    expect(Math.max(...restOffsets)).toBeGreaterThan(SHRINK_HEIGHT_PX);
-    for (const [at, offset] of restOffsets.entries()) {
-      const top = (await boxOf(parts.nth(at))).y - heldTop;
-      expect(Math.abs(top - offset * factor)).toBeLessThanOrEqual(TOLERANCE_PX);
-    }
-  });
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
 
-  test("returns to rest when the gesture is cancelled", async ({ page }) => {
-    const sheet = await openViewOptions(page);
-    const rest = await boxOf(sheet);
-    await gesture(started());
-    await gesture(moved(FULL_PROGRESS));
-    await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
+      const factor = (restWidth - SHRINK_WIDTH_PX) / restWidth;
+      await expect
+        .poll(async () => (await boxOf(sheet)).width)
+        .toBeCloseTo(restWidth - SHRINK_WIDTH_PX, 0);
+      const heldTop = (await boxOf(sheet)).y;
+      expect(Math.max(...restOffsets)).toBeGreaterThan(SHRINK_HEIGHT_PX);
+      for (const [at, offset] of restOffsets.entries()) {
+        const top = (await boxOf(parts.nth(at))).y - heldTop;
+        expect(Math.abs(top - offset * factor)).toBeLessThanOrEqual(
+          TOLERANCE_PX,
+        );
+      }
+    });
 
-    await gesture({ kind: "cancelled" });
+    test("returns to rest when the gesture is cancelled", async ({ page }) => {
+      const sheet = await openViewOptions(page);
+      const rest = await boxOf(sheet);
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
+      await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
 
-    await expectSheetAtRest(sheet, rest);
-    await expect(sheet).toBeVisible();
-    await expectPageStill(page);
-  });
+      await gesture({ kind: "cancelled" });
 
-  test("opens at rest again once back has closed it", async ({ page }) => {
-    const sheet = await openViewOptions(page);
-    const rest = await boxOf(sheet);
-    await gesture(started());
-    await gesture(moved(FULL_PROGRESS));
-    await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
-    await page.goBack();
-    await expect(sheet).toBeHidden();
+      await expectSheetAtRest(sheet, rest);
+      await expect(sheet).toBeVisible();
+      await expectPageStill(page);
+    });
 
-    await page.getByRole("button", { name: "View options" }).click();
-    const reopened = page.getByRole("dialog", { name: "View options" });
-    await expect(reopened).toBeVisible();
-    await settle(reopened);
+    test("opens at rest again once back has closed it", async ({ page }) => {
+      const sheet = await openViewOptions(page);
+      const rest = await boxOf(sheet);
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
+      await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
+      await page.goBack();
+      await expect(sheet).toBeHidden();
 
-    await expectSheetAtRest(reopened, rest);
-    await expect(reopened).not.toHaveAttribute("data-back", /.*/);
-    const part = reopened.locator(":scope > *").nth(1);
-    await expect(part).toHaveCSS("scale", "none");
-  });
+      await page.getByRole("button", { name: "View options" }).click();
+      const reopened = page.getByRole("dialog", { name: "View options" });
+      await expect(reopened).toBeVisible();
+      await settle(reopened);
 
-  test("opens at rest when it is opened again within its slide out", async ({
-    page,
-  }) => {
-    const sheet = await openViewOptions(page);
-    const rest = await boxOf(sheet);
-    await gesture(started());
-    await gesture(moved(FULL_PROGRESS));
-    await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
-    const reopening = page.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          addEventListener(
-            "popstate",
-            () => {
-              setTimeout(() => {
-                document
-                  .querySelector<HTMLElement>('[aria-label="View options"]')
-                  ?.click();
-                resolve();
-              }, 60);
-            },
-            { once: true },
-          );
-        }),
-    );
+      await expectSheetAtRest(reopened, rest);
+      await expect(reopened).not.toHaveAttribute("data-back", /.*/);
+      const part = reopened.locator(":scope > *").nth(1);
+      await expect(part).toHaveCSS("scale", "none");
+    });
 
-    await page.goBack();
-    await reopening;
+    test("opens at rest when it is opened again within its slide out", async ({
+      page,
+    }) => {
+      const sheet = await openViewOptions(page);
+      const rest = await boxOf(sheet);
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
+      await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
+      const reopening = page.evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            addEventListener(
+              "popstate",
+              () => {
+                setTimeout(() => {
+                  document
+                    .querySelector<HTMLElement>('[aria-label="View options"]')
+                    ?.click();
+                  resolve();
+                }, 60);
+              },
+              { once: true },
+            );
+          }),
+      );
 
-    const reopened = page.getByRole("dialog", { name: "View options" });
-    await expect(reopened).toBeVisible();
-    await settle(reopened);
-    await expectSheetAtRest(reopened, rest);
-    await expect(reopened).not.toHaveAttribute("data-back", /.*/);
-  });
+      await page.goBack();
+      await reopening;
 
-  test("slides out when it is closed within the spring back", async ({
-    page,
-  }) => {
-    const sheet = await openViewOptions(page);
-    await page.evaluate(() => {
-      const ran: string[] = [];
-      Object.assign(window, { ranTransitions: ran });
-      document.addEventListener("transitionrun", (event) => {
-        if (
-          event.target instanceof Element &&
-          event.target.getAttribute("role") === "dialog"
-        ) {
-          ran.push(event.propertyName);
-        }
+      const reopened = page.getByRole("dialog", { name: "View options" });
+      await expect(reopened).toBeVisible();
+      await settle(reopened);
+      await expectSheetAtRest(reopened, rest);
+      await expect(reopened).not.toHaveAttribute("data-back", /.*/);
+    });
+
+    test("slides out when it is closed within the spring back", async ({
+      page,
+    }) => {
+      const sheet = await openViewOptions(page);
+      await page.evaluate(() => {
+        const ran: string[] = [];
+        Object.assign(window, { ranTransitions: ran });
+        document.addEventListener("transitionrun", (event) => {
+          if (
+            event.target instanceof Element &&
+            event.target.getAttribute("role") === "dialog"
+          ) {
+            ran.push(event.propertyName);
+          }
+        });
+      });
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
+
+      await gesture({ kind: "cancelled" });
+      await expect(sheet).toHaveAttribute("data-back", "cancelling");
+      await page.keyboard.press("Escape");
+
+      await expect(sheet).toBeHidden();
+      expect(
+        await page.evaluate(
+          () =>
+            (window as unknown as { ranTransitions: string[] }).ranTransitions,
+        ),
+      ).toContain("translate");
+    });
+
+    test("closes from its shrunken size when back goes through, with no snap back to full size first", async ({
+      page,
+    }) => {
+      const sheet = await openViewOptions(page);
+      const rest = await boxOf(sheet);
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
+      await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
+      const widths = page.evaluate(
+        ({ frames }) =>
+          new Promise<number[]>((resolve) => {
+            addEventListener(
+              "popstate",
+              () => {
+                const seen: number[] = [];
+                const sample = () => {
+                  const open = document.querySelector('[role="dialog"]');
+                  seen.push(open?.getBoundingClientRect().width ?? 0);
+                  if (seen.length === frames) {
+                    resolve(seen);
+                    return;
+                  }
+                  requestAnimationFrame(sample);
+                };
+                requestAnimationFrame(sample);
+              },
+              { once: true },
+            );
+          }),
+        { frames: FIRST_FRAMES },
+      );
+
+      await page.goBack();
+
+      for (const width of await widths) {
+        expect(width).toBeLessThan(rest.width - SHRINK_WIDTH_PX / 2);
+      }
+      await expect(sheet).toBeHidden();
+      await expectPageStill(page);
+    });
+
+    test("shrinks again on the next gesture once a cancelled one has returned it to rest", async ({
+      page,
+    }) => {
+      const sheet = await openViewOptions(page);
+      const rest = await boxOf(sheet);
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
+      await gesture({ kind: "cancelled" });
+      await expectSheetAtRest(sheet, rest);
+
+      await gesture(started());
+      await gesture(moved(HALFWAY));
+
+      await expectSheetShrunkBy(sheet, rest, easedBackProgress(HALFWAY));
+    });
+
+    test("keeps its size while held when reduced motion is on, and closes on back", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      const sheet = await openViewOptions(page);
+      const rest = await boxOf(sheet);
+
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
+
+      await expectSheetAtRest(sheet, rest);
+      await page.goBack();
+      await expect(sheet).toBeHidden();
+    });
+
+    test("keeps its size while held when the app's sheet motion is off", async ({
+      page,
+    }) => {
+      const sheet = await openViewOptions(page);
+      await page.evaluate(() => {
+        document.documentElement.dataset.still = "sheets";
+      });
+      await settle(sheet);
+      const rest = await boxOf(sheet);
+
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
+
+      await expectSheetAtRest(sheet, rest);
+      await page.goBack();
+      await expect(sheet).toBeHidden();
+    });
+
+    test("keeps a dialog the size it is", async ({ page }) => {
+      await page.goto("/settings/advanced");
+      await page.getByRole("button", { name: /^Keep Undo for/ }).click();
+      const dialog = page.getByRole("dialog", { name: "Keep Undo for" });
+      await expect(dialog).toBeVisible();
+      await settle(dialog);
+      const rest = await boxOf(dialog);
+
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
+
+      await expectSheetAtRest(dialog, rest);
+    });
+
+    test("shrinks no sheet below a menu that holds the gesture", async ({
+      page,
+    }) => {
+      const sheet = await openSheet(page, "Sort and filter");
+      const rest = await boxOf(sheet);
+      await sheet.getByRole("combobox", { name: "Sort by" }).click();
+      const menu = page.getByRole("listbox", { name: "Sort by" });
+      await expect(menu).toBeVisible();
+      const menuRest = await boxOf(menu);
+
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
+
+      await expectSheetAtRest(sheet, rest);
+      await expectSheetAtRest(menu, menuRest);
+    });
+
+    test.describe("a Sort and filter sheet tall enough to scroll", () => {
+      test.use({
+        backend: {
+          ...DEFAULT_BACKEND,
+          appInfo: () => fakeAppInfo("android"),
+          librarySeries: pagedSeries(() => LIBRARY),
+          librarySeriesCount: () => LIBRARY.length,
+          libraryFilterChoices: () => MANY_CHOICES,
+          watchBackSwipes: (channel) => {
+            gestures = channel;
+            return null;
+          },
+        },
+      });
+
+      async function openTallSheet(page: Page): Promise<Locator> {
+        const sheet = await openSheet(page, "Sort and filter");
+        const isScrolling = await sheet
+          .locator(".overflow-y-auto")
+          .evaluate((element) => element.scrollHeight > element.clientHeight);
+        expect(isScrolling).toBe(true);
+        return sheet;
+      }
+
+      async function holdAtFullProgress(sheet: Locator): Promise<Box> {
+        const rest = await boxOf(sheet);
+        await gesture(started());
+        await gesture(moved(FULL_PROGRESS));
+        await expect
+          .poll(async () => (await boxOf(sheet)).width)
+          .toBeLessThan(rest.width - SHRINK_WIDTH_PX / 2);
+        return rest;
+      }
+
+      test("keeps the scrolling body reaching the pinned footer while held", async ({
+        page,
+      }) => {
+        const sheet = await openTallSheet(page);
+        const footer = sheet
+          .getByRole("button", { name: /^Show \d+ series$/ })
+          .locator("xpath=..");
+
+        await holdAtFullProgress(sheet);
+
+        const body = await boxOf(sheet.locator(".overflow-y-auto"));
+        expect(
+          Math.abs(body.y + body.height - (await boxOf(footer)).y),
+        ).toBeLessThanOrEqual(TOLERANCE_PX);
+      });
+
+      test("keeps the pinned footer at the surface's bottom, scaled with the sheet, while held", async ({
+        page,
+      }) => {
+        const sheet = await openTallSheet(page);
+        const footer = sheet.getByRole("button", { name: /^Show \d+ series$/ });
+        const rest = await boxOf(sheet);
+        const restButton = await boxOf(footer);
+        const restGap =
+          rest.y + rest.height - (restButton.y + restButton.height);
+
+        await holdAtFullProgress(sheet);
+
+        const surface = await boxOf(sheet);
+        const button = await boxOf(footer);
+        const factor = (rest.width - SHRINK_WIDTH_PX) / rest.width;
+        expect(
+          Math.abs(
+            surface.y +
+              surface.height -
+              (button.y + button.height) -
+              restGap * factor,
+          ),
+        ).toBeLessThanOrEqual(TOLERANCE_PX);
+      });
+
+      test("leaves no empty strip at the surface's bottom while held", async ({
+        page,
+      }) => {
+        const sheet = await openTallSheet(page);
+        await holdAtFullProgress(sheet);
+
+        const surface = await boxOf(sheet);
+        const isFilled = await sheet.evaluate(
+          (element, at) => {
+            const found = document.elementFromPoint(at.x, at.y);
+            return found !== null && found !== element;
+          },
+          {
+            x: surface.x + surface.width / 2,
+            y: surface.y + surface.height - 2,
+          },
+        );
+
+        expect(isFilled).toBe(true);
+      });
+
+      test("keeps the body's scroll position through the hold and the cancel", async ({
+        page,
+      }) => {
+        const sheet = await openTallSheet(page);
+        const body = sheet.locator(".overflow-y-auto");
+        await body.evaluate((element) => {
+          element.scrollTop = 20;
+        });
+        const before = await body.evaluate((element) => element.scrollTop);
+
+        await holdAtFullProgress(sheet);
+
+        expect(await body.evaluate((element) => element.scrollTop)).toBe(
+          before,
+        );
+        await gesture({ kind: "cancelled" });
+        await expect
+          .poll(() => body.evaluate((element) => element.scrollTop))
+          .toBe(before);
       });
     });
-    await gesture(started());
-    await gesture(moved(FULL_PROGRESS));
-
-    await gesture({ kind: "cancelled" });
-    await expect(sheet).toHaveAttribute("data-back", "cancelling");
-    await page.keyboard.press("Escape");
-
-    await expect(sheet).toBeHidden();
-    expect(
-      await page.evaluate(
-        () =>
-          (window as unknown as { ranTransitions: string[] }).ranTransitions,
-      ),
-    ).toContain("translate");
   });
+}
 
-  test("closes from its shrunken size when back goes through, with no snap back to full size first", async ({
+test.describe("View options, which nearly fills a short phone", () => {
+  test.use({ viewport: PHONE });
+
+  test("keeps the scrolling body's bottom at the surface's bottom while held", async ({
     page,
   }) => {
     const sheet = await openViewOptions(page);
-    const rest = await boxOf(sheet);
+    const body = sheet.locator(".overflow-auto");
+
     await gesture(started());
     await gesture(moved(FULL_PROGRESS));
-    await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
-    const widths = page.evaluate(
-      ({ frames }) =>
-        new Promise<number[]>((resolve) => {
-          addEventListener(
-            "popstate",
-            () => {
-              const seen: number[] = [];
-              const sample = () => {
-                const open = document.querySelector('[role="dialog"]');
-                seen.push(open?.getBoundingClientRect().width ?? 0);
-                if (seen.length === frames) {
-                  resolve(seen);
-                  return;
-                }
-                requestAnimationFrame(sample);
-              };
-              requestAnimationFrame(sample);
-            },
-            { once: true },
-          );
-        }),
-      { frames: FIRST_FRAMES },
+
+    await expect
+      .poll(async () => {
+        const surface = await boxOf(sheet);
+        const scroller = await boxOf(body);
+        return Math.abs(
+          surface.y + surface.height - (scroller.y + scroller.height),
+        );
+      })
+      .toBeLessThanOrEqual(TOLERANCE_PX);
+  });
+
+  test("leaves no empty strip under the body while held", async ({ page }) => {
+    const sheet = await openViewOptions(page);
+    const body = sheet.locator(".overflow-auto");
+    await gesture(started());
+    await gesture(moved(FULL_PROGRESS));
+    await expect
+      .poll(async () => (await boxOf(sheet)).width)
+      .toBeLessThan((await boxOf(body)).width + SHRINK_WIDTH_PX);
+
+    const surface = await boxOf(sheet);
+    const isBodyAtTheBottom = await body.evaluate(
+      (element, at) => {
+        const found = document.elementFromPoint(at.x, at.y);
+        return found !== null && element.contains(found);
+      },
+      { x: surface.x + surface.width / 2, y: surface.y + surface.height - 2 },
     );
 
-    await page.goBack();
-
-    for (const width of await widths) {
-      expect(width).toBeLessThan(rest.width - SHRINK_WIDTH_PX / 2);
-    }
-    await expect(sheet).toBeHidden();
-    await expectPageStill(page);
+    expect(isBodyAtTheBottom).toBe(true);
   });
 
-  test("shrinks again on the next gesture once a cancelled one has returned it to rest", async ({
+  test("keeps the body's scroll position through the hold and the cancel", async ({
     page,
   }) => {
     const sheet = await openViewOptions(page);
-    const rest = await boxOf(sheet);
-    await gesture(started());
-    await gesture(moved(FULL_PROGRESS));
-    await gesture({ kind: "cancelled" });
-    await expectSheetAtRest(sheet, rest);
-
-    await gesture(started());
-    await gesture(moved(HALFWAY));
-
-    await expectSheetShrunkBy(sheet, rest, easedBackProgress(HALFWAY));
-  });
-
-  test("keeps its size while held when reduced motion is on, and closes on back", async ({
-    page,
-  }) => {
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    const sheet = await openViewOptions(page);
-    const rest = await boxOf(sheet);
-
-    await gesture(started());
-    await gesture(moved(FULL_PROGRESS));
-
-    await expectSheetAtRest(sheet, rest);
-    await page.goBack();
-    await expect(sheet).toBeHidden();
-  });
-
-  test("keeps its size while held when the app's sheet motion is off", async ({
-    page,
-  }) => {
-    const sheet = await openViewOptions(page);
-    await page.evaluate(() => {
-      document.documentElement.dataset.still = "sheets";
+    const body = sheet.locator(".overflow-auto");
+    await body.evaluate((element) => {
+      element.scrollTop = 20;
     });
-    await settle(sheet);
-    const rest = await boxOf(sheet);
+    const before = await body.evaluate((element) => element.scrollTop);
 
     await gesture(started());
     await gesture(moved(FULL_PROGRESS));
 
-    await expectSheetAtRest(sheet, rest);
-    await page.goBack();
-    await expect(sheet).toBeHidden();
-  });
-
-  test("keeps a dialog the size it is", async ({ page }) => {
-    await page.goto("/settings/advanced");
-    await page.getByRole("button", { name: /^Keep Undo for/ }).click();
-    const dialog = page.getByRole("dialog", { name: "Keep Undo for" });
-    await expect(dialog).toBeVisible();
-    await settle(dialog);
-    const rest = await boxOf(dialog);
-
-    await gesture(started());
-    await gesture(moved(FULL_PROGRESS));
-
-    await expectSheetAtRest(dialog, rest);
-  });
-
-  test("shrinks no sheet below a menu that holds the gesture", async ({
-    page,
-  }) => {
-    const sheet = await openSheet(page, "Sort and filter");
-    const rest = await boxOf(sheet);
-    await sheet.getByRole("combobox", { name: "Sort by" }).click();
-    const menu = page.getByRole("listbox", { name: "Sort by" });
-    await expect(menu).toBeVisible();
-    const menuRest = await boxOf(menu);
-
-    await gesture(started());
-    await gesture(moved(FULL_PROGRESS));
-
-    await expectSheetAtRest(sheet, rest);
-    await expectSheetAtRest(menu, menuRest);
+    await expect
+      .poll(async () => (await boxOf(sheet)).width)
+      .toBeLessThan((await boxOf(body)).width + SHRINK_WIDTH_PX);
+    expect(await body.evaluate((element) => element.scrollTop)).toBe(before);
+    await gesture({ kind: "cancelled" });
+    await expect
+      .poll(() => body.evaluate((element) => element.scrollTop))
+      .toBe(before);
   });
 });
 
