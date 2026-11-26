@@ -251,6 +251,42 @@ test.describe("a bottom sheet while a back gesture is held", () => {
     await expect(part).toHaveCSS("scale", "none");
   });
 
+  test("opens at rest when it is opened again within its slide out", async ({
+    page,
+  }) => {
+    const sheet = await openViewOptions(page);
+    const rest = await boxOf(sheet);
+    await gesture(started());
+    await gesture(moved(FULL_PROGRESS));
+    await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
+    const reopening = page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          addEventListener(
+            "popstate",
+            () => {
+              setTimeout(() => {
+                document
+                  .querySelector<HTMLElement>('[aria-label="View options"]')
+                  ?.click();
+                resolve();
+              }, 60);
+            },
+            { once: true },
+          );
+        }),
+    );
+
+    await page.goBack();
+    await reopening;
+
+    const reopened = page.getByRole("dialog", { name: "View options" });
+    await expect(reopened).toBeVisible();
+    await settle(reopened);
+    await expectSheetAtRest(reopened, rest);
+    await expect(reopened).not.toHaveAttribute("data-back", /.*/);
+  });
+
   test("slides out when it is closed within the spring back", async ({
     page,
   }) => {
@@ -271,6 +307,7 @@ test.describe("a bottom sheet while a back gesture is held", () => {
     await gesture(moved(FULL_PROGRESS));
 
     await gesture({ kind: "cancelled" });
+    await expect(sheet).toHaveAttribute("data-back", "cancelling");
     await page.keyboard.press("Escape");
 
     await expect(sheet).toBeHidden();
