@@ -50,6 +50,7 @@
     androidPhoneLook,
     tone = "danger",
     isBusy = false,
+    onCloseAutoFocus = () => undefined,
     children,
   }: {
     isOpen: boolean;
@@ -65,6 +66,7 @@
     androidPhoneLook?: AndroidPhoneConfirmLook | undefined;
     tone?: AlertTone;
     isBusy?: boolean;
+    onCloseAutoFocus?: (event: Event) => void;
     children: Snippet;
   } = $props();
 
@@ -119,6 +121,7 @@
     wideOverlayClass={alert.scrim}
     onDismiss={onCancel}
     onOpenAutoFocus={focusDefaultButton}
+    {onCloseAutoFocus}
   >
     <div class={cn("flex items-center gap-md", alert.header)}>
       {#if alert.showsAppIcon}
