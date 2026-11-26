@@ -94,6 +94,8 @@ const BLOCKED_FRAME_MS = 80;
 const LATE_START_BOUND_MS = BLOCKED_FRAME_MS / 2;
 const FRAMES_BEFORE_A_LATE_CLICK = [1, 2] as const;
 const READ_BOOK = 7;
+const DEVICE_TRAVERSAL_DELAY_MS = 20;
+const HOLD_RELEASED_WITHIN_MS = 1500;
 const NEEDLE_OUT_DEG = 30;
 const NEEDLE_BACK_DEG = -8;
 const CLOCK_BACK_DEG = -50;
@@ -468,6 +470,45 @@ async function tabAsItIsChosen(
     throw new Error(`${label} was never chosen`);
   }
   return atChoosing;
+}
+
+async function delayHistoryTraversals(page: Page): Promise<void> {
+  await page.addInitScript((delayMs) => {
+    const go = history.go.bind(history);
+    history.go = (delta) => {
+      setTimeout(() => {
+        go(delta);
+      }, delayMs);
+    };
+  }, DEVICE_TRAVERSAL_DELAY_MS);
+}
+
+interface HeldDuration {
+  releasedAfterMs: number;
+}
+
+function heldDurationOf(
+  page: Page,
+  label: string,
+): Promise<JSHandle<HeldDuration>> {
+  return holderOf(page, label).evaluateHandle((holder) => {
+    const duration: HeldDuration = { releasedAfterMs: Infinity };
+    let heldAt: number | undefined;
+    const watcher = new MutationObserver(() => {
+      const now = performance.now();
+      if (holder.hasAttribute("data-held-press")) {
+        heldAt ??= now;
+      } else if (heldAt !== undefined) {
+        duration.releasedAfterMs = now - heldAt;
+        watcher.disconnect();
+      }
+    });
+    watcher.observe(holder, {
+      attributes: true,
+      attributeFilter: ["data-held-press"],
+    });
+    return duration;
+  });
 }
 
 function holderOf(page: Page, label: string): Locator {
@@ -1123,6 +1164,76 @@ test.describe("on Android", () => {
     await expect(tab(page, "Browse")).toHaveClass(
       new RegExp(tabBarLook("android").currentTab),
     );
+  });
+
+  test.describe("going back through history as slowly as the phone", () => {
+    test.beforeEach(async ({ page }) => {
+      await delayHistoryTraversals(page);
+    });
+
+    test("keeps Library pressed while history goes back one step to it", async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "bar and rail only",
+      );
+      await page.goto("/");
+      await settle(navigation(page));
+      const finger = await fingerOn(page);
+      await finger.tap(tab(page, "Browse"), TAP_MS);
+      await expect(tab(page, "Browse")).toHaveAttribute("aria-current", "page");
+      await settle(navigation(page));
+
+      const frames = await pillFramesWhilePressing(page, "Library", (_, link) =>
+        finger.tap(link, TAP_MS),
+      );
+      await finger.lift();
+
+      expect(frames.filter((frame) => !showsAPill(frame))).toEqual([]);
+      expect(frames.some(({ isHeld }) => isHeld)).toBe(true);
+    });
+  });
+
+  test.describe("going back through history that never arrives", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript(() => {
+        history.go = () => undefined;
+      });
+    });
+
+    test("lets go of the pressed tab within a bounded time", async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "bar and rail only",
+      );
+      await page.goto("/");
+      await settle(navigation(page));
+      const finger = await fingerOn(page);
+      await finger.tap(tab(page, "Browse"), TAP_MS);
+      await expect(tab(page, "Browse")).toHaveAttribute("aria-current", "page");
+      await settle(navigation(page));
+      const heldFor = await heldDurationOf(page, "Library");
+
+      await finger.tap(tab(page, "Library"), TAP_MS);
+      await finger.lift();
+
+      await expect
+        .poll(
+          () => heldFor.evaluate(({ releasedAfterMs }) => releasedAfterMs),
+          {
+            timeout: HOLD_RELEASED_WITHIN_MS * 2,
+          },
+        )
+        .toBeLessThanOrEqual(HOLD_RELEASED_WITHIN_MS);
+      await expect(heldPresses(page)).toHaveCount(0);
+      await expect(holderOf(page, "Library")).toHaveCSS(
+        "background-image",
+        "none",
+      );
+    });
   });
 
   test.describe("passing back through History on the way to Settings", () => {

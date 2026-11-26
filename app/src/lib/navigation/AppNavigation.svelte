@@ -19,23 +19,30 @@
   import PaneToggle from "./PaneToggle.svelte";
   import { type Section, SECTION_ROUTE_IDS } from "./sections";
   import { getSidebarSetting } from "./sidebar.svelte.ts";
+  import type { BackGoesUp } from "./back-goes-up";
   import { TabPress } from "./tab-press.svelte.ts";
   import { COLLAPSED_TAB_BAR_LOOK, tabBarLook } from "./tab-bar.ts";
 
   const ICON_SIZE = 22;
+
+  type HistoryMoves = Pick<BackGoesUp, "isPassingThrough" | "isMoving">;
+  const STILL_HISTORY: HistoryMoves = {
+    isPassingThrough: false,
+    isMoving: false,
+  };
 
   let {
     current,
     attention,
     isCollapsed = false,
     onOpenTabTap,
-    isPassingThrough = () => false,
+    historyMoves = STILL_HISTORY,
   }: {
     current: Section;
     attention?: Snippet<[{ isFolded: boolean }]> | undefined;
     isCollapsed?: boolean;
     onOpenTabTap?: ((event: MouseEvent) => void) | undefined;
-    isPassingThrough?: () => boolean;
+    historyMoves?: HistoryMoves;
   } = $props();
 
   const platform = currentPlatform();
@@ -56,12 +63,20 @@
   const waitsForThePagesFirstPaint = platform === "android";
   let previous: Section | undefined;
   let settling: number | undefined;
-  const press = new TabPress({
-    request: (callback) => requestAnimationFrame(callback),
-    cancel: (handle) => {
-      cancelAnimationFrame(handle);
+  const press = new TabPress(
+    {
+      request: (callback) => requestAnimationFrame(callback),
+      cancel: (handle) => {
+        cancelAnimationFrame(handle);
+      },
     },
-  });
+    {
+      start: (ms, callback) => window.setTimeout(callback, ms),
+      stop: (handle) => {
+        clearTimeout(handle);
+      },
+    },
+  );
 
   $effect(() => {
     const next = current;
@@ -71,7 +86,7 @@
       shownSection = next;
       return;
     }
-    if (leaving === next || isPassingThrough()) {
+    if (leaving === next || historyMoves.isPassingThrough) {
       return;
     }
     if (!waitsForThePagesFirstPaint) {
@@ -114,14 +129,16 @@
   });
 
   afterNavigate(() => {
-    if (!isPassingThrough()) {
+    if (!historyMoves.isPassingThrough) {
       press.settled(current);
     }
   });
 
   function settleUnlessStillMoving(): void {
     settling = undefined;
-    if (navigating.to === null && !isPassingThrough()) {
+    const isHistoryMoving =
+      historyMoves.isMoving || historyMoves.isPassingThrough;
+    if (navigating.to === null && !isHistoryMoving) {
       press.settled(current);
     }
   }

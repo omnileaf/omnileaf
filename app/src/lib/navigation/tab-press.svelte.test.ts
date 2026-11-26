@@ -3,7 +3,9 @@ import { expect, test } from "vitest";
 import {
   FRAMES_TO_WAIT_FOR_A_CLICK,
   type Frames,
+  PRESS_HOLD_LIMIT_MS,
   TabPress,
+  type Timers,
 } from "./tab-press.svelte.ts";
 
 const MAIN_BUTTON = 0;
@@ -39,12 +41,44 @@ class FakeFrames implements Frames {
   }
 }
 
-function tapStarted(): { press: TabPress; frames: FakeFrames } {
+class FakeTimers implements Timers {
+  #now = 0;
+  #next = 1;
+  readonly #due = new Map<number, { at: number; callback: () => void }>();
+
+  start = (ms: number, callback: () => void): number => {
+    const handle = this.#next;
+    this.#next += 1;
+    this.#due.set(handle, { at: this.#now + ms, callback });
+    return handle;
+  };
+
+  stop = (handle: number): void => {
+    this.#due.delete(handle);
+  };
+
+  pass(ms: number): void {
+    this.#now += ms;
+    for (const [handle, { at, callback }] of [...this.#due]) {
+      if (at <= this.#now) {
+        this.#due.delete(handle);
+        callback();
+      }
+    }
+  }
+}
+
+function tapStarted(): {
+  press: TabPress;
+  frames: FakeFrames;
+  timers: FakeTimers;
+} {
   const frames = new FakeFrames();
-  const press = new TabPress(frames);
+  const timers = new FakeTimers();
+  const press = new TabPress(frames, timers);
   press.pointerWentDown("history");
   press.lifted("history", MAIN_BUTTON, "library");
-  return { press, frames };
+  return { press, frames, timers };
 }
 
 test.each([1, 2])(
@@ -80,7 +114,7 @@ test("holds a tab again when its routed click comes after the wait", () => {
 });
 
 test("holds nothing after the browser calls the press a long press", () => {
-  const press = new TabPress(new FakeFrames());
+  const press = new TabPress(new FakeFrames(), new FakeTimers());
 
   press.pointerWentDown("history");
   press.longPressed();
@@ -90,7 +124,7 @@ test("holds nothing after the browser calls the press a long press", () => {
 });
 
 test("holds nothing for a button other than the main one", () => {
-  const press = new TabPress(new FakeFrames());
+  const press = new TabPress(new FakeFrames(), new FakeTimers());
 
   press.pointerWentDown("history");
   press.lifted("history", SECONDARY_BUTTON, "library");
@@ -99,7 +133,7 @@ test("holds nothing for a button other than the main one", () => {
 });
 
 test("holds nothing for a tab that is already open", () => {
-  const press = new TabPress(new FakeFrames());
+  const press = new TabPress(new FakeFrames(), new FakeTimers());
 
   press.pointerWentDown("library");
   press.lifted("library", MAIN_BUTTON, "library");
@@ -109,7 +143,7 @@ test("holds nothing for a tab that is already open", () => {
 });
 
 test("holds no tab for a routed click somewhere else after a swallowed lift", () => {
-  const press = new TabPress(new FakeFrames());
+  const press = new TabPress(new FakeFrames(), new FakeTimers());
   press.pointerWentDown("history");
 
   press.pointerWentDown(undefined);
@@ -153,4 +187,23 @@ test("cancels its waiting frame when stopped", () => {
   press.stop();
 
   expect(frames.pending).toBe(0);
+});
+
+test("lets go of a held tab whose navigation never lands within the hold limit", () => {
+  const { press, timers } = tapStarted();
+  press.clicked("history", true, "library");
+
+  timers.pass(PRESS_HOLD_LIMIT_MS);
+
+  expect(press.held).toBeUndefined();
+});
+
+test("keeps holding past the limit once the navigation has landed on the tab", () => {
+  const { press, timers } = tapStarted();
+  press.clicked("history", true, "library");
+
+  press.settled("history");
+  timers.pass(PRESS_HOLD_LIMIT_MS);
+
+  expect(press.held).toBe("history");
 });

@@ -299,7 +299,7 @@
             current={sectionOf(page.url.pathname)}
             isCollapsed={isTabBarCollapsed}
             onOpenTabTap={androidPhone.isOn ? tapOpenSection : undefined}
-            isPassingThrough={() => backGoesUp.isPassingThrough}
+            historyMoves={backGoesUp}
             attention={isPointer(data.appInfo.platform) &&
             needsAttention.problems.length > 0
               ? attention
