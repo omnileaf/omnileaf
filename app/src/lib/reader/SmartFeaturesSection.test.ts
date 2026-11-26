@@ -77,9 +77,12 @@ const LOOKS = [
   { platform: "android", size: "flat" },
   { platform: "ios", size: "regular" },
   { platform: "ios", size: "small" },
-  { platform: "linux", size: "regular" },
-  { platform: "linux", size: "small" },
 ] as const;
+
+const DESKTOP_LOOKS = (["linux", "macos", "windows"] as const).flatMap(
+  (platform) =>
+    (["regular", "small"] as const).map((size) => ({ platform, size })),
+);
 
 for (const { platform, size } of LOOKS) {
   test(`ends the ${platform} ${size} list with Turn all off as a row as wide as the switches`, async () => {
@@ -126,7 +129,28 @@ for (const { platform, size } of LOOKS) {
   });
 }
 
+for (const { platform, size } of DESKTOP_LOOKS) {
+  test(`offers no Turn all off on the ${platform} ${size} list`, async () => {
+    followCorePlatform(platform);
+
+    const screen = await render(SmartFeaturesSection, { heading: "h2", size });
+
+    await expect.element(screen.getByRole("button")).not.toBeInTheDocument();
+  });
+
+  test(`still turns a single ${platform} ${size} switch off`, async () => {
+    followCorePlatform(platform);
+    const screen = await render(SmartFeaturesSection, { heading: "h2", size });
+    const toggle = screen.getByRole("switch", { name: /^Book summary/ });
+
+    await toggle.click();
+
+    await expect.element(toggle).not.toBeChecked();
+  });
+}
+
 test("offers Turn all off again once a smart feature is turned back on", async () => {
+  followCorePlatform("ios");
   const screen = await render(SmartFeaturesSection, {
     heading: "h2",
     size: "regular",
@@ -173,20 +197,6 @@ test("draws the iOS Turn all off row in the accent", async () => {
   const label = screen.getByText("Turn all off").element();
 
   expect(getComputedStyle(label).color).toBe(accentColour);
-});
-
-test("draws the desktop Turn all off row in the same colour as the switches", async () => {
-  const screen = await render(SmartFeaturesSection, {
-    heading: "h2",
-    size: "regular",
-  });
-
-  const label = screen.getByText("Turn all off").element();
-  const switchLabel = screen.getByText("Book summary").element();
-
-  expect(getComputedStyle(label).color).toBe(
-    getComputedStyle(switchLabel).color,
-  );
 });
 
 test("turns a single Android switch off when it is pressed", async () => {

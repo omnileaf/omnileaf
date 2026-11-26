@@ -5,7 +5,7 @@
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { currentPlatform, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
     ANDROID_LIST_HEADING,
@@ -77,7 +77,9 @@
 
   const features = getSmartFeatures();
   const id = $props.id();
-  const isIos = currentPlatform() === "ios";
+  const platform = currentPlatform();
+  const isIos = platform === "ios";
+  const offersTurnAllOff = !isPointer(platform);
   const allOff = $derived(features.areAllOff);
   const allOffRow = $derived(
     isFlush
@@ -199,18 +201,20 @@
         </Switch>
       {/if}
     {/each}
-    <button
-      type="button"
-      class={allOffRow}
-      disabled={allOff}
-      onclick={() => {
-        features.turnAllOff();
-      }}
-    >
-      <Icon name="power" class={allOffIcon} />
-      <span class={allOffLabel}>
-        {allOff ? m.reader_smart_features_all_off() : m.reader_turn_all_off()}
-      </span>
-    </button>
+    {#if offersTurnAllOff}
+      <button
+        type="button"
+        class={allOffRow}
+        disabled={allOff}
+        onclick={() => {
+          features.turnAllOff();
+        }}
+      >
+        <Icon name="power" class={allOffIcon} />
+        <span class={allOffLabel}>
+          {allOff ? m.reader_smart_features_all_off() : m.reader_turn_all_off()}
+        </span>
+      </button>
+    {/if}
   </div>
 </section>
