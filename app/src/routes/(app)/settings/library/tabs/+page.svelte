@@ -139,6 +139,7 @@
     isDeleting = false;
     deleting = undefined;
     if (removed.status === "error") {
+      focusAfterDelete = undefined;
       reportError(removed.error);
       return;
     }
@@ -284,12 +285,12 @@
             renaming = asCategory(tab);
           }
         : undefined}
-      {said}
       onDelete={keepsLabels
         ? (tab: ArrangedTab) => {
             deleting = asCategory(tab);
           }
         : undefined}
+      {said}
     />
   </div>
   {#if android.isOn}
