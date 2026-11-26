@@ -74,10 +74,7 @@ async function openLabels(page: Page): Promise<Locator> {
   const second = list.getByRole("listitem").nth(1);
   await expect(second).toBeVisible();
   const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
-  await second
-    .getByRole("link")
-    .first()
-    .dispatchEvent("pointerdown", touch);
+  await second.getByRole("link").first().dispatchEvent("pointerdown", touch);
   await page.waitForTimeout(HELD_MS);
   const picked = list.getByRole("checkbox", { name: LIBRARY[1]?.title ?? "" });
   await picked.dispatchEvent("pointerup", touch);
