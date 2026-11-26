@@ -6,8 +6,6 @@
   import { m } from "#lib/paraglide/messages.js";
 
   const ICON_SIZE = 16;
-  const INPUT_COVERS_GROUP_BORDER =
-    "android:max-medium:-my-px android:max-medium:self-stretch";
 
   let {
     search,
@@ -21,7 +19,7 @@
 </script>
 
 <InputGroup
-  class="flex-1 gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button max-inline-section-search min-inline-section-search-narrowest focus-within:border-accent android:max-medium:block-native-target"
+  class="flex-1 gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button max-inline-section-search min-inline-section-search-narrowest focus-within:border-accent"
 >
   <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
   <Input
@@ -30,7 +28,7 @@
     aria-label={m.series_find_book()}
     placeholder={m.series_find_book()}
     value={search}
-    class={["text-small text-foreground", INPUT_COVERS_GROUP_BORDER]}
+    class="text-small text-foreground"
     oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
       onSearch(event.currentTarget.value);
     }}
