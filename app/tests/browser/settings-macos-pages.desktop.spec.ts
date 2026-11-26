@@ -314,9 +314,6 @@ test.describe("the 18+ content page's lead line", () => {
 });
 
 test.describe("the 18+ content page's age ratings switch", () => {
-  const FOOTER =
-    "First launch offers the same choice. It applies straight away.";
-
   test.beforeEach(async ({ page }) => {
     await page.goto("/settings/library/adult-content");
     await expect(
@@ -340,16 +337,8 @@ test.describe("the 18+ content page's age ratings switch", () => {
     await expect(row).toHaveCSS("padding-left", PLATE_INSET);
   });
 
-  test("ends with a footer in 11px muted type", async ({ page }) => {
-    const footer = page.getByText(FOOTER);
-
-    await expect(footer).toBeVisible();
-    await expect(footer).toHaveCSS("font-size", SUB_TYPE.fontSize);
-    await expect(footer).toHaveCSS("line-height", SUB_TYPE.lineHeight);
-    await expect(footer).toHaveCSS(
-      "color",
-      await tokenColour(page, "--color-muted"),
-    );
+  test("ends with the switch, with no footer under it", async ({ page }) => {
+    await expect(page.getByText(/^First launch offers/)).toHaveCount(0);
   });
 });
 

@@ -148,9 +148,7 @@ const LINES_ABOVE: readonly LineAbove[] = [
     route: "/settings/library",
     between: "Scheduled rescans and Library tabs",
     above: (page) =>
-      page.getByText(
-        "New books show up without a rescan. Turn off to save battery.",
-      ),
+      page.getByText("While Omnileaf is open. Off saves battery."),
     group: (page) =>
       page
         .getByRole("list")

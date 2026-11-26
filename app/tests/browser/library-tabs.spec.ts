@@ -116,9 +116,8 @@ test.describe("in a library that keeps labels", () => {
     await page.goto("/settings/library/tabs");
 
     await expect(tabList(page).getByRole("listitem")).toHaveCount(5);
-    await expect(rowOf(page, "All")).toContainText(
-      "Always shown; can’t be hidden",
-    );
+    await expect(rowOf(page, "All")).toContainText("Always shown");
+    await expect(rowOf(page, "All")).not.toContainText("can’t be hidden");
     await expect(rowOf(page, "New chapters")).toContainText("Hidden");
     await expect(rowOf(page, "Manga")).toContainText("Category · 64 series");
   });
@@ -709,11 +708,13 @@ test.describe("in a narrow desktop window", () => {
   });
 });
 
-test("says what Library tabs holds in Settings > Library", async ({ page }) => {
+test("shows Library tabs with no second line in Settings > Library", async ({
+  page,
+}) => {
   await page.goto("/settings/library");
 
-  await expect(page.getByRole("link", { name: /^Library tabs/ })).toContainText(
-    "Order, hidden tabs, where the library opens",
+  await expect(page.getByRole("link", { name: /^Library tabs/ })).toHaveText(
+    "Library tabs",
   );
 });
 

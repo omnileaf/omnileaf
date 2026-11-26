@@ -104,7 +104,6 @@
           icon: LayoutGrid,
           iconName: "layout-grid",
           label: m.library_tabs_title(),
-          summary: m.library_tabs_summary(),
         },
         {
           route: "/(app)/settings/library/tags",

@@ -12,9 +12,8 @@
   import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { currentPlatform, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import { FLUSH_FOOTER } from "#lib/settings/android-flush-look.ts";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
-  import { LIST_LINE, LIST_PLATE } from "#lib/settings/grouped-rows-look.ts";
+  import { LIST_PLATE } from "#lib/settings/grouped-rows-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
@@ -82,17 +81,7 @@
           grouped={isMacos}
           class={plate}
         />
-        {#if isMacos}
-          <p class={["mbs-native-list-footer-gap px-sm", LIST_LINE]}>
-            {m.adult_content_footer()}
-          </p>
-        {/if}
       </div>
-      {#if android.isOn}
-        <p class={FLUSH_FOOTER}>
-          {m.adult_content_footer()}
-        </p>
-      {/if}
     </div>
   {/if}
 </GroupedGround>
