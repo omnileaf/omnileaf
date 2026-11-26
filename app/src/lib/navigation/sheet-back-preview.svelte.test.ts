@@ -361,3 +361,20 @@ test("follows the end of a body that is back at its end as the spring brings the
 
   expect(body.scrollHeight - body.clientHeight - body.scrollTop).toBe(0);
 });
+
+test("keeps a body that was at its end at its end when the sheet's layout moves after the release", () => {
+  const { sheet, element, apply, settle, nextFrame } = preview();
+  const body = element.lastElementChild as HTMLElement;
+  body.scrollTop = body.scrollHeight;
+  sheet.follow(started);
+  sheet.follow(moved(1));
+  apply();
+  sheet.follow(ended);
+  apply();
+  settle();
+
+  element.style.height = "599px";
+  nextFrame();
+
+  expect(body.scrollHeight - body.clientHeight - body.scrollTop).toBe(0);
+});

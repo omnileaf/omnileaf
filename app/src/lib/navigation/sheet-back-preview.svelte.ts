@@ -20,7 +20,10 @@ type Phase = "held" | "cancelling" | "resetting";
 interface ScrolledPart {
   readonly part: HTMLElement;
   readonly scrollTop: number;
+  readonly isAtEnd: boolean;
 }
+
+const END_ROUNDING_PX = 1;
 
 const NO_SHAPE: SheetBackShape = { scale: 1, layoutHeight: 0 };
 const REST_SCALE = "1";
@@ -49,7 +52,20 @@ function scrolledPartsOf(sheet: HTMLElement): readonly ScrolledPart[] {
         ["auto", "scroll"].includes(getComputedStyle(part).overflowY) &&
         part.scrollHeight > part.clientHeight,
     )
-    .map((part) => ({ part, scrollTop: part.scrollTop }));
+    .map((part) => ({
+      part,
+      scrollTop: part.scrollTop,
+      isAtEnd:
+        part.scrollTop >=
+        part.scrollHeight - part.clientHeight - END_ROUNDING_PX,
+    }));
+}
+
+function scrolledBack(parts: readonly ScrolledPart[]): void {
+  for (const { part, scrollTop, isAtEnd } of parts) {
+    const end = part.scrollHeight - part.clientHeight;
+    part.scrollTop = isAtEnd ? end : Math.min(scrollTop, end);
+  }
 }
 
 function fillableHeightOf(parts: readonly ScrolledPart[]): number {
@@ -100,6 +116,7 @@ export class SheetBackPreview {
   #scrolled: readonly ScrolledPart[] = [];
   #stopFollowingScroll: (() => void) | undefined;
   #stopResetting: (() => void) | undefined;
+  #stopScrollingBack: (() => void) | undefined;
   #watching: MutationObserver | undefined;
   #spring: Animation | undefined;
   #stopSettling: (() => void) | undefined;
@@ -191,6 +208,8 @@ export class SheetBackPreview {
             ),
           );
     this.#release();
+    this.#stopScrollingBack?.();
+    this.#stopScrollingBack = undefined;
     this.#size = size;
     this.#scrolled = scrolled;
     this.#reached = reached;
@@ -236,19 +255,10 @@ export class SheetBackPreview {
   }
 
   #followScroll(): void {
-    this.#restoreScroll();
+    scrolledBack(this.#scrolled);
     this.#stopFollowingScroll = this.#scheduler.nextFrame(() => {
       this.#followScroll();
     });
-  }
-
-  #restoreScroll(): void {
-    for (const { part, scrollTop } of this.#scrolled) {
-      part.scrollTop = Math.min(
-        scrollTop,
-        part.scrollHeight - part.clientHeight,
-      );
-    }
   }
 
   #reopen(): void {
@@ -260,18 +270,26 @@ export class SheetBackPreview {
   }
 
   #release(): void {
-    this.#restoreScroll();
+    const scrolled = this.#scrolled;
     this.#stopFollowingScroll?.();
     this.#stopFollowingScroll = undefined;
     this.#stopResetting?.();
     this.#stopResetting = undefined;
-    this.#scrolled = [];
+    this.#stopScrollingBack?.();
+    this.#stopScrollingBack = undefined;
     this.#stopSettling?.();
     this.#stopSettling = undefined;
     this.#stopChecking?.();
     this.#stopChecking = undefined;
     this.#spring?.cancel();
     this.#spring = undefined;
+    scrolledBack(scrolled);
+    if (scrolled.length > 0) {
+      this.#stopScrollingBack = this.#scheduler.nextFrame(() => {
+        scrolledBack(scrolled);
+      });
+    }
+    this.#scrolled = [];
     this.#watching?.disconnect();
     this.#watching = undefined;
     this.#size = undefined;
