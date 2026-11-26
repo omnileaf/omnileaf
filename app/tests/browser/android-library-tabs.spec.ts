@@ -87,20 +87,34 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     await expect(more.locator("svg")).toHaveCount(0);
   });
 
-  test("sets New category as an outlined pill under the list, 16px in", async ({
+  test("sets New category as a full-width row after the tabs, the plus where the handles sit", async ({
     page,
   }) => {
     await page.goto("/settings/library/tabs");
     const add = page.getByRole("button", { name: "New category" });
-    const list = page.getByRole("list", { name: "Library tabs" });
+    const lastRow = page
+      .getByRole("list", { name: "Library tabs" })
+      .getByRole("listitem")
+      .last();
+    const handle = lastRow.getByRole("button", { name: /^Move / });
+    const plus = add.locator("[data-icon=plus]");
 
-    expect((await boxOf(add)).x).toBeCloseTo(16, 0);
-    expect((await boxOf(add)).height).toBe(40);
-    await expect(add).toHaveCSS("font-size", "14px");
-    await expect(add).toHaveCSS("line-height", "20px");
-    expect((await boxOf(add)).y).toBeGreaterThan(
-      (await boxOf(list)).y + (await boxOf(list)).height,
+    const addBox = await boxOf(add);
+    const rowBox = await boxOf(lastRow);
+    const handleBox = await boxOf(handle);
+    const plusBox = await boxOf(plus);
+
+    expect(addBox.x).toBe(rowBox.x);
+    expect(addBox.width).toBe(rowBox.width);
+    expect(addBox.height).toBe(rowBox.height);
+    expect(addBox.y).toBeCloseTo(rowBox.y + rowBox.height, 0);
+    expect(plusBox.x + plusBox.width / 2).toBeCloseTo(
+      handleBox.x + handleBox.width / 2,
+      0,
     );
+    await expect(add).toHaveCSS("border-top-width", "0px");
+    await expect(add).toHaveCSS("border-radius", "0px");
+    await expect(add.getByText("New category")).toHaveCSS("font-size", "16px");
   });
 
   test("sets the Hidden badge without a border and the note at 14px", async ({

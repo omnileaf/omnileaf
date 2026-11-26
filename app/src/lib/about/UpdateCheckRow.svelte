@@ -2,13 +2,11 @@
   import { RefreshCw } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  import { Button } from "#lib/components/ui/button/index.ts";
-  import { Item } from "#lib/components/ui/item/index.ts";
   import { m } from "#lib/paraglide/messages.js";
   import type { UpdateCheck } from "#lib/updates/update-check.svelte.ts";
 
-  import { type AboutLook, ROW_LOOKS } from "./look";
-  import RowText from "./RowText.svelte";
+  import AboutButtonRow from "./AboutButtonRow.svelte";
+  import type { AboutLook } from "./look";
 
   let { checking, look }: { checking: UpdateCheck; look: AboutLook } = $props();
 
@@ -25,26 +23,16 @@
 </script>
 
 <li>
-  <Item look={ROW_LOOKS[look]}>
-    {#snippet child({ props })}
-      <Button
-        {...props}
-        type="button"
-        look="row"
-        aria-busy={checking.phase === "checking"}
-        onclick={() => {
-          void check();
-        }}
-      >
-        <RowText
-          icon={RefreshCw}
-          iconName="refresh-cw"
-          label={m.about_check_for_updates()}
-          hint={checking.hint}
-          {look}
-        />
-      </Button>
-    {/snippet}
-  </Item>
+  <AboutButtonRow
+    icon={RefreshCw}
+    iconName="refresh-cw"
+    label={m.about_check_for_updates()}
+    hint={checking.hint}
+    {look}
+    isBusy={checking.phase === "checking"}
+    onPress={() => {
+      void check();
+    }}
+  />
   <span role="status" class="sr-only">{checkedHint}</span>
 </li>

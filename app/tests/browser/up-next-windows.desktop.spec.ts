@@ -5,8 +5,9 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
-  testOnlyInItsWebview,
+  tabTo,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 import {
   BOOK_ID,
@@ -22,7 +23,6 @@ import {
   colourOf,
   escapedForPattern,
   NO_SHADOW,
-  tabTo,
   THEMES,
 } from "./windows-look.ts";
 
