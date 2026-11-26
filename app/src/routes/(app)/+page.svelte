@@ -54,6 +54,7 @@
   import {
     actionOffered,
     type EmptyActionKind,
+    type EmptyCause,
     emptyCauseOf,
     keepsListChrome,
     narrowsLibrary,
@@ -179,6 +180,7 @@
   const PAGE_STRIDE = "100% + var(--spacing-pager-gap)";
   const PAGE_INSET = "pe-page-end max-medium:ps-page-start medium:ps-gutter";
   const PAGE_BLEED = "-me-page-end max-medium:-ms-page-start medium:-ms-gutter";
+  const COVERS_GAP = "mbs-lg medium:mbs-xl";
 
   const animations = getAnimationsSetting();
   const screenshotMode = getScreenshotMode();
@@ -429,6 +431,7 @@
       ? BESIDE_PHONE_TABS
       : 0,
   );
+  const isPaging = $derived(pagesBesideChosen > 0);
   const isIosPhone = $derived(
     phoneOf(data.appInfo.platform, width.current) === "ios",
   );
@@ -499,8 +502,24 @@
     listedTab === undefined ? ALL_SERIES : tabKey(listedTab.id),
   );
 
-  const listsNothing = $derived(
-    library.list.kind === "loaded" && library.list.items.length === 0,
+  function listsNothingOn(tabPage: TabPage): boolean {
+    const { list } = tabPage.series;
+    return list.kind === "loaded" && list.items.length === 0;
+  }
+
+  const listsNothing = $derived(listsNothingOn(chosenPage));
+  const isListingFiltered = $derived(
+    chosenListing !== undefined && filtersOn(chosenListing.filter) > 0,
+  );
+  const emptyBesideTabs = $derived(
+    shownTabs.filter(({ id }) =>
+      pagerSlots.some(
+        (slot) =>
+          slot.offset !== 0 &&
+          slot.key === tabKey(id) &&
+          listsNothingOn(slot.page),
+      ),
+    ),
   );
   const unfilteredCounts = new UnfilteredCounts(
     (tab) => countOf(tab, NEW_LIBRARY_LISTING),
@@ -509,12 +528,16 @@
     },
   );
   const tabsCountedUnfiltered = $derived<readonly LibraryTabId[]>([
-    ...(listsNothing && narrowsLibrary({ listedTab, isFilterOn })
+    ...((listsNothing && narrowsLibrary({ listedTab, isFilterOn })) ||
+    emptyBesideTabs.length > 0
       ? [ALL_TAB]
       : []),
     ...(listsNothing && listedTab !== undefined && listedTabKey !== ALL_SERIES
       ? [listedTab.id]
       : []),
+    ...emptyBesideTabs
+      .map(({ id }) => id)
+      .filter((id) => tabKey(id) !== ALL_SERIES),
   ]);
   const emptyCause = $derived(
     listsNothing
@@ -526,7 +549,28 @@
         })
       : undefined,
   );
+  const besideCauses = $derived(
+    new Map(
+      emptyBesideTabs.map((beside) => {
+        const key = tabKey(beside.id);
+        const cause = emptyCauseOf({
+          listedTab: beside,
+          isFilterOn: isListingFiltered,
+          libraryCount: unfilteredCounts.of(ALL_SERIES),
+          listedTabCount: unfilteredCounts.of(key),
+        });
+        return [key, cause] as const;
+      }),
+    ),
+  );
   const isEmpty = $derived(emptyCause?.kind === "library");
+
+  function drawsEmptyState(cause: EmptyCause): boolean {
+    return (
+      cause.kind === "tab" ||
+      (cause.kind === "filters" && chosenListing !== undefined)
+    );
+  }
   const libraryView = $derived(
     view.reading.kind === "read" ? view.reading.value : undefined,
   );
@@ -636,8 +680,7 @@
     describedList = shown;
     untrack(() => {
       listedTab = chosenArrangedTab;
-      isFilterOn =
-        chosenListing !== undefined && filtersOn(chosenListing.filter) > 0;
+      isFilterOn = isListingFiltered;
     });
   });
 
@@ -1061,6 +1104,19 @@
   {/if}
 {/snippet}
 
+{#snippet tabEmptyState(cause: EmptyCause)}
+  {#if cause.kind === "tab"}
+    <EmptyTab tab={cause.tab} onAddSeries={addSeries} />
+  {:else if cause.kind === "filters" && chosenListing !== undefined}
+    <NoMatches
+      filter={chosenListing.filter}
+      onClear={() => {
+        chooseListing(withoutFilters(chosenListing));
+      }}
+    />
+  {/if}
+{/snippet}
+
 {#snippet attentionDot()}
   <NeedsAttentionDot
     count={needsAttention.problems.length}
@@ -1398,28 +1454,25 @@
         usesStandIns={screenshotMode.isOn}
         onDismissed={returnFocusFromNotice}
       />
-      {#if emptyCause?.kind === "tab"}
-        <EmptyTab tab={emptyCause.tab} onAddSeries={addSeries} />
-      {:else if emptyCause?.kind === "filters" && chosenListing !== undefined}
-        <NoMatches
-          filter={chosenListing.filter}
-          onClear={() => {
-            chooseListing(withoutFilters(chosenListing));
-          }}
-        />
-      {:else if loaded !== undefined && emptyCause?.kind !== "counting"}
-        {#if loaded.view.showsContinueRow}
-          <div class="mbs-lg medium:mbs-xl">
+      {#if !isPaging && emptyCause !== undefined && drawsEmptyState(emptyCause)}
+        {@render tabEmptyState(emptyCause)}
+      {:else if loaded !== undefined && (isPaging || emptyCause?.kind !== "counting")}
+        {#if loaded.view.showsContinueRow && emptyCause === undefined}
+          <div class={COVERS_GAP}>
             <ContinueRow usesStandIns={screenshotMode.isOn} />
           </div>
         {/if}
         <div
           class={[
             PAGE_BLEED,
-            "mbs-lg flex flex-1 flex-col overflow-x-clip medium:mbs-xl",
+            !isPaging && COVERS_GAP,
+            "flex flex-1 flex-col overflow-x-clip",
           ]}
         >
-          <div bind:this={pager} class="relative flex-1">
+          <div
+            bind:this={pager}
+            class={["relative flex-1", isPaging && "flex flex-col"]}
+          >
             {#if groups.length > 0}
               <div
                 class={[
@@ -1439,35 +1492,52 @@
                   />
                 {/each}
               </div>
-            {:else if pagesBesideChosen > 0}
+            {:else if isPaging}
               {#each pagerSlots as slot (slot.key)}
                 {@const isChosen = slot.offset === 0}
+                {@const cause = isChosen
+                  ? emptyCause
+                  : besideCauses.get(slot.key)}
                 <div
                   inert={!isChosen}
                   aria-hidden={isChosen ? undefined : "true"}
                   data-pager-page={isChosen ? "chosen" : "beside"}
                   class={isChosen
-                    ? "relative"
+                    ? "relative flex flex-1 flex-col"
                     : "invisible absolute inset-bs-none overflow-clip block-full inline-full in-data-swiping:visible"}
                   style:inset-inline-start={isChosen
                     ? undefined
                     : pagesAlong(slot.offset, PAGE_STRIDE)}
                 >
                   <div
-                    class={isChosen
-                      ? undefined
-                      : "sticky inset-bs-none overflow-clip block-dvh"}
+                    class={[
+                      "flex flex-1 flex-col",
+                      !isChosen &&
+                        "sticky inset-bs-none overflow-clip block-dvh max-block-full",
+                    ]}
                   >
                     <div
-                      class={PAGE_INSET}
+                      class={[
+                        PAGE_INSET,
+                        cause === undefined
+                          ? COVERS_GAP
+                          : "flex flex-1 flex-col",
+                      ]}
                       style:translate={isChosen
                         ? undefined
                         : `0 -${String(slot.scrolled)}px`}
                     >
-                      {#if isChosen}
-                        <FastScroll total={seriesCount.count} {letterAt} />
+                      {#if cause !== undefined}
+                        {@render tabEmptyState(cause)}
+                      {:else}
+                        {#if isChosen}
+                          <FastScroll total={seriesCount.count} {letterAt} />
+                        {/if}
+                        {@render seriesGrid(
+                          slot.page,
+                          isChosen ? covers : looks,
+                        )}
                       {/if}
-                      {@render seriesGrid(slot.page, isChosen ? covers : looks)}
                     </div>
                   </div>
                 </div>
@@ -1480,7 +1550,7 @@
             {/if}
           </div>
         </div>
-        {#if selection.isSelecting && (selection.count > 0 || androidPhone.isOn) && !commandsOnTop && !isMac}
+        {#if emptyCause === undefined && selection.isSelecting && (selection.count > 0 || androidPhone.isOn) && !commandsOnTop && !isMac}
           {#if isIos}
             <IosSelectionActions
               {keepsLabels}
