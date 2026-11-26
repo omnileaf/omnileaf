@@ -1,96 +1,162 @@
-import { afterEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-import { markFingerPresses } from "./finger-press";
+import {
+  FINGER_PRESS_DELAY_MS,
+  markFingerPresses,
+  SHORTEST_PRESS_SHOWN_MS,
+} from "./finger-press.ts";
 
-function buttonWithLabel(): { button: HTMLButtonElement; label: HTMLElement } {
-  const button = document.createElement("button");
+interface Finger {
+  readonly pointerId: number;
+  readonly pointerType?: "touch" | "mouse";
+  readonly clientX?: number;
+  readonly clientY?: number;
+}
+
+const FIRST: Finger = { pointerId: 1 };
+const SECOND: Finger = { pointerId: 2 };
+const SLOP_AND_MORE = 24;
+
+function button(): { button: HTMLButtonElement; label: HTMLElement } {
+  const pressable = document.createElement("button");
   const label = document.createElement("span");
-  button.append(label);
-  document.body.append(button);
-  return { button, label };
+  pressable.append(label);
+  document.body.append(pressable);
+  return { button: pressable, label };
 }
 
-function pointer(
-  type: string,
-  pointerType: "touch" | "mouse" = "touch",
-): PointerEvent {
-  return new PointerEvent(type, { bubbles: true, pointerType });
+function send(target: Element, type: string, finger: Finger = FIRST): void {
+  target.dispatchEvent(
+    new PointerEvent(type, {
+      bubbles: true,
+      pointerType: "touch",
+      clientX: 0,
+      clientY: 0,
+      ...finger,
+    }),
+  );
 }
+
+let stop: () => void = () => undefined;
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  stop = markFingerPresses(document);
+});
 
 afterEach(() => {
+  stop();
+  vi.useRealTimers();
   document.body.replaceChildren();
 });
 
-test("marks the button under a finger as pressed while the finger is down", () => {
-  const stop = markFingerPresses(document);
-  const { button, label } = buttonWithLabel();
+test("marks the button under a resting finger as pressed once the finger has stayed put", () => {
+  const { button: held, label } = button();
 
-  label.dispatchEvent(pointer("pointerdown"));
+  send(label, "pointerdown");
+  const before = held.hasAttribute("data-pressed");
+  vi.advanceTimersByTime(FINGER_PRESS_DELAY_MS);
 
-  expect(button.hasAttribute("data-pressed")).toBe(true);
-  stop();
+  expect(before).toBe(false);
+  expect(held.hasAttribute("data-pressed")).toBe(true);
 });
 
-test("clears the mark when the finger lifts", () => {
-  const stop = markFingerPresses(document);
-  const { button, label } = buttonWithLabel();
-  label.dispatchEvent(pointer("pointerdown"));
+test("never marks a button when the touch turns into a scroll before the delay", () => {
+  const { button: flicked, label } = button();
+  send(label, "pointerdown");
 
-  label.dispatchEvent(pointer("pointerup"));
+  send(label, "pointercancel");
+  vi.advanceTimersByTime(FINGER_PRESS_DELAY_MS);
 
-  expect(button.hasAttribute("data-pressed")).toBe(false);
-  stop();
+  expect(flicked.hasAttribute("data-pressed")).toBe(false);
 });
 
-test("clears the mark when the touch turns into a scroll", () => {
-  const stop = markFingerPresses(document);
-  const { button, label } = buttonWithLabel();
-  label.dispatchEvent(pointer("pointerdown"));
+test("never marks a button when the finger slides away before the delay", () => {
+  const { button: flicked, label } = button();
+  send(label, "pointerdown");
 
-  label.dispatchEvent(pointer("pointercancel"));
+  send(label, "pointermove", { ...FIRST, clientY: SLOP_AND_MORE });
+  vi.advanceTimersByTime(FINGER_PRESS_DELAY_MS);
 
-  expect(button.hasAttribute("data-pressed")).toBe(false);
-  stop();
+  expect(flicked.hasAttribute("data-pressed")).toBe(false);
 });
 
-test("clears the mark when the finger lifts somewhere else", () => {
-  const stop = markFingerPresses(document);
-  const { button, label } = buttonWithLabel();
-  label.dispatchEvent(pointer("pointerdown"));
+test("shows a quick tap's press at once and keeps it long enough to be seen", () => {
+  const { button: tapped, label } = button();
+  send(label, "pointerdown");
 
-  document.body.dispatchEvent(pointer("pointerup"));
+  send(label, "pointerup");
+  const shown = tapped.hasAttribute("data-pressed");
+  vi.advanceTimersByTime(SHORTEST_PRESS_SHOWN_MS - 1);
+  const stillShown = tapped.hasAttribute("data-pressed");
+  vi.advanceTimersByTime(1);
 
-  expect(button.hasAttribute("data-pressed")).toBe(false);
-  stop();
+  expect([shown, stillShown]).toEqual([true, true]);
+  expect(tapped.hasAttribute("data-pressed")).toBe(false);
+});
+
+test("clears a held press as soon as the finger lifts", () => {
+  const { button: held, label } = button();
+  send(label, "pointerdown");
+  vi.advanceTimersByTime(FINGER_PRESS_DELAY_MS);
+
+  send(label, "pointerup");
+
+  expect(held.hasAttribute("data-pressed")).toBe(false);
+});
+
+test("clears a held press when the touch turns into a scroll", () => {
+  const { button: held, label } = button();
+  send(label, "pointerdown");
+  vi.advanceTimersByTime(FINGER_PRESS_DELAY_MS);
+
+  send(label, "pointercancel");
+
+  expect(held.hasAttribute("data-pressed")).toBe(false);
+});
+
+test("keeps one finger's press when a second finger lifts", () => {
+  const first = button();
+  const second = button();
+  send(first.label, "pointerdown", FIRST);
+  send(second.label, "pointerdown", SECOND);
+  vi.advanceTimersByTime(FINGER_PRESS_DELAY_MS);
+
+  send(second.label, "pointerup", SECOND);
+
+  expect(first.button.hasAttribute("data-pressed")).toBe(true);
+  expect(second.button.hasAttribute("data-pressed")).toBe(false);
 });
 
 test("leaves a mouse press to the browser", () => {
-  const stop = markFingerPresses(document);
-  const { button, label } = buttonWithLabel();
+  const { button: clicked, label } = button();
 
-  label.dispatchEvent(pointer("pointerdown", "mouse"));
+  send(label, "pointerdown", { ...FIRST, pointerType: "mouse" });
+  vi.advanceTimersByTime(FINGER_PRESS_DELAY_MS);
 
-  expect(button.hasAttribute("data-pressed")).toBe(false);
-  stop();
+  expect(clicked.hasAttribute("data-pressed")).toBe(false);
 });
 
-test("leaves a disabled button unmarked", () => {
-  const stop = markFingerPresses(document);
-  const { button, label } = buttonWithLabel();
-  button.disabled = true;
+test("leaves a disabled or busy button unmarked", () => {
+  const disabled = button();
+  const busy = button();
+  disabled.button.disabled = true;
+  busy.button.setAttribute("aria-disabled", "true");
 
-  label.dispatchEvent(pointer("pointerdown"));
+  send(disabled.label, "pointerdown", FIRST);
+  send(busy.label, "pointerdown", SECOND);
+  vi.advanceTimersByTime(FINGER_PRESS_DELAY_MS);
 
-  expect(button.hasAttribute("data-pressed")).toBe(false);
-  stop();
+  expect(disabled.button.hasAttribute("data-pressed")).toBe(false);
+  expect(busy.button.hasAttribute("data-pressed")).toBe(false);
 });
 
 test("stops marking once told to", () => {
-  const stop = markFingerPresses(document);
   stop();
-  const { button, label } = buttonWithLabel();
+  const { button: ignored, label } = button();
 
-  label.dispatchEvent(pointer("pointerdown"));
+  send(label, "pointerdown");
+  vi.advanceTimersByTime(FINGER_PRESS_DELAY_MS);
 
-  expect(button.hasAttribute("data-pressed")).toBe(false);
+  expect(ignored.hasAttribute("data-pressed")).toBe(false);
 });

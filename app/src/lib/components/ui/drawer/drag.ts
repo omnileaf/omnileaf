@@ -11,7 +11,7 @@ export interface DragRelease {
   readonly elapsedMs: number;
 }
 
-const TOUCH_SLOP_PX = 10;
+export const TOUCH_SLOP_PX = 10;
 const POINTER_SLOP_PX = 2;
 const RESISTANCE_PX = 8;
 const RESISTANCE_FREE_PULL = 2;
