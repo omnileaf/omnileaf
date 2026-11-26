@@ -109,6 +109,9 @@
     title,
     seriesTitle,
     seriesHref,
+    backHref,
+    backLabel,
+    onBack,
     next,
     nextHref,
     direction,
@@ -117,6 +120,9 @@
     title: string;
     seriesTitle: string;
     seriesHref: ResolvedPathname;
+    backHref: ResolvedPathname;
+    backLabel: string;
+    onBack: () => void;
     next: SeriesNeighbour | null;
     nextHref: ResolvedPathname | undefined;
     direction: ReadingDirection;
@@ -202,8 +208,12 @@
     class="pointer-events-auto flex items-center gap-xs self-start px-reader-bar-inline pbs-reader-bar-top min-inline-none expanded:px-lg expanded:pbs-md"
   >
     <a
-      href={seriesHref}
-      aria-label={m.reader_back_to_series({ series: seriesTitle })}
+      href={backHref}
+      aria-label={backLabel}
+      onclick={(event) => {
+        event.preventDefault();
+        onBack();
+      }}
       class={isOnAndroidPhone
         ? foregroundBackLook(platform, width.current)
         : READER_BUTTON}
@@ -219,8 +229,9 @@
         <a
           href={seriesHref}
           class="block truncate text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
-          >{seriesTitle}</a
         >
+          {seriesTitle}
+        </a>
       </BreadcrumbItem>
       <BreadcrumbSeparator class="text-muted" />
       <BreadcrumbItem class="min-inline-none">
@@ -301,8 +312,9 @@
               class={isOnPhone
                 ? "text-native-notice-label/native-notice-label font-native-notice-label tracking-native-notice-label text-muted"
                 : "text-body expanded:text-title"}
-              >{m.reader_up_next()}</CardTitle
             >
+              {m.reader_up_next()}
+            </CardTitle>
           </CardHeader>
           <CardContent class="flex items-center gap-md px-lg expanded:px-xl">
             <span
@@ -331,14 +343,18 @@
                   isOnPhone
                     ? "text-native-end-book/native-end-book font-native-end-book tracking-native-end-book"
                     : "text-group-title font-semibold expanded:text-body",
-                ]}>{next.title}</span
+                ]}
               >
+                {next.title}
+              </span>
               <span
                 class={[
                   isOnPhone ? ROW_SUBTITLE_TYPE : "text-small",
                   "text-muted",
-                ]}>{nextDetails(next)}</span
+                ]}
               >
+                {nextDetails(next)}
+              </span>
             </span>
           </CardContent>
           <CardFooter class={actions.group}>
@@ -358,15 +374,16 @@
                 aria-hidden="true"
                 class="shrink-0"
               />
-              <span class={actionLabel}
-                >{m.reader_read_next({ title: next.title })}</span
-              >
+              <span class={actionLabel}>
+                {m.reader_read_next({ title: next.title })}
+              </span>
               {#if !isWindows}
                 <Kbd
                   aria-hidden="true"
                   class="hidden border-transparent bg-on-accent text-accent desktop:inline"
-                  >{nextKey}</Kbd
                 >
+                  {nextKey}
+                </Kbd>
               {/if}
             </UpNextLink>
             <UpNextLink
@@ -388,8 +405,9 @@
                 <Kbd
                   aria-hidden="true"
                   class="hidden border-transparent bg-transparent px-none font-medium text-muted desktop:inline"
-                  >{m.reader_key_esc()}</Kbd
                 >
+                  {m.reader_key_esc()}
+                </Kbd>
               {/if}
             </UpNextLink>
           </CardFooter>
@@ -399,12 +417,14 @@
               class={isOnPhone
                 ? "text-native-end-card-title/native-end-card-title font-native-end-card-title tracking-native-end-card-title wrap-anywhere"
                 : "text-body expanded:text-title"}
-              >{m.reader_series_finished()}</CardTitle
             >
+              {m.reader_series_finished()}
+            </CardTitle>
             <CardDescription
               class={isOnPhone ? ROW_SUBTITLE_TYPE : "text-small"}
-              >{m.reader_series_finished_body()}</CardDescription
             >
+              {m.reader_series_finished_body()}
+            </CardDescription>
           </CardHeader>
           <CardFooter class={actions.group}>
             <a href={seriesHref} class={actions.main}>
@@ -461,25 +481,26 @@
             <span
               id="{id}-skip"
               class="text-body font-medium expanded:text-small"
-              >{m.reader_skip_this_screen()}</span
             >
-            <span id="{id}-skip-help" class="text-small text-muted"
-              >{m.reader_skip_this_screen_help()}</span
-            >
+              {m.reader_skip_this_screen()}
+            </span>
+            <span id="{id}-skip-help" class="text-small text-muted">
+              {m.reader_skip_this_screen_help()}
+            </span>
           </span>
         </Switch>
       {/if}
       <p class="text-center text-small text-muted">
-        <span class="desktop:hidden"
-          >{next === null
+        <span class="desktop:hidden">
+          {next === null
             ? m.reader_turn_again_to_series()
-            : m.reader_turn_again({ title: next.title })}</span
-        >
-        <span class="hidden desktop:inline"
-          >{next === null
+            : m.reader_turn_again({ title: next.title })}
+        </span>
+        <span class="hidden desktop:inline">
+          {next === null
             ? m.reader_press_again_to_series({ key: nextKey })
-            : m.reader_press_again({ key: nextKey, title: next.title })}</span
-        >
+            : m.reader_press_again({ key: nextKey, title: next.title })}
+        </span>
       </p>
     </section>
   </div>

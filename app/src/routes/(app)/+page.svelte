@@ -1,6 +1,11 @@
 <script lang="ts">
   import { Channel } from "@tauri-apps/api/core";
-  import { CircleAlert, FolderOpen, RefreshCw } from "@lucide/svelte";
+  import {
+    CircleAlert,
+    FolderOpen,
+    RefreshCw,
+    TriangleAlert,
+  } from "@lucide/svelte";
   import { onMount, type Snippet, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -104,6 +109,7 @@
     setSeriesSelection,
   } from "#lib/library/series-selection.ts";
   import { Selection } from "#lib/page/selection.svelte.ts";
+  import { endsOnBack } from "#lib/page/selection-back.svelte.ts";
   import type { SeriesId } from "#lib/series/series-id.ts";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import { holdScrollTop } from "#lib/navigation/hold-scroll.ts";
@@ -365,6 +371,12 @@
     await loadMissingFolders();
   }
   const selection = new Selection<SeriesId>();
+  endsOnBack(
+    () => selection.isSelecting,
+    () => {
+      selection.end();
+    },
+  );
   const updateCheck = updateCheckForApp();
   setSeriesSelection(selection);
   let keepsLabels = $state(false);
@@ -425,6 +437,24 @@
   );
   function labelPicked(from: LabelsFrom): void {
     label(selection.picked, from);
+  }
+
+  function endSelecting(): void {
+    selection.end();
+  }
+
+  function sayFailed(error: unknown, title: string): void {
+    reportError(error);
+    notices.show({
+      tone: "warning",
+      icon: TriangleAlert,
+      title,
+      body: m.library_action_failed_body(),
+    });
+  }
+
+  function sayLabelsFailed(error: unknown): void {
+    sayFailed(error, m.library_labels_failed());
   }
 
   function markPickedRead(): void {
@@ -814,7 +844,7 @@
     isRemoving = false;
     removing = undefined;
     if (removed.status !== "ok") {
-      reportError(removed.error);
+      sayFailed(removed.error, m.library_remove_failed());
       return;
     }
     selection.end();
@@ -829,7 +859,7 @@
   async function markRead(series: SeriesId[]): Promise<void> {
     const marked = await commands.markSeriesRead(series);
     if (marked.status !== "ok") {
-      reportError(marked.error);
+      sayFailed(marked.error, m.library_mark_read_failed());
       return;
     }
     selection.end();
@@ -1030,6 +1060,8 @@
     bind:isOpen={isLabelling}
     series={labelled}
     startsAtTags={labelsFrom === "tags"}
+    onApplied={endSelecting}
+    onApplyFailed={sayLabelsFailed}
     onError={reportFailure}
   />
 {:else}
@@ -1037,6 +1069,8 @@
     bind:isOpen={isLabelling}
     series={labelled}
     startsAtTags={labelsFrom === "tags"}
+    onApplied={endSelecting}
+    onApplyFailed={sayLabelsFailed}
     onError={reportFailure}
   />
 {/if}

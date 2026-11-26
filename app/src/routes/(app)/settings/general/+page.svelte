@@ -19,7 +19,7 @@
     systemLanguage,
   } from "#lib/language/language.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
@@ -47,7 +47,7 @@
   const id = $props.id();
   const hintId = `${id}-hint`;
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const language = getLanguageSetting();
   const dateHeading = radiosLook(true).heading;
   const isMacos = currentPlatform() === "macos";

@@ -10,12 +10,14 @@ import {
 import type { ResolvedPathname } from "$app/types";
 
 import { resolvedPathOf } from "./app-path";
+import { isInAppShell } from "./sections";
 import { type HistoryMove, moveTo } from "./up-history";
 
 type Replacing = Extract<HistoryMove, { kind: "replace" }>;
 
 export interface BackGoesUp {
   readonly isPassingThrough: boolean;
+  readonly entries: readonly string[];
   replaceWith(target: ResolvedPathname): Promise<void>;
   followLinkTo(target: ResolvedPathname): Promise<void>;
 }
@@ -122,7 +124,12 @@ export function makeBackGoUp(): BackGoesUp {
   }
 
   beforeNavigate(({ type, to, cancel }) => {
-    if (type !== "link" || to === null || to.route.id === null) {
+    if (
+      type !== "link" ||
+      to === null ||
+      to.route.id === null ||
+      !isInAppShell(to.route.id)
+    ) {
       return;
     }
     if (isMoving) {
@@ -151,6 +158,9 @@ export function makeBackGoUp(): BackGoesUp {
   return {
     get isPassingThrough() {
       return isPassingThrough;
+    },
+    get entries() {
+      return entries;
     },
     replaceWith,
     followLinkTo,

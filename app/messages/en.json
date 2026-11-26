@@ -22,6 +22,54 @@
       }
     }
   ],
+  "library_series_volumes": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} volume",
+        "countPlural=other": "{formattedCount} volumes"
+      }
+    }
+  ],
+  "library_series_chapters": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} chapter",
+        "countPlural=other": "{formattedCount} chapters"
+      }
+    }
+  ],
+  "library_series_volumes_and_chapters": [
+    {
+      "declarations": [
+        "input volumes",
+        "input chapters",
+        "local volumesPlural = volumes: plural",
+        "local chaptersPlural = chapters: plural",
+        "local formattedVolumes = volumes: number",
+        "local formattedChapters = chapters: number"
+      ],
+      "selectors": ["volumesPlural", "chaptersPlural"],
+      "match": {
+        "volumesPlural=one, chaptersPlural=one": "{formattedVolumes} volume · {formattedChapters} chapter",
+        "volumesPlural=one, chaptersPlural=other": "{formattedVolumes} volume · {formattedChapters} chapters",
+        "volumesPlural=other, chaptersPlural=one": "{formattedVolumes} volumes · {formattedChapters} chapter",
+        "volumesPlural=other, chaptersPlural=other": "{formattedVolumes} volumes · {formattedChapters} chapters"
+      }
+    }
+  ],
+  "library_series_one_shot": "One-shot",
   "library_series_failed": "Couldn't load your library. Try again later.",
   "library_unchanged": "Nothing in your library has changed.",
   "library_try_again": "Try again",
@@ -197,7 +245,6 @@
   "library_tabs_summary": "Order, hidden tabs, where the library opens",
   "library_opens_on": "The library opens on",
   "library_opens_on_last": "The tab used last",
-  "library_opens_on_help": "Or All, or a tab you choose. If it would open on New chapters and nothing is new, it opens on All.",
   "library_tabs_title_mac": "Categories",
   "library_tabs_intro_mac": "Drag to reorder, or use ⌥↑ and ⌥↓. Hiding a category never removes a series.",
   "library_tabs_all_mac": "Library",
@@ -455,6 +502,10 @@
   "library_cancel": "Cancel",
   "library_mark_read": "Mark as read",
   "library_marked_read": "{count} series marked as read",
+  "library_mark_read_failed": "Couldn't mark the series as read",
+  "library_labels_failed": "Couldn't change the categories and tags",
+  "library_remove_failed": "Couldn't remove the series",
+  "library_action_failed_body": "Nothing in your library has changed. Try again in a moment.",
   "library_selection_toolbar": "Selected series",
   "library_selection_more": "More",
   "library_tags": "Tags",
@@ -2392,7 +2443,9 @@
   ],
   "series_bookmark_failed": "Couldn't keep the bookmark",
   "series_bookmark_failed_body": "Try again in a moment.",
+  "reader_back": "Back",
   "reader_back_label": "Back to the library",
+  "reader_back_to_history": "Back to History",
   "reader_back_to_series": "Back to {series}",
   "reader_breadcrumb": "Breadcrumb",
   "settings_breadcrumb": "Breadcrumb",
@@ -2551,6 +2604,21 @@
       }
     }
   ],
+  "reading_long_strip_speed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Long strip: {formattedCount} screen a minute",
+        "countPlural=other": "Long strip: {formattedCount} screens a minute"
+      }
+    }
+  ],
+  "reading_long_strip_speed_help": "The speed every long strip starts at, from {slowest} to {fastest} screens a minute. Change it while reading and that series keeps its own.",
   "reader_auto_scroll_rate": "Screens a minute",
   "reader_auto_scroll_rate_value": "Screens a minute: {count}",
   "reader_save_speed_for": "Save the speed for",

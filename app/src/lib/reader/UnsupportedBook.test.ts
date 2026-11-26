@@ -18,6 +18,7 @@ import "../../app.css";
 
 import { type BookId, bookIdIn } from "./opened-book.ts";
 import UnsupportedBook from "./UnsupportedBook.svelte";
+import { leavesNowhere, seriesWayBackOf } from "./way-back-for-tests";
 
 type Hidden = Awaited<ReturnType<typeof commands.hideFilesLike>>;
 
@@ -79,6 +80,8 @@ async function shown(
   const notices = new Notices();
   const screen = await render(UnsupportedBook, {
     place: shownPlace,
+    wayBack: seriesWayBackOf(shownPlace),
+    onBack: leavesNowhere,
     file,
     platform: "linux",
     hideFilesLike: fileTypes.hideFilesLike,

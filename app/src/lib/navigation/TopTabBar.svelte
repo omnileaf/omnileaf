@@ -25,8 +25,10 @@
             isSelected
               ? "bg-native-tab-pill text-native-on-tab-pill"
               : "text-native-on-tab",
-          ]}><span class="truncate">{label()}</span></a
+          ]}
         >
+          <span class="truncate">{label()}</span>
+        </a>
       </li>
     {/each}
   </ul>

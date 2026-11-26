@@ -136,8 +136,9 @@
       <div class="flex flex-col gap-2xs">
         <DialogTitle
           class="text-title font-bold ios:text-body ios:font-semibold"
-          >{book.title}</DialogTitle
         >
+          {book.title}
+        </DialogTitle>
         <p class="text-detail text-muted">
           {readingWords(book.reading, m.series_book_unread)}
         </p>

@@ -105,6 +105,8 @@
   import { Swipe } from "#lib/reader/swipe.ts";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { followVolumeKeys, hasVolumeKeys } from "#lib/reader/volume-keys.ts";
+  import { moveWithinReader } from "#lib/reader/reader-origin.ts";
+  import type { ReaderWayBack } from "#lib/reader/reader-way-back.ts";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
   import UpNext from "#lib/up-next/UpNext.svelte";
 
@@ -140,11 +142,15 @@
     platform,
     opensAtEnd,
     hasJumped,
+    wayBack,
+    leaveReader,
   }: {
     book: OpenedBook;
     platform: Platform;
     opensAtEnd: boolean;
     hasJumped: boolean;
+    wayBack: ReaderWayBack;
+    leaveReader: () => Promise<void>;
   } = $props();
 
   const screenshotMode = getScreenshotMode();
@@ -352,6 +358,7 @@
       ? resolve("/(app)/series/[id]", { id: book.series })
       : resolve("/(app)"),
   );
+
   const nextHref = $derived(
     book.next === null
       ? undefined
@@ -552,7 +559,7 @@
         zoomTo(1);
         return;
       case "back":
-        void goto(seriesHref);
+        void leaveReader();
         return;
       case "jump":
         openJump(!isJumpOpen);
@@ -626,7 +633,9 @@
   }
 
   function startNextBook(): void {
-    void goto(nextHref ?? seriesHref, { replaceState: nextHref !== undefined });
+    void (nextHref === undefined
+      ? goto(seriesHref).catch(reportFailure)
+      : moveWithinReader(nextHref));
   }
 
   function goStraightOn(): void {
@@ -641,10 +650,7 @@
     notices.offerUndo({
       title: m.reader_now_reading({ title: named.next.title }),
       undo: () => {
-        void goto(finished, {
-          replaceState: true,
-          state: { readerOpensAtEnd: true },
-        });
+        void moveWithinReader(finished, { readerOpensAtEnd: true });
       },
     });
   }
@@ -823,7 +829,7 @@
     if (left.status === "ok" && left.data) {
       return;
     }
-    await goto(seriesHref);
+    await leaveReader();
   }
 
   function isAtRevealEdge(event: PointerEvent): boolean {
@@ -1151,8 +1157,8 @@
 <ReaderBackSwipe
   swipeState={backSwipe}
   takenEdge={nextPageDragEdge}
-  backPath={seriesHref}
-  onBack={() => goto(seriesHref)}
+  backPath={wayBack.path}
+  onBack={leaveReader}
 >
   <main
     {@attach zoomsOnWheel}
@@ -1250,6 +1256,11 @@
         title={named.title}
         seriesTitle={named.seriesTitle}
         {seriesHref}
+        backHref={wayBack.href}
+        backLabel={wayBack.label}
+        onBack={() => {
+          void leaveReader();
+        }}
         next={named.next}
         {nextHref}
         direction={reading.direction}
@@ -1273,6 +1284,12 @@
       >
         <ReaderTopBar
           {seriesHref}
+          backHref={wayBack.href}
+          backLabel={wayBack.label}
+          isBackToSeries={wayBack.isSeries}
+          onBack={() => {
+            void leaveReader();
+          }}
           isInLibrary={book.isInLibrary}
           {platform}
           seriesTitle={named.seriesTitle}
@@ -1411,8 +1428,10 @@
               chrome.floats
                 ? [READER_CAPSULE, "px-md"]
                 : "bg-reader-glass text-reader-muted",
-            )}>{spreadPosition(spread, pageCount)}</span
+            )}
           >
+            {spreadPosition(spread, pageCount)}
+          </span>
         </div>
       {/if}
     {/if}
@@ -1451,6 +1470,7 @@
     <KeyboardShortcuts
       isOpen={areShortcutsOpen}
       isInLibrary={book.isInLibrary}
+      backLabel={wayBack.genericLabel}
       {platform}
       onClose={() => {
         openShortcuts(false);

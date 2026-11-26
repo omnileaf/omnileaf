@@ -1,8 +1,30 @@
 import { createContext } from "svelte";
+import type { Attachment } from "svelte/attachments";
 
 export interface ScreenCopy {
   readonly content: HTMLElement;
   readonly scrollTop: number;
+}
+
+export interface ScreenArea {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export function areaStyle({ left, top, width, height }: ScreenArea): string {
+  return `left: ${String(left)}px; top: ${String(top)}px; width: ${String(width)}px; height: ${String(height)}px;`;
+}
+
+export function showCopy(shown: ScreenCopy): Attachment<HTMLElement> {
+  return (holder) => {
+    holder.append(shown.content);
+    shown.content.scrollTop = shown.scrollTop;
+    return () => {
+      shown.content.remove();
+    };
+  };
 }
 
 export class PreviousScreens {
@@ -31,9 +53,9 @@ export class PreviousScreens {
     return isLanding ? this.of(pathname) : undefined;
   }
 
-  forgetAllButAbove(pathname: string): void {
+  forgetAllBut(waysBack: ReadonlySet<string>): void {
     for (const kept of this.#copies.keys()) {
-      if (!pathname.startsWith(`${kept}/`)) {
+      if (!waysBack.has(kept)) {
         this.#copies.delete(kept);
       }
     }

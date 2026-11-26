@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SettingRadios from "#lib/settings/SettingRadios.svelte";
@@ -36,7 +36,7 @@
 
   const colours = getColoursSetting();
   const theme = getThemeSetting();
-  const onPhone = new AndroidPhone();
+  const onPhone = androidListLook();
   let swatch = $state<WallpaperSwatch | null>(null);
 
   const shown = $derived(swatch?.[theme.resolved]);

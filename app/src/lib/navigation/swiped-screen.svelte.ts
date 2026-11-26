@@ -36,6 +36,7 @@ const MOVING_LOOK = "bg-background shadow-back-swipe rtl:shadow-back-swipe-rtl";
 function acrossScreen(swipe: BackSwipe, screen: DOMRect): BackSwipe {
   const scale = window.innerWidth / screen.width;
   switch (swipe.kind) {
+    case "started":
     case "moved":
       return { ...swipe, progress: (swipe.progress ?? 0) * scale };
     case "released":

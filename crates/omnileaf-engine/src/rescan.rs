@@ -13,10 +13,12 @@ use tokio::task::spawn_blocking;
 
 use crate::{
     FolderId, LibraryError, ScanProgress, SkippedType,
+    book_reader::{BOOKS_PER_BATCH, BookReader},
     library_layout::Layout,
     library_removal::{RemovedBooks, marked_to_leave_out},
     rescan_plan::{Forgetting, Plan, ReadBook, Replacement, ToRead},
-    scan::{BOOKS_PER_BATCH, Target, read_book, saturating_u32},
+    saturating_u32::saturating_u32,
+    scan_target::Target,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -120,13 +122,14 @@ async fn record_changed(
     let total = saturating_u32(to_read.len());
     let mut scanned: u32 = 0;
     on_progress(ScanProgress::Reading { scanned, total });
+    let reader = BookReader::new(target.clone());
     let mut to_read = to_read.into_iter();
     loop {
         let batch: Vec<ToRead> = to_read.by_ref().take(BOOKS_PER_BATCH).collect();
         if batch.is_empty() {
             return Ok(());
         }
-        let read = read_batch(target, batch).await?;
+        let read = read_batch(&reader, batch).await?;
         scanned = scanned.saturating_add(saturating_u32(read.len()));
         let removed = marked_to_leave_out(
             store,
@@ -146,18 +149,20 @@ async fn record_changed(
     }
 }
 
-async fn read_batch(target: &Target, batch: Vec<ToRead>) -> Result<Vec<ReadBook>, LibraryError> {
-    let reading = target.clone();
-    Ok(spawn_blocking(move || {
-        batch
-            .into_iter()
-            .map(|to_read| ReadBook {
-                book: read_book(&to_read.found, &reading),
-                known: to_read.known,
-            })
-            .collect()
-    })
-    .await?)
+async fn read_batch(
+    reader: &BookReader,
+    batch: Vec<ToRead>,
+) -> Result<Vec<ReadBook>, LibraryError> {
+    let (found, known): (Vec<_>, Vec<_>) = batch
+        .into_iter()
+        .map(|to_read| (to_read.found, to_read.known))
+        .unzip();
+    let read = reader.read(found).await?;
+    Ok(read
+        .into_iter()
+        .zip(known)
+        .map(|(book, known)| ReadBook { book, known })
+        .collect())
 }
 
 async fn carry_reading_states(

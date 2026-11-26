@@ -19,6 +19,7 @@
   } from "#lib/ipc/bindings.ts";
   import type { FolderFinder } from "#lib/library/folder-finder.svelte.ts";
   import { marksBooksNotConnected } from "#lib/library/not-connected.ts";
+  import { leaveOverlaysThen } from "#lib/navigation/overlay-back.ts";
   import {
     type FilterCondition,
     NEW_LIBRARY_LISTING,
@@ -26,6 +27,7 @@
   import { browserPreferenceStore } from "#lib/preferences/stored-preference.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+  import type { BookId } from "#lib/reader/opened-book.ts";
 
   import { isComposing } from "./composition";
   import {
@@ -299,6 +301,10 @@
     selectedKey = choices[0] === undefined ? "" : choiceKey(choices[0]);
   }
 
+  function readBook(book: BookId): void {
+    leaveOverlaysThen(() => goto(resolve("/read/[book]", { book })));
+  }
+
   function choose(choice: Choice | undefined): void {
     if (choice === undefined) {
       return;
@@ -310,17 +316,17 @@
     }
     switch (choice.kind) {
       case "series":
-        void goto(
-          choice.series.continuesFrom === null
-            ? resolve("/(app)/series/[id]", { id: choice.series.id })
-            : resolve("/read/[book]", { book: choice.series.continuesFrom }),
-        );
+        if (choice.series.continuesFrom === null) {
+          void goto(resolve("/(app)/series/[id]", { id: choice.series.id }));
+        } else {
+          readBook(choice.series.continuesFrom);
+        }
         return;
       case "place":
         void goto(resolve(choice.place.route));
         return;
       case "continue":
-        void goto(resolve("/read/[book]", { book: choice.entry.book }));
+        readBook(choice.entry.book);
         return;
       case "search":
         void goto(resolve(`/(app)/search${searchQuery(choice.text)}`));
@@ -483,11 +489,9 @@
       class="flex items-center gap-lg border-bs border-border px-lg text-caption text-muted block-key-hints"
     >
       <span>{m.search_key_move()}</span>
-      <span
-        >{platform === "macos"
-          ? m.search_key_open_mac()
-          : m.search_key_open()}</span
-      >
+      <span>
+        {platform === "macos" ? m.search_key_open_mac() : m.search_key_open()}
+      </span>
       <span>
         {platform === "macos"
           ? m.search_key_next_group_mac()

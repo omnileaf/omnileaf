@@ -6,6 +6,7 @@
     Maximize,
     SlidersHorizontal,
   } from "@lucide/svelte";
+  import { mergeProps } from "bits-ui";
   import type { Snippet } from "svelte";
 
   import type { ResolvedPathname } from "$app/types";
@@ -46,6 +47,10 @@
 
   let {
     seriesHref,
+    backHref,
+    backLabel,
+    isBackToSeries,
+    onBack,
     isInLibrary,
     platform,
     seriesTitle,
@@ -65,6 +70,10 @@
     onFullScreen,
   }: {
     seriesHref: ResolvedPathname;
+    backHref: ResolvedPathname;
+    backLabel: string;
+    isBackToSeries: boolean;
+    onBack: () => void;
     isInLibrary: boolean;
     platform: Platform;
     seriesTitle: string;
@@ -84,11 +93,6 @@
     onFullScreen: () => void;
   } = $props();
 
-  const backLabel = $derived(
-    isInLibrary
-      ? m.reader_back_to_series({ series: seriesTitle })
-      : m.reader_back_label(),
-  );
   const JUMP_ICON_SIZE = 12;
 
   const chrome = getReaderChrome();
@@ -140,8 +144,13 @@
   >
     {#snippet child({ props })}
       <a
-        {...props}
-        href={seriesHref}
+        {...mergeProps(props, {
+          onclick: (event: MouseEvent) => {
+            event.preventDefault();
+            onBack();
+          },
+        })}
+        href={backHref}
         aria-label={backLabel}
         aria-keyshortcuts={isWindows ? WINDOWS_BACK_KEYS : undefined}
         class={cn(
@@ -152,7 +161,7 @@
         )}
       >
         <ReaderBackArrow {platform} {isOnPhone} />
-        {#if !isOnPhone && isInLibrary}
+        {#if !isOnPhone && isInLibrary && isBackToSeries}
           <span
             class="hidden truncate text-small text-accent max-inline-reader-crumb-book ios:max-expanded:inline"
           >
@@ -259,8 +268,9 @@
         <a
           href={seriesHref}
           class="-my-xs block truncate py-xs text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
-          >{seriesTitle}</a
         >
+          {seriesTitle}
+        </a>
       </BreadcrumbItem>
       <BreadcrumbSeparator class="text-muted" />
       <BreadcrumbItem class="min-inline-none">
@@ -283,9 +293,9 @@
                   isJumpOpen && "bg-hover",
                 )}
               >
-                <span class="truncate max-inline-reader-crumb-book"
-                  >{bookTitle}</span
-                >
+                <span class="truncate max-inline-reader-crumb-book">
+                  {bookTitle}
+                </span>
                 <ChevronDown
                   size={JUMP_ICON_SIZE}
                   aria-hidden="true"

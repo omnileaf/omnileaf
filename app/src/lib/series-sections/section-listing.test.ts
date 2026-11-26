@@ -5,6 +5,7 @@ import type { PhonePlatform } from "#lib/page/platform.ts";
 
 import {
   firstDirection,
+  hasSectionHeading,
   type SectionScreen,
   sectionListing,
   sectionTabs,
@@ -96,14 +97,48 @@ test("keeps the books shown as chosen under an Android phone's covers", () => {
   expect(sectionListing(chosen, EVERY_SECTION, ANDROID_PHONE)).toEqual(chosen);
 });
 
-test("lists every book of an Android phone's series with one kind", () => {
+test("keeps the books shown as chosen for an Android phone's series with one kind", () => {
   const chosen: SeriesBookListing = { shown: "unread", direction: "ascending" };
 
-  expect(sectionListing(chosen, ["volumes"], ANDROID_PHONE)).toEqual({
+  expect(sectionListing(chosen, ["volumes"], ANDROID_PHONE)).toEqual(chosen);
+});
+
+test("lists every book of an iPhone's series with one kind", () => {
+  const chosen: SeriesBookListing = { shown: "unread", direction: "ascending" };
+
+  expect(sectionListing(chosen, ["volumes"], IPHONE)).toEqual({
     ...chosen,
     shown: "all",
   });
 });
+
+test.each<[readonly BookSection[]]>([
+  [EVERY_SECTION],
+  [["volumes"]],
+  [["specials"]],
+])("heads the books of a series of %j on an Android phone", (sections) => {
+  expect(hasSectionHeading(sections, ANDROID_PHONE)).toBe(true);
+});
+
+test.each<[readonly BookSection[]]>([[["chapters"]], [[]]])(
+  "leaves a series of %j to head its own books on an Android phone",
+  (sections) => {
+    expect(hasSectionHeading(sections, ANDROID_PHONE)).toBe(false);
+  },
+);
+
+test.each<SectionScreen>([
+  IPHONE,
+  LINUX_WINDOW,
+  NARROW_LINUX_WINDOW,
+  { platform: "android", width: "medium" },
+  { platform: "android", width: "expanded" },
+])(
+  "keeps a series of volumes only unheaded on $platform at width $width",
+  (screen) => {
+    expect(hasSectionHeading(["volumes"], screen)).toBe(false);
+  },
+);
 
 test("goes back to the first section when the chosen one is gone", () => {
   const chosen: SeriesBookListing = { ...IN_ORDER, section: "specials" };

@@ -37,9 +37,9 @@
         <wording.icon size={ICON_SIZE} />
       </span>
       <div class="flex flex-1 flex-col min-inline-none">
-        <span id={titleId} class={["wrap-anywhere", look.title]}
-          >{wording.title}</span
-        >
+        <span id={titleId} class={["wrap-anywhere", look.title]}>
+          {wording.title}
+        </span>
         <span class={["wrap-anywhere", look.detail]}>{wording.detail}</span>
       </div>
       <Button

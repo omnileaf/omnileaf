@@ -49,6 +49,15 @@ class BackNavigationPlugin(
 
 private fun BackGesture.toJson(): JSObject =
     when (this) {
-        is BackGesture.Moved -> JSObject().put("kind", "moved").put("progress", progress.toDouble())
+        is BackGesture.Started -> at.toJson("started")
+        is BackGesture.Moved -> at.toJson("moved")
         BackGesture.Cancelled -> JSObject().put("kind", "cancelled")
     }
+
+private fun BackPosition.toJson(kind: String): JSObject =
+    JSObject()
+        .put("kind", kind)
+        .put("progress", progress.toDouble())
+        .put("edge", edge.id)
+        .put("touchY", touchY.toDouble())
+        .put("corner", cornerDp.toDouble())

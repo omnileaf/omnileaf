@@ -130,3 +130,118 @@ test("holds nothing where the platform does not follow the page's history", () =
   expect(page.entries).toEqual({ pushed: 0, backed: 0 });
   expect(told.count).toBe(0);
 });
+
+test("settles at once when no overlay holds an entry", async () => {
+  const { overlays, page } = overlayBack();
+
+  await overlays.giveBack();
+
+  expect(page.entries.backed).toBe(0);
+});
+
+test("gives an open overlay's entry back and settles once the page has gone back", async () => {
+  const { overlays, page } = overlayBack();
+  overlays.hold(() => undefined);
+  const settled = { isDone: false };
+
+  const giving = overlays.giveBack().then(() => {
+    settled.isDone = true;
+  });
+  await Promise.resolve();
+
+  expect(page.entries.backed).toBe(1);
+  expect(settled.isDone).toBe(false);
+
+  page.goBack();
+  await giving;
+
+  expect(settled.isDone).toBe(true);
+});
+
+test("gives an entry back only once when its overlay closes afterwards", async () => {
+  const { overlays, page } = overlayBack();
+  const release = overlays.hold(() => undefined);
+  const giving = overlays.giveBack();
+  page.goBack();
+  await giving;
+
+  release();
+
+  expect(page.entries.backed).toBe(1);
+  expect(page.listening()).toBe(0);
+});
+
+test("must give back before leaving only while an overlay is open or its entry's step back is on its way", () => {
+  const { overlays, page } = overlayBack();
+  const before = overlays.mustGiveBackBeforeLeaving();
+
+  const release = overlays.hold(() => undefined);
+  const whileOpen = overlays.mustGiveBackBeforeLeaving();
+  void overlays.giveBack();
+  const whileSteppingBack = overlays.mustGiveBackBeforeLeaving();
+  page.goBack();
+  const onceLanded = overlays.mustGiveBackBeforeLeaving();
+  release();
+
+  expect([before, whileOpen, whileSteppingBack, onceLanded]).toEqual([
+    false,
+    true,
+    true,
+    false,
+  ]);
+});
+
+test("never must give back when the page does not follow history for back", () => {
+  const { overlays } = overlayBack(false);
+
+  overlays.hold(() => undefined);
+
+  expect(overlays.mustGiveBackBeforeLeaving()).toBe(false);
+});
+
+test("must give back before leaving while its own step back is on its way and an overlay waits for its entry", () => {
+  const { overlays } = overlayBack();
+  const releaseSheet = overlays.hold(() => undefined);
+  releaseSheet();
+
+  overlays.hold(() => undefined);
+
+  expect(overlays.mustGiveBackBeforeLeaving()).toBe(true);
+});
+
+test("holds a new entry only once its own step back for the last overlay has landed", () => {
+  const { overlays, page } = overlayBack();
+  let closed = 0;
+  const releaseSheet = overlays.hold(() => undefined);
+  releaseSheet();
+
+  overlays.hold(() => {
+    closed += 1;
+  });
+  const pushedWhileStepping = page.entries.pushed;
+  page.goBack();
+  const pushedOnceLanded = page.entries.pushed;
+  page.goBack();
+
+  expect([pushedWhileStepping, pushedOnceLanded]).toEqual([1, 2]);
+  expect(closed).toBe(1);
+});
+
+test("settles a give-back once its last step back lands, never pushing the overlay that waited for an entry", async () => {
+  const { overlays, page } = overlayBack();
+  const releaseSheet = overlays.hold(() => undefined);
+  releaseSheet();
+  overlays.hold(() => undefined);
+  const settled = { isDone: false };
+
+  const giving = overlays.giveBack().then(() => {
+    settled.isDone = true;
+  });
+  await Promise.resolve();
+  const settledBeforeLanding = settled.isDone;
+  page.goBack();
+  await giving;
+
+  expect(settledBeforeLanding).toBe(false);
+  expect(page.entries).toEqual({ pushed: 1, backed: 1 });
+});

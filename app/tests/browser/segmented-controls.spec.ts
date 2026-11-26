@@ -138,7 +138,7 @@ const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "Settings > Privacy's Crash reports",
     hasIcons: () => false,
-    isSegmented: (platform, width) => !isAndroidPhone(platform, width),
+    isSegmented: (platform) => platform !== "android",
     backend: (platform) => onPlatform(platform).backend,
     open: (page, messages) =>
       settingsGroup(page, "/settings/privacy", messages.privacy_crash_reports),
@@ -310,7 +310,7 @@ for (const [platform, { project, target }] of Object.entries(PLATFORMS)) {
                 );
                 test.skip(
                   control.isSegmented?.(platform, width) === false,
-                  `${control.name} is flat radio rows on an Android phone`,
+                  `${control.name} is flat radio rows there`,
                 );
                 await scaleText(page, scale);
                 await page.setViewportSize({ width, height: HEIGHT });

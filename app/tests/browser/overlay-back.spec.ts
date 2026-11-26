@@ -4,14 +4,20 @@ import type {
   LibraryCategory,
   SeriesLabels,
 } from "../../src/lib/ipc/bindings.ts";
-import { DEFAULT_BACKEND, expect, settle, test } from "./fixtures.ts";
+import {
+  DEFAULT_BACKEND,
+  expect,
+  selectByLongPress,
+  settle,
+  test,
+} from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(6);
 const CATEGORY = { id: "reading", name: "Reading" } as LibraryCategory;
 const PHONE_WIDTH = 500;
-const HELD_MS = 800;
 let historyFollowed = 0;
+let canGoBack: boolean | undefined;
 
 function labelsFor(series: readonly string[]): SeriesLabels {
   return {
@@ -28,8 +34,9 @@ test.use({
     librarySeries: pagedSeries(() => LIBRARY),
     librarySeriesCount: () => LIBRARY.length,
     seriesLabels: (series) => labelsFor(series),
-    followBackHistory: () => {
+    followBackHistory: (canGo) => {
       historyFollowed += 1;
+      canGoBack = canGo;
       return null;
     },
   },
@@ -37,6 +44,7 @@ test.use({
 
 test.beforeEach(() => {
   historyFollowed = 0;
+  canGoBack = undefined;
 });
 
 async function openLibrary(page: Page): Promise<Locator> {
@@ -55,23 +63,17 @@ async function openSortAndFilter(page: Page): Promise<Locator> {
   return sheet;
 }
 
-async function openCategoriesAndTags(page: Page): Promise<Locator> {
+async function selectASeries(page: Page): Promise<Locator> {
   const list = await openLibrary(page);
-  const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
-  await list
-    .getByRole("listitem")
-    .nth(1)
-    .getByRole("link")
-    .first()
-    .dispatchEvent("pointerdown", touch);
-  await page.waitForTimeout(HELD_MS);
-  const picked = list.getByRole("checkbox", { name: LIBRARY[1]?.title ?? "" });
-  await picked.dispatchEvent("pointerup", touch);
-  await picked.dispatchEvent("click");
-  await page
-    .getByRole("group", { name: "Selected series" })
-    .getByRole("button", { name: "Categories" })
-    .click();
+  await selectByLongPress(page, list.getByRole("listitem").nth(1));
+  const actions = page.getByRole("group", { name: "Selected series" });
+  await expect(actions).toBeVisible();
+  return actions;
+}
+
+async function openCategoriesAndTags(page: Page): Promise<Locator> {
+  const actions = await selectASeries(page);
+  await actions.getByRole("button", { name: "Categories" }).click();
   const sheet = page.getByRole("dialog", { name: "Categories and tags" });
   await expect(sheet).toBeVisible();
   await settle(sheet);
@@ -134,6 +136,53 @@ test.describe("back while a sheet is open", { tag: "@native" }, () => {
       await page.goBack();
 
       await expect(sheet).toBeHidden();
+    });
+  });
+});
+
+test.describe("back while series are selected", { tag: "@native" }, () => {
+  test.describe("on an Android phone", () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android follows the page's history");
+    });
+
+    test("clears the selection and stays on the Library", async ({ page }) => {
+      const actions = await selectASeries(page);
+
+      await page.goBack();
+
+      await expect(actions).toBeHidden();
+      await expect(page.getByText("1 selected")).toHaveCount(0);
+      await expect(
+        page.getByRole("navigation", { name: "Main" }),
+      ).toBeVisible();
+      expect(new URL(page.url()).pathname).toBe("/");
+    });
+
+    test("lets Android hand back to the page while series are selected, and not once they are cleared", async ({
+      page,
+    }) => {
+      await openLibrary(page);
+      await expect.poll(() => canGoBack).toBe(false);
+      const actions = await selectASeries(page);
+      await expect.poll(() => canGoBack).toBe(true);
+
+      await page.goBack();
+
+      await expect(actions).toBeHidden();
+      await expect.poll(() => canGoBack).toBe(false);
+    });
+
+    test("leaves no history entry behind when the selection is closed from its bar", async ({
+      page,
+    }) => {
+      const actions = await selectASeries(page);
+      await page.getByRole("button", { name: "Cancel selecting" }).click();
+      await expect(actions).toBeHidden();
+
+      await page.goBack();
+
+      expect(page.url()).toBe("about:blank");
     });
   });
 });

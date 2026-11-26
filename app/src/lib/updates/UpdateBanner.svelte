@@ -46,13 +46,13 @@
     role="status"
     aria-labelledby={titleId}
   >
-    <AlertTitle id={titleId}
-      >{m.about_update_available({ version: release.version })}</AlertTitle
-    >
+    <AlertTitle id={titleId}>
+      {m.about_update_available({ version: release.version })}
+    </AlertTitle>
     {#if release.headline !== null}
-      <AlertDescription class="line-clamp-2"
-        >{release.headline}</AlertDescription
-      >
+      <AlertDescription class="line-clamp-2">
+        {release.headline}
+      </AlertDescription>
     {/if}
     <AlertActions>
       <Button
@@ -60,15 +60,19 @@
         variant="plain"
         onclick={() => {
           void checking.openReleasePage();
-        }}>{m.update_banner_view_release()}</Button
+        }}
       >
+        {m.update_banner_view_release()}
+      </Button>
       <Button
         type="button"
         variant="plain"
         onclick={() => {
           void checking.snooze(release.version);
-        }}>{m.update_banner_not_now()}</Button
+        }}
       >
+        {m.update_banner_not_now()}
+      </Button>
     </AlertActions>
     <DropdownMenu>
       <DropdownMenuTrigger>

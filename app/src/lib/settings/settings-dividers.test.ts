@@ -225,17 +225,22 @@ test("draws no line above the first group when only an unmarked block comes befo
   expect(line).toBe(NO_LINE);
 });
 
-for (const [name, platform, width] of [
-  ["an Android tablet", "android", TABLET_WIDTH],
-  ["an iPhone", "ios", PHONE_WIDTH],
-] as const) {
-  test(`draws no lines on ${name}`, async () => {
-    await settingsPage(platform, width);
+test("draws the phone's lines on an Android tablet", async () => {
+  await settingsPage("android", TABLET_WIDTH);
 
-    const lines = ["second-group", "group-after-end-only", "wrapped-group"].map(
-      lineAbove,
-    );
+  const lines = ["second-group", "group-after-end-only", "wrapped-group"].map(
+    lineAbove,
+  );
 
-    expect(lines).toEqual([NO_LINE, NO_LINE, NO_LINE]);
-  });
-}
+  expect(lines).toEqual([LINE, LINE, LINE]);
+});
+
+test("draws no lines on an iPhone", async () => {
+  await settingsPage("ios", PHONE_WIDTH);
+
+  const lines = ["second-group", "group-after-end-only", "wrapped-group"].map(
+    lineAbove,
+  );
+
+  expect(lines).toEqual([NO_LINE, NO_LINE, NO_LINE]);
+});

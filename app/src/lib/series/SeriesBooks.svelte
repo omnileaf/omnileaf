@@ -48,6 +48,7 @@
   import type { SeriesBookCommands } from "./series-book-commands";
   import BookTable from "./BookTable.svelte";
   import { Selection } from "#lib/page/selection.svelte.ts";
+  import { endsOnBack } from "#lib/page/selection-back.svelte.ts";
   import BarControls from "./BarControls.svelte";
   import SelectionBar from "./SelectionBar.svelte";
   import WindowsSelectionBar from "./WindowsSelectionBar.svelte";
@@ -418,6 +419,13 @@
       void end();
     });
   });
+
+  endsOnBack(
+    () => isPicking,
+    () => {
+      void end();
+    },
+  );
 
   beforeNavigate((navigation) => {
     if (navigation.type === "popstate" && navigation.delta < 0 && isPicking) {

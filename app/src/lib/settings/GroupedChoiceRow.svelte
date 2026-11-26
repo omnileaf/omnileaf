@@ -33,9 +33,9 @@
     }}
   >
     <span class="flex-auto wrap-anywhere min-inline-none">{title}</span>
-    <span class="shrink text-end wrap-anywhere text-muted min-inline-none"
-      >{value}</span
-    >
+    <span class="shrink text-end wrap-anywhere text-muted min-inline-none">
+      {value}
+    </span>
     <ChevronRight
       size={CHEVRON_SIZE}
       aria-hidden="true"
