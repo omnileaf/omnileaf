@@ -69,6 +69,7 @@ export function testListSize(
   const units = unitsOf(tests, timings);
   return {
     lines: units.length,
+    timedLines: units.filter((unit) => unit.durationMs > 0).length,
     durationMs: units.reduce((total, unit) => total + unit.durationMs, 0),
   };
 }

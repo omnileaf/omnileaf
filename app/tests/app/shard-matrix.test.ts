@@ -10,8 +10,8 @@ import {
 } from "../shard-matrix.ts";
 
 const NO_TOUCHED_TESTS = {
-  rest: { lines: 0, durationMs: 0 },
-  screens: { lines: 0, durationMs: 0 },
+  rest: { lines: 0, timedLines: 0, durationMs: 0 },
+  screens: { lines: 0, timedLines: 0, durationMs: 0 },
 };
 
 const WHOLE_APP: ShardPlan = {
@@ -121,8 +121,8 @@ test("runs a short list of touched tests on one shard, without the speed timing"
   const matrix = shardMatrix({
     ...TOUCHED_APP,
     touched: {
-      rest: { lines: 12, durationMs: 90_000 },
-      screens: { lines: 0, durationMs: 0 },
+      rest: { lines: 12, timedLines: 12, durationMs: 90_000 },
+      screens: { lines: 0, timedLines: 0, durationMs: 0 },
     },
   });
 
@@ -133,8 +133,8 @@ test("adds a shard for each target's worth of touched tests", () => {
   const matrix = shardMatrix({
     ...TOUCHED_APP,
     touched: {
-      rest: { lines: 400, durationMs: 2.5 * TARGET_SHARD_MS },
-      screens: { lines: 30, durationMs: TARGET_SHARD_MS },
+      rest: { lines: 400, timedLines: 400, durationMs: 2.5 * TARGET_SHARD_MS },
+      screens: { lines: 30, timedLines: 30, durationMs: TARGET_SHARD_MS },
     },
   });
 
@@ -146,8 +146,16 @@ test("never uses more shards than the whole suite does", () => {
     ...TOUCHED_APP,
     screens: ["phone", "desktop"],
     touched: {
-      rest: { lines: 5000, durationMs: 400 * TARGET_SHARD_MS },
-      screens: { lines: 5000, durationMs: 400 * TARGET_SHARD_MS },
+      rest: {
+        lines: 5000,
+        timedLines: 5000,
+        durationMs: 400 * TARGET_SHARD_MS,
+      },
+      screens: {
+        lines: 5000,
+        timedLines: 5000,
+        durationMs: 400 * TARGET_SHARD_MS,
+      },
     },
   });
 
@@ -160,12 +168,36 @@ test("never uses more shards than there are test list lines to share out", () =>
   const matrix = shardMatrix({
     ...TOUCHED_APP,
     touched: {
-      rest: { lines: 2, durationMs: 50 * TARGET_SHARD_MS },
-      screens: { lines: 0, durationMs: 0 },
+      rest: { lines: 2, timedLines: 2, durationMs: 50 * TARGET_SHARD_MS },
+      screens: { lines: 0, timedLines: 0, durationMs: 0 },
     },
   });
 
   expect(countOf(matrix, "rest")).toBe(2);
+});
+
+test("never uses more shards than there are test list lines that take time, so no shard is empty", () => {
+  const matrix = shardMatrix({
+    ...TOUCHED_APP,
+    touched: {
+      rest: { lines: 3, timedLines: 1, durationMs: 20 * TARGET_SHARD_MS },
+      screens: { lines: 0, timedLines: 0, durationMs: 0 },
+    },
+  });
+
+  expect(countOf(matrix, "rest")).toBe(1);
+});
+
+test("keeps one shard for touched tests that all take no time", () => {
+  const matrix = shardMatrix({
+    ...TOUCHED_APP,
+    touched: {
+      rest: { lines: 4, timedLines: 0, durationMs: 0 },
+      screens: { lines: 0, timedLines: 0, durationMs: 0 },
+    },
+  });
+
+  expect(matrix).toEqual([{ group: "rest", shard: 1, of: 1 }]);
 });
 
 test("adds the website's tests to the touched ones", () => {
@@ -173,8 +205,8 @@ test("adds the website's tests to the touched ones", () => {
     ...TOUCHED_APP,
     isSiteChanged: true,
     touched: {
-      rest: { lines: 1, durationMs: 1000 },
-      screens: { lines: 0, durationMs: 0 },
+      rest: { lines: 1, timedLines: 1, durationMs: 1000 },
+      screens: { lines: 0, timedLines: 0, durationMs: 0 },
     },
   });
 

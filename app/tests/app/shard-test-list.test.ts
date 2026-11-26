@@ -504,9 +504,30 @@ test("sizes a test list by its lines and the time its tests take, counting a tes
 
   const size = testListSize(tests, timings);
 
-  expect(size).toEqual({ lines: 4, durationMs: 80 });
+  expect(size).toEqual({ lines: 4, timedLines: 4, durationMs: 80 });
 });
 
 test("sizes an empty test list as nothing", () => {
-  expect(testListSize([], {})).toEqual({ lines: 0, durationMs: 0 });
+  expect(testListSize([], {})).toEqual({
+    lines: 0,
+    timedLines: 0,
+    durationMs: 0,
+  });
+});
+
+test("leaves the test list lines that take no time out of the lines that count", () => {
+  const tests = [
+    listed("p", "slow"),
+    listed("p", "instant"),
+    listed("p", "idle"),
+  ];
+  const timings = {
+    "a.spec.ts › slow": { p: 1200000 },
+    "a.spec.ts › instant": { p: 0 },
+    "a.spec.ts › idle": { p: 0 },
+  };
+
+  const size = testListSize(tests, timings);
+
+  expect(size).toEqual({ lines: 3, timedLines: 1, durationMs: 1200000 });
 });

@@ -14,6 +14,7 @@ export interface ShardJob {
 
 export interface TestListSize {
   readonly lines: number;
+  readonly timedLines: number;
   readonly durationMs: number;
 }
 
@@ -76,7 +77,11 @@ function touchedShardCount(size: TestListSize, wholeCount: number): number {
     SINGLE_SHARD,
     Math.ceil(size.durationMs / TARGET_SHARD_MS),
   );
-  return Math.min(wholeCount, size.lines, byDuration);
+  return Math.min(
+    wholeCount,
+    Math.max(SINGLE_SHARD, size.timedLines),
+    byDuration,
+  );
 }
 
 function appShards(plan: ShardPlan): ShardJob[] {
