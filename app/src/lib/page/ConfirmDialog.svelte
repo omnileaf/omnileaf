@@ -5,6 +5,7 @@
   import { cn } from "#lib/components/cn.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import {
+    ACCENT_CONFIRM_FILL,
     type AlertAction,
     alertLook,
     type AlertTone,
@@ -31,8 +32,7 @@
   } as const satisfies Record<AlertTone, string>;
   const CONFIRM_FILLS = {
     danger: "",
-    accent:
-      "bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed",
+    accent: ACCENT_CONFIRM_FILL,
   } as const satisfies Record<AlertTone, string>;
 
   let {

@@ -7,6 +7,7 @@ import "../../app.css";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import NewCategoryDialog from "./NewCategoryDialog.svelte";
+import RenameCategoryDialog from "./RenameCategoryDialog.svelte";
 import RenameTagDialog from "./RenameTagDialog.svelte";
 
 afterEach(() => {
@@ -44,6 +45,19 @@ const DIALOGS = [
       render(RenameTagDialog, {
         props: {
           tag: "Harbour",
+          onRename: () => undefined,
+          onClose: () => undefined,
+        },
+      }),
+    action: "Rename",
+  },
+  {
+    name: "rename category",
+    show: () =>
+      render(RenameCategoryDialog, {
+        props: {
+          name: "Plan to read",
+          otherNames: [],
           onRename: () => undefined,
           onClose: () => undefined,
         },

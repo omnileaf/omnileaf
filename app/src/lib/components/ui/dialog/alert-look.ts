@@ -36,6 +36,9 @@ export interface AlertLook {
   readonly defaultAction: Readonly<Record<AlertTone, AlertAction>>;
 }
 
+export const ACCENT_CONFIRM_FILL =
+  "bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed";
+
 export const CONTENT_DIALOG_PANEL =
   "inset-none m-auto flex flex-col gap-lg overflow-hidden rounded-panel border border-dialog-edge bg-dialog px-sheet-inline py-sheet-inline text-foreground fade-motion dialog-drop shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit";
 
