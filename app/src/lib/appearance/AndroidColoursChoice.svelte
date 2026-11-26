@@ -31,8 +31,7 @@
 
   const HINTS = {
     omnileaf: m.appearance_colours_omnileaf_hint(),
-    wallpaper: m.appearance_colours_wallpaper_hint(),
-  } satisfies Record<ColoursChoice, string>;
+  } satisfies Partial<Record<ColoursChoice, string>>;
 
   const colours = getColoursSetting();
   const theme = getThemeSetting();

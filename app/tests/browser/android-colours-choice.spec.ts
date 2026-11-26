@@ -59,7 +59,7 @@ test.describe("the Colours choice on Android", { tag: "@native" }, () => {
     test.skip(platform !== "android", "Android's Colours choice");
   });
 
-  test("offers Omnileaf, chosen, and From your wallpaper, with what each does", async ({
+  test("offers Omnileaf, chosen and marked the default, and From your wallpaper", async ({
     page,
   }) => {
     await openAppearance(page);
@@ -73,12 +73,10 @@ test.describe("the Colours choice on Android", { tag: "@native" }, () => {
     await expect(
       colours.getByRole("radio", { name: "Omnileaf" }),
     ).toBeChecked();
+    await expect(colours.getByText("The default.")).toBeVisible();
     await expect(
-      page.getByText("The app's own theme. The default."),
-    ).toBeVisible();
-    await expect(
-      page.getByText("Colours Android picks from your wallpaper."),
-    ).toBeVisible();
+      colours.getByRole("radio", { name: "From your wallpaper" }),
+    ).toHaveText("From your wallpaper");
     await expect(page.getByText(OMNILEAF_FOOTER)).toBeVisible();
     await expect(page.locator(ROOT)).not.toHaveAttribute("data-colours");
   });

@@ -15,8 +15,8 @@ const OPTION_HEIGHT = 40;
 const TRACK_HEIGHT = 44;
 const TAP_OVERHANG = 3;
 
-const DEVICE_HINT = "System follows the device's setting and changes with it.";
-const PHONE_HINT = "System follows your phone's setting.";
+const DEVICE_HINT = "Follows your device.";
+const PHONE_HINT = "Follows your phone.";
 
 async function chooseTheme(
   page: import("@playwright/test").Page,
@@ -114,7 +114,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
     testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
-    test("explains what System follows in the group's description", async ({
+    test("explains what System follows while System is chosen", async ({
       page,
     }) => {
       await page.goto("/settings/appearance");
@@ -126,6 +126,18 @@ for (const platform of ["android", "ios", "linux"] as const) {
       await expect(group).toHaveAccessibleDescription(
         isPhone ? PHONE_HINT : DEVICE_HINT,
       );
+    });
+
+    test("drops the explanation once Light or Dark is chosen", async ({
+      page,
+    }) => {
+      await page.goto("/settings/appearance");
+      const group = page.getByRole("radiogroup", { name: "Light or dark" });
+
+      await group.getByRole("radio", { name: "Dark" }).click();
+
+      await expect(group).toHaveAccessibleDescription("");
+      await expect(page.getByText(/^Follows your/)).toHaveCount(0);
     });
   });
 }
