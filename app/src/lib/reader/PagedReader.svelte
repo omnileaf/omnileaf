@@ -13,6 +13,7 @@
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import { cn } from "#lib/components/cn.ts";
   import { reportFailure } from "#lib/errors/report-failure.ts";
   import {
@@ -155,6 +156,7 @@
 
   const screenshotMode = getScreenshotMode();
   const smartFeatures = getSmartFeatures();
+  const animations = getAnimationsSetting();
   const named = $derived(screenshotMode.isOn ? standInOpenedBook(book) : book);
 
   const turner = untrack(
@@ -172,6 +174,7 @@
   );
   const swipe = new Swipe(SWIPE_MIN_PX);
   let slide = $state(0);
+  let dragFrom = 0;
   let isSettling = $state(false);
   const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
   let hasOpened = false;
@@ -269,7 +272,9 @@
         scrubTo: (along: number) => void;
       }
     | undefined = $state();
-  let paged: { place: () => SpreadPlace | undefined } | undefined = $state();
+  let paged:
+    | { place: () => SpreadPlace | undefined; shiftInFlight: () => number }
+    | undefined = $state();
   let autoScroll: "off" | "running" | "paused" = $state("off");
   let autoScrollBar: { focusReadout: () => void } | undefined = $state();
   let isSpeedOpen = $state(false);
@@ -605,6 +610,7 @@
       return;
     }
     const target = spreads[spreadIndex + step];
+    const from = { shown: turner.shown, isPastEnd: turner.isPastEnd };
     if (turner.isPastEnd) {
       turner.turn(step);
     } else if (target !== undefined) {
@@ -614,7 +620,9 @@
       turner.turn(1);
     }
     zoom = 1;
-    isSettling = look.pageTurn === "slide";
+    if (turner.shown !== from.shown || turner.isPastEnd !== from.isPastEnd) {
+      isSettling = slidesPages();
+    }
     controls.hide();
     if (turner.isPastEnd && skipUpNext.isOn) {
       goStraightOn();
@@ -884,23 +892,37 @@
     },
   };
 
+  function slidesPages(): boolean {
+    return look.pageTurn === "slide" && animations.moves("reader");
+  }
+
+  function onSwipeStart(event: PointerEvent): void {
+    swipe.started(event);
+    dragFrom = 0;
+  }
+
   function onSwipeMove(event: PointerEvent): void {
-    if (look.pageTurn === "slide" && !isZoomedIn(viewportScale)) {
-      isSettling = false;
-      slide = swipe.moved(event) ?? 0;
+    const across = swipe.moved(event);
+    if (across === undefined || look.pageTurn !== "slide" || isPagePanning) {
+      return;
     }
+    if (isSettling) {
+      dragFrom = paged?.shiftInFlight() ?? 0;
+      isSettling = false;
+    }
+    slide = dragFrom + across;
   }
 
   function onSwipeEnd(event: PointerEvent): void {
     const turn = swipe.ended(event);
-    if (turn !== undefined && !isZoomedIn(viewportScale)) {
+    if (turn !== undefined && !isPagePanning) {
       turnBy(TURN_STEPS[inReadingOrder(turn, reading.direction)]);
     }
     settleSlide();
   }
 
   function settleSlide(): void {
-    isSettling ||= slide !== 0;
+    isSettling ||= slide !== 0 && animations.moves("reader");
     slide = 0;
   }
 
@@ -1095,13 +1117,9 @@
     class={[
       "absolute inset-none",
       look.tapZones === "lShape" ? "grid grid-l-zones" : "flex",
-      isZoomedIn(viewportScale)
-        ? "touch-manipulation"
-        : "touch-pan-y touch-pinch-zoom",
+      isPagePanning ? "touch-manipulation" : "touch-pan-y touch-pinch-zoom",
     ]}
-    onpointerdown={(event) => {
-      swipe.started(event);
-    }}
+    onpointerdown={onSwipeStart}
     onpointermove={onSwipeMove}
     onpointerup={onSwipeEnd}
     onpointercancel={() => {

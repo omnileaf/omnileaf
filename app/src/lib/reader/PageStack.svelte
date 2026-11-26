@@ -19,7 +19,7 @@
   import { fittedTo, type Size } from "#lib/reader/page-fit.ts";
   import type { PageFit } from "#lib/reader/reader-settings.svelte.ts";
   import { spreadAt, type Spread } from "#lib/reader/spreads.ts";
-  import { cellsAround } from "#lib/reader/page-cells.ts";
+  import { cellsAround, type SpreadsInView } from "#lib/reader/page-cells.ts";
   import { pagesAround } from "#lib/reader/page-window.ts";
 
   /** Pages decoded ahead of the one shown, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
@@ -27,6 +27,7 @@
   /** How long a page may take before a spinner says it's on its way, so a quick one never flashes one. */
   const SPINNER_DELAY_MS = 100;
   const SPINNER_SIZE = 20;
+  const RESTING_ZOOM = 1;
   const PROBLEM_ICON_SIZE = 20;
   const BUTTON_ICON_SIZE = 16;
   /** Asks again for a page that failed once, as the core may have dropped its request for newer ones. */
@@ -83,14 +84,31 @@
 
   const shownSpread = $derived(spreadAt(spreads, shown));
   const spread = $derived(spreads[shownSpread] ?? [shown]);
-  const cells = $derived(
-    cellsAround(
-      spreads,
-      isPastEnd ? spreads.length : shownSpread,
-      pagesAround(shown, pages.length, PAGES_AHEAD),
-    ),
-  );
+  const position = $derived(isPastEnd ? spreads.length : shownSpread);
   const nextSide = $derived(isReversed ? -1 : 1);
+  const revealed = $derived(position + turnsRevealed(slide));
+  let inView: SpreadsInView = $state.raw(
+    untrack(() => ({ at: position, low: position, high: position })),
+  );
+  const cells = $derived(
+    cellsAround(spreads, inView, pagesAround(shown, pages.length, PAGES_AHEAD)),
+  );
+
+  $effect.pre(() => {
+    const at = position;
+    const low = Math.min(at, revealed);
+    const high = Math.max(at, revealed);
+    const isMoving = isSettling || slide !== 0;
+    untrack(() => {
+      inView = isMoving
+        ? {
+            at,
+            low: Math.min(inView.low, low),
+            high: Math.max(inView.high, high),
+          }
+        : { at, low, high };
+    });
+  });
   const isShownReady = $derived(
     isBlank || decoded.has(shown) || failed.has(shown),
   );
@@ -128,13 +146,13 @@
     ).height;
   }
 
-  function sizeOf(index: number, pagesShown: Spread) {
+  function sizeOf(index: number, pagesShown: Spread, scale: number) {
     const ratio = ratioOf(index);
     if (ratio === undefined) {
       return undefined;
     }
     const spreadHeight = heightOfSpread(pagesShown);
-    return zoomed(
+    return scaled(
       spreadHeight === undefined
         ? fittedTo(
             { width: ratio, height: 1 },
@@ -142,6 +160,7 @@
             fit,
           )
         : { width: spreadHeight * ratio, height: spreadHeight },
+      scale,
     );
   }
 
@@ -158,8 +177,34 @@
     return across === 0 && !isSettling ? undefined : `${String(across)}px 0`;
   }
 
-  function zoomed(size: { width: number; height: number }) {
-    return { width: size.width * zoom, height: size.height * zoom };
+  function scaled(size: { width: number; height: number }, scale: number) {
+    return { width: size.width * scale, height: size.height * scale };
+  }
+
+  function turnsRevealed(across: number): number {
+    if (across === 0 || spaceWidth <= 0) {
+      return 0;
+    }
+    return (
+      -Math.sign(across * nextSide) * Math.ceil(Math.abs(across) / spaceWidth)
+    );
+  }
+
+  function isInView(offset: number): boolean {
+    const index = position + offset;
+    return index >= inView.low && index <= inView.high;
+  }
+
+  export function shiftInFlight(): number {
+    const cell = scroller?.querySelector<HTMLElement>("[data-turns]");
+    if (cell === null || cell === undefined) {
+      return 0;
+    }
+    const [across = ""] = getComputedStyle(cell).translate.split(" ");
+    const shift = Number.parseFloat(across);
+    return Number.isNaN(shift)
+      ? 0
+      : shift - Number(cell.dataset.turns) * nextSide * spaceWidth;
   }
 
   /** Starts each spread at its top, since a page fitted to the width scrolls down. */
@@ -289,15 +334,19 @@
   >
     {#each cells as cell (cell.spread[0])}
       {@const isNeighbour = cell.offset !== 0}
+      {@const isPainted = isInView(cell.offset)}
       <div
         aria-hidden={isNeighbour ? "true" : undefined}
+        data-turns={isPainted ? cell.offset : undefined}
         class={[
           "flex",
           isNeighbour
             ? "fixed inset-s-none inset-bs-none overflow-hidden"
             : "col-start-1 row-start-1",
+          !isPainted && "invisible",
           isReversed && "flex-row-reverse",
           isSettling &&
+            isPainted &&
             "motion-reader:transition-transform motion-reader:duration-slide motion-reader:ease-emphasized",
         ]}
         style:translate={placeOf(cell.offset)}
@@ -306,11 +355,16 @@
         style:width={isNeighbour ? `${String(spaceWidth)}px` : undefined}
         style:height={isNeighbour ? `${String(spaceHeight)}px` : undefined}
         ontransitionend={settleOnceStill}
+        ontransitioncancel={settleOnceStill}
       >
         {#each cell.spread as index (index)}
           {@const page = pages[index]}
           {#if page !== undefined}
-            {@const size = sizeOf(index, cell.spread)}
+            {@const size = sizeOf(
+              index,
+              cell.spread,
+              isNeighbour ? RESTING_ZOOM : zoom,
+            )}
             {@const isShown = spread.includes(index)}
             <div
               class={[

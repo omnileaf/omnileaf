@@ -5,17 +5,25 @@ export interface PageCell {
   readonly offset: number;
 }
 
+export interface SpreadsInView {
+  readonly at: number;
+  readonly low: number;
+  readonly high: number;
+}
+
 const NEIGHBOUR_TURNS = 1;
 
 export function cellsAround(
   spreads: readonly Spread[],
-  position: number,
+  inView: SpreadsInView,
   kept: readonly number[],
 ): PageCell[] {
-  const isKept = (spread: Spread, offset: number): boolean =>
-    Math.abs(offset) <= NEIGHBOUR_TURNS ||
+  const isKept = (spread: Spread, index: number): boolean =>
+    (index >= inView.low - NEIGHBOUR_TURNS &&
+      index <= inView.high + NEIGHBOUR_TURNS) ||
     spread.some((page) => kept.includes(page));
   return spreads
-    .map((spread, index) => ({ spread, offset: index - position }))
-    .filter(({ spread, offset }) => isKept(spread, offset));
+    .map((spread, index) => ({ spread, index }))
+    .filter(({ spread, index }) => isKept(spread, index))
+    .map(({ spread, index }) => ({ spread, offset: index - inView.at }));
 }

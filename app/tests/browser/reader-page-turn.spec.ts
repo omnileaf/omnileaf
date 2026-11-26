@@ -21,6 +21,13 @@ const DRAG_PX = 100;
 const SHORT_DRAG_PX = 30;
 const CLOSE_PX = 4;
 const TURN_SHARES = [0, 0.25, 0.5, 0.75, 1] as const;
+const MID_TURN = [0.5] as const;
+const AT_REST = [0] as const;
+const COVER_SAMPLES = 20;
+const SLOW_SLIDE_MS = 100_000;
+const SLIDE_MS = 350;
+const QUICK_TURN_MS = 50;
+const SMALL_MOVE_PX = 6;
 const OPENING = {
   reading: { state: "started", page: 14 },
   startPage: 13,
@@ -135,6 +142,97 @@ function framesOfTheTurn(
     },
     { pages: numbers, shares: TURN_SHARES },
   );
+}
+
+interface CellsSeen {
+  readonly gaps: number;
+  readonly offScreen: number;
+}
+
+function cellsOfTheTurn(
+  page: Page,
+  shares: readonly number[] = TURN_SHARES,
+): Promise<CellsSeen[]> {
+  return page.evaluate(
+    ({ moments, samples }) => {
+      const moving = document
+        .getAnimations()
+        .filter(
+          (animation) =>
+            animation instanceof CSSTransition &&
+            animation.transitionProperty === "translate",
+        );
+      for (const animation of moving) {
+        animation.pause();
+      }
+      const area = document
+        .querySelector("[data-shown-page]")
+        ?.getBoundingClientRect();
+      if (area === undefined) {
+        throw new Error("the page area is not on screen");
+      }
+      const cells = (): Element[] => [
+        ...new Set(
+          [...document.querySelectorAll('main img[alt^="Page "]')].flatMap(
+            (image) => image.parentElement?.parentElement ?? [],
+          ),
+        ),
+      ];
+      const isOnScreen = (box: DOMRect): boolean =>
+        box.right > area.left &&
+        box.left < area.right &&
+        box.bottom > area.top &&
+        box.top < area.bottom;
+      const seen = moments.map((share) => {
+        for (const animation of moving) {
+          const duration = Number(animation.effect?.getTiming().duration ?? 0);
+          animation.currentTime = share * duration;
+        }
+        const painted = cells().filter((cell) =>
+          cell.checkVisibility({ visibilityProperty: true }),
+        );
+        const xs = Array.from(
+          { length: samples },
+          (_, step) => area.left + ((step + 0.5) * area.width) / samples,
+        );
+        const gaps = xs.filter(
+          (x) =>
+            !painted.some((cell) => {
+              const box = cell.getBoundingClientRect();
+              return box.left <= x && x <= box.right;
+            }),
+        ).length;
+        const offScreen = cells().filter(
+          (cell) =>
+            (cell.checkVisibility({ visibilityProperty: true }) ||
+              cell.getAnimations().length > 0) &&
+            !isOnScreen(cell.getBoundingClientRect()),
+        ).length;
+        return { gaps, offScreen };
+      });
+      for (const animation of moving) {
+        animation.finish();
+      }
+      return seen;
+    },
+    { moments: shares, samples: COVER_SAMPLES },
+  );
+}
+
+async function holdSlidesAt(page: Page, share: number): Promise<void> {
+  await page.evaluate((held) => {
+    for (const animation of document.getAnimations()) {
+      animation.pause();
+      const duration = Number(animation.effect?.getTiming().duration ?? 0);
+      animation.currentTime = held * duration;
+    }
+  }, share);
+}
+
+async function slowSlides(page: Page): Promise<void> {
+  await page.addStyleTag({
+    content: `:root, :root * { --native-duration-slide: ${String(SLOW_SLIDE_MS)}ms !important; }`,
+  });
 }
 
 async function finishSlides(page: Page): Promise<void> {
@@ -495,6 +593,7 @@ test("brings the last page back from the left with a drag back from Up next", as
   const width = await pageAreaWidth(page);
   await page.keyboard.press("ArrowRight");
   await expect(upNext(page)).toBeVisible();
+  await finishSlides(page);
 
   await dragUnderneath(page, DRAG_PX);
   const { frames } = await framesOfTheTurn(page, [PAGE_COUNT]);
@@ -541,8 +640,146 @@ test("pans rather than slides when pinched in", async ({ page }) => {
   await dragBy(page, -DRAG_PX);
 
   expect(await leftOf(shownPage(page, 14))).toBe(start);
+  await expect(anyPage(page, 15)).toBeHidden();
+  await expect(anyPage(page, 13)).toBeHidden();
   await page.mouse.up();
   await expectOnPage(page, 14);
+});
+
+test("pans rather than turns after a double tap zooms the page in", async ({
+  page,
+}) => {
+  await openBookWith(page, { pageTurn: "slide" });
+  await page
+    .getByRole("button", { name: /^(Show|Hide) the controls$/ })
+    .dblclick();
+  await expect(page.locator("[data-tap-zones]")).toHaveCSS(
+    "touch-action",
+    "manipulation",
+  );
+  const start = await leftOf(shownPage(page, 14));
+
+  await dragBy(page, -DRAG_PX);
+
+  expect(await leftOf(shownPage(page, 14))).toBe(start);
+  await expect(anyPage(page, 15)).toBeHidden();
+  await page.mouse.up();
+  await expectOnPage(page, 14);
+});
+
+test("keeps a tapped slide running while the pointer moves with no button down", async ({
+  page,
+}) => {
+  await openBookWith(page, { pageTurn: "slide" });
+  await slowSlides(page);
+  await expectDecoded(page, 15);
+  const start = await leftOf(shownPage(page, 14));
+  const width = await pageAreaWidth(page);
+  const next = page.getByRole("button", { name: "Next page" });
+  await next.click();
+  const box = await next.boundingBox();
+  if (box === null) {
+    throw new Error("the next page zone is not on screen");
+  }
+
+  await page.mouse.move(
+    box.x + box.width / 2 + SMALL_MOVE_PX,
+    box.y + box.height / 2 + SMALL_MOVE_PX,
+  );
+  const { moving, frames } = await framesOfTheTurn(page, [14, 15]);
+
+  expect(moving).toBeGreaterThan(0);
+  expectNear(frames[0]?.[1]?.x, start + width);
+  expectBeside(frames[2] ?? [], RIGHT, width);
+});
+
+test("picks a slide up where it is when a drag starts during it", async ({
+  page,
+}) => {
+  await openBookWith(page, { pageTurn: "slide" });
+  await slowSlides(page);
+  await expectDecoded(page, 15);
+  await page.keyboard.press("ArrowRight");
+  await holdSlidesAt(page, MID_TURN[0]);
+  const held = await leftOf(shownPage(page, 15));
+
+  await dragBy(page, -DRAG_PX);
+
+  expectNear(await leftOf(shownPage(page, 15)), held - DRAG_PX);
+});
+
+test("covers the screen with pages through two turns a moment apart", async ({
+  page,
+}) => {
+  await openBookWith(page, { pageTurn: "slide" });
+  await slowSlides(page);
+  await expectDecoded(page, 15);
+  await expectDecoded(page, 16);
+  await page.keyboard.press("ArrowRight");
+  await holdSlidesAt(page, QUICK_TURN_MS / SLIDE_MS);
+
+  await page.keyboard.press("ArrowRight");
+  const seen = await cellsOfTheTurn(page);
+
+  expect(seen.map(({ gaps }) => gaps)).toEqual(TURN_SHARES.map(() => 0));
+  await expectOnPage(page, 16);
+});
+
+test("paints only the pages on screen, at rest and mid-turn", async ({
+  page,
+}) => {
+  await openBookWith(page, { pageTurn: "slide" });
+  await expectDecoded(page, 15);
+  const atRest = await cellsOfTheTurn(page, AT_REST);
+
+  await page.keyboard.press("ArrowRight");
+  const midTurn = await cellsOfTheTurn(page, MID_TURN);
+
+  expect([...atRest, ...midTurn]).toEqual([
+    { gaps: 0, offScreen: 0 },
+    { gaps: 0, offScreen: 0 },
+  ]);
+});
+
+test("draws nothing before the first page and springs it back after a drag back", async ({
+  page,
+}) => {
+  await openBookWith(page, { pageTurn: "slide" });
+  await page.keyboard.press("Home");
+  await expect(shownPage(page, 1)).toBeVisible();
+  const start = await leftOf(shownPage(page, 1));
+
+  await dragBy(page, DRAG_PX);
+  const dragged = await cellsOfTheTurn(page, AT_REST);
+  expectNear(await leftOf(shownPage(page, 1)), start + DRAG_PX);
+  await page.mouse.up();
+  const { frames } = await framesOfTheTurn(page, [1]);
+
+  expect(dragged.map(({ offScreen }) => offScreen)).toEqual([0]);
+  expectNear(frames[0]?.[0]?.x, start + DRAG_PX);
+  expectNear(frames.at(-1)?.[0]?.x, start);
+  await expectOnPage(page, 1);
+});
+
+test("leaves no slide waiting after a turn that moves nothing", async ({
+  page,
+}) => {
+  await openBookWith(page, { pageTurn: "slide" });
+  await page.keyboard.press("Home");
+  await expect(shownPage(page, 1)).toBeVisible();
+  await page.keyboard.press("ArrowLeft");
+  const size = page.viewportSize();
+  if (size === null) {
+    throw new Error("the page has no viewport size");
+  }
+
+  await page.setViewportSize({
+    width: size.width - SMALL_MOVE_PX,
+    height: size.height,
+  });
+  const { moving } = await framesOfTheTurn(page, [1]);
+
+  expect(moving).toBe(0);
 });
 
 test("chooses Slide under Pages in Reading settings", async ({ page }) => {
