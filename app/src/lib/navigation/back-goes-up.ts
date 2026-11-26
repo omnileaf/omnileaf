@@ -44,7 +44,7 @@ const BROWSER: BackGuardEnvironment = {
     history.go(-steps);
   },
   browserAt: () => new URL(location.href),
-  pageAt: () => page.url,
+  pageAt: () => new URL(page.url.href),
   after: (ms, run) => {
     const timer = setTimeout(run, ms);
     return () => {
