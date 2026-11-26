@@ -492,3 +492,20 @@ test.describe("the suggested tags on an iPad", () => {
     openLabels,
   );
 });
+
+test.describe("the suggested tags on an Android tablet", () => {
+  test.beforeEach(({ browserName, page }) => {
+    test.skip(
+      browserName !== "chromium" || screenSizeOf(page) !== "tablet",
+      "an Android tablet is Chromium at a tablet's size",
+    );
+  });
+
+  testSuggestedTags(
+    {
+      ...suggesting([...MANY_SUGGESTIONS, UNBROKEN_TAG]),
+      appInfo: () => fakeAppInfo("android"),
+    },
+    openLabels,
+  );
+});
