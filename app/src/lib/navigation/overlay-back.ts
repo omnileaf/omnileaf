@@ -68,7 +68,7 @@ export class OverlayBack {
   }
 
   mustGiveBackBeforeLeaving(): boolean {
-    return this.#ownPops > 0 || this.#held.some((entry) => isGiveable(entry));
+    return this.#ownPops > 0 || this.willTakeBack();
   }
 
   willTakeBack(): boolean {
