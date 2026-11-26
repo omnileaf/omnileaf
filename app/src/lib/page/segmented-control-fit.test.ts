@@ -9,6 +9,7 @@ import SegmentedControl from "./SegmentedControl.svelte";
 
 const ANDROID_PHONE = { width: 390, height: 844 };
 const SPARE = 1;
+const SUBPIXEL_SHORTFALL = 0.25;
 
 const OPTIONS = ["all", "unread", "bookmarked"] as const;
 type Option = (typeof OPTIONS)[number];
@@ -164,5 +165,27 @@ test("gives a group at its row's end a line of its own across the row once it no
   );
   expect(track().getBoundingClientRect().top).toBeGreaterThanOrEqual(
     asElement(row.firstElementChild ?? row).getBoundingClientRect().bottom,
+  );
+});
+
+test("keeps a group at its row's end on one row when the row has not a pixel to spare", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+
+  row.style.inlineSize = `${String(roomFor(widths) - SPARE)}px`;
+
+  await expect.poll(rows).toEqual([NAMES]);
+});
+
+test("gives a group at its row's end a line of its own when the row is a quarter pixel short", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+
+  row.style.inlineSize = `${String(roomFor(widths) - SPARE - SUBPIXEL_SHORTFALL)}px`;
+
+  await expect.poll(() => rows().length).toBeGreaterThan(1);
+  expect(track().getBoundingClientRect().width).toBeCloseTo(
+    row.getBoundingClientRect().width,
+    0,
   );
 });
