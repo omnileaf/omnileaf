@@ -246,8 +246,10 @@
             class={[
               "text-muted",
               android.isOn || ios.isOn ? ROW_SUBTITLE_TYPE : "text-detail",
-            ]}>{detailOf(tab)}</span
+            ]}
           >
+            {detailOf(tab)}
+          </span>
         </span>
         {#if tab.isHidden}
           <span
