@@ -6,6 +6,8 @@ import { BOOK_ID, readerBackend, servePages } from "./reader-book.ts";
 const PRELOADED_TURN_BUDGET_MS = 16;
 const TURNS = 20;
 const P95 = 0.95;
+const LOOK_KEY = "omnileaf.readerSettings.all";
+const PAGES_ON_SCREEN_IN_A_TURN = 2;
 
 declare global {
   interface Window {
@@ -63,6 +65,22 @@ function percentile(values: readonly number[], share: number): number {
 
 test.use({ backend: readerBackend(DEFAULT_BACKEND) });
 
+async function slidesOnScreen(): Promise<number> {
+  const sliding = document
+    .getAnimations()
+    .filter(
+      (animation) =>
+        animation instanceof CSSTransition &&
+        animation.transitionProperty === "translate",
+    );
+  for (const animation of sliding) {
+    animation.finish();
+  }
+  await new Promise((painted) => requestAnimationFrame(painted));
+  await new Promise((painted) => requestAnimationFrame(painted));
+  return sliding.length;
+}
+
 test("turns to a page read ahead within a frame's budget from the key that turns it", async ({
   page,
 }) => {
@@ -83,4 +101,32 @@ test("turns to a page read ahead within a frame's budget from the key that turns
     description: `p95 ${p95.toFixed(1)} ms of ${timings.map((ms) => `${ms.toFixed(1)} ms`).join(", ")}`,
   });
   expect(p95).toBeLessThanOrEqual(PRELOADED_TURN_BUDGET_MS);
+});
+
+test("turns to a page read ahead with Slide within a frame's budget, sliding only the two pages on screen", async ({
+  page,
+}) => {
+  await page.addInitScript((key) => {
+    localStorage.setItem(key, JSON.stringify({ pageTurn: "slide" }));
+  }, LOOK_KEY);
+  await servePages(page);
+  await page.goto(`/read/${BOOK_ID}`);
+  await expect(
+    page.getByRole("img", { name: "Page 1", exact: true }),
+  ).toBeVisible();
+  const timings: number[] = [];
+  const slides: number[] = [];
+
+  for (let turn = 0; turn < TURNS; turn += 1) {
+    timings.push(await turnTimed(page, turn + 2));
+    slides.push(await page.evaluate(slidesOnScreen));
+  }
+
+  const p95 = percentile(timings, P95);
+  test.info().annotations.push({
+    type: "preloaded slide turn",
+    description: `p95 ${p95.toFixed(1)} ms of ${timings.map((ms) => `${ms.toFixed(1)} ms`).join(", ")}`,
+  });
+  expect(p95).toBeLessThanOrEqual(PRELOADED_TURN_BUDGET_MS);
+  expect(Math.max(...slides)).toBeLessThanOrEqual(PAGES_ON_SCREEN_IN_A_TURN);
 });
