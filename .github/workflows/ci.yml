@@ -39,6 +39,7 @@ jobs:
       site: ${{ steps.areas.outputs.site }}
       vendor: ${{ steps.areas.outputs.vendor }}
       admin: ${{ steps.areas.outputs.admin }}
+      dependencies: ${{ steps.areas.outputs.dependencies }}
     steps:
       - name: Read the pull request's labels as they are now
         id: labels
@@ -263,8 +264,16 @@ jobs:
         with:
           tool: cargo-deny@0.20.2,cargo-about@0.9.2
 
-      - name: Run the gate
-        run: cargo xtask check --only portable
+      - name: Run the gate, leaving out the advisory check on a pull request that changes no dependency list
+        env:
+          SKIP_ADVISORIES: ${{ github.event_name == 'pull_request' && needs.changes.outputs.dependencies == 'false' }}
+        run: |
+          skip=()
+          if [ "$SKIP_ADVISORIES" = true ]; then
+            skip=(--skip advisories)
+          fi
+          cargo xtask check --only portable "${skip[@]}"
+
 
       - name: Compare the vendored sources with their upstream tarball
         if: needs.changes.outputs.vendor != 'false'
