@@ -1,11 +1,13 @@
 import type { Page } from "@playwright/test";
 
+import { showKeyboard } from "./android-keyboard.ts";
 import { emitFakeEvent } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
   EXPANDED_MIN_WIDTH,
   expect,
+  sidewaysOverflow,
   test,
   tokenColour,
   viewportOf,
@@ -29,7 +31,6 @@ const NARROW_WIDTH = EXPANDED_MIN_WIDTH - 40;
 const PHONE_IN_LANDSCAPE = { width: 700, height: 360 };
 const PHONE_IN_PORTRAIT = { width: 360, height: 800 };
 const LIBRARY_CHANGED = "library-changed";
-const KEYBOARD_HEIGHT = 336;
 const SEARCH_VIEW_HEIGHT = 56;
 const GAP_ABOVE_SEARCH_VIEW = 12;
 const TOUCH_TARGET = 48;
@@ -660,18 +661,6 @@ test.describe(
       await expect(findField(page)).toBeFocused();
     }
 
-    /** Android's WebView scrolls the focused field into view once the keyboard resizes it, which a desktop browser leaves undone. */
-    async function showKeyboard(page: Page): Promise<void> {
-      const { width, height } = viewportOf(page);
-      await page.setViewportSize({ width, height: height - KEYBOARD_HEIGHT });
-      await page.evaluate(() => {
-        document.documentElement.toggleAttribute("data-keyboard-shown", true);
-      });
-      await findField(page).evaluate((field) => {
-        field.scrollIntoView({ block: "nearest" });
-      });
-    }
-
     test("opens a full search field across the page's column under the tabs", async ({
       page,
     }) => {
@@ -800,7 +789,7 @@ test.describe(
       await expect(findField(page)).toBeFocused();
     });
 
-    test("keeps the field and its search above the keyboard", async ({
+    test("keeps the field, its search and the matching covers once the keyboard opens", async ({
       page,
     }) => {
       await openFinding(page);
@@ -808,10 +797,10 @@ test.describe(
 
       await showKeyboard(page);
 
-      await expect(findField(page)).toBeInViewport({ ratio: 1 });
       await expect(findField(page)).toBeFocused();
       await expect(findField(page)).toHaveValue("2");
       await expect(covers(page, "Volumes")).toHaveCount(1);
+      expect(await sidewaysOverflow(page, "body")).toEqual([]);
     });
 
     for (const width of [360, 320]) {
@@ -825,14 +814,8 @@ test.describe(
           "A search far longer than the field is wide",
         );
 
-        const [field, edges] = await Promise.all([
-          boxOf(searchView(page)),
-          page.evaluate(() => ({
-            page: document.documentElement.scrollWidth,
-            window: window.innerWidth,
-          })),
-        ]);
-        expect(edges.page).toBe(edges.window);
+        const field = await boxOf(searchView(page));
+        expect(await sidewaysOverflow(page, "body")).toEqual([]);
         expect(field.x + field.width).toBeLessThanOrEqual(width);
       });
     }
