@@ -19,26 +19,38 @@ const SLIDE = "0.35s cubic-bezier(0.32, 0.72, 0, 1)";
 const PILL_GROW = `pill-grow ${GROW}`;
 const ICON_POP = "nav-pop 0.3s cubic-bezier(0.32, 0.72, 0, 1)";
 const ICON_MOVE_TIMING = "0.3s ease-out";
+const SWAY_TIMING = "0.3s ease-in-out";
 
 interface IconMove {
   readonly label: string;
   readonly startFrom: string;
   readonly move: string;
+  readonly timing: string;
 }
 
 const ICON_MOVES: readonly IconMove[] = [
-  { label: "Library", startFrom: "/settings", move: "book-open" },
-  { label: "Browse", startFrom: "/", move: "needle-swing" },
-  { label: "History", startFrom: "/", move: "hands-sweep" },
-  { label: "Settings", startFrom: "/", move: "gear-turn" },
-];
+  ["Library", "/settings", "book-open"],
+  ["Browse", "/", "needle-swing"],
+  ["History", "/", "hands-sweep"],
+  ["Settings", "/", "gear-turn"],
+].map(([label = "", startFrom = "", move = ""]) => ({
+  label,
+  startFrom,
+  move,
+  timing: ICON_MOVE_TIMING,
+}));
 
 const ANDROID_ICON_MOVES: readonly IconMove[] = [
-  { label: "Library", startFrom: "/settings", move: "book-pop" },
-  { label: "Browse", startFrom: "/", move: "needle-sway" },
-  { label: "History", startFrom: "/", move: "clock-rewind" },
-  { label: "Settings", startFrom: "/", move: "gear-turn" },
-];
+  ["Library", "/settings", "book-pop", ICON_MOVE_TIMING],
+  ["Browse", "/", "needle-sway", SWAY_TIMING],
+  ["History", "/", "clock-rewind", SWAY_TIMING],
+  ["Settings", "/", "gear-turn", ICON_MOVE_TIMING],
+].map(([label = "", startFrom = "", move = "", timing = ""]) => ({
+  label,
+  startFrom,
+  move,
+  timing,
+}));
 
 const MOVE_SAMPLES = [0, 0.25, 0.5, 0.75, 0.999] as const;
 const ONE_TOOTH_DEG = 60;
@@ -47,7 +59,19 @@ const VISIBLY_MOVED = 0.05;
 const PRESS_FRAMES = 4;
 const LONG_PRESS_MS = 800;
 const TAP_MS = 50;
+const MOVE_MS = 300;
+const FRAME_MS = 16;
 const FINGER_PRESS_MS = [350, 450, 1000] as const;
+const NEEDLE_OUT_DEG = 30;
+const NEEDLE_BACK_DEG = -8;
+const CLOCK_BACK_DEG = -50;
+const NEEDLE_LARGEST_STEP_DEG = 8;
+const CLOCK_LARGEST_STEP_DEG = 10;
+const PEAK_TOLERANCE_DEG = 2;
+const EVERY_FRAME_OF_A_MOVE = Array.from(
+  { length: Math.floor(MOVE_MS / FRAME_MS) + 1 },
+  (_, frame) => Math.min((frame * FRAME_MS) / MOVE_MS, 0.999),
+);
 const FINGER = { pointerType: "touch", isPrimary: true } as const;
 const HAND_OVER_FRAMES = 40;
 
@@ -190,6 +214,7 @@ async function sampleMove(
   page: Page,
   label: string,
   move: string,
+  fractions: readonly number[] = MOVE_SAMPLES,
 ): Promise<MoveSample[]> {
   const icon = tab(page, label).locator('[data-slot="navigation-icon"]');
   await tab(page, label).tap();
@@ -234,7 +259,7 @@ async function sampleMove(
         return { rotate, scaleX, scaleY, matrix: { a, b, c, d } };
       });
     },
-    { name: move, fractions: [...MOVE_SAMPLES] },
+    { name: move, fractions: [...fractions] },
   );
 }
 
@@ -558,7 +583,7 @@ function testMovingIcons({
   icon,
   moves,
 }: IconMoveScreens): void {
-  for (const { label, startFrom, move } of moves) {
+  for (const { label, startFrom, move, timing } of moves) {
     test(`moves the ${label} icon as it becomes selected`, async ({ page }) => {
       test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
       await page.goto(startFrom);
@@ -570,7 +595,7 @@ function testMovingIcons({
 
       expect(started).toContainEqual({
         tab: label,
-        animation: `${move} ${ICON_MOVE_TIMING}`,
+        animation: `${move} ${timing}`,
       });
     });
   }
@@ -900,6 +925,48 @@ test.describe("on Android", () => {
     expect(held).toEqual([]);
     await expect(tab(page, "Library")).toHaveAttribute("aria-current", "page");
   });
+
+  for (const { label, move, from, peaks, largestStep } of [
+    {
+      label: "Browse",
+      move: "needle-sway",
+      from: "/",
+      peaks: [NEEDLE_OUT_DEG, NEEDLE_BACK_DEG],
+      largestStep: NEEDLE_LARGEST_STEP_DEG,
+    },
+    {
+      label: "History",
+      move: "clock-rewind",
+      from: "/",
+      peaks: [CLOCK_BACK_DEG],
+      largestStep: CLOCK_LARGEST_STEP_DEG,
+    },
+  ]) {
+    test(`turns the ${label} icon smoothly, frame by frame, to its far points`, async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "bar and rail only",
+      );
+      await page.goto(from);
+      await settle(navigation(page));
+      await slowMoves(page);
+
+      const turns = (
+        await sampleMove(page, label, move, EVERY_FRAME_OF_A_MOVE)
+      ).map(({ rotate }) => rotate);
+
+      const steps = turns
+        .slice(1)
+        .map((turn, index) => Math.abs(turn - (turns[index] ?? 0)));
+      expect(Math.max(...steps)).toBeLessThanOrEqual(largestStep);
+      for (const peak of peaks) {
+        const nearest = Math.min(...turns.map((turn) => Math.abs(turn - peak)));
+        expect(nearest).toBeLessThanOrEqual(PEAK_TOLERANCE_DEG);
+      }
+    });
+  }
 
   test("leaves no grey on the open tab when it is tapped", async ({ page }) => {
     await page.goto("/history");
