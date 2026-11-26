@@ -56,7 +56,6 @@
   --native-weight-button-large: var(--font-weight-medium);
   --native-tracking-button: 0.1px;
   --native-spacing-icon: 1.5rem;
-  --native-color-switch-halo-on: color-mix(in srgb, var(--native-color-switch-on) 12%, transparent);
   --native-spacing-switch-length: 52px;
   --native-spacing-switch-thickness: 32px;
   --native-spacing-switch-knob: 16px;
@@ -566,6 +565,7 @@
   --native-color-switch-thumb-pressed-off: #58615a;
   --native-color-switch-thumb-pressed: #b4f0cb;
   --native-color-switch-halo: #2c352e1a;
+  --native-color-switch-halo-on: #326a4d1f;
   --native-color-segmented-track: transparent;
   --native-color-segment-fill: #e9f0e8;
   --native-color-on-segment: #58615a;
@@ -667,6 +667,7 @@
   --native-color-switch-thumb-pressed-off: #a4aea5;
   --native-color-switch-thumb-pressed: #325b44;
   --native-color-switch-halo: #dee8df1a;
+  --native-color-switch-halo-on: #78d99f1f;
   --native-color-segmented-track: transparent;
   --native-color-segment-fill: #141b17;
   --native-color-on-segment: #a4aea5;
@@ -766,6 +767,7 @@
   --native-color-switch-thumb-pressed-off: #3c453e;
   --native-color-switch-thumb-pressed: #488061;
   --native-color-switch-halo: #1d26201a;
+  --native-color-switch-halo-on: #114c321f;
   --native-color-on-segment: #3c453e;
   --native-color-segment-selected: #114c32;
   --native-color-on-segment-selected: #ace7c3;
@@ -832,6 +834,7 @@
   --native-color-switch-thumb-pressed-off: #b1bbb3;
   --native-color-switch-thumb-pressed: #547d65;
   --native-color-switch-halo: #ffffff1a;
+  --native-color-switch-halo-on: #a4d1b41f;
   --native-color-on-segment: #b1bbb3;
   --native-color-segment-selected: #a4d1b4;
   --native-color-on-segment-selected: #133e29;
@@ -898,6 +901,7 @@
   --native-color-switch-thumb-pressed-off: #1d2620;
   --native-color-switch-thumb-pressed: #245c40;
   --native-color-switch-halo: #0000001a;
+  --native-color-switch-halo-on: #002a181f;
   --native-color-on-segment: #1d2620;
   --native-color-segment-selected: #002a18;
   --native-color-on-segment-selected: #ace7c3;
@@ -964,6 +968,7 @@
   --native-color-switch-thumb-pressed-off: #dee8df;
   --native-color-switch-thumb-pressed: #82ad93;
   --native-color-switch-halo: #ffffff1a;
+  --native-color-switch-halo-on: #c2f0d21f;
   --native-color-on-segment: #dee8df;
   --native-color-segment-selected: #c2f0d2;
   --native-color-on-segment-selected: #063320;
@@ -1030,6 +1035,7 @@
   --native-color-switch-thumb: var(--android-wallpaper-light-on-primary);
   --native-color-switch-thumb-off: var(--android-wallpaper-light-outline);
   --native-color-switch-thumb-pressed-off: var(--android-wallpaper-light-on-surface-variant);
+  --native-color-switch-halo-on: color-mix(in srgb, var(--android-wallpaper-light-primary) 12%, transparent);
   --native-color-segment-fill: var(--android-wallpaper-light-surface-container);
   --native-color-on-segment: var(--android-wallpaper-light-on-surface-variant);
   --native-color-segment-selected: var(--android-wallpaper-light-primary);
@@ -1100,6 +1106,7 @@
   --native-color-switch-thumb: var(--android-wallpaper-dark-on-primary);
   --native-color-switch-thumb-off: var(--android-wallpaper-dark-outline);
   --native-color-switch-thumb-pressed-off: var(--android-wallpaper-dark-on-surface-variant);
+  --native-color-switch-halo-on: color-mix(in srgb, var(--android-wallpaper-dark-primary) 12%, transparent);
   --native-color-segment-fill: var(--android-wallpaper-dark-surface-container);
   --native-color-on-segment: var(--android-wallpaper-dark-on-surface-variant);
   --native-color-segment-selected: var(--android-wallpaper-dark-primary);
