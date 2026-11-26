@@ -44,6 +44,8 @@ const MOVE_SAMPLES = [0, 0.25, 0.5, 0.75, 0.999] as const;
 const ONE_TOOTH_DEG = 60;
 const REST_TOLERANCE = 0.01;
 const VISIBLY_MOVED = 0.05;
+const PRESS_FRAMES = 4;
+const HAND_OVER_FRAMES = 40;
 
 const HALFWAY = "0.5";
 const DOUBLED_ROOT_FONT = ":root { font-size: 200% !important; }";
@@ -238,6 +240,49 @@ function distanceFromRest(sample: MoveSample | undefined): number {
   }
   const { a, b, c, d } = sample.matrix;
   return Math.max(Math.abs(a - 1), Math.abs(b), Math.abs(c), Math.abs(d - 1));
+}
+
+interface PillFrame {
+  readonly isPressed: boolean;
+  readonly pill: number;
+}
+
+async function pillFramesWhilePressing(
+  page: Page,
+  label: string,
+): Promise<PillFrame[]> {
+  const link = tab(page, label);
+  const recording = await link.evaluateHandle((root) => {
+    const pill = root.querySelector('[data-slot="navigation-pill"]');
+    const holder = pill?.parentElement;
+    if (pill === null || holder === null || holder === undefined) {
+      throw new Error("the tab has no pill");
+    }
+    const frames: PillFrame[] = [];
+    const record = () => {
+      frames.push({
+        isPressed: getComputedStyle(holder).backgroundImage !== "none",
+        pill: Number(getComputedStyle(pill).opacity),
+      });
+      requestAnimationFrame(record);
+    };
+    requestAnimationFrame(record);
+    return frames;
+  });
+  const { x, y, width, height } = await boxOf(link);
+  await page.mouse.move(x + width / 2, y + height / 2);
+  await page.mouse.down();
+  await expect
+    .poll(() => recording.evaluate((frames) => frames.length))
+    .toBeGreaterThan(PRESS_FRAMES);
+  await page.mouse.up();
+  await expect(link).toHaveAttribute("aria-current", "page");
+  const pressedAt = await recording.evaluate((frames) => frames.length);
+  await expect
+    .poll(() => recording.evaluate((frames) => frames.length))
+    .toBeGreaterThan(pressedAt + HAND_OVER_FRAMES);
+  const frames = await recording.jsonValue();
+  return frames.slice(frames.findIndex(({ isPressed }) => isPressed));
 }
 
 async function iconPixels(page: Page, icon: Locator): Promise<number[]> {
@@ -651,6 +696,22 @@ test.describe("on Android", () => {
       expect(scaleX).toBeCloseTo(scaleY, 5);
     }
     expect(samples[2]?.scaleX).toBeGreaterThan(1);
+  });
+
+  test("keeps a pill on a pressed tab until it is chosen", async ({ page }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
+    await page.goto("/");
+    await settle(navigation(page));
+
+    const frames = await pillFramesWhilePressing(page, "History");
+
+    expect(frames.length).toBeGreaterThan(HAND_OVER_FRAMES);
+    expect(
+      frames.filter(({ isPressed, pill }) => !isPressed && pill < 1),
+    ).toEqual([]);
   });
 
   test("keeps the History icon at full strength halfway through its crossfade", async ({
