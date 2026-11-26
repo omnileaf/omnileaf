@@ -1,9 +1,15 @@
 import type { ButtonSize, ButtonVariant } from "./looks.ts";
 
+const RESTING_SHAPE = {
+  small: "rounded-[calc(var(--spacing-native-button-small)/2)]",
+  regular: "rounded-[calc(var(--spacing-native-button)/2)]",
+  large: "rounded-[calc(var(--spacing-native-button-large)/2)]",
+} satisfies Record<ButtonSize, string>;
+
 const PRESSED_SHAPE = {
-  small: "pressed:rounded-android-sm",
-  regular: "pressed:rounded-android-sm",
-  large: "pressed:rounded-android-md",
+  small: "not-disabled:not-aria-disabled:pressed:rounded-android-sm",
+  regular: "not-disabled:not-aria-disabled:pressed:rounded-android-sm",
+  large: "not-disabled:not-aria-disabled:pressed:rounded-android-md",
 } satisfies Record<ButtonSize, string>;
 
 const LABEL_ICON = {
@@ -59,5 +65,5 @@ export function androidButtonStates(
   const focusedLayer = isStandardIconButton(variant, isIconOnly)
     ? FOCUSED_STANDARD_ICON_LAYER
     : FOCUSED_LAYER[variant];
-  return `transition-shape ${PRESSED_SHAPE[size]} ${DISABLED[variant]} ${focusedLayer} ${icon}`;
+  return `transition-shape ${RESTING_SHAPE[size]} ${PRESSED_SHAPE[size]} ${DISABLED[variant]} ${focusedLayer} ${icon}`;
 }

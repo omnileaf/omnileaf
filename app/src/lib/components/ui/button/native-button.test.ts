@@ -20,6 +20,7 @@ interface NativeButtonLook {
   readonly fill: string;
   readonly darkFill: string;
   readonly secondaryFill: string;
+  readonly capsule: string;
 }
 
 const NATIVE_LOOKS: readonly NativeButtonLook[] = [
@@ -30,6 +31,7 @@ const NATIVE_LOOKS: readonly NativeButtonLook[] = [
     fill: "rgb(47, 111, 79)",
     darkFill: "rgb(127, 203, 157)",
     secondaryFill: "rgba(118, 118, 128, 0.12)",
+    capsule: "999px",
   },
   {
     platform: "android",
@@ -38,6 +40,7 @@ const NATIVE_LOOKS: readonly NativeButtonLook[] = [
     fill: "rgb(50, 106, 77)",
     darkFill: "rgb(120, 217, 159)",
     secondaryFill: "rgb(208, 232, 215)",
+    capsule: "20px",
   },
 ];
 
@@ -48,8 +51,6 @@ const PLATFORMS: readonly Platform[] = [
   "macos",
   "windows",
 ];
-
-const CAPSULE = "999px";
 
 const label = createRawSnippet(() => ({ render: () => "<span>Remove</span>" }));
 
@@ -99,7 +100,7 @@ for (const look of NATIVE_LOOKS) {
     const style = getComputedStyle(button);
 
     expect(button.getBoundingClientRect().height).toBeCloseTo(look.height, 0);
-    expect(style.borderTopLeftRadius).toBe(CAPSULE);
+    expect(style.borderTopLeftRadius).toBe(look.capsule);
     expect(style.backgroundColor).toBe(look.fill);
   });
 
@@ -149,7 +150,7 @@ for (const look of NATIVE_LOOKS) {
     const style = getComputedStyle(button);
 
     expect(button.getBoundingClientRect().height).toBeCloseTo(look.height, 0);
-    expect(style.borderTopLeftRadius).toBe(CAPSULE);
+    expect(style.borderTopLeftRadius).toBe(look.capsule);
     expect(style.backgroundColor).toBe(look.secondaryFill);
   });
 }
