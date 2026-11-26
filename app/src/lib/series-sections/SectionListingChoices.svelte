@@ -45,7 +45,7 @@
           {...props}
           look="outline"
           aria-label={m.series_sort({ order })}
-          class="flex shrink-0 items-center justify-center gap-sm rounded-shadcn-button border-transparent bg-transparent px-md text-small font-medium block-pointer-button hover:bg-hover android:max-medium:native-target"
+          class="flex shrink-0 items-center justify-center gap-sm rounded-shadcn-button border-transparent bg-transparent px-md text-small font-medium block-pointer-button hover:bg-hover"
         >
           <ArrowDownUp size={ICON_SIZE} aria-hidden="true" />
           <span class="grid">

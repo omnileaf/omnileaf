@@ -1,11 +1,13 @@
 import type { Page } from "@playwright/test";
 
+import { showKeyboard } from "./android-keyboard.ts";
 import { emitFakeEvent } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
   EXPANDED_MIN_WIDTH,
   expect,
+  sidewaysOverflow,
   test,
   tokenColour,
   viewportOf,
@@ -29,6 +31,9 @@ const NARROW_WIDTH = EXPANDED_MIN_WIDTH - 40;
 const PHONE_IN_LANDSCAPE = { width: 700, height: 360 };
 const PHONE_IN_PORTRAIT = { width: 360, height: 800 };
 const LIBRARY_CHANGED = "library-changed";
+const SEARCH_VIEW_HEIGHT = 56;
+const GAP_ABOVE_SEARCH_VIEW = 12;
+const TOUCH_TARGET = 48;
 
 function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
@@ -47,6 +52,10 @@ function kinds(page: Page) {
 
 function covers(page: Page, section: string) {
   return page.getByRole("list", { name: section }).getByRole("link");
+}
+
+function scrollTopOf(page: Page): Promise<number> {
+  return page.getByRole("main").evaluate((main) => main.scrollTop);
 }
 
 function bookRows(page: Page) {
@@ -614,6 +623,278 @@ test.describe(
       await expect(sheet).toBeHidden();
       await expect(covers(page, "Volumes")).toHaveCount(1);
       await expect(covers(page, "Volumes")).toContainText(/Volume 2/);
+    });
+  },
+);
+
+test.describe(
+  "Find a book under an Android phone's tabs",
+  { tag: "@native" },
+  () => {
+    const shelf = new SectionShelf(EVERY_KIND);
+    test.use({
+      platform: "android",
+      backend: shelf.backend(),
+      viewport: PHONE_IN_PORTRAIT,
+    });
+
+    function findButton(page: Page) {
+      return page.getByRole("button", { name: "Find a book" });
+    }
+
+    function findField(page: Page) {
+      return page.getByRole("searchbox", { name: "Find a book" });
+    }
+
+    function searchView(page: Page) {
+      return page.locator("[data-slot=input-group]", { has: findField(page) });
+    }
+
+    function closeButton(page: Page) {
+      return page.getByRole("button", { name: "Close the search" });
+    }
+
+    function countHeading(page: Page) {
+      return page.getByRole("heading", { level: 2, name: "2 volumes" });
+    }
+
+    async function openFinding(page: Page): Promise<void> {
+      await openSeries(page);
+      await countHeading(page).scrollIntoViewIfNeeded();
+      await findButton(page).click();
+      await expect(findField(page)).toBeFocused();
+    }
+
+    test("opens a full search field across the page's column under the tabs", async ({
+      page,
+    }) => {
+      await openFinding(page);
+
+      const [heading, tabs, field] = await Promise.all([
+        boxOf(countHeading(page)),
+        boxOf(kinds(page)),
+        boxOf(searchView(page)),
+      ]);
+      const { width } = viewportOf(page);
+      expect(field.x).toBeCloseTo(heading.x, 0);
+      expect(field.x + field.width).toBeCloseTo(width - heading.x, 0);
+      expect(field.height).toBeCloseTo(SEARCH_VIEW_HEIGHT, 0);
+      expect(field.y - (tabs.y + tabs.height)).toBeCloseTo(
+        GAP_ABOVE_SEARCH_VIEW,
+        0,
+      );
+    });
+
+    test("draws the search field as a filled pill", async ({ page }) => {
+      await openFinding(page);
+
+      const look = await searchView(page).evaluate((field) => {
+        const style = getComputedStyle(field);
+        return {
+          radius: parseFloat(style.borderStartStartRadius),
+          height: field.getBoundingClientRect().height,
+          background: style.backgroundColor,
+        };
+      });
+      expect(look.radius).toBeGreaterThanOrEqual(look.height / 2);
+      expect(look.background).toBe(
+        await tokenColour(page, "--native-color-search-view"),
+      );
+    });
+
+    test("leads with the search icon and ends with Close the search, empty or typed", async ({
+      page,
+    }) => {
+      await openFinding(page);
+      await expect(findField(page)).toHaveAttribute(
+        "placeholder",
+        "Find a book",
+      );
+      const empty = await Promise.all([
+        boxOf(searchView(page)),
+        boxOf(searchView(page).locator("[aria-hidden=true]").first()),
+        boxOf(findField(page)),
+        boxOf(closeButton(page)),
+      ]);
+
+      await findField(page).fill("Summer");
+
+      const typed = await boxOf(closeButton(page));
+      const [field, icon, input, close] = empty;
+      expect(icon.x + icon.width).toBeLessThanOrEqual(input.x);
+      expect(input.x + input.width).toBeLessThanOrEqual(close.x);
+      expect(close.x + close.width).toBeLessThanOrEqual(field.x + field.width);
+      expect([close.width, close.height]).toEqual([TOUCH_TARGET, TOUCH_TARGET]);
+      expect(typed).toEqual(close);
+      await expect(findField(page)).toHaveValue("Summer");
+    });
+
+    test.describe("on a page long enough to scroll", () => {
+      test.use({
+        backend: new SectionShelf([
+          ...volumes(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+          ...chapters(13, 14),
+          SUMMER_SHORT,
+        ]).backend(),
+      });
+
+      test("opens without moving the heading, the tabs or the page", async ({
+        page,
+      }) => {
+        await openSeries(page);
+        const heading = page.getByRole("heading", {
+          level: 2,
+          name: "12 volumes",
+        });
+        await heading.evaluate((shown) => {
+          shown.scrollIntoView({ block: "center" });
+        });
+        const [headingBefore, tabsBefore, scrolledBefore] = await Promise.all([
+          boxOf(heading),
+          boxOf(kinds(page)),
+          scrollTopOf(page),
+        ]);
+        expect(scrolledBefore).toBeGreaterThan(0);
+
+        await findButton(page).click();
+
+        await expect(findField(page)).toBeFocused();
+        const [headingAfter, tabsAfter, scrolledAfter] = await Promise.all([
+          boxOf(heading),
+          boxOf(kinds(page)),
+          scrollTopOf(page),
+        ]);
+        expect([headingAfter.y, tabsAfter.y, scrolledAfter]).toEqual([
+          headingBefore.y,
+          tabsBefore.y,
+          scrolledBefore,
+        ]);
+      });
+    });
+
+    test("points Find a book at the field only while it is open", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await expect(findButton(page)).not.toHaveAttribute("aria-controls");
+
+      await findButton(page).click();
+
+      const fieldId = await findField(page).getAttribute("id");
+      expect(fieldId).toBeTruthy();
+      await expect(findButton(page)).toHaveAttribute(
+        "aria-controls",
+        fieldId ?? "",
+      );
+      await closeButton(page).click();
+      await expect(findButton(page)).not.toHaveAttribute("aria-controls");
+    });
+
+    test("closes from Close the search, clearing it and going back to Find a book", async ({
+      page,
+    }) => {
+      await openFinding(page);
+      await findField(page).fill("Summer");
+
+      await closeButton(page).click();
+
+      await expect(findField(page)).toHaveCount(0);
+      await expect(findButton(page)).toBeFocused();
+      await expect(findButton(page)).toHaveAttribute("aria-expanded", "false");
+      await expect(covers(page, "Volumes")).toHaveCount(2);
+    });
+
+    test("lists only the matching covers while a search is typed", async ({
+      page,
+    }) => {
+      await openFinding(page);
+
+      await findField(page).fill("2");
+
+      await expect(covers(page, "Volumes")).toHaveCount(1);
+      await expect(findField(page)).toHaveValue("2");
+    });
+
+    test("says when no book matches and keeps the field open", async ({
+      page,
+    }) => {
+      await openFinding(page);
+
+      await findField(page).fill("Nothing like it");
+
+      await expect(
+        page.getByText("No book in this series matches “Nothing like it”."),
+      ).toBeVisible();
+      await expect(findField(page)).toBeFocused();
+    });
+
+    test("keeps the field, its search and the matching covers once the keyboard opens", async ({
+      page,
+    }) => {
+      await openFinding(page);
+      await findField(page).fill("2");
+
+      await showKeyboard(page);
+
+      await expect(findField(page)).toBeFocused();
+      await expect(findField(page)).toHaveValue("2");
+      await expect(covers(page, "Volumes")).toHaveCount(1);
+      expect(await sidewaysOverflow(page, "body")).toEqual([]);
+    });
+
+    for (const width of [360, 320]) {
+      test(`scrolls nothing sideways with a long search at ${String(width)} pixels`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: PHONE_IN_PORTRAIT.height });
+        await openFinding(page);
+
+        await findField(page).fill(
+          "A search far longer than the field is wide",
+        );
+
+        const field = await boxOf(searchView(page));
+        expect(await sidewaysOverflow(page, "body")).toEqual([]);
+        expect(field.x + field.width).toBeLessThanOrEqual(width);
+      });
+    }
+  },
+);
+
+test.describe(
+  "Find a book under an Android phone's tabs, then a volume of chapters",
+  { tag: "@native" },
+  () => {
+    test.use({
+      platform: "android",
+      backend: new SectionShelf([
+        ...volumes(1),
+        { kind: "chapter", numbers: { first: 5, last: 5 }, volume: 2 },
+        { kind: "chapter", numbers: { first: 6, last: 6 }, volume: 2 },
+        ...chapters(13),
+      ]).backend(),
+      viewport: PHONE_IN_PORTRAIT,
+    });
+
+    test("leaves no extra Back step behind a volume opened while the search is open", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await openSeries(page);
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toBeFocused();
+
+      await covers(page, "Volumes").last().click();
+      await expect(page).toHaveURL(
+        new RegExp(`/series/${SERIES_ID}/volume/2$`),
+      );
+      await page.goBack();
+      await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+      await page.goBack();
+
+      await expect(page).toHaveURL(/\/$/);
     });
   },
 );
