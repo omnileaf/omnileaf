@@ -4,6 +4,7 @@ import {
   accessibilityViolations,
   boxOf,
   expect,
+  lengthOf,
   MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
@@ -12,17 +13,6 @@ import {
 } from "./fixtures.ts";
 
 const NARROW_PHONE = { width: 360, height: 780 };
-
-function insetOf(page: Page): Promise<number> {
-  return page.evaluate(() => {
-    const probe = document.createElement("div");
-    probe.style.inlineSize = "var(--spacing-lg)";
-    document.body.append(probe);
-    const inset = probe.getBoundingClientRect().width;
-    probe.remove();
-    return inset;
-  });
-}
 
 function navigationBox(page: Page) {
   return boxOf(page.getByRole("navigation", { name: "Main" }));
@@ -57,7 +47,7 @@ test.describe("on iOS", () => {
     await page.goto("/");
 
     const bar = await navigationBox(page);
-    const inset = await insetOf(page);
+    const inset = await lengthOf(page, "--spacing-lg");
 
     expect(bar.x).toBeGreaterThanOrEqual(inset);
     expect(bar.x + bar.width).toBeLessThanOrEqual(NARROW_PHONE.width - inset);

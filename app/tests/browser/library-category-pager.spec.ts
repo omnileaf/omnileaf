@@ -15,6 +15,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   fakeAppInfo,
+  lengthOf,
   MEDIUM_MIN_WIDTH,
   test,
   viewportOf,
@@ -41,6 +42,11 @@ const SCROLLED_MANGA_PX = 600;
 const SCROLLED_FAR_PX = 3000;
 const SCROLL_TOLERANCE_PX = 2;
 const BLANK_INSET_PX = 8;
+const SAME_ROW_PX = 1;
+const TOUCH = { pointerType: "touch", pointerId: 7, isPrimary: true } as const;
+const LAST_FRAME_BEFORE_END_MS = 1;
+const FRACTIONAL_TRIM_PX = 0.4;
+const CLEAR_OF_ENDS_PX = 4;
 
 interface Library {
   readonly all: ReturnType<typeof sampleSeries>;
@@ -122,6 +128,16 @@ function pageBeside(page: Page) {
   return page.locator('[data-pager-page="beside"]');
 }
 
+function besideCovers(page: Page, firstTitle: string) {
+  return pageBeside(page)
+    .filter({ hasText: firstTitle })
+    .getByRole("listitem", { includeHidden: true });
+}
+
+function chosenCovers(page: Page) {
+  return seriesList(page).getByRole("listitem");
+}
+
 function pagerTrack(page: Page) {
   return page.locator("[data-pager-page]").first().locator("xpath=..");
 }
@@ -134,9 +150,46 @@ function skipUnlessPhone(page: Page, hasTouch: boolean | undefined): void {
   );
 }
 
+interface RowSpan {
+  readonly left: number;
+  readonly right: number;
+}
+
+interface CoverBox {
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
+}
+
+function firstRowIn(boxes: readonly CoverBox[]): RowSpan {
+  const first = boxes[0];
+  if (first === undefined) {
+    throw new Error("no covers are drawn");
+  }
+  const row = boxes.filter(
+    ({ top }) => Math.abs(top - first.top) < SAME_ROW_PX,
+  );
+  return {
+    left: Math.min(...row.map(({ left }) => left)),
+    right: Math.max(...row.map(({ right }) => right)),
+  };
+}
+
+async function firstRowOf(covers: Locator): Promise<RowSpan> {
+  return firstRowIn(
+    await covers.evaluateAll((items) =>
+      items.map((item) => {
+        const { left, right, top } = item.getBoundingClientRect();
+        return { left, right, top };
+      }),
+    ),
+  );
+}
+
 interface Drag {
   readonly to: (x: number) => Promise<void>;
   readonly release: () => Promise<void>;
+  readonly finger: () => Point;
 }
 
 interface Point {
@@ -197,10 +250,10 @@ async function blankBelow(page: Page, emptyState: Locator): Promise<Spot> {
 }
 
 async function beginDragAt(from: DragTarget, start: Point): Promise<Drag> {
-  const touch = { pointerType: "touch", pointerId: 7, isPrimary: true };
   let reached = 0;
+  const finger = () => ({ x: start.x + reached, y: start.y });
   await from.dispatchEvent("pointerdown", {
-    ...touch,
+    ...TOUCH,
     clientX: start.x,
     clientY: start.y,
   });
@@ -209,20 +262,78 @@ async function beginDragAt(from: DragTarget, start: Point): Promise<Drag> {
       for (let step = 1; step <= DRAG_STEPS; step += 1) {
         reached = reached + (x - reached) / (DRAG_STEPS - step + 1);
         await from.dispatchEvent("pointermove", {
-          ...touch,
-          clientX: start.x + reached,
-          clientY: start.y,
+          ...TOUCH,
+          clientX: finger().x,
+          clientY: finger().y,
         });
       }
     },
     release: async () => {
       await from.dispatchEvent("pointerup", {
-        ...touch,
-        clientX: start.x + reached,
-        clientY: start.y,
+        ...TOUCH,
+        clientX: finger().x,
+        clientY: finger().y,
       });
     },
+    finger,
   };
+}
+
+/** WebKit resolves a translate percentage against the box snapped to device pixels, so a settled slide can sit a fraction of a device pixel off the laid-out place. */
+async function halfADevicePixel(page: Page): Promise<number> {
+  return page.evaluate(() => 1 / (2 * window.devicePixelRatio));
+}
+
+interface SettleFrames {
+  readonly halfway: RowSpan;
+  readonly end: RowSpan;
+}
+
+async function releaseThroughSettle(
+  page: Page,
+  drag: Drag,
+  incoming: Locator,
+): Promise<SettleFrames> {
+  const covers = await incoming.elementHandles();
+  const frames = await pagerTrack(page).evaluate(
+    (track, { touch, at, coming, beforeEnd }) => {
+      track.dispatchEvent(
+        new PointerEvent("pointerup", {
+          ...touch,
+          bubbles: true,
+          clientX: at.x,
+          clientY: at.y,
+        }),
+      );
+      const [settling] = track.getAnimations();
+      const end = settling?.effect?.getComputedTiming().endTime;
+      if (settling === undefined || typeof end !== "number") {
+        throw new Error("the swipe settles without sliding");
+      }
+      const coversNow = () =>
+        coming.map((cover) => {
+          if (!(cover instanceof Element)) {
+            throw new Error("a cover is not drawn as an element");
+          }
+          const { left, right, top } = cover.getBoundingClientRect();
+          return { left, right, top };
+        });
+      settling.pause();
+      settling.currentTime = end / 2;
+      const halfway = coversNow();
+      settling.currentTime = end - beforeEnd;
+      const last = coversNow();
+      settling.finish();
+      return { halfway, last };
+    },
+    {
+      touch: TOUCH,
+      at: drag.finger(),
+      coming: covers,
+      beforeEnd: LAST_FRAME_BEFORE_END_MS,
+    },
+  );
+  return { halfway: firstRowIn(frames.halfway), end: firstRowIn(frames.last) };
 }
 
 async function scrolledBy(page: Page): Promise<number> {
@@ -250,6 +361,8 @@ for (const platform of PLATFORMS) {
       skipUnlessPhone(page, testInfo.project.use.hasTouch);
       await openLibrary(page);
       const track = await boxOf(pagerTrack(page));
+      const besideStart =
+        track.x + track.width + (await lengthOf(page, "--spacing-pager-gap"));
 
       const drag = await beginDrag(page, seriesList(page));
       await drag.to(-SWIPE_PX / 2);
@@ -258,8 +371,8 @@ for (const platform of PLATFORMS) {
       const further = await boxOf(pageBeside(page));
       await drag.release();
 
-      expect(halfway.x).toBeCloseTo(track.x + track.width - SWIPE_PX / 2, 0);
-      expect(further.x).toBeCloseTo(track.x + track.width - SWIPE_PX, 0);
+      expect(halfway.x).toBeCloseTo(besideStart - SWIPE_PX / 2, 0);
+      expect(further.x).toBeCloseTo(besideStart - SWIPE_PX, 0);
       expect(further.width).toBeCloseTo(track.width, 0);
     });
 
@@ -750,6 +863,188 @@ test.describe("on tablets and desktops", () => {
       );
     }
   });
+
+  test("moves the chosen category's covers with the finger on tablets", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.use.hasTouch !== true, "a finger swipes");
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "phones page between categories",
+    );
+    await openLibrary(page);
+    const atRest = await firstRowOf(chosenCovers(page));
+
+    const drag = await beginDrag(page, seriesList(page));
+    await drag.to(-SWIPE_PX);
+    const swiping = await firstRowOf(chosenCovers(page));
+    await drag.release();
+
+    expect(swiping.left).toBeCloseTo(atRest.left - SWIPE_PX, 0);
+    expect(swiping.right).toBeCloseTo(atRest.right - SWIPE_PX, 0);
+  });
+});
+
+test.describe("each category as a page of its own", { tag: "@native" }, () => {
+  test.use({ backend: backendWith(SMALL, "android") });
+
+  test("sits the covers one gutter in from each side of the column at rest", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await expect(chosenCovers(page)).toHaveCount(EVERY_SERIES.length);
+    const column = await boxOf(page.getByRole("main"));
+    const gutter = await lengthOf(page, "--spacing-gutter");
+
+    const covers = await firstRowOf(chosenCovers(page));
+
+    expect(covers.left).toBeCloseTo(column.x + gutter, 0);
+    expect(covers.right).toBeCloseTo(column.x + column.width - gutter, 0);
+  });
+
+  test("lands the incoming category without a jump when the pager is a fraction of a pixel wide", async ({
+    page,
+  }, testInfo) => {
+    skipUnlessPhone(page, testInfo.project.use.hasTouch);
+    await openLibrary(page);
+    await expect(chosenCovers(page)).toHaveCount(EVERY_SERIES.length);
+    await pagerTrack(page).evaluate((track, trim) => {
+      track.style.inlineSize = `${String(track.getBoundingClientRect().width - trim)}px`;
+    }, FRACTIONAL_TRIM_PX);
+    const incomingTitle = MANGA[0]?.title ?? "";
+    const unseenJump = await halfADevicePixel(page);
+
+    const drag = await beginDrag(page, seriesList(page));
+    await drag.to(-SWIPE_PX);
+    await expect(besideCovers(page, incomingTitle)).toHaveCount(MANGA.length);
+    const settling = await releaseThroughSettle(
+      page,
+      drag,
+      besideCovers(page, incomingTitle),
+    );
+    await expectChosen(page, "Manga");
+    await expect(chosenCovers(page)).toHaveCount(MANGA.length);
+    await expect(pagerTrack(page)).toHaveCSS("translate", "none");
+    const settled = await firstRowOf(chosenCovers(page));
+
+    expect(Math.abs(settling.end.left - settled.left)).toBeLessThan(unseenJump);
+    expect(Math.abs(settling.end.right - settled.right)).toBeLessThan(
+      unseenJump,
+    );
+  });
+
+  for (const {
+    way,
+    from,
+    listed,
+    by,
+    incoming,
+    lands,
+    dir,
+    layout,
+    padding,
+  } of (
+    [
+      {
+        dir: "ltr",
+        layout: "",
+        forward: -SWIPE_PX,
+        padding: { left: "--spacing-page-start", right: "--spacing-page-end" },
+      },
+      {
+        dir: "rtl",
+        layout: " in a right-to-left layout",
+        forward: SWIPE_PX,
+        padding: { left: "--spacing-page-end", right: "--spacing-page-start" },
+      },
+    ] as const
+  ).flatMap((direction) => [
+    {
+      ...direction,
+      way: "after",
+      from: "All",
+      listed: EVERY_SERIES,
+      by: direction.forward,
+      incoming: MANGA,
+      lands: "Manga",
+    },
+    {
+      ...direction,
+      way: "before",
+      from: "Manga",
+      listed: MANGA,
+      by: -direction.forward,
+      incoming: EVERY_SERIES,
+      lands: "All",
+    },
+  ])) {
+    test(`keeps both pages' side padding with a gap between them while the category ${way} comes in${layout}`, async ({
+      page,
+    }, testInfo) => {
+      skipUnlessPhone(page, testInfo.project.use.hasTouch);
+      await openLibrary(page);
+      await page.evaluate((textDirection) => {
+        document.documentElement.dir = textDirection;
+        document.documentElement.style.setProperty(
+          "--system-inset-left",
+          "var(--spacing-sm)",
+        );
+      }, dir);
+      await chosenTab(page, from).click();
+      await expectChosen(page, from);
+      await expect(chosenCovers(page)).toHaveCount(listed.length);
+      const incomingTitle = incoming[0]?.title ?? "";
+      const column = await boxOf(page.getByRole("main"));
+      const gap = await lengthOf(page, "--spacing-pager-gap");
+      const leftInset = await lengthOf(page, padding.left);
+      const rightInset = await lengthOf(page, padding.right);
+      expect(leftInset).not.toBeCloseTo(rightInset, 0);
+      const atRest = await firstRowOf(chosenCovers(page));
+
+      const drag = await beginDrag(page, seriesList(page));
+      await drag.to(by);
+      await expect(
+        pageBeside(page).filter({ hasText: incomingTitle }),
+      ).toHaveCount(1);
+      await expect(besideCovers(page, incomingTitle)).toHaveCount(
+        incoming.length,
+      );
+      const chosen = await firstRowOf(chosenCovers(page));
+      const beside = await firstRowOf(besideCovers(page, incomingTitle));
+      const settling = await releaseThroughSettle(
+        page,
+        drag,
+        besideCovers(page, incomingTitle),
+      );
+      await expectChosen(page, lands);
+      await expect(chosenCovers(page)).toHaveCount(incoming.length);
+      await expect(pagerTrack(page)).toHaveCSS("translate", "none");
+      const settled = await firstRowOf(chosenCovers(page));
+
+      const [onLeft, onRight] = by < 0 ? [chosen, beside] : [beside, chosen];
+      expect(atRest.left).toBeCloseTo(column.x + leftInset, 0);
+      expect(atRest.right).toBeCloseTo(column.x + column.width - rightInset, 0);
+      expect(chosen.left).toBeCloseTo(atRest.left + by, 0);
+      expect(chosen.right).toBeCloseTo(atRest.right + by, 0);
+      expect(beside.right - beside.left).toBeCloseTo(
+        atRest.right - atRest.left,
+        0,
+      );
+      expect(
+        onRight.left - leftInset - (onLeft.right + rightInset),
+      ).toBeCloseTo(gap, 0);
+      expect(settling.halfway.left).toBeGreaterThan(
+        Math.min(beside.left, atRest.left) + CLEAR_OF_ENDS_PX,
+      );
+      expect(settling.halfway.left).toBeLessThan(
+        Math.max(beside.left, atRest.left) - CLEAR_OF_ENDS_PX,
+      );
+      expect(settling.end.left).toBeCloseTo(atRest.left, 0);
+      expect(settling.end.right).toBeCloseTo(atRest.right, 0);
+      expect(settled.left).toBeCloseTo(atRest.left, 0);
+      expect(settled.right).toBeCloseTo(atRest.right, 0);
+    });
+  }
 });
 
 for (const colorScheme of ["light", "dark"] as const) {

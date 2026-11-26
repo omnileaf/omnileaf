@@ -5,6 +5,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  lengthOf,
   literalColour,
   test,
   testOnlyInItsWebview,
@@ -107,17 +108,6 @@ function typeOf(locator: Locator) {
   });
 }
 
-function toolbarHeight(page: Page): Promise<number> {
-  return page.evaluate(() => {
-    const probe = document.createElement("div");
-    probe.style.blockSize = "var(--spacing-toolbar)";
-    document.body.append(probe);
-    const { height } = probe.getBoundingClientRect();
-    probe.remove();
-    return height;
-  });
-}
-
 test.describe("Edit details on macOS", () => {
   testOnlyInItsWebview("macos");
   test.use({ platform: "macos" });
@@ -130,7 +120,7 @@ test.describe("Edit details on macOS", () => {
     const box = await boxOf(sheet);
 
     expect(box.y).toBeCloseTo(
-      (await toolbarHeight(page)) + MACOS.belowToolbar,
+      (await lengthOf(page, "--spacing-toolbar")) + MACOS.belowToolbar,
       0,
     );
     expect(box.width).toBeCloseTo(MACOS.width, 0);

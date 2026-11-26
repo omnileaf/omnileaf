@@ -41,16 +41,20 @@ export function tabSwipedTo({
   return stepOf(moved, direction);
 }
 
+export function pagesAlong(count: number, stride: string): string {
+  return `calc(${String(count)} * (${stride}))`;
+}
+
 export function settlesAt({
   moved,
-  width,
+  stride,
   step,
 }: {
   moved: number;
-  width: number;
+  stride: string;
   step: -1 | 0 | 1;
-}): number {
-  return step === 0 ? 0 : Math.sign(moved) * width;
+}): string {
+  return pagesAlong(step === 0 ? 0 : Math.sign(moved), stride);
 }
 
 const EDGE_PX = 24;
@@ -100,6 +104,7 @@ export interface TabSwipe {
   readonly canStep: (step: 1 | -1) => boolean;
   readonly settlesSmoothly: () => boolean;
   readonly track: () => HTMLElement | null;
+  readonly stride: string;
 }
 
 export function swipesBetweenTabs({
@@ -107,6 +112,7 @@ export function swipesBetweenTabs({
   canStep,
   settlesSmoothly,
   track,
+  stride,
 }: TabSwipe): (area: HTMLElement) => () => void {
   return (area) => {
     let start: SwipeStart | undefined;
@@ -130,11 +136,11 @@ export function swipesBetweenTabs({
     const settle = (
       moving: HTMLElement,
       from: number,
-      to: number,
+      to: string,
     ): Promise<boolean> => {
       isSettling = true;
       start = undefined;
-      const toOffset = `${String(to)}px 0`;
+      const toOffset = `${to} 0`;
       settling = moving.animate(
         [{ translate: `${String(from)}px 0` }, { translate: toOffset }],
         { duration: SETTLE_MS, easing: "ease-out" },
@@ -201,7 +207,7 @@ export function swipesBetweenTabs({
       const step = isSwiping
         ? tabSwipedTo({
             moved,
-            width: area.clientWidth,
+            width: area.getBoundingClientRect().width,
             velocity: moved / Math.max(event.timeStamp - start.at, 1),
             direction: start.direction,
           })
@@ -219,11 +225,10 @@ export function swipesBetweenTabs({
         finish();
         return;
       }
-      const width = moving.clientWidth;
       void settle(
         moving,
         moved,
-        settlesAt({ moved, width, step: committed }),
+        settlesAt({ moved, stride, step: committed }),
       ).then((isFinished) => {
         if (isFinished) {
           finish();

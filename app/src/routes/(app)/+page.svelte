@@ -93,7 +93,7 @@
   import SeriesCovers from "#lib/library/SeriesCovers.svelte";
   import SeriesGroup from "#lib/library/SeriesGroup.svelte";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
-  import { swipesBetweenTabs } from "#lib/library/tab-swipe.ts";
+  import { pagesAlong, swipesBetweenTabs } from "#lib/library/tab-swipe.ts";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
   import type { EditedSeries } from "#lib/series/edited-series.ts";
@@ -165,7 +165,9 @@
   const FILTER_PANEL_ID = "library-filter";
   const ALL_TAB: LibraryTabId = { kind: "all" };
   const BESIDE_PHONE_TABS = 1;
-  const PERCENT = 100;
+  const PAGE_STRIDE = "100% + var(--spacing-pager-gap)";
+  const PAGE_INSET = "pe-page-end max-medium:ps-page-start medium:ps-gutter";
+  const PAGE_BLEED = "-me-page-end max-medium:-ms-page-start medium:-ms-gutter";
 
   const animations = getAnimationsSetting();
   const screenshotMode = getScreenshotMode();
@@ -1238,6 +1240,7 @@
         settlesSmoothly: () =>
           pagesBesideChosen > 0 && animations.moves("navigation"),
         track: () => pager,
+        stride: PAGE_STRIDE,
       })}
     class={[
       "flex flex-1 flex-col",
@@ -1344,11 +1347,19 @@
           </div>
         {/if}
         <div
-          class="-me-page-end mbs-lg flex flex-1 flex-col overflow-x-clip pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:mbs-xl medium:ps-gutter"
+          class={[
+            PAGE_BLEED,
+            "mbs-lg flex flex-1 flex-col overflow-x-clip medium:mbs-xl",
+          ]}
         >
           <div bind:this={pager} class="relative flex-1">
             {#if groups.length > 0}
-              <div class="flex flex-col gap-xl android:max-medium:gap-sm">
+              <div
+                class={[
+                  PAGE_INSET,
+                  "flex flex-col gap-xl android:max-medium:gap-sm",
+                ]}
+              >
                 {#each groups as group (group.key)}
                   <SeriesGroup
                     name={group.name}
@@ -1373,7 +1384,7 @@
                     : "invisible absolute inset-bs-none overflow-clip block-full inline-full in-data-swiping:visible"}
                   style:inset-inline-start={isChosen
                     ? undefined
-                    : `${String(slot.offset * PERCENT)}%`}
+                    : pagesAlong(slot.offset, PAGE_STRIDE)}
                 >
                   <div
                     class={isChosen
@@ -1381,6 +1392,7 @@
                       : "sticky inset-bs-none overflow-clip block-dvh"}
                   >
                     <div
+                      class={PAGE_INSET}
                       style:translate={isChosen
                         ? undefined
                         : `0 -${String(slot.scrolled)}px`}
@@ -1394,8 +1406,10 @@
                 </div>
               {/each}
             {:else}
-              <FastScroll total={seriesCount.count} {letterAt} />
-              {@render seriesGrid(chosenPage, covers)}
+              <div class={PAGE_INSET}>
+                <FastScroll total={seriesCount.count} {letterAt} />
+                {@render seriesGrid(chosenPage, covers)}
+              </div>
             {/if}
           </div>
         </div>

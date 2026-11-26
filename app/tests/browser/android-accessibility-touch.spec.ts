@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { boxOf, DEFAULT_BACKEND, expect, lengthOf, test } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 import { ANDROID_SCREENS } from "./android-screens.ts";
 
@@ -26,16 +26,10 @@ async function openAccessibility(page: Page): Promise<void> {
 }
 
 function targetSizes(page: Page): Promise<number[]> {
-  return page.evaluate(() =>
-    ["--native-spacing-target", "--spacing-touch-target"].map((name) => {
-      const probe = document.createElement("div");
-      probe.style.blockSize = `var(${name})`;
-      document.body.append(probe);
-      const size = probe.getBoundingClientRect().height;
-      probe.remove();
-      return size;
-    }),
-  );
+  return Promise.all([
+    lengthOf(page, "--native-spacing-target"),
+    lengthOf(page, "--spacing-touch-target"),
+  ]);
 }
 
 function seriesList(page: Page): Locator {
