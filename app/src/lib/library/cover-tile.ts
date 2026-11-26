@@ -55,7 +55,9 @@ const NO_PICKED_RING_ON_PHONES = `${PICKED_COVER_RING} max-medium:outline-0`;
 const BADGE_PLACEMENT =
   "absolute inset-s-badge-inset inset-bs-badge-inset flex items-center justify-center text-caption medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-s-sm large:inset-bs-sm";
 
-const BADGE_GEOMETRY = `${BADGE_PLACEMENT} px-badge-inline min-block-xl min-inline-xl`;
+const COUNT_BADGE_ON_COVER = `${BADGE_PLACEMENT} ring-1 ring-background`;
+
+const BADGE_GEOMETRY = `${COUNT_BADGE_ON_COVER} px-badge-inline min-block-xl min-inline-xl`;
 
 const ANDROID_PICKED_CAPTION =
   "max-medium:in-aria-checked:px-xs max-medium:in-aria-checked:text-native-on-cover-accent";
@@ -69,11 +71,11 @@ const ANDROID_GRID = "max-medium:covers-gap-sm! max-medium:covers-row-gap-lg!";
 
 const ANDROID_TILE_META = `max-medium:text-native-tile-meta/native-tile-meta max-medium:font-native-tile-meta max-medium:tracking-native-tile-meta ${ANDROID_PICKED_CAPTION}`;
 
-const NATIVE_COUNT_BADGE = `${BADGE_GEOMETRY} max-medium:rounded-full max-medium:bg-native-bar-badge max-medium:text-native-on-bar-badge max-medium:min-block-native-cover-badge max-medium:min-inline-native-cover-badge`;
+const NATIVE_COUNT_BADGE = `${BADGE_GEOMETRY} max-medium:rounded-full max-medium:min-block-native-cover-badge max-medium:min-inline-native-cover-badge`;
 
 const ANDROID_COUNT_BADGE = `${NATIVE_COUNT_BADGE} max-medium:inset-s-xs max-medium:inset-bs-xs max-medium:px-xs max-medium:text-native-count-badge/native-count-badge max-medium:tracking-native-count-badge`;
 
-const LINUX_BADGE = `${BADGE_PLACEMENT} border border-transparent px-sm py-2xs`;
+const LINUX_BADGE = `${COUNT_BADGE_ON_COVER} border border-transparent px-sm py-2xs`;
 
 const SHEET =
   "absolute rounded-t-cover border border-b-0 border-cover-edge block-cover-sheet";
@@ -202,7 +204,7 @@ const WINDOWS_TILE: CoverTileLook = {
   focusRing:
     "focus-visible:outline-none focus-visible:before:outline-2 focus-visible:before:outline-offset-1 focus-visible:before:outline-native-focus-ring focus-visible:before:ring-1 focus-visible:before:ring-native-focus-ring-inner",
   pickedRing: "",
-  unread: `${BADGE_PLACEMENT} rounded-full px-xs min-block-native-tile-badge min-inline-native-tile-badge`,
+  unread: `${COUNT_BADGE_ON_COVER} rounded-full px-xs min-block-native-tile-badge min-inline-native-tile-badge`,
   downloaded: "block-native-tile-badge inline-native-tile-badge",
   mark: WINDOWS_MARK,
   compactMark: WINDOWS_MARK,

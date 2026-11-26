@@ -235,7 +235,7 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-test("draws iOS's tile with a red count badge, a glass download mark and edit-mode select circles", async () => {
+test("draws iOS's tile with an accent count badge, a glass download mark and edit-mode select circles", async () => {
   const { emptyMark, ...look } = await lookOn("ios", "light");
   const { corner, ...badge } = look.badge;
 
@@ -244,7 +244,7 @@ test("draws iOS's tile with a red count badge, a glass download mark and edit-mo
     cover: { corner: "6px" },
     badge: {
       height: 20,
-      fill: "rgb(155, 44, 44)",
+      fill: "rgb(47, 111, 79)",
       label: "rgb(255, 255, 255)",
       weight: "590",
       numerals: "tabular-nums",
@@ -332,7 +332,7 @@ test("draws no outline round a picked cover on an iPhone, and keeps it on an iPa
   ]);
 });
 
-test("lightens iOS's count badge to a pink with dark words in the dark theme", async () => {
+test("lightens iOS's count badge to the dark accent with dark words in the dark theme", async () => {
   const look = await lookOn("ios", "dark");
 
   expect([
@@ -341,14 +341,14 @@ test("lightens iOS's count badge to a pink with dark words in the dark theme", a
     look.mark.fill,
     look.mark.tick,
   ]).toEqual([
-    "rgb(240, 140, 140)",
-    "rgb(42, 14, 14)",
+    "rgb(127, 203, 157)",
+    "rgb(15, 36, 24)",
     "rgb(127, 203, 157)",
     "rgb(15, 36, 24)",
   ]);
 });
 
-test("draws Android's tile with a 16px red count pill and no download dot", async () => {
+test("draws Android's tile with a 16px primary count pill and no download dot", async () => {
   const { badge, downloaded, ...look } = await badgeLookOn("android", "light");
   const { corner, ...pill } = badge;
 
@@ -358,8 +358,8 @@ test("draws Android's tile with a 16px red count pill and no download dot", asyn
     cover: { corner: "4px" },
     badge: {
       height: 16,
-      fill: "rgb(168, 56, 54)",
-      label: "rgb(255, 247, 246)",
+      fill: "rgb(50, 106, 77)",
+      label: "rgb(230, 255, 237)",
       weight: "500",
       numerals: "normal",
     },
@@ -370,8 +370,8 @@ test("tints Android's badges for the dark theme", async () => {
   const look = await badgeLookOn("android", "dark");
 
   expect([look.badge.fill, look.badge.label]).toEqual([
-    "rgb(250, 116, 111)",
-    "rgb(73, 0, 6)",
+    "rgb(120, 217, 159)",
+    "rgb(0, 57, 29)",
   ]);
 });
 
