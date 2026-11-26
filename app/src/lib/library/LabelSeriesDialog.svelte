@@ -22,6 +22,8 @@
   import type { SeriesId } from "#lib/series/series-id.ts";
 
   import { AndroidPhone } from "./android-phone.svelte";
+  import { focusFieldWhenNothingToPick } from "./label-focus";
+  import type { LabelsFrom } from "./series-selection";
   import {
     ANDROID_FILTER_HEADING,
     ANDROID_FILTER_SHEET,
@@ -35,14 +37,14 @@
   let {
     isOpen = $bindable(false),
     series,
-    startsAtTags,
+    from,
     onApplied,
     onApplyFailed,
     onError,
   }: {
     isOpen?: boolean;
     series: readonly SeriesId[];
-    startsAtTags: boolean;
+    from: LabelsFrom;
     onApplied?: () => void;
     onApplyFailed: (error: unknown) => void;
     onError: (error: unknown) => void;
@@ -56,6 +58,8 @@
   let newCategory = $state("");
   let newTag = $state("");
   let tagField = $state<HTMLInputElement | null>(null);
+  let categoryField = $state<HTMLInputElement | null>(null);
+  let sheet = $state<HTMLElement | null>(null);
 
   const android = new AndroidPhone();
   const actionOrder = alertLook(currentPlatform()).actionOrder;
@@ -114,11 +118,15 @@
     created = [];
     tagsAdded = [];
     tagsRemoved = [];
-    if (startsAtTags) {
-      requestAnimationFrame(() => {
-        tagField?.focus();
-      });
-    }
+    focusFieldWhenNothingToPick(loaded.data, from, () => ({
+      categories: categoryField,
+      tags: tagField,
+    }));
+  }
+
+  function focusSheet(event: Event): void {
+    event.preventDefault();
+    sheet?.focus();
   }
 
   function addCategory(): void {
@@ -179,6 +187,8 @@
 
 <Dialog.Root bind:open={isOpen}>
   <ModalContent
+    bind:ref={sheet}
+    onOpenAutoFocus={focusSheet}
     wideClass="inset-none m-auto flex flex-col overflow-hidden rounded-panel border border-dialog-edge bg-dialog text-foreground fade-motion shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit"
     phoneClass="inset-bs-sheet-top block-auto"
     onDismiss={() => {
@@ -285,6 +295,7 @@
               <Plus size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
             {/if}
             <Input
+              bind:ref={categoryField}
               value={newCategory}
               oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
                 newCategory = event.currentTarget.value;

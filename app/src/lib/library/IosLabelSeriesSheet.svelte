@@ -14,6 +14,8 @@
 
   import { GROUPED_GROUP_LOOK } from "./group-look";
   import { LabelDraft } from "./label-draft.svelte";
+  import { focusFieldWhenNothingToPick } from "./label-focus";
+  import type { LabelsFrom } from "./series-selection";
 
   const ICON_SIZE = 20;
   const REMOVE_ICON_SIZE = 12;
@@ -21,14 +23,14 @@
   let {
     isOpen = $bindable(false),
     series,
-    startsAtTags,
+    from,
     onApplied,
     onApplyFailed,
     onError,
   }: {
     isOpen?: boolean;
     series: readonly SeriesId[];
-    startsAtTags: boolean;
+    from: LabelsFrom;
     onApplied?: () => void;
     onApplyFailed: (error: unknown) => void;
     onError: (error: unknown) => void;
@@ -39,6 +41,8 @@
   let newCategory = $state("");
   let newTag = $state("");
   let tagField = $state<HTMLInputElement | null>(null);
+  let categoryField = $state<HTMLInputElement | null>(null);
+  let sheet = $state<HTMLElement | null>(null);
 
   $effect(() => {
     if (isOpen) {
@@ -55,11 +59,15 @@
       return;
     }
     draft.load(loaded.data);
-    if (startsAtTags) {
-      requestAnimationFrame(() => {
-        tagField?.focus();
-      });
-    }
+    focusFieldWhenNothingToPick(loaded.data, from, () => ({
+      categories: categoryField,
+      tags: tagField,
+    }));
+  }
+
+  function focusSheet(event: Event): void {
+    event.preventDefault();
+    sheet?.focus();
   }
 
   async function apply(): Promise<void> {
@@ -79,6 +87,8 @@
 
 <Dialog.Root bind:open={isOpen}>
   <ModalContent
+    bind:ref={sheet}
+    onOpenAutoFocus={focusSheet}
     phoneClass=""
     phoneHeight="large"
     phoneGround="grouped"
@@ -166,6 +176,7 @@
           <div class="flex items-center gap-md text-muted block-native-target">
             <Plus size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
             <Input
+              bind:ref={categoryField}
               value={newCategory}
               oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
                 newCategory = event.currentTarget.value;
