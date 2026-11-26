@@ -217,6 +217,20 @@ test.describe(
     test.describe("with many suggested tags", () => {
       test.use({ backend: suggesting(MANY_SUGGESTIONS) });
 
+      test("sets the Suggested label in the sheet's label type and colour", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+        const label = sheet.getByText("Suggested", { exact: true });
+
+        await expect(label).toHaveCSS("font-size", "14px");
+        await expect(label).toHaveCSS("font-weight", "500");
+        await expect(label).toHaveCSS(
+          "color",
+          await tokenColour(page, "--color-foreground"),
+        );
+      });
+
       test("lines the suggestions up with Add a tag, under a Suggested label of their own", async ({
         page,
       }) => {

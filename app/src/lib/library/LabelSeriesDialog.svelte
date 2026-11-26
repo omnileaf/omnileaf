@@ -391,7 +391,7 @@
               <span
                 id={suggestedLabelId}
                 class={isAndroidSheet
-                  ? `${FILTER_SETTING_LABEL_TYPE} text-muted`
+                  ? FILTER_SETTING_LABEL_TYPE
                   : "text-detail text-muted"}
               >
                 {m.library_suggested_tags()}
