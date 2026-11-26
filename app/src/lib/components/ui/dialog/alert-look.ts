@@ -223,10 +223,7 @@ function isMacAlert(platform: Platform, looks: ConfirmLooks): boolean {
   return platform === "macos" && looks.mac !== undefined;
 }
 
-function isAndroidIconDialog(
-  platform: Platform,
-  looks: ConfirmLooks,
-): boolean {
+function isAndroidIconDialog(platform: Platform, looks: ConfirmLooks): boolean {
   return platform === "android" && looks.androidPhone === "iconDialog";
 }
 
