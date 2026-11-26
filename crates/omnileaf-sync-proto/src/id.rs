@@ -144,7 +144,6 @@ impl CategoryId {
         Ok(Self(key.id()))
     }
 
-    /// For a category whose name's own id is held by a category renamed since, so no two categories share an id while each id stays one every device derives the same way.
     pub fn minted(name: &str, node: NodeId, hlc: Hlc) -> Result<Self, KeyError> {
         let key = NaturalKey::new(MINTED_CATEGORY_KEY)
             .part(norm(name).as_bytes())?
