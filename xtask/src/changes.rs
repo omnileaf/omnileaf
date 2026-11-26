@@ -16,6 +16,7 @@ pub(crate) struct Areas {
     pub(crate) vendor: bool,
     pub(crate) admin: bool,
     pub(crate) dependencies: bool,
+    pub(crate) browser_setup: bool,
 }
 
 impl Areas {
@@ -26,6 +27,7 @@ impl Areas {
         vendor: true,
         admin: true,
         dependencies: true,
+        browser_setup: true,
     };
 
     fn union(self, other: Self) -> Self {
@@ -36,10 +38,11 @@ impl Areas {
             vendor: self.vendor || other.vendor,
             admin: self.admin || other.admin,
             dependencies: self.dependencies || other.dependencies,
+            browser_setup: self.browser_setup || other.browser_setup,
         }
     }
 
-    pub(crate) fn outputs(self) -> [String; 6] {
+    pub(crate) fn outputs(self) -> [String; 7] {
         [
             format!("native={}", self.native),
             format!("app={}", self.app),
@@ -47,6 +50,7 @@ impl Areas {
             format!("vendor={}", self.vendor),
             format!("admin={}", self.admin),
             format!("dependencies={}", self.dependencies),
+            format!("browser-setup={}", self.browser_setup),
         ]
     }
 }
@@ -58,6 +62,7 @@ const NOTHING: Areas = Areas {
     vendor: false,
     admin: false,
     dependencies: false,
+    browser_setup: false,
 };
 
 const NATIVE: Areas = Areas {
@@ -76,6 +81,10 @@ const ADMIN_BROWSER_CHECK: Areas = Areas {
 const VENDORED: Areas = Areas {
     native: true,
     vendor: true,
+    ..NOTHING
+};
+const BROWSER_SETUP: Areas = Areas {
+    browser_setup: true,
     ..NOTHING
 };
 const DEPENDENCY_LIST: Areas = Areas {
@@ -100,6 +109,14 @@ const BRANDING: Areas = Areas {
     site: true,
     ..NOTHING
 };
+
+const BROWSER_SETUP_FILES: &[&str] = &[
+    "app/playwright.config.ts",
+    "app/package.json",
+    "app/vite.config.ts",
+    "app/tsconfig.json",
+];
+const BROWSER_TEST_SCRIPTS: &str = "app/tests/";
 
 const DEPENDENCY_LISTS: &[&str] = &["Cargo.toml", "Cargo.lock", "deny.toml"];
 
@@ -160,11 +177,23 @@ fn area_of(path: &str) -> Areas {
         .iter()
         .find(|(rule, _)| covers(rule, path))
         .map_or(Areas::EVERYTHING, |(_, areas)| *areas);
-    if is_dependency_list(path) {
+    let areas = if is_dependency_list(path) {
         areas.union(DEPENDENCY_LIST)
     } else {
         areas
+    };
+    if is_browser_setup(path) {
+        areas.union(BROWSER_SETUP)
+    } else {
+        areas
     }
+}
+
+fn is_browser_setup(path: &str) -> bool {
+    BROWSER_SETUP_FILES.contains(&path)
+        || path
+            .strip_prefix(BROWSER_TEST_SCRIPTS)
+            .is_some_and(|rest| !rest.contains('/'))
 }
 
 fn is_dependency_list(path: &str) -> bool {
@@ -236,6 +265,43 @@ mod tests {
             "site/src/routes/+page.svelte",
         ] {
             assert!(!areas(&[path]).dependencies, "{path}");
+        }
+    }
+
+    #[test]
+    fn sends_what_sets_up_the_browser_tests_to_every_browser_test() {
+        for path in [
+            "app/playwright.config.ts",
+            "app/package.json",
+            "app/vite.config.ts",
+            "app/tsconfig.json",
+            "app/tests/shard-matrix.ts",
+            "app/tests/write-shard-test-list.ts",
+            "app/tests/browser-timings.json",
+            "package.json",
+            "pnpm-lock.yaml",
+            "pnpm-workspace.yaml",
+            ".node-version",
+            ".github/workflows/ci.yml",
+            ".github/actions/playwright-browsers/action.yml",
+        ] {
+            assert!(areas(&[path]).browser_setup, "{path}");
+        }
+    }
+
+    #[test]
+    fn leaves_the_browser_setup_alone_for_specs_and_the_code_they_test() {
+        for path in [
+            "app/tests/browser/library.spec.ts",
+            "app/tests/browser/helpers/open-series.ts",
+            "app/tests/app/shard-matrix.test.ts",
+            "app/src/lib/library/add-folder.ts",
+            "app/src/app.css",
+            "crates/omnileaf-db/src/lib.rs",
+            "site/src/routes/+page.svelte",
+            "docs/code-standards.md",
+        ] {
+            assert!(!areas(&[path]).browser_setup, "{path}");
         }
     }
 
@@ -356,6 +422,7 @@ mod tests {
                 vendor: false,
                 admin: false,
                 dependencies: true,
+                browser_setup: false,
             }
         );
     }
@@ -379,7 +446,8 @@ mod tests {
                 "site=true",
                 "vendor=false",
                 "admin=false",
-                "dependencies=false"
+                "dependencies=false",
+                "browser-setup=false"
             ]
         );
     }
