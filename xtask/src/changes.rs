@@ -15,6 +15,7 @@ pub(crate) struct Areas {
     pub(crate) site: bool,
     pub(crate) vendor: bool,
     pub(crate) admin: bool,
+    pub(crate) dependencies: bool,
 }
 
 impl Areas {
@@ -24,6 +25,7 @@ impl Areas {
         site: true,
         vendor: true,
         admin: true,
+        dependencies: true,
     };
 
     fn union(self, other: Self) -> Self {
@@ -33,16 +35,18 @@ impl Areas {
             site: self.site || other.site,
             vendor: self.vendor || other.vendor,
             admin: self.admin || other.admin,
+            dependencies: self.dependencies || other.dependencies,
         }
     }
 
-    pub(crate) fn outputs(self) -> [String; 5] {
+    pub(crate) fn outputs(self) -> [String; 6] {
         [
             format!("native={}", self.native),
             format!("app={}", self.app),
             format!("site={}", self.site),
             format!("vendor={}", self.vendor),
             format!("admin={}", self.admin),
+            format!("dependencies={}", self.dependencies),
         ]
     }
 }
@@ -53,6 +57,7 @@ const NOTHING: Areas = Areas {
     site: false,
     vendor: false,
     admin: false,
+    dependencies: false,
 };
 
 const NATIVE: Areas = Areas {
@@ -73,6 +78,10 @@ const VENDORED: Areas = Areas {
     vendor: true,
     ..NOTHING
 };
+const DEPENDENCY_LIST: Areas = Areas {
+    dependencies: true,
+    ..NOTHING
+};
 const APP: Areas = Areas {
     app: true,
     ..NOTHING
@@ -91,6 +100,8 @@ const BRANDING: Areas = Areas {
     site: true,
     ..NOTHING
 };
+
+const DEPENDENCY_LISTS: &[&str] = &["Cargo.toml", "Cargo.lock", "deny.toml"];
 
 const RULES: &[(&str, Areas)] = &[
     ("crates/omnileaf-admin/", ADMIN_SERVICE),
@@ -145,10 +156,20 @@ fn areas_for(changed: &[String]) -> Areas {
 }
 
 fn area_of(path: &str) -> Areas {
-    RULES
+    let areas = RULES
         .iter()
         .find(|(rule, _)| covers(rule, path))
-        .map_or(Areas::EVERYTHING, |(_, areas)| *areas)
+        .map_or(Areas::EVERYTHING, |(_, areas)| *areas);
+    if is_dependency_list(path) {
+        areas.union(DEPENDENCY_LIST)
+    } else {
+        areas
+    }
+}
+
+fn is_dependency_list(path: &str) -> bool {
+    let file_name = path.rsplit('/').next().unwrap_or(path);
+    DEPENDENCY_LISTS.contains(&file_name)
 }
 
 fn covers(rule: &str, path: &str) -> bool {
@@ -163,28 +184,64 @@ fn covers(rule: &str, path: &str) -> bool {
 mod tests {
     use super::*;
 
+    const NATIVE_DEPENDENCIES: Areas = Areas {
+        dependencies: true,
+        ..NATIVE
+    };
+
     fn areas(paths: &[&str]) -> Areas {
         let changed: Vec<String> = paths.iter().map(|path| (*path).to_owned()).collect();
         areas_for(&changed)
     }
 
     #[test]
-    fn sends_rust_sources_and_cargo_files_to_the_native_jobs() {
+    fn sends_rust_sources_and_cargo_settings_to_the_native_jobs() {
         for path in [
             "crates/omnileaf-formats/src/lib.rs",
             "app/src-tauri/src/lib.rs",
             "xtask/src/check.rs",
             "fuzz/fuzz_targets/read_cb7.rs",
             ".cargo/config.toml",
-            "Cargo.toml",
-            "Cargo.lock",
             "rust-toolchain.toml",
             "clippy.toml",
-            "deny.toml",
             "about.toml",
         ] {
             assert_eq!(areas(&[path]), NATIVE, "{path}");
         }
+    }
+
+    #[test]
+    fn sends_the_dependency_lists_to_the_native_jobs_and_the_advisory_check() {
+        for path in [
+            "Cargo.toml",
+            "Cargo.lock",
+            "deny.toml",
+            "crates/omnileaf-db/Cargo.toml",
+            "app/src-tauri/Cargo.toml",
+            "xtask/Cargo.toml",
+            "fuzz/Cargo.toml",
+            "fuzz/Cargo.lock",
+        ] {
+            assert_eq!(areas(&[path]), NATIVE_DEPENDENCIES, "{path}");
+        }
+    }
+
+    #[test]
+    fn leaves_the_advisory_check_out_for_changes_that_keep_the_dependencies() {
+        for path in [
+            "crates/omnileaf-db/src/lib.rs",
+            "fuzz/fuzz_targets/read_cb7.rs",
+            "app/src/lib/library/add-folder.ts",
+            "docs/code-standards.md",
+            "site/src/routes/+page.svelte",
+        ] {
+            assert!(!areas(&[path]).dependencies, "{path}");
+        }
+    }
+
+    #[test]
+    fn checks_the_advisories_when_a_path_is_one_no_rule_knows() {
+        assert!(areas(&["server/src/main.rs"]).dependencies);
     }
 
     #[test]
@@ -288,7 +345,7 @@ mod tests {
 
     #[test]
     fn combines_the_areas_of_every_changed_path() {
-        let changed = areas(&["site/src/app.css", "crates/omnileaf-db/src/lib.rs"]);
+        let changed = areas(&["site/src/app.css", "crates/omnileaf-db/Cargo.toml"]);
 
         assert_eq!(
             changed,
@@ -298,6 +355,7 @@ mod tests {
                 site: true,
                 vendor: false,
                 admin: false,
+                dependencies: true,
             }
         );
     }
@@ -320,7 +378,8 @@ mod tests {
                 "app=false",
                 "site=true",
                 "vendor=false",
-                "admin=false"
+                "admin=false",
+                "dependencies=false"
             ]
         );
     }
