@@ -68,7 +68,7 @@
   </Button>
 {/snippet}
 
-<h1 class="sr-only">{m.library_title()}</h1>
+<h1 tabindex="-1" class="sr-only">{m.library_title()}</h1>
 <div
   data-page-toolbar
   data-picking-bar={onIosPhone || undefined}
