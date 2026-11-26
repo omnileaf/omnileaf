@@ -537,6 +537,32 @@ test.describe("in a library that keeps labels", () => {
     expect(shadows).toEqual({ start: lifted, end: "none" });
   });
 
+  test("sets a dropped tab down flat even when its settle can't animate", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Element.prototype.animate = () => {
+        throw new DOMException("no animations here", "NotSupportedError");
+      };
+    });
+    await page.goto("/settings/library/tabs");
+    const row = rowOf(page, "Reading");
+    const start = await boxOf(
+      row.getByRole("button", { name: "Move Reading" }),
+    );
+    const x = start.x + start.width / 2;
+
+    await page.mouse.move(x, start.y + start.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x, await bottomOfRow(page, "Manga"), {
+      steps: DRAG_STEPS,
+    });
+    await page.mouse.up();
+
+    await expect.poll(savedOrder).toBeDefined();
+    await expect(row).toHaveCSS("z-index", "auto");
+  });
+
   test("leaves a drag to the pointer that started it", async ({ page }) => {
     await page.addInitScript(() => {
       Element.prototype.setPointerCapture = () => undefined;

@@ -238,15 +238,20 @@
       onArrange(moved(tabs, rows.from, rows.gap));
       announceMove(tab, rows.from, rows.gap);
     }
-    await tick();
-    const row = rowOf(key);
-    const settle =
-      row === null || lifted === undefined ? undefined : settleRow(row, lifted);
-    await settle?.finished.then(
-      () => undefined,
-      () => undefined,
-    );
-    stopSettling(key);
+    try {
+      await tick();
+      const row = rowOf(key);
+      const settle =
+        row === null || lifted === undefined
+          ? undefined
+          : settleRow(row, lifted);
+      await settle?.finished.then(
+        () => undefined,
+        () => undefined,
+      );
+    } finally {
+      stopSettling(key);
+    }
   }
 
   function stopSettling(key: string): void {
