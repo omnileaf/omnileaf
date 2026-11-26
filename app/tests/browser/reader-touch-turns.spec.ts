@@ -39,6 +39,7 @@ const DRAG_STEPS = 12;
 const CLOSE_PX = 4;
 const LONG_BOOK_PAGES = 200;
 const KEY_REPEAT_MS = 30;
+const PAGE_ARRIVAL_MS = 300;
 const HELD_KEY_MS = 2000;
 const TAP_BURST = 12;
 const TAP_BURST_GAP_MS = 40;
@@ -124,7 +125,10 @@ async function largeNoisePage(page: Page): Promise<Buffer> {
   return Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64");
 }
 
-async function serveLargePages(page: Page): Promise<void> {
+async function serveLargePages(
+  page: Page,
+  { arrivesAfterMs }: { arrivesAfterMs: number } = { arrivesAfterMs: 0 },
+): Promise<void> {
   const jpeg = await largeNoisePage(page);
   await servePages(page);
   await page.route(fakeProtocolRoute("omni"), async (route) => {
@@ -132,6 +136,7 @@ async function serveLargePages(page: Page): Promise<void> {
       await route.fallback();
       return;
     }
+    await new Promise((arrived) => setTimeout(arrived, arrivesAfterMs));
     await route.fulfill({ contentType: "image/jpeg", body: jpeg });
   });
 }
@@ -323,7 +328,11 @@ async function recordUncoveredFrames(page: Page): Promise<void> {
               return box.left <= x && x <= box.right;
             }),
         ).length;
-        window.omnileafGappedFrames?.push(gaps);
+        const loading = document.querySelector('main [role="status"] p');
+        const isLoadingShown =
+          loading?.textContent.startsWith("Loading page") === true &&
+          loading.checkVisibility({ visibilityProperty: true });
+        window.omnileafGappedFrames?.push(isLoadingShown ? 0 : gaps);
       }
       requestAnimationFrame(record);
     };
@@ -472,6 +481,33 @@ test(
     expect(gapped.length).toBeGreaterThan(0);
     expect(gapped.filter((gaps) => gaps > 0)).toEqual([]);
     expect(await pageDrawnAtRest(page)).toBe(14 + QUICK_TAPS);
+  },
+);
+
+test(
+  "covers the page area with a page or its loading state through a burst of taps onto pages still on their way",
+  { tag: "@native" },
+  async ({ page }) => {
+    await serveLargePages(page, { arrivesAfterMs: PAGE_ARRIVAL_MS });
+    await openBookWith(page, { pageTurn: "slide" });
+    const session = await page.context().newCDPSession(page);
+    const next = await centreOf(
+      page.getByRole("button", { name: "Next page" }),
+    );
+    await session.send("Emulation.setCPUThrottlingRate", {
+      rate: CPU_SLOWDOWN,
+    });
+    await recordUncoveredFrames(page);
+
+    await tapEvery(session, next, { taps: TAP_BURST, gapMs: TAP_BURST_GAP_MS });
+    await expectOnPage(page, 14 + TAP_BURST);
+    await expect.poll(() => slidesRunning(page)).toBe(0);
+    await waitFrames(page, FRAMES_TO_SETTLE);
+    const gapped = await stopRecording(page);
+    await session.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+
+    expect(gapped.length).toBeGreaterThan(0);
+    expect(gapped.filter((gaps) => gaps > 0)).toEqual([]);
   },
 );
 

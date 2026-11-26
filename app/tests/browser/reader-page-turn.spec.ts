@@ -30,6 +30,7 @@ const SLIDE_MS = 350;
 const QUICK_TURN_MS = 50;
 const SMALL_MOVE_PX = 6;
 const NEVER_ARRIVING_PAGE = 16;
+const CAUGHT_AT = 0.4;
 const TAPPED_ACROSS = 0.75;
 const TAPPED_DOWN = 0.4;
 const OPENING = {
@@ -829,6 +830,34 @@ test("turns to a page that never arrives, showing it loading, and on past it", a
 
   await expectOnPage(page, NEVER_ARRIVING_PAGE + 1);
   await expect.poll(() => pageDrawnAtRest(page)).toBe(NEVER_ARRIVING_PAGE + 1);
+});
+
+test("carries a slide caught mid-way straight on to a page still on its way", async ({
+  page,
+}) => {
+  await openBookWith(
+    page,
+    { pageTurn: "slide" },
+    {
+      pageArrives: (index) =>
+        index === NEVER_ARRIVING_PAGE - 1
+          ? new Promise<void>(() => undefined)
+          : Promise.resolve(),
+    },
+  );
+  await slowSlides(page);
+  await expectDecoded(page, NEVER_ARRIVING_PAGE - 1);
+  await page.keyboard.press("ArrowRight");
+  await holdSlidesAt(page, CAUGHT_AT);
+  const held = await leftOf(shownPage(page, NEVER_ARRIVING_PAGE - 1));
+
+  await page.keyboard.press("ArrowRight");
+  const { moving, frames } = await framesOfTheTurn(page, [
+    NEVER_ARRIVING_PAGE - 1,
+  ]);
+
+  expect(moving).toBeGreaterThan(0);
+  expectNear(frames[0]?.[0]?.x, held);
 });
 
 test.describe("pages whose size is not known yet", () => {

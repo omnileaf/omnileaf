@@ -80,6 +80,7 @@
 
   interface Flight {
     readonly from: number;
+    readonly kind: "slide" | "cut";
     readonly start: SlideStart;
     readonly isFlying: boolean;
   }
@@ -117,7 +118,7 @@
     turnsOnScreen(
       flight === undefined
         ? { from: slide, to: slide }
-        : { from: flight.from, to: 0 },
+        : { from: flight.from, to: flight.kind === "cut" ? flight.from : 0 },
       spaceWidth,
       nextSide,
     ),
@@ -158,11 +159,14 @@
     if (flight === undefined || flight.isFlying) {
       return;
     }
-    if (isTargetReady) {
-      untrack(launch);
+    const settle = flight.kind === "cut" ? land : launch;
+    const isCaughtMidway =
+      flight.kind === "slide" && flight.start === "inMotion";
+    if (isTargetReady || isCaughtMidway) {
+      untrack(settle);
       return;
     }
-    const waiting = setTimeout(launch, LONGEST_DECODE_WAIT_MS);
+    const waiting = setTimeout(settle, LONGEST_DECODE_WAIT_MS);
     return () => {
       clearTimeout(waiting);
     };
@@ -180,6 +184,9 @@
     isBlank || decoded.has(shown) || failed.has(shown),
   );
   const isShownFailed = $derived(failed.has(shown));
+  const isSlidingOntoUnready = $derived(
+    flight?.isFlying === true && !isShownReady,
+  );
   const isSpreadSettled = $derived(
     isBlank || spread.every((index) => decoded.has(index) || failed.has(index)),
   );
@@ -250,21 +257,17 @@
     const turned = at - lastPosition;
     const isLetGo = lastSlide !== 0 && across === 0;
     if (settles && (turned !== 0 || isLetGo)) {
-      const isInMotion = flight !== undefined;
-      const shift = isInMotion ? shiftInFlight() : lastSlide;
+      const shift = flight === undefined ? lastSlide : shiftInFlight();
+      const start = flight?.isFlying === true ? "inMotion" : "fromRest";
       stopFlying();
       const from = shift + restOf(turned);
-      flight =
-        Math.abs(from) < LONGEST_SLIDE_SPREADS * spaceWidth
-          ? {
-              from,
-              start: isInMotion ? "inMotion" : "fromRest",
-              isFlying: false,
-            }
-          : undefined;
-      if (flight === undefined) {
-        onSettled();
-      }
+      flight = {
+        from,
+        kind:
+          Math.abs(from) < LONGEST_SLIDE_SPREADS * spaceWidth ? "slide" : "cut",
+        start,
+        isFlying: false,
+      };
     } else if (!settles && flight !== undefined) {
       stopFlying();
       flight = undefined;
@@ -632,7 +635,7 @@
                 title: bookTitle,
               })}
             </EmptyDescription>
-          {:else if isSlow}
+          {:else if isSlow || isSlidingOntoUnready}
             <Spinner size={SPINNER_SIZE} class="text-muted" />
             <p class="text-small text-muted">
               {m.reader_page_loading({ page: shown + 1 })}
