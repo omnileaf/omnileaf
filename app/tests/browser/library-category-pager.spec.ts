@@ -790,6 +790,9 @@ for (const platform of PLATFORMS) {
 
         const drag = await beginDragAt(blank.target, blank.at);
         await drag.to(forward);
+        await expect(besideCovers(page, MANGA[0]?.title ?? "")).toHaveCount(
+          MANGA.length,
+        );
         const moved = await boxOf(nothingNew(page));
         const beside = await spansOf(
           pageBeside(page).filter({ hasText: MANGA[0]?.title ?? "" }),
@@ -818,6 +821,9 @@ for (const platform of PLATFORMS) {
 
       const drag = await beginDrag(page, seriesList(page));
       await drag.to(-SWIPE_PX);
+      await expect(
+        besideTitled(page, categoryEmptyTitle("Comics")),
+      ).toHaveCount(1);
       const incoming = await spansOf(
         besideTitled(page, categoryEmptyTitle("Comics")),
       );
@@ -1034,6 +1040,9 @@ for (const platform of PLATFORMS) {
 
       const drag = await beginDragAt(blank.target, blank.at);
       await drag.to(-SWIPE_PX);
+      await expect(
+        besideTitled(page, english.library_no_matches_title),
+      ).toHaveCount(1);
       const noMatchesComing = await spansOf(
         besideTitled(page, english.library_no_matches_title),
       );
@@ -1105,6 +1114,9 @@ for (const platform of PLATFORMS) {
 
       const drag = await beginDragAt(blank.target, blank.at);
       await drag.to(-SWIPE_PX);
+      await expect(besideCovers(page, MANGA[0]?.title ?? "")).toHaveCount(
+        MANGA.length,
+      );
       const moved = await boxOf(noMatches(page));
       const beside = await spansOf(
         pageBeside(page).filter({ hasText: MANGA[0]?.title ?? "" }),
