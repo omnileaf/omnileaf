@@ -181,7 +181,7 @@
     data-slot="navigation-icon"
     aria-hidden="true"
     class={[
-      "relative isolate flex",
+      "relative isolate flex items-center justify-center",
       className,
       isArriving && ANDROID_MOVES[section],
     ]}
@@ -195,7 +195,11 @@
       name={SECTION_ICONS[section]}
       filled
       size={iconSize}
-      class={["absolute inset-none", GLYPH_FADE, !isSelected && "opacity-0"]}
+      class={[
+        "absolute inset-none m-auto",
+        GLYPH_FADE,
+        !isSelected && "opacity-0",
+      ]}
     />
   </span>
 {:else}

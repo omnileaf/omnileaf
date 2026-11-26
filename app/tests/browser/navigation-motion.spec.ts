@@ -37,6 +37,7 @@ const ANDROID_ICON_MOVES: readonly IconMove[] = ICON_MOVES.map((icon) =>
 );
 
 const HALFWAY = "0.5";
+const DOUBLED_ROOT_FONT = ":root { font-size: 200% !important; }";
 const SAME_PIXEL_TOLERANCE = 2;
 
 interface Motion {
@@ -214,6 +215,24 @@ async function iconPixels(page: Page, icon: Locator): Promise<number[]> {
     context.drawImage(image, 0, 0);
     return [...context.getImageData(0, 0, image.width, image.height).data];
   }, png.toString("base64"));
+}
+
+function centreOffset(icon: Locator): Promise<number[]> {
+  return icon.evaluate((wrapper) => {
+    const middle = (box: DOMRect) => [
+      box.x + box.width / 2,
+      box.y + box.height / 2,
+    ];
+    const [wrapperX = 0, wrapperY = 0] = middle(
+      wrapper.getBoundingClientRect(),
+    );
+    return Array.from(wrapper.querySelectorAll("[data-icon]")).flatMap(
+      (glyph) => {
+        const [glyphX = 0, glyphY = 0] = middle(glyph.getBoundingClientRect());
+        return [glyphX - wrapperX, glyphY - wrapperY];
+      },
+    );
+  });
 }
 
 interface IconLayers {
@@ -568,6 +587,25 @@ test.describe("on Android", () => {
       ),
     );
     expect(furthest).toBeLessThanOrEqual(SAME_PIXEL_TOLERANCE);
+  });
+
+  test("centres the icon's glyphs in their box when the root font grows", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
+    await page.goto("/");
+    await page.addStyleTag({ content: DOUBLED_ROOT_FONT });
+    const icon = tab(page, "Browse").locator('[data-slot="navigation-icon"]');
+
+    const offsets = await centreOffset(icon);
+
+    expect(offsets).toHaveLength(4);
+    for (const offset of offsets) {
+      expect(offset).toBeCloseTo(0, 0);
+    }
   });
 
   test("shows only the selected tab's icon filled", async ({ page }) => {
