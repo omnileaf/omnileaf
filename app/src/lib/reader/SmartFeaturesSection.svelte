@@ -34,8 +34,10 @@
     string
   >;
 
-  const SWITCH_ROW =
-    "flex items-center gap-md py-setting-grid-pad text-start min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  const ROW =
+    "flex items-center py-setting-grid-pad text-start min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
+  const SWITCH_ROW = `${ROW} gap-md`;
 
   const FLUSH_ACTION_ROW = `${FLUSH_BLEED} flex items-center gap-lg ps-lg pe-xl py-sm text-start text-body min-block-native-row`;
 
@@ -81,22 +83,30 @@
   const isIos = platform === "ios";
   const offersTurnAllOff = !isPointer(platform);
   const allOff = $derived(features.areAllOff);
+  const fadesWhenOff = $derived(isFlush || size === "flat");
+  const iosColour = $derived(allOff ? "text-faint" : "text-accent");
+  const allOffColour = $derived(
+    isIos ? iosColour : allOff && !fadesWhenOff && "text-muted",
+  );
   const allOffRow = $derived(
     isFlush
       ? [FLUSH_ACTION_ROW, !allOff && TINTED, ROW_FOCUS_RING]
       : [
-          SWITCH_ROW,
+          ROW,
           "inline-full",
-          allOff ? "text-muted" : isIos && "text-accent",
+          size === "flat" ? "gap-lg" : "gap-md",
+          allOffColour,
         ],
   );
-  const fadesWhenAllOff = $derived(isFlush && allOff && DISABLED_ROW);
-  const allOffIcon = $derived([!isIos && "text-muted", fadesWhenAllOff]);
-  const allOffLabel = $derived([
-    "flex-1 min-inline-none",
-    look.label,
-    fadesWhenAllOff,
-  ]);
+  const fade = $derived(allOff && fadesWhenOff && DISABLED_ROW);
+  const allOffIcon = $derived([!isIos && "text-muted", fade]);
+  const allOffLabel = $derived(["flex-1 min-inline-none", look.label, fade]);
+
+  function turnAllOff(): void {
+    if (!allOff) {
+      features.turnAllOff();
+    }
+  }
 
   const rows = $derived([
     {
@@ -205,12 +215,17 @@
       <button
         type="button"
         class={allOffRow}
-        disabled={allOff}
-        onclick={() => {
-          features.turnAllOff();
-        }}
+        aria-disabled={allOff || undefined}
+        onclick={turnAllOff}
       >
-        <Icon name="power" class={allOffIcon} />
+        <span
+          class={[
+            "flex shrink-0 justify-center",
+            isIos && "inline-native-row-lead",
+          ]}
+        >
+          <Icon name="power" class={allOffIcon} />
+        </span>
         <span class={allOffLabel}>
           {allOff ? m.reader_smart_features_all_off() : m.reader_turn_all_off()}
         </span>

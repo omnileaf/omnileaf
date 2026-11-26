@@ -1,4 +1,5 @@
 import { afterEach, expect, test } from "vitest";
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -122,10 +123,103 @@ for (const { platform, size } of LOOKS) {
 
     await expect
       .element(screen.getByRole("button", { name: "All off" }))
-      .toBeDisabled();
+      .toHaveAttribute("aria-disabled", "true");
     await expect
       .element(screen.getByRole("button", { name: "Turn all off" }))
       .not.toBeInTheDocument();
+  });
+
+  test(`keeps focus on the ${platform} ${size} row once Enter turns everything off`, async () => {
+    followCorePlatform(platform);
+    const screen = await render(SmartFeaturesSection, { heading: "h2", size });
+    const row = screen.getByRole("button", { name: "Turn all off" }).element();
+    (row as HTMLElement).focus();
+
+    await userEvent.keyboard("{Enter}");
+
+    await expect
+      .element(screen.getByRole("button", { name: "All off" }))
+      .toHaveFocus();
+    expect(document.activeElement).toBe(row);
+  });
+}
+
+function fadeOf(element: Element | null): string {
+  return element === null ? "missing" : getComputedStyle(element).opacity;
+}
+
+function colourOf(className: string): string {
+  const probe = document.createElement("span");
+  probe.className = className;
+  document.body.append(probe);
+  const colour = getComputedStyle(probe).color;
+  probe.remove();
+  return colour;
+}
+
+for (const size of ["regular", "flat"] as const) {
+  test(`fades the Android ${size} row's icon and words once everything is off`, async () => {
+    followCorePlatform("android");
+    const screen = await render(SmartFeaturesSection, { heading: "h2", size });
+    await screen.getByRole("button", { name: "Turn all off" }).click();
+
+    const row = screen.getByRole("button", { name: "All off" }).element();
+    const label = screen.getByText("All off").element();
+
+    expect(fadeOf(row.querySelector("[data-icon='power']"))).toBe("0.38");
+    expect(fadeOf(label)).toBe("0.38");
+    expect(getComputedStyle(label).color).toBe(colourOf("text-foreground"));
+  });
+}
+
+test("sets the Android sheet row's words 16px after its icon", async () => {
+  followCorePlatform("android");
+  const screen = await render(SmartFeaturesSection, {
+    heading: "h3",
+    size: "flat",
+  });
+
+  const row = screen.getByRole("button", { name: "Turn all off" }).element();
+  const icon = row.querySelector("[data-icon='power']");
+  const label = screen.getByText("Turn all off").element();
+
+  expect(
+    label.getBoundingClientRect().left -
+      (icon?.getBoundingClientRect().right ?? 0),
+  ).toBeCloseTo(16, 0);
+});
+
+for (const size of ["regular", "small"] as const) {
+  test(`starts the iOS ${size} row's words 42px in, after a 30px icon slot`, async () => {
+    followCorePlatform("ios");
+    const screen = await render(SmartFeaturesSection, { heading: "h2", size });
+
+    const row = screen.getByRole("button", { name: "Turn all off" }).element();
+    const icon = row.querySelector("[data-icon='power']");
+    const label = screen.getByText("Turn all off").element();
+    const start = row.getBoundingClientRect().left;
+    const iconBox = icon?.getBoundingClientRect();
+
+    expect(label.getBoundingClientRect().left - start).toBeCloseTo(42, 0);
+    expect(
+      (iconBox?.left ?? 0) - start + (iconBox?.width ?? 0) / 2,
+    ).toBeCloseTo(15, 0);
+  });
+
+  test(`draws the iOS ${size} row in the faint colour once everything is off`, async () => {
+    followCorePlatform("ios");
+    const screen = await render(SmartFeaturesSection, { heading: "h2", size });
+    await screen.getByRole("button", { name: "Turn all off" }).click();
+
+    const row = screen.getByRole("button", { name: "All off" }).element();
+    const faint = colourOf("text-faint");
+
+    expect(getComputedStyle(screen.getByText("All off").element()).color).toBe(
+      faint,
+    );
+    expect(
+      getComputedStyle(row.querySelector("[data-icon='power']") ?? row).color,
+    ).toBe(faint);
   });
 }
 
