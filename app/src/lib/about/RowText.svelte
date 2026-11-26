@@ -47,7 +47,9 @@
     <ItemDescription
       dir={isAddress ? "ltr" : undefined}
       translate={isAddress ? "no" : undefined}
-      class="text-footnote android:max-medium:text-native-row-subtitle/native-row-subtitle"
+      class={look === "android"
+        ? "text-native-row-subtitle/native-row-subtitle"
+        : "text-footnote"}
     >
       {hint}
     </ItemDescription>
