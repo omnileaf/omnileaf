@@ -42,7 +42,7 @@ test("keeps the loading captions as they were on macos", async () => {
 const PHONE = { width: 390, height: 844 };
 const SERIES = {
   id: "0190a3e4-0000-8000-8000-0000000000a1",
-  title: "Sample Series 01",
+  title: "Tide",
   bookCount: 1,
   volumeCount: 0,
   chapterCount: 1,
