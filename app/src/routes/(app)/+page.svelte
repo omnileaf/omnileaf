@@ -764,20 +764,31 @@
             commands.folderSeriesCount(folder.id, listedBy().filter),
         }));
       case "category":
-        return categories.map((category) => ({
-          key: category.id,
-          name: category.name,
-          listSeries: (after) =>
-            commands.categorySeries(category.id, after, listedBy()),
-          countSeries: () =>
-            commands.categorySeriesCount(category.id, listedBy().filter),
-        }));
+        return categories.length === 0
+          ? []
+          : [...categories.map(categoryGroup), CATEGORYLESS_GROUP];
       case "creator":
         return [...writers.map(writerGroup), WRITERLESS_GROUP];
       default:
         return assertNever(grouping);
     }
   }
+
+  function categoryGroup({ id, name }: LibraryCategory): Group {
+    return {
+      key: id,
+      name,
+      listSeries: (after) => commands.categorySeries(id, after, listedBy()),
+      countSeries: () => commands.categorySeriesCount(id, listedBy().filter),
+    };
+  }
+
+  const CATEGORYLESS_GROUP: Group = {
+    key: "categoryless",
+    name: m.library_group_no_category(),
+    listSeries: (after) => commands.categorylessSeries(after, listedBy()),
+    countSeries: () => commands.categorylessSeriesCount(listedBy().filter),
+  };
 
   function writerGroup({ name }: LibraryWriter): Group {
     return {

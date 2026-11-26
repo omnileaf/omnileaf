@@ -4,8 +4,10 @@ import {
   DEFAULT_LIBRARY_VIEW,
   type LibraryCategory,
   type LibraryFolder,
+  type LibraryListing,
   type LibraryView,
 } from "../../src/lib/ipc/bindings.ts";
+import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
@@ -32,6 +34,11 @@ const IN_CATEGORY: Partial<Record<string, typeof LIBRARY>> = {
   manga: LIBRARY.slice(0, 4),
   comics: LIBRARY.slice(4, 6),
 };
+const IN_NO_CATEGORY = LIBRARY.slice(6);
+const UNREAD_ONLY: LibraryListing = {
+  ...NEW_LIBRARY_LISTING,
+  filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
+};
 const WRITERS = [
   { name: "Author A", seriesCount: 3 },
   { name: "Author B", seriesCount: 2 },
@@ -48,6 +55,14 @@ const IN_FOLDER: Partial<Record<string, typeof LIBRARY>> = {
 
 let storedView: LibraryView = DEFAULT_LIBRARY_VIEW;
 let categories: readonly LibraryCategory[] = CATEGORIES;
+let inNoCategory: typeof LIBRARY = IN_NO_CATEGORY;
+let listing: LibraryListing = NEW_LIBRARY_LISTING;
+
+function categorylessShown(filter: LibraryListing["filter"]): typeof LIBRARY {
+  return filter.unread === "only"
+    ? inNoCategory.filter(({ unreadCount }) => unreadCount > 0)
+    : inNoCategory;
+}
 
 test.use({
   backend: {
@@ -58,6 +73,10 @@ test.use({
     categorySeries: (category, after, listing) =>
       pagedSeries(() => IN_CATEGORY[category] ?? [])(after, listing),
     categorySeriesCount: (category) => (IN_CATEGORY[category] ?? []).length,
+    categorylessSeries: (after, chosen) =>
+      pagedSeries(() => categorylessShown(chosen.filter))(after, chosen),
+    categorylessSeriesCount: (filter) => categorylessShown(filter).length,
+    libraryListing: () => listing,
     libraryFolders: () => ({ folders: FOLDERS, next: null }),
     folderSeries: (folder, after, listing) =>
       pagedSeries(() => IN_FOLDER[folder] ?? [])(after, listing),
@@ -79,6 +98,8 @@ test.use({
 test.beforeEach(() => {
   storedView = DEFAULT_LIBRARY_VIEW;
   categories = CATEGORIES;
+  inNoCategory = IN_NO_CATEGORY;
+  listing = NEW_LIBRARY_LISTING;
 });
 
 function group(page: Page, name: string): Locator {
@@ -148,6 +169,50 @@ test("draws a section for each category holding series", async ({ page }) => {
   await expect(coversIn(group(page, "Manga"))).toHaveCount(4);
   await expect(coversIn(group(page, "Comics"))).toHaveCount(2);
   await expect(group(page, "Shelved")).toHaveCount(0);
+});
+
+test("ends the categories with the series in no category, counting them", async ({
+  page,
+}) => {
+  await openGroupedBy(page, "category");
+
+  await expect(
+    page
+      .getByRole("region")
+      .filter({ has: page.getByRole("heading", { level: 2 }) }),
+  ).toHaveText([
+    /^Manga.*4 series/,
+    /^Comics.*2 series/,
+    /^No category.*6 series/,
+  ]);
+  await expect(group(page, "No category")).not.toContainText("·");
+  await expect(coversIn(group(page, "No category"))).toHaveText(
+    IN_NO_CATEGORY.map(({ title }) => new RegExp(title)),
+  );
+});
+
+test("draws no No category section when every series is in a category", async ({
+  page,
+}) => {
+  inNoCategory = [];
+  await openGroupedBy(page, "category");
+
+  await expect(coversIn(group(page, "Manga"))).toHaveCount(4);
+  await expect(group(page, "No category")).toHaveCount(0);
+});
+
+test("draws no No category section when the filter hides all of its series", async ({
+  page,
+}) => {
+  inNoCategory = IN_NO_CATEGORY.map((series) => ({
+    ...series,
+    unreadCount: 0,
+  }));
+  listing = UNREAD_ONLY;
+  await openGroupedBy(page, "category");
+
+  await expect(coversIn(group(page, "Manga"))).toHaveCount(4);
+  await expect(group(page, "No category")).toHaveCount(0);
 });
 
 test("lists the whole library when grouped by category with none kept", async ({
