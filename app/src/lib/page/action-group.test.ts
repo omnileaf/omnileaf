@@ -42,6 +42,6 @@ test("fits a phone's action the way the phone's action group does", () => {
 
   expect(look).toEqual({
     button: { variant: "outline", size: "regular" },
-    fit: "max-inline-full disabled:opacity-60",
+    fit: "max-inline-full",
   });
 });

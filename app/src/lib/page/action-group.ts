@@ -52,7 +52,7 @@ const PHONE_ACTIONS: Readonly<Record<Platform, PhoneActions | undefined>> = {
   },
   android: {
     group: "flex flex-col items-center gap-sm",
-    fit: `max-inline-full ${DIMMED_WHEN_DISABLED}`,
+    fit: "max-inline-full",
     main: { variant: "primary", size: "regular" },
     other: { variant: "outline", size: "regular" },
   },

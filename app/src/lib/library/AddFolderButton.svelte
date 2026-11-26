@@ -80,6 +80,9 @@
       ? actionLookOn(platform, width.current, "main", placed)
       : placed,
   );
+  const isKitButton = $derived(
+    platform === "android" && "variant" in shown.button,
+  );
 </script>
 
 <Tooltip
@@ -96,7 +99,8 @@
       {...props}
       {...shown.button}
       class={[
-        "inline-flex shrink-0 items-center justify-center disabled:opacity-60",
+        "inline-flex shrink-0 items-center justify-center",
+        !isKitButton && "disabled:opacity-60",
         shown.fit,
       ]}
     >
