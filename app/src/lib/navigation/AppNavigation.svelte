@@ -195,8 +195,10 @@
                 class={[
                   "truncate max-inline-full sidebar-hidden:sr-only",
                   isCollapsed && "sr-only",
-                ]}>{destination.label()}</span
+                ]}
               >
+                {destination.label()}
+              </span>
             </a>
           {/snippet}
         </Tooltip>

@@ -174,9 +174,9 @@
           <span class="flex flex-1 flex-col gap-2xs min-inline-none">
             <span id="{id}-{feature}" class={look.label}>{label}</span>
             {#if description !== undefined}
-              <span id="{id}-{feature}-description" class={look.description}
-                >{description}</span
-              >
+              <span id="{id}-{feature}-description" class={look.description}>
+                {description}
+              </span>
             {/if}
           </span>
         </Switch>

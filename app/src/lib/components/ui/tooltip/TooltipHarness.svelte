@@ -19,5 +19,7 @@
   {keys}
   aria-label="Rescan Sample Comics"
   {onclick}
-  {onpointerup}>R</Tooltip
+  {onpointerup}
 >
+  R
+</Tooltip>

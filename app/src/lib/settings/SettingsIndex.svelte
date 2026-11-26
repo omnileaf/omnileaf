@@ -116,8 +116,9 @@
                       <ItemDescription
                         lang={summary.lang}
                         class="text-footnote ios:flex-1 ios:truncate ios:text-end ios:text-body ios:min-inline-settings-value android:text-native-row-subtitle/native-row-subtitle"
-                        >{summary.text}</ItemDescription
                       >
+                        {summary.text}
+                      </ItemDescription>
                     {/if}
                   </ItemContent>
                   <ChevronRight

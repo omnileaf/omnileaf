@@ -182,12 +182,15 @@
             class={[
               "desktop:text-callout",
               android.isOn ? ANDROID_LABEL : "font-semibold",
-            ]}>{row.label}</span
+            ]}
           >
+            {row.label}
+          </span>
           <span
             class={["text-muted", android.isOn ? ANDROID_LINE : "text-detail"]}
-            >{row.description}</span
           >
+            {row.description}
+          </span>
         </span>
         {#if row.state !== undefined}
           {#if android.isOn}
@@ -196,8 +199,10 @@
               class={[
                 "shrink-0 text-caption font-medium tracking-native-row-title",
                 row.state === "allowed" ? "text-accent" : "text-muted",
-              ]}>{STATE_LABELS[row.state]()}</span
+              ]}
             >
+              {STATE_LABELS[row.state]()}
+            </span>
           {:else}
             <Badge look="outline" class="shrink-0 bg-card">
               {STATE_LABELS[row.state]()}

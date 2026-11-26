@@ -26,16 +26,20 @@
         android.isOn
           ? "font-regular tracking-native-row-title"
           : "font-medium expanded:font-semibold desktop:text-callout",
-      ]}>{title}</span
+      ]}
     >
+      {title}
+    </span>
     <span
       class={[
         "text-muted",
         android.isOn
           ? "text-native-row-subtitle/native-row-subtitle"
           : "text-detail",
-      ]}>{detail}</span
+      ]}
     >
+      {detail}
+    </span>
   </div>
   <Button
     type="button"

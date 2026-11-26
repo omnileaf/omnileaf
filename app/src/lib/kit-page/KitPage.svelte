@@ -217,8 +217,10 @@
         variant="secondary"
         onclick={() => {
           isSheetOpen = true;
-        }}>Open sheet</Button
+        }}
       >
+        Open sheet
+      </Button>
       <DrawerContent
         aria-label="Volume 3"
         onDismiss={() => {

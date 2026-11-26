@@ -172,9 +172,9 @@
           <FlaskConical size={NOTE_ICON_SIZE} />
         </span>
         <span class="flex flex-1 flex-col gap-2xs self-center min-inline-none">
-          <span class="text-label font-bold touch:max-medium:text-callout"
-            >{m.advanced_note_title()}</span
-          >
+          <span class="text-label font-bold touch:max-medium:text-callout">
+            {m.advanced_note_title()}
+          </span>
           <span class="text-detail opacity-85">{m.advanced_note_body()}</span>
         </span>
       </div>

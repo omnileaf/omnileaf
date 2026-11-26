@@ -115,8 +115,10 @@
             <span
               id={systemNameId}
               lang={system}
-              class="text-detail font-regular text-muted">{systemName}</span
+              class="text-detail font-regular text-muted"
             >
+              {systemName}
+            </span>
           </span>
         {:else}
           <span lang={choice} class="flex-1">{languageName(choice)}</span>

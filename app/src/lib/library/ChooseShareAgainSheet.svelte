@@ -100,8 +100,9 @@
             </span>
             <span
               class="text-native-row-title/native-row-title tracking-native-row-title"
-              >{step}</span
             >
+              {step}
+            </span>
           </li>
         {/each}
       </ol>

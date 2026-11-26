@@ -121,9 +121,9 @@
   {:else}
     <Breadcrumb aria-label={m.settings_breadcrumb()} class="text-small">
       <BreadcrumbItem>
-        <a href={resolve(SETTINGS_ROUTE)} class={CRUMB_LINK}
-          >{m.settings_title()}</a
-        >
+        <a href={resolve(SETTINGS_ROUTE)} class={CRUMB_LINK}>
+          {m.settings_title()}
+        </a>
       </BreadcrumbItem>
       <BreadcrumbSeparator class="text-muted" />
       {#if isNested}

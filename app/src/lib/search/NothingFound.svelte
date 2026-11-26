@@ -101,8 +101,10 @@
           ]}
           onclick={() => {
             onSuggest(suggestion.text);
-          }}>{suggestion.text}</button
-        >{afterSuggestion}
+          }}
+        >
+          {suggestion.text}
+        </button>{afterSuggestion}
         {#if suggestion.chapterOf !== null}
           {m.search_chapter_title_in({ series: suggestion.chapterOf })}
         {/if}
