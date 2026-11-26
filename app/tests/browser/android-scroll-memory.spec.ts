@@ -14,9 +14,8 @@ import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 import { withCountsUnderCovers } from "./view-options.ts";
 
 const PHONE = { width: 412, height: 700 };
-const LIBRARY_DOWN = 600;
+const LIBRARY_DOWN = 1200;
 const SETTINGS_DOWN = 300;
-const COUNTED_LIBRARY_DOWN = 1200;
 const TABLET_LIBRARY_DOWN = 200;
 const TABLET = { width: 820, height: 1180 };
 const SERIES_DOWN = 250;
@@ -29,6 +28,17 @@ const CHAPTER_COUNT = 120;
 
 const removedSeries = new Set<string>();
 let bookReads: HeldReads = { isHolding: false, waiting: [] };
+
+function withoutRemoved<Listed extends { series: readonly { id: string }[] }>(
+  listed: Listed,
+): Listed {
+  return {
+    ...listed,
+    series: listed.series.filter(
+      ({ id }) => !removedSeries.has(`/series/${id}`),
+    ),
+  };
+}
 
 function numbersFrom(first: number, count: number): number[] {
   return Array.from({ length: count }, (_, index) => first + index);
@@ -123,15 +133,10 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
     test.use({
       backend: {
         ...sample,
-        librarySeries: async (...asked) => {
-          const listed = await sample.librarySeries(...asked);
-          return {
-            ...listed,
-            series: listed.series.filter(
-              ({ id }) => !removedSeries.has(`/series/${id}`),
-            ),
-          };
-        },
+        librarySeries: async (...asked) =>
+          withoutRemoved(await sample.librarySeries(...asked)),
+        categorySeries: async (...asked) =>
+          withoutRemoved(await sample.categorySeries(...asked)),
       },
     });
 
@@ -296,7 +301,7 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
       }) => {
         await page.setViewportSize(PHONE);
         await page.goto("/");
-        await scrollMainTo(page, COUNTED_LIBRARY_DOWN);
+        await scrollMainTo(page, LIBRARY_DOWN);
         const opened = await seriesLinkInView(page);
         const card = main(page).locator(`a[href='${opened}']`).first();
         const shownAt = (await boxOf(card)).y;
