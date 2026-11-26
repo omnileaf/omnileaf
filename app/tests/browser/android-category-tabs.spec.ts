@@ -348,18 +348,13 @@ test.describe("every category on an Android phone", { tag: "@native" }, () => {
     );
   });
 
-  test("says what the sheet holds under the title in muted text", async ({
+  test("titles the sheet Categories with no line under it", async ({
     page,
   }) => {
     const sheet = await openEveryCategory(page);
-    const line = sheet.getByText("Every tab in your library.");
 
-    await expect(line).toHaveCSS("font-size", LABEL_SIZE);
-    await expect(line).toHaveCSS("line-height", LABEL_LINE);
-    await expect(line).toHaveCSS(
-      "color",
-      await tokenColour(page, "--secondary-text"),
-    );
+    await expect(sheet).toHaveAccessibleDescription("");
+    await expect(sheet.getByText(/^Every tab in your library/)).toHaveCount(0);
   });
 
   test("tints the current category's row and ticks it, leaving the others plain", async ({

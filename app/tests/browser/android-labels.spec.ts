@@ -156,7 +156,7 @@ test.describe(
     }) => {
       const sheet = await openLabels(page);
       const title = sheet.getByRole("heading", { name: "Categories and tags" });
-      const note = sheet.getByText("For 1 series", { exact: false });
+      const note = sheet.getByText("For 1 series", { exact: true });
 
       await expect(title).toHaveCSS("font-size", "22px");
       await expect(title).toHaveCSS("line-height", "28px");

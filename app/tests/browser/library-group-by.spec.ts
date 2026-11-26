@@ -107,7 +107,7 @@ test("groups by nothing in a new library, and keeps the grouping chosen", async 
   await expect.poll(() => storedView.groupBy).toBe("folder");
 });
 
-test("offers Creator beside None, Category and Folder, saying what it does", async ({
+test("offers Creator beside None, Category and Folder, saying what it does once chosen", async ({
   page,
 }) => {
   await page.goto("/");
@@ -120,12 +120,13 @@ test("offers Creator beside None, Category and Folder, saying what it does", asy
     /Folder/,
     /Creator/,
   ]);
-  await expect(groupBy).toHaveAccessibleDescription(
-    "Creator puts each series under its writer; a series with two writers shows under both.",
-  );
+  await expect(groupBy).toHaveAccessibleDescription("");
   await choose(groupBy, "Creator");
 
   await expect.poll(() => storedView.groupBy).toBe("creator");
+  await expect(groupBy).toHaveAccessibleDescription(
+    "A series with two writers shows under both.",
+  );
 });
 
 test("draws a section for each folder holding series, saying how many, without the tabs", async ({

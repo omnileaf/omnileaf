@@ -82,7 +82,7 @@ test.describe("with two categories", () => {
 test.describe("with two categories in the view options", () => {
   test.use({ backend: backendWith(CATEGORIES) });
 
-  test("offers Categories in the sidebar as a checkbox, not category tabs", async ({
+  test("offers Categories in the sidebar as a checkbox with no second line, not category tabs", async ({
     page,
   }) => {
     await page.goto("/");
@@ -90,10 +90,12 @@ test.describe("with two categories in the view options", () => {
       .getByRole("button", { name: "View options", exact: true })
       .click();
     const options = page.getByRole("dialog", { name: "View options" });
+    const sidebar = options.getByRole("checkbox", {
+      name: /Categories in the sidebar/,
+    });
 
-    await expect(
-      options.getByRole("checkbox", { name: /Categories in the sidebar/ }),
-    ).toBeVisible();
+    await expect(sidebar).toBeVisible();
+    await expect(sidebar).toHaveAccessibleDescription("");
     await expect(options.getByText("Category tabs")).toHaveCount(0);
   });
 });

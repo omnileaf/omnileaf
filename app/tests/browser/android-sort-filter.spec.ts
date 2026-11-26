@@ -583,20 +583,21 @@ test.describe(
         }
       });
 
-      test("sets Group by on its own line, its hint under it and its four choices across the sheet, Creator last", async ({
+      test("sets Group by on its own line, Creator's hint under it and its four choices across the sheet, Creator last", async ({
         page,
       }) => {
         const sheet = await openView(page);
-        const sheetBox = await boxOf(sheet);
-        const label = sheet.getByText("Group by", { exact: true });
-        const words = await boxOf(label);
-        const hint = await boxOf(
-          sheet.getByText("Creator puts each series under its writer"),
-        );
         const group = sheet.getByRole("radiogroup", {
           name: "Group by",
           exact: true,
         });
+        await group.getByRole("radio", { name: "Creator" }).click();
+        const sheetBox = await boxOf(sheet);
+        const label = sheet.getByText("Group by", { exact: true });
+        const words = await boxOf(label);
+        const hint = await boxOf(
+          sheet.getByText("A series with two writers shows under both."),
+        );
         const groupBox = await boxOf(group);
 
         expect(words.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
@@ -613,7 +614,7 @@ test.describe(
         );
         await expect(group.locator("svg")).toHaveCount(0);
         await expect(group).toHaveAccessibleDescription(
-          /^Creator puts each series under its writer/,
+          "A series with two writers shows under both.",
         );
       });
 

@@ -140,8 +140,10 @@ test("opens Categories and tags for the series right-clicked", async ({
   await menu.getByRole("menuitem", { name: "Categories and tags…" }).click();
 
   await expect(
-    page.getByRole("dialog", { name: "Categories and tags" }),
-  ).toContainText("For 1 series.");
+    page
+      .getByRole("dialog", { name: "Categories and tags" })
+      .getByText("For 1 series", { exact: true }),
+  ).toBeVisible();
 });
 
 test("opens the menu from the keyboard on the cover in focus", async ({

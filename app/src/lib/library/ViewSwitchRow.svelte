@@ -15,7 +15,7 @@
     onToggle,
   }: {
     label: string;
-    description?: string;
+    description?: string | undefined;
     isOn: boolean;
     usesItemRow?: boolean;
     isInspector?: boolean;

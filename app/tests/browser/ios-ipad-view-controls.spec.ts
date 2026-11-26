@@ -34,7 +34,7 @@ const CATEGORIES = [
   { id: "manga", name: "Manga" },
   { id: "comics", name: "Comics" },
 ] as LibraryCategory[];
-const CATEGORY_TABS_HINT = "Your categories as tabs above the library.";
+const CATEGORY_TABS_HINT = "Above the library";
 const FIT_WIDTH_NOTE = /^Fits as many as the width allows/;
 const GROUP_BY_NOTE = /^Creator puts each series/;
 

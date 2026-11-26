@@ -136,7 +136,7 @@
   "library_group_creator": "Creator",
   "library_group_no_creator": "No creator in the files",
   "library_group_no_creator_hint": "add one with Edit details on the series page",
-  "library_group_creator_hint": "Creator puts each series under its writer; a series with two writers shows under both.",
+  "library_group_creator_hint": "A series with two writers shows under both.",
   "library_view": "View",
   "library_view_done": "Done",
   "library_view_display": "Display",
@@ -288,14 +288,11 @@
   "library_categories_edit_short": "Edit",
   "library_category_new": "New category",
   "library_categories_every": "Every category",
-  "library_categories_every_description": "Every tab in your library.",
   "library_view_layout": "Layout",
   "library_category_sidebar": "Categories in the sidebar",
-  "library_category_sidebar_hint": "Your categories as a list in the sidebar.",
   "library_category_tabs": "Category tabs",
-  "library_category_tabs_hint": "Your categories as tabs above the library.",
+  "library_category_tabs_hint": "Above the library",
   "library_stack_covers": "Stack series covers",
-  "library_stack_covers_hint": "A series with more than one book shows its covers stacked.",
   "library_view_kept_phone": "Kept on this phone.",
   "library_display_grid": "Grid",
   "library_display_compact": "Compact",
@@ -396,7 +393,7 @@
   "library_smart_duplicates_hint": "The same book in more than one folder, even renamed.",
   "library_smart_ready_to_clean_up": "Ready to clean up",
   "library_smart_ready_to_clean_up_hint": "Downloaded and finished.",
-  "library_smart_clean_up_waits": "Ready to clean up (downloaded and finished) appears once you have downloads.",
+  "library_smart_clean_up_waits": "Ready to clean up appears once you have downloads.",
   "library_read_state_any": "Any",
   "library_read_state_unread": "Unread",
   "library_read_state_in_progress": "In progress",
@@ -523,8 +520,8 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "For 1 series. Done applies the changes to it.",
-        "countPlural=other": "For {formattedCount} series. Done applies the changes to all {formattedCount}."
+        "countPlural=one": "For 1 series",
+        "countPlural=other": "For {formattedCount} series"
       }
     }
   ],

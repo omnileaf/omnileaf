@@ -1,9 +1,5 @@
 import type { ButtonVariant } from "#lib/components/ui/button/looks.ts";
-import {
-  ITEM_LOOKS,
-  ROW_FOCUS_RING,
-  ROW_SUBTITLE_MUTED_TYPE,
-} from "#lib/components/ui/item/looks.ts";
+import { ITEM_LOOKS, ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
 import { WINDOWS_SELECTOR_BAR_LOOK } from "#lib/components/ui/tabs/looks.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
@@ -18,7 +14,6 @@ export interface CategorySheetLook {
   readonly header: string;
   readonly hasBadge: boolean;
   readonly title: string;
-  readonly description: string;
   readonly list: string;
   readonly option: string;
   readonly foot: string;
@@ -46,7 +41,6 @@ const SHARED_SHEET: CategorySheetLook = {
   header: "flex items-center gap-md px-sheet-inline pbs-sheet-gap",
   hasBadge: true,
   title: "text-title font-bold",
-  description: "text-small text-muted",
   list: "flex flex-col overflow-auto pbs-sm min-block-none px-sm",
   option:
     "flex items-center gap-md rounded-control px-md text-start text-body transition-control min-block-touch-target hover:bg-hover active:bg-pressed",
@@ -101,8 +95,7 @@ const ANDROID_PHONE_LOOK: CategoryTabsLook = {
     header: "flex flex-col px-lg pbe-sm",
     hasBadge: false,
     title:
-      "pbe-xs text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title text-balance wrap-anywhere",
-    description: ROW_SUBTITLE_MUTED_TYPE,
+      "text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title text-balance wrap-anywhere",
     list: "flex flex-col overflow-auto pbe-sm min-block-none row-rules",
     option: `${ITEM_LOOKS.row} aria-checked:bg-native-row-current aria-checked:text-native-on-row-current`,
     foot: "flex flex-wrap gap-sm px-lg pbs-md pbe-native-sheet-foot-bottom",

@@ -224,9 +224,7 @@ test("says Ready to clean up waits for downloads while the library has none", as
   const panel = await openPanel(page);
 
   await expect(
-    panel.getByText(
-      "Ready to clean up (downloaded and finished) appears once you have downloads.",
-    ),
+    panel.getByText("Ready to clean up appears once you have downloads."),
   ).toBeVisible();
   await expect(
     panel.getByRole("switch", { name: "Ready to clean up" }),

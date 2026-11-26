@@ -42,16 +42,14 @@ function sheets(page: Page): Locator {
 test.describe("on linux", () => {
   test.use({ backend: BACKEND });
 
-  test("offers stacked covers as a switch, on to start with", async ({
+  test("offers stacked covers as a switch with no second line, on to start with", async ({
     page,
   }) => {
     await page.goto("/");
     const options = await openViewOptions(page);
 
     await expect(stackSwitch(options)).toBeChecked();
-    await expect(stackSwitch(options)).toHaveAccessibleDescription(
-      "A series with more than one book shows its covers stacked.",
-    );
+    await expect(stackSwitch(options)).toHaveAccessibleDescription("");
   });
 
   test("flattens the covers behind at once and keeps the choice", async ({
