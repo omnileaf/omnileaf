@@ -482,6 +482,7 @@ test("hides and shows the controls with a tap in the middle of the page and the 
 const CONTROLS_HIDE_AFTER_MS = 3000;
 /** Playwright's clock draws a frame every 16ms; the controls count their time from the frame they are drawn in, or from the one after the opening page. */
 const FRAME_MS = 16;
+const DOUBLE_TAP_MS = 300;
 /** Far enough ahead for the pause to arrive before it, and well short of the time the controls stay up for. */
 const CONTROLS_PAUSE_AHEAD_MS = 500;
 
@@ -538,13 +539,17 @@ test("hides the controls at once on a page turn", async ({ page }) => {
   await expectControlsHidden(page);
 });
 
-test("hides the controls shown by a tap again after the same delay", async ({
+test("shows the controls a double tap's wait after a tap, then hides them again after the same delay", async ({
   page,
 }) => {
   await openBookBeforeControlsHide(page);
   await page.keyboard.press("ArrowRight");
   await zone(page, "Show the controls").click();
 
+  await page.clock.runFor(DOUBLE_TAP_MS - 1);
+  await expectControlsHidden(page);
+  await page.clock.runFor(1);
+  await expectControlsShown(page);
   await page.clock.runFor(CONTROLS_HIDE_AFTER_MS - 1);
   await expectControlsShown(page);
   await page.clock.runFor(FRAME_MS + 1);

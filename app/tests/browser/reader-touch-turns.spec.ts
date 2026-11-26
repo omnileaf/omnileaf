@@ -34,6 +34,12 @@ test.skip(
   "real touches go through Chromium's DevTools protocol on a touch screen",
 );
 
+declare global {
+  interface Window {
+    omnileafControlsShown?: boolean;
+  }
+}
+
 interface Point {
   readonly x: number;
   readonly y: number;
@@ -143,6 +149,17 @@ async function liftFinger(session: CDPSession): Promise<void> {
   });
 }
 
+async function watchForControls(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    window.omnileafControlsShown = false;
+    new MutationObserver(() => {
+      if (document.querySelector("[data-reader-resting-count]") === null) {
+        window.omnileafControlsShown = true;
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+}
+
 async function hideControls(page: Page, session: CDPSession): Promise<void> {
   await tap(
     session,
@@ -210,6 +227,24 @@ async function expectZoomedPagePans(page: Page): Promise<void> {
   expect(Math.abs(clamped.y - area.y)).toBeLessThan(CLOSE_PX);
   await expectOnPage(page, 14);
 }
+
+test(
+  "zooms on a double tap without showing the controls first",
+  { tag: "@native" },
+  async ({ page }) => {
+    await servePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    const session = await page.context().newCDPSession(page);
+    await hideControls(page, session);
+    await watchForControls(page);
+
+    await doubleTapToZoom(page, session);
+
+    expect(
+      await page.evaluate(() => window.omnileafControlsShown ?? false),
+    ).toBe(false);
+  },
+);
 
 test(
   "pans a page zoomed by a double tap both ways under the finger, stopping at its edges, without turning it",

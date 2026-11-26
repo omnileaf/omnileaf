@@ -121,6 +121,8 @@
   const MOUSE_BACK_BUTTON = 3;
   /** How near the window's top or bottom the pointer brings hidden controls back. */
   const REVEAL_EDGE_PX = 48;
+  /** Android's double-tap timeout, the longest a second tap may follow the first and still count as a double tap. */
+  const DOUBLE_TAP_MS = 300;
   const TURN_STEPS = { next: 1, previous: -1 } as const satisfies Record<
     PageTurn,
     number
@@ -855,6 +857,7 @@
   }
 
   let lastPointer = { x: Number.NaN, y: Number.NaN };
+  let waitingTap: ReturnType<typeof setTimeout> | undefined;
 
   /** WebKit sends a pointermove whenever the page scrolls under a pointer that hasn't moved, so only a change of position counts. */
   function hasPointerMoved(event: PointerEvent): boolean {
@@ -873,6 +876,25 @@
     if (!swipe.isClickASwipe() && action !== undefined) {
       act(action);
     }
+  }
+
+  function onMiddleTap(event: MouseEvent): void {
+    if (!isPointerClick(event)) {
+      onZone(event, "toggleControls");
+      return;
+    }
+    if (event.currentTarget instanceof HTMLElement) {
+      event.currentTarget.blur();
+    }
+    clearTimeout(waitingTap);
+    waitingTap = undefined;
+    if (swipe.isClickASwipe() || event.detail > 1) {
+      return;
+    }
+    waitingTap = setTimeout(() => {
+      waitingTap = undefined;
+      act("toggleControls");
+    }, DOUBLE_TAP_MS);
   }
 
   function isPointerClick(event: MouseEvent): boolean {
@@ -985,6 +1007,7 @@
     heading?.focus();
     return () => {
       controls.stop();
+      clearTimeout(waitingTap);
     };
   });
 
@@ -1147,9 +1170,7 @@
             ? m.reader_hide_controls()
             : m.reader_show_controls()}
           class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
-          onclick={(event) => {
-            onZone(event, "toggleControls");
-          }}
+          onclick={onMiddleTap}
           ondblclick={() => {
             if (isZoomedIn(viewportScale)) {
               fitPinch();
