@@ -28,7 +28,7 @@
 
   const shown = lastShown(() => category);
   const name = $derived(shown.current?.name ?? "");
-  const seriesCount = $derived(shown.current?.seriesCount ?? 0);
+  const seriesCount = $derived(shown.current?.seriesCount);
 </script>
 
 <ConfirmDialog
@@ -45,9 +45,9 @@
   {onCancel}
   {onCloseAutoFocus}
 >
-  <p>
-    {seriesCount > 0
-      ? m.library_tabs_delete_kept({ count: seriesCount })
-      : m.library_tabs_delete_kept_uncounted()}
-  </p>
+  {#if seriesCount === undefined}
+    <p>{m.library_tabs_delete_kept_uncounted()}</p>
+  {:else if seriesCount > 0}
+    <p>{m.library_tabs_delete_kept({ count: seriesCount })}</p>
+  {/if}
 </ConfirmDialog>
