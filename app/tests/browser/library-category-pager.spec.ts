@@ -1,5 +1,6 @@
 import type { ElementHandle, Locator, Page } from "@playwright/test";
 
+import english from "../../messages/en.json" with { type: "json" };
 import {
   DEFAULT_LIBRARY_VIEW,
   type LibraryCategory,
@@ -7,7 +8,11 @@ import {
   type Platform,
 } from "../../src/lib/ipc/bindings.ts";
 import { filtersOn } from "../../src/lib/library/library-listing.ts";
-import type { FakeBackend } from "./fake-backend.ts";
+import {
+  commandsAsked,
+  emitFakeEvent,
+  type FakeBackend,
+} from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -139,6 +144,29 @@ function chosenCovers(page: Page) {
   return seriesList(page).getByRole("listitem");
 }
 
+function besideTitled(page: Page, title: string) {
+  return pageBeside(page).getByText(title, { exact: true });
+}
+
+function categoryEmptyTitle(name: string): string {
+  return english.library_category_empty.replace("{name}", name);
+}
+
+interface Span {
+  readonly x: number;
+  readonly width: number;
+  readonly top: number;
+}
+
+async function spansOf(drawn: Locator): Promise<readonly Span[]> {
+  return drawn.evaluateAll((elements) =>
+    elements.map((element) => {
+      const { x, width, top } = element.getBoundingClientRect();
+      return { x, width, top };
+    }),
+  );
+}
+
 function pagerTrack(page: Page) {
   return page.locator("[data-pager-page]").first().locator("xpath=..");
 }
@@ -148,6 +176,14 @@ function skipUnlessPhone(page: Page, hasTouch: boolean | undefined): void {
   test.skip(
     viewportOf(page).width >= MEDIUM_MIN_WIDTH,
     "only phones page between categories",
+  );
+}
+
+function skipUnlessTablet(page: Page, hasTouch: boolean | undefined): void {
+  test.skip(hasTouch !== true, "a finger swipes");
+  test.skip(
+    viewportOf(page).width < MEDIUM_MIN_WIDTH,
+    "phones page between categories",
   );
 }
 
@@ -583,6 +619,56 @@ test.describe("loading the categories beside the chosen one", () => {
   });
 });
 
+test.describe("counting an empty category beside the chosen one", () => {
+  const counted: string[] = [];
+  const holding = backendWith(EMPTY_COMICS, "android");
+
+  test.use({
+    backend: {
+      ...holding,
+      categorySeriesCount: (category, filter) => {
+        counted.push(category);
+        return holding.categorySeriesCount(category, filter);
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    counted.length = 0;
+  });
+
+  async function answered(page: Page): Promise<void> {
+    await expect
+      .poll(async () => (await commandsAsked(page)).unanswered)
+      .toBe(0);
+  }
+
+  test("counts it once when the library changes with no filter on", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "only phones page between categories",
+    );
+    await openLibrary(page);
+    await chosenTab(page, "Manga").click();
+    await expect(chosenCovers(page)).toHaveCount(MANGA.length);
+    await expect.poll(() => counted.includes("comics")).toBe(true);
+    await answered(page);
+    const countedBefore = counted.filter((tab) => tab === "comics").length;
+
+    await emitFakeEvent(page, "library-changed");
+    await expect
+      .poll(() => counted.filter((tab) => tab === "comics").length)
+      .toBeGreaterThan(countedBefore);
+    await answered(page);
+
+    expect(counted.filter((tab) => tab === "comics").length).toBe(
+      countedBefore + 1,
+    );
+  });
+});
+
 test.describe("each category's scroll position", () => {
   test.use({ backend: backendWith(LONG, "android") });
 
@@ -745,18 +831,220 @@ for (const platform of PLATFORMS) {
       });
     }
 
-    test("leaves the empty tab in place under the finger", async ({ page }) => {
-      await openEmptyTab(page, "New chapters", nothingNew(page));
-      const before = await boxOf(nothingNew(page));
+    for (const { dir, forward, layout } of [
+      { dir: "ltr", forward: -SWIPE_PX, layout: "" },
+      { dir: "rtl", forward: SWIPE_PX, layout: " in a right-to-left layout" },
+    ] as const) {
+      test(`moves the empty tab with the finger and brings the tab after it in beside it${layout}`, async ({
+        page,
+      }, testInfo) => {
+        skipUnlessPhone(page, testInfo.project.use.hasTouch);
+        await openLibrary(page);
+        await page.evaluate((textDirection) => {
+          document.documentElement.dir = textDirection;
+        }, dir);
+        await chosenTab(page, "New chapters").click();
+        await expect(nothingNew(page)).toBeVisible();
+        const column = await boxOf(page.getByRole("main"));
+        const gap = await lengthOf(page, "--spacing-pager-gap");
+        const atRest = await boxOf(nothingNew(page));
+        const blank = await blankBelow(page, nothingNew(page));
 
-      const drag = await beginDrag(page, nothingNew(page));
+        const drag = await beginDragAt(blank.target, blank.at);
+        await drag.to(forward);
+        await expect(besideCovers(page, MANGA[0]?.title ?? "")).toHaveCount(
+          MANGA.length,
+        );
+        const moved = await boxOf(nothingNew(page));
+        const beside = await spansOf(
+          pageBeside(page).filter({ hasText: MANGA[0]?.title ?? "" }),
+        );
+        await drag.release();
+
+        const besideAtRest =
+          forward < 0
+            ? column.x + column.width + gap
+            : column.x - gap - column.width;
+        expect(moved.x).toBeCloseTo(atRest.x + forward, 0);
+        expect(beside).toHaveLength(1);
+        expect(beside[0]?.x).toBeCloseTo(besideAtRest + forward, 0);
+        expect(beside[0]?.width).toBeCloseTo(column.width, 0);
+      });
+    }
+
+    test("brings an empty category's state in beside the covers, not a blank page", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessPhone(page, testInfo.project.use.hasTouch);
+      await openLibrary(page);
+      await chosenTab(page, "Manga").click();
+      await expect(chosenCovers(page)).toHaveCount(MANGA.length);
+      const column = await boxOf(page.getByRole("main"));
+
+      const drag = await beginDrag(page, seriesList(page));
       await drag.to(-SWIPE_PX);
+      await expect(
+        besideTitled(page, categoryEmptyTitle("Comics")),
+      ).toHaveCount(1);
+      const incoming = await spansOf(
+        besideTitled(page, categoryEmptyTitle("Comics")),
+      );
+      await drag.release();
+
+      expect(incoming).toHaveLength(1);
+      expect(incoming[0]?.x).toBeLessThan(column.x + column.width);
+    });
+
+    test("moves an empty tab with the finger on tablets, then lands on the tab after it", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessTablet(page, testInfo.project.use.hasTouch);
+      await openEmptyTab(page, "New chapters", nothingNew(page));
+      const atRest = await boxOf(nothingNew(page));
+      const blank = await blankBelow(page, nothingNew(page));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(-SWIPE_PX);
+      const moved = await boxOf(nothingNew(page));
+      await drag.release();
+
+      expect(moved.x).toBeCloseTo(atRest.x - SWIPE_PX, 0);
+      await expectChosen(page, "Manga");
+      await expect(chosenCovers(page)).toHaveCount(MANGA.length);
+    });
+
+    test("springs back to an empty category after a short drag on tablets", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessTablet(page, testInfo.project.use.hasTouch);
+      await openEmptyTab(page, "Comics", emptyCategory(page, "Comics"));
+      const atRest = await boxOf(emptyCategory(page, "Comics"));
+      const blank = await blankBelow(page, emptyCategory(page, "Comics"));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(SHORT_DRAG_PX);
+      const moved = await boxOf(emptyCategory(page, "Comics"));
+      await page.waitForTimeout(HELD_MS);
+      await drag.release();
+
+      expect(moved.x).toBeCloseTo(atRest.x + SHORT_DRAG_PX, 0);
+      await expectChosen(page, "Comics");
+      await expect
+        .poll(async () => (await boxOf(emptyCategory(page, "Comics"))).x)
+        .toBeCloseTo(atRest.x, 0);
+    });
+
+    test("lands on an empty category's state after dragging the covers on tablets", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessTablet(page, testInfo.project.use.hasTouch);
+      await openLibrary(page);
+      await chosenTab(page, "Manga").click();
+      await expect(chosenCovers(page)).toHaveCount(MANGA.length);
+
+      const drag = await beginDrag(page, seriesList(page));
+      await drag.to(-SWIPE_PX);
+      await drag.release();
+
+      await expectChosen(page, "Comics");
+      await expect(emptyCategory(page, "Comics")).toBeVisible();
+      await expect(page.locator("[data-swiping]")).toHaveCount(0);
+    });
+
+    test("springs back to the empty tab after a short drag", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessPhone(page, testInfo.project.use.hasTouch);
+      await openEmptyTab(page, "New chapters", nothingNew(page));
+      const atRest = await boxOf(nothingNew(page));
+      const blank = await blankBelow(page, nothingNew(page));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(-SHORT_DRAG_PX);
       const during = await boxOf(nothingNew(page));
+      await page.waitForTimeout(HELD_MS);
+      await drag.release();
+
+      expect(during.x).toBeCloseTo(atRest.x - SHORT_DRAG_PX, 0);
+      await expect(pagerTrack(page)).toHaveCSS("translate", "none");
+      await expectChosen(page, "New chapters");
+      expect((await boxOf(nothingNew(page))).x).toBeCloseTo(atRest.x, 0);
+    });
+
+    test("lands on the tab after the empty one without a jump", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessPhone(page, testInfo.project.use.hasTouch);
+      await openEmptyTab(page, "New chapters", nothingNew(page));
+      const blank = await blankBelow(page, nothingNew(page));
+      const incomingTitle = MANGA[0]?.title ?? "";
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(-SWIPE_PX);
+      await expect(besideCovers(page, incomingTitle)).toHaveCount(MANGA.length);
+      const settling = await releaseThroughSettle(
+        page,
+        drag,
+        besideCovers(page, incomingTitle),
+      );
+      await expectChosen(page, "Manga");
+      await expect(chosenCovers(page)).toHaveCount(MANGA.length);
+      await expect(pagerTrack(page)).toHaveCSS("translate", "none");
+      const settled = await firstRowOf(chosenCovers(page));
+
+      expect(settling.end.left).toBeCloseTo(settled.left, 0);
+      expect(settling.end.right).toBeCloseTo(settled.right, 0);
+    });
+
+    test("lands on an empty category from the covers without a jump", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessPhone(page, testInfo.project.use.hasTouch);
+      await openLibrary(page);
+      await chosenTab(page, "Manga").click();
+      await expect(chosenCovers(page)).toHaveCount(MANGA.length);
+      const title = categoryEmptyTitle("Comics");
+
+      const drag = await beginDrag(page, seriesList(page));
+      await drag.to(-SWIPE_PX);
+      await expect(besideTitled(page, title)).toHaveCount(1);
+      const [coming] = await spansOf(besideTitled(page, title));
+      const settling = await releaseThroughSettle(
+        page,
+        drag,
+        besideTitled(page, title),
+      );
+      await expectChosen(page, "Comics");
+      await expect(pagerTrack(page)).toHaveCSS("translate", "none");
+      const settled = await boxOf(
+        emptyCategory(page, "Comics").getByText(title, { exact: true }),
+      );
+
+      expect(settling.end.left).toBeCloseTo(settled.x, 0);
+      expect(settling.end.right).toBeCloseTo(settled.x + settled.width, 0);
+      expect(coming?.top).toBeCloseTo(settled.y, 0);
+    });
+
+    test("switches from the empty tab at once when the system asks for less motion", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessPhone(page, testInfo.project.use.hasTouch);
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await openEmptyTab(page, "New chapters", nothingNew(page));
+      const blank = await blankBelow(page, nothingNew(page));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(-SWIPE_PX);
       const swiping = await page.locator("[data-swiping]").count();
       await drag.release();
 
-      expect(during.x).toBe(before.x);
-      expect(swiping).toBe(0);
+      expect(swiping).toBe(1);
+      await expectChosen(page, "Manga");
+      expect(
+        await pagerTrack(page).evaluate(
+          (track) => track.getAnimations().length,
+        ),
+      ).toBe(0);
     });
 
     test("keeps sideways drags on an empty tab for the swipe", async ({
@@ -860,6 +1148,52 @@ for (const platform of PLATFORMS) {
       await expect(emptyCategory(page, "Comics")).toBeVisible();
       await expect(noMatches(page)).toHaveCount(0);
     });
+
+    test("brings in no matches on a category the filter empties while it is dragged in from New chapters", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessPhone(page, testInfo.project.use.hasTouch);
+      await openEmptyTab(page, "New chapters", nothingNew(page));
+      const blank = await blankBelow(page, nothingNew(page));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(-SWIPE_PX);
+      await expect(
+        besideTitled(page, english.library_no_matches_title),
+      ).toHaveCount(1);
+      const noMatchesComing = await spansOf(
+        besideTitled(page, english.library_no_matches_title),
+      );
+      const emptyComing = await spansOf(
+        besideTitled(page, categoryEmptyTitle("Manga")),
+      );
+      await drag.release();
+
+      expect(noMatchesComing).toHaveLength(1);
+      expect(emptyComing).toHaveLength(0);
+    });
+
+    test("brings in an empty category's state while it is dragged in from a category the filter empties", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessPhone(page, testInfo.project.use.hasTouch);
+      await openEmptyTab(page, "Manga", noMatches(page));
+      const blank = await blankBelow(page, noMatches(page));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(-SWIPE_PX);
+      await expect(
+        besideTitled(page, categoryEmptyTitle("Comics")),
+      ).toHaveCount(1);
+      const noMatchesComing = await spansOf(
+        pageBeside(page)
+          .filter({ hasText: categoryEmptyTitle("Comics") })
+          .getByText(english.library_no_matches_title, { exact: true }),
+      );
+      await drag.release();
+
+      expect(noMatchesComing).toHaveLength(0);
+    });
   });
 
   test.describe(`swiping from All filtered to no matches on ${platform}`, () => {
@@ -885,6 +1219,30 @@ for (const platform of PLATFORMS) {
       await drag.release();
 
       await expectChosen(page, "Manga");
+    });
+
+    test("moves the no matches state with the finger and brings the tab after it in beside it", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessPhone(page, testInfo.project.use.hasTouch);
+      await page.goto("/");
+      await expect(noMatches(page)).toBeVisible();
+      const atRest = await boxOf(noMatches(page));
+      const blank = await blankBelow(page, noMatches(page));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(-SWIPE_PX);
+      await expect(besideCovers(page, MANGA[0]?.title ?? "")).toHaveCount(
+        MANGA.length,
+      );
+      const moved = await boxOf(noMatches(page));
+      const beside = await spansOf(
+        pageBeside(page).filter({ hasText: MANGA[0]?.title ?? "" }),
+      );
+      await drag.release();
+
+      expect(moved.x).toBeCloseTo(atRest.x - SWIPE_PX, 0);
+      expect(beside).toHaveLength(1);
     });
   });
 }

@@ -1,4 +1,3 @@
-import { Channel } from "@tauri-apps/api/core";
 import type { ClassValue } from "svelte/elements";
 import { prefersReducedMotion } from "svelte/motion";
 
@@ -53,7 +52,7 @@ function acrossScreen(swipe: BackSwipe, screen: DOMRect): BackSwipe {
 }
 
 export class SwipedScreen {
-  element: HTMLElement | undefined = $state();
+  #element: HTMLElement | undefined = $state();
   readonly #way: WayBack;
   readonly #previousScreens = getPreviousScreens();
   readonly #allowance = new BackSwipeAllowance();
@@ -72,12 +71,11 @@ export class SwipedScreen {
       if (!way.isOn()) {
         return;
       }
-      watchBackSwipes(
-        new Channel((swipe) => {
-          this.#follow(swipe);
-        }),
-      );
+      const stopWatching = watchBackSwipes((swipe) => {
+        this.#follow(swipe);
+      });
       return () => {
+        stopWatching();
         this.#allowedFor = undefined;
         this.#allowance.withdraw();
         this.#screens.arrived();
@@ -89,6 +87,15 @@ export class SwipedScreen {
         void this.#screens.settleOnceMoved(this.element);
       }
     });
+  }
+
+  get element(): HTMLElement | undefined {
+    return this.#element;
+  }
+
+  /** Svelte sets a `bind:this` target to `null` when its element is destroyed. */
+  set element(screen: HTMLElement | null | undefined) {
+    this.#element = screen ?? undefined;
   }
 
   get behind(): ScreenBehind | undefined {

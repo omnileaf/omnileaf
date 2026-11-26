@@ -54,12 +54,12 @@
   import {
     actionOffered,
     type EmptyActionKind,
+    type EmptyCause,
     emptyCauseOf,
     keepsListChrome,
     narrowsLibrary,
   } from "#lib/library/empty-cause.ts";
   import EmptyTab from "#lib/library/EmptyTab.svelte";
-  import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { defaultLibraryView, viewDrawn } from "#lib/library/library-view.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
@@ -97,6 +97,7 @@
   } from "#lib/library/library-tabs.ts";
   import { countOf, type TabPage } from "#lib/library/tab-page.svelte.ts";
   import { TabPages } from "#lib/library/tab-pages.svelte.ts";
+  import { UnfilteredCounts } from "#lib/library/unfiltered-counts.svelte.ts";
   import FastScroll from "#lib/library/FastScroll.svelte";
   import NoMatches from "#lib/library/NoMatches.svelte";
   import SeriesCount from "#lib/library/SeriesCount.svelte";
@@ -179,6 +180,7 @@
   const PAGE_STRIDE = "100% + var(--spacing-pager-gap)";
   const PAGE_INSET = "pe-page-end max-medium:ps-page-start medium:ps-gutter";
   const PAGE_BLEED = "-me-page-end max-medium:-ms-page-start medium:-ms-gutter";
+  const COVERS_GAP = "mbs-lg medium:mbs-xl";
 
   const animations = getAnimationsSetting();
   const screenshotMode = getScreenshotMode();
@@ -429,6 +431,7 @@
       ? BESIDE_PHONE_TABS
       : 0,
   );
+  const isPaging = $derived(pagesBesideChosen > 0);
   const isIosPhone = $derived(
     phoneOf(data.appInfo.platform, width.current) === "ios",
   );
@@ -499,47 +502,76 @@
     listedTab === undefined ? ALL_SERIES : tabKey(listedTab.id),
   );
 
-  const listsNothing = $derived(
-    library.list.kind === "loaded" && library.list.items.length === 0,
-  );
-  interface AskedCount {
-    readonly count: LibrarySeriesCount;
-    readonly askedFor: () => string | undefined;
+  function listsNothingOn(tabPage: TabPage): boolean {
+    const { list } = tabPage.series;
+    return list.kind === "loaded" && list.items.length === 0;
   }
 
-  const libraryCount = new LibrarySeriesCount(
-    countOf(ALL_TAB, NEW_LIBRARY_LISTING),
-    (error) => {
-      reportError(error);
+  const listsNothing = $derived(listsNothingOn(chosenPage));
+  const isListingFiltered = $derived(
+    chosenListing !== undefined && filtersOn(chosenListing.filter) > 0,
+  );
+  const emptyBesideTabs = $derived(
+    shownTabs.filter(({ id }) =>
+      pagerSlots.some(
+        (slot) =>
+          slot.offset !== 0 &&
+          slot.key === tabKey(id) &&
+          listsNothingOn(slot.page),
+      ),
+    ),
+  );
+  const tabsCountedForChosen = $derived<readonly LibraryTabId[]>([
+    ...(listsNothing && narrowsLibrary({ listedTab, isFilterOn })
+      ? [ALL_TAB]
+      : []),
+    ...(listsNothing && listedTab !== undefined && listedTabKey !== ALL_SERIES
+      ? [listedTab.id]
+      : []),
+  ]);
+  const tabsCountedBeside = $derived<readonly LibraryTabId[]>(
+    emptyBesideTabs.length === 0
+      ? []
+      : [
+          ALL_TAB,
+          ...(isListingFiltered
+            ? emptyBesideTabs
+                .map(({ id }) => id)
+                .filter((id) => tabKey(id) !== ALL_SERIES)
+            : []),
+        ],
+  );
+  const unfilteredCounts = new UnfilteredCounts(
+    (tab) => countOf(tab, NEW_LIBRARY_LISTING),
+    (error, key) => {
+      if (tabsCountedForChosen.some((tab) => tabKey(tab) === key)) {
+        reportError(error);
+      }
     },
   );
-  const listedTabCount = new LibrarySeriesCount(
-    () => countOf(listedTab?.id ?? ALL_TAB, NEW_LIBRARY_LISTING)(),
-    (error) => {
-      reportError(error);
-    },
-  );
-  const libraryCountAskedFor = $derived(
-    listsNothing && narrowsLibrary({ listedTab, isFilterOn })
-      ? ALL_SERIES
-      : undefined,
-  );
-  const tabCountAskedFor = $derived(
-    listsNothing && listedTabKey !== ALL_SERIES ? listedTabKey : undefined,
-  );
-  const emptyListCounts: readonly AskedCount[] = [
-    { count: libraryCount, askedFor: () => libraryCountAskedFor },
-    { count: listedTabCount, askedFor: () => tabCountAskedFor },
-  ];
   const emptyCause = $derived(
     listsNothing
       ? emptyCauseOf({
           listedTab,
           isFilterOn,
-          libraryCount: libraryCount.reading,
-          listedTabCount: listedTabCount.reading,
+          libraryCount: unfilteredCounts.of(ALL_SERIES),
+          listedTabCount: unfilteredCounts.of(listedTabKey),
         })
       : undefined,
+  );
+  const besideCauses = $derived(
+    new Map(
+      emptyBesideTabs.map((beside) => {
+        const key = tabKey(beside.id);
+        const cause = emptyCauseOf({
+          listedTab: beside,
+          isFilterOn: isListingFiltered,
+          libraryCount: unfilteredCounts.of(ALL_SERIES),
+          listedTabCount: unfilteredCounts.of(key),
+        });
+        return [key, cause] as const;
+      }),
+    ),
   );
   const isEmpty = $derived(emptyCause?.kind === "library");
   const libraryView = $derived(
@@ -651,27 +683,16 @@
     describedList = shown;
     untrack(() => {
       listedTab = chosenArrangedTab;
-      isFilterOn =
-        chosenListing !== undefined && filtersOn(chosenListing.filter) > 0;
+      isFilterOn = isListingFiltered;
     });
   });
 
-  function countOnlyWhileAsked({ count, askedFor }: AskedCount): void {
-    $effect.pre(() => {
-      const tab = askedFor();
-      untrack(() => {
-        if (tab === undefined) {
-          count.clear();
-        } else {
-          void count.load();
-        }
-      });
+  $effect.pre(() => {
+    const tabs = [...tabsCountedForChosen, ...tabsCountedBeside];
+    untrack(() => {
+      unfilteredCounts.ask(tabs);
     });
-  }
-
-  for (const asked of emptyListCounts) {
-    countOnlyWhileAsked(asked);
-  }
+  });
 
   const listingShown = $derived(
     chosenListing === undefined
@@ -1036,11 +1057,7 @@
       if (countsSeries) {
         void seriesCount.load();
       }
-      for (const { count, askedFor } of emptyListCounts) {
-        if (askedFor() !== undefined) {
-          void count.refresh();
-        }
-      }
+      void unfilteredCounts.refresh();
       pages.refreshBeside();
     }, reportFailure);
     return () => {
@@ -1087,6 +1104,19 @@
     />
   {:else if page.series.list.kind === "loading"}
     <CoverSkeletons coversPerRow={props.view.coversPerRow} />
+  {/if}
+{/snippet}
+
+{#snippet tabEmptyState(cause: EmptyCause)}
+  {#if cause.kind === "tab"}
+    <EmptyTab tab={cause.tab} onAddSeries={addSeries} />
+  {:else if cause.kind === "filters" && chosenListing !== undefined}
+    <NoMatches
+      filter={chosenListing.filter}
+      onClear={() => {
+        chooseListing(withoutFilters(chosenListing));
+      }}
+    />
   {/if}
 {/snippet}
 
@@ -1427,29 +1457,81 @@
         usesStandIns={screenshotMode.isOn}
         onDismissed={returnFocusFromNotice}
       />
-      {#if emptyCause?.kind === "tab"}
-        <EmptyTab tab={emptyCause.tab} onAddSeries={addSeries} />
-      {:else if emptyCause?.kind === "filters" && chosenListing !== undefined}
-        <NoMatches
-          filter={chosenListing.filter}
-          onClear={() => {
-            chooseListing(withoutFilters(chosenListing));
-          }}
-        />
-      {:else if loaded !== undefined && emptyCause?.kind !== "counting"}
-        {#if loaded.view.showsContinueRow}
-          <div class="mbs-lg medium:mbs-xl">
+      {#if loaded !== undefined}
+        {#if loaded.view.showsContinueRow && emptyCause === undefined}
+          <div class={COVERS_GAP}>
             <ContinueRow usesStandIns={screenshotMode.isOn} />
           </div>
         {/if}
         <div
           class={[
             PAGE_BLEED,
-            "mbs-lg flex flex-1 flex-col overflow-x-clip medium:mbs-xl",
+            !isPaging && emptyCause === undefined && COVERS_GAP,
+            "flex flex-1 flex-col overflow-x-clip",
           ]}
         >
-          <div bind:this={pager} class="relative flex-1">
-            {#if groups.length > 0}
+          <div
+            bind:this={pager}
+            class={[
+              "relative flex-1",
+              (isPaging || emptyCause !== undefined) && "flex flex-col",
+            ]}
+          >
+            {#if isPaging}
+              {#each pagerSlots as slot (slot.key)}
+                {@const isChosen = slot.offset === 0}
+                {@const cause = isChosen
+                  ? emptyCause
+                  : besideCauses.get(slot.key)}
+                <div
+                  inert={!isChosen}
+                  aria-hidden={isChosen ? undefined : "true"}
+                  data-pager-page={isChosen ? "chosen" : "beside"}
+                  class={isChosen
+                    ? "relative flex flex-1 flex-col"
+                    : "invisible absolute inset-bs-none overflow-clip block-full inline-full in-data-swiping:visible"}
+                  style:inset-inline-start={isChosen
+                    ? undefined
+                    : pagesAlong(slot.offset, PAGE_STRIDE)}
+                >
+                  <div
+                    class={[
+                      "flex flex-1 flex-col",
+                      !isChosen &&
+                        "sticky inset-bs-none overflow-clip block-dvh max-block-full",
+                    ]}
+                  >
+                    <div
+                      class={[
+                        PAGE_INSET,
+                        cause === undefined
+                          ? COVERS_GAP
+                          : "flex flex-1 flex-col",
+                      ]}
+                      style:translate={isChosen
+                        ? undefined
+                        : `0 -${String(slot.scrolled)}px`}
+                    >
+                      {#if cause !== undefined}
+                        {@render tabEmptyState(cause)}
+                      {:else}
+                        {#if isChosen}
+                          <FastScroll total={seriesCount.count} {letterAt} />
+                        {/if}
+                        {@render seriesGrid(
+                          slot.page,
+                          isChosen ? covers : looks,
+                        )}
+                      {/if}
+                    </div>
+                  </div>
+                </div>
+              {/each}
+            {:else if emptyCause !== undefined}
+              <div class={[PAGE_INSET, "flex flex-1 flex-col"]}>
+                {@render tabEmptyState(emptyCause)}
+              </div>
+            {:else if groups.length > 0}
               <div
                 class={[
                   PAGE_INSET,
@@ -1468,39 +1550,6 @@
                   />
                 {/each}
               </div>
-            {:else if pagesBesideChosen > 0}
-              {#each pagerSlots as slot (slot.key)}
-                {@const isChosen = slot.offset === 0}
-                <div
-                  inert={!isChosen}
-                  aria-hidden={isChosen ? undefined : "true"}
-                  data-pager-page={isChosen ? "chosen" : "beside"}
-                  class={isChosen
-                    ? "relative"
-                    : "invisible absolute inset-bs-none overflow-clip block-full inline-full in-data-swiping:visible"}
-                  style:inset-inline-start={isChosen
-                    ? undefined
-                    : pagesAlong(slot.offset, PAGE_STRIDE)}
-                >
-                  <div
-                    class={isChosen
-                      ? undefined
-                      : "sticky inset-bs-none overflow-clip block-dvh"}
-                  >
-                    <div
-                      class={PAGE_INSET}
-                      style:translate={isChosen
-                        ? undefined
-                        : `0 -${String(slot.scrolled)}px`}
-                    >
-                      {#if isChosen}
-                        <FastScroll total={seriesCount.count} {letterAt} />
-                      {/if}
-                      {@render seriesGrid(slot.page, isChosen ? covers : looks)}
-                    </div>
-                  </div>
-                </div>
-              {/each}
             {:else}
               <div class={PAGE_INSET}>
                 <FastScroll total={seriesCount.count} {letterAt} />
@@ -1509,7 +1558,7 @@
             {/if}
           </div>
         </div>
-        {#if selection.isSelecting && (selection.count > 0 || androidPhone.isOn) && !commandsOnTop && !isMac}
+        {#if emptyCause === undefined && selection.isSelecting && (selection.count > 0 || androidPhone.isOn) && !commandsOnTop && !isMac}
           {#if isIos}
             <IosSelectionActions
               {keepsLabels}
