@@ -43,6 +43,7 @@
   const ICON_SIZE = 16;
   const BADGE_ICON_SIZE = 12;
   const ANDROID_BADGE_ICON_SIZE = 14;
+  const NO_BUTTONS = 0;
   const ANDROID_BADGE =
     "gap-xs rounded-label-badge bg-chip px-sm py-xs text-caption font-medium tracking-native-row-title";
 
@@ -196,6 +197,10 @@
     if (drag === undefined || !isDragPointer(event)) {
       return;
     }
+    if (event.buttons === NO_BUTTONS) {
+      void endDrag(true);
+      return;
+    }
     drag = { ...drag, rows: drag.rows.to(event.clientY - listTop()) };
   }
 
@@ -255,6 +260,11 @@
 </script>
 
 <svelte:document onvisibilitychange={cancelDragWhenHidden} />
+<svelte:window
+  onblur={() => {
+    void endDrag(false);
+  }}
+/>
 
 <div
   data-settings-group

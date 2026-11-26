@@ -351,6 +351,58 @@ test.describe("in a library that keeps labels", () => {
     expect(saved).toBeUndefined();
   });
 
+  test("puts a dragged tab back when the window loses focus", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+    const handle = rowOf(page, "Reading").getByRole("button", {
+      name: "Move Reading",
+    });
+    const start = await boxOf(handle);
+    const x = start.x + start.width / 2;
+
+    await page.mouse.move(x, start.y + start.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x, start.y + start.height * 2, { steps: DRAG_STEPS });
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event("blur"));
+    });
+    await page.mouse.up();
+
+    await expect(rowOf(page, "Reading")).toHaveCSS("box-shadow", "none");
+    await expect(tabList(page).getByRole("listitem")).toHaveText(
+      STARTING_ORDER,
+    );
+    expect(saved).toBeUndefined();
+  });
+
+  test("sets a tab down in its last gap when the release happened outside the window", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+    const handle = rowOf(page, "Reading").getByRole("button", {
+      name: "Move Reading",
+    });
+    const start = await boxOf(handle);
+    const x = start.x + start.width / 2;
+
+    await page.mouse.move(x, start.y + start.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x, await bottomOfRow(page, "Manga"), {
+      steps: DRAG_STEPS,
+    });
+    await handle.dispatchEvent("pointermove", {
+      pointerId: 1,
+      buttons: 0,
+      clientY: start.y,
+    });
+
+    await expect(rowOf(page, "Reading")).toHaveCSS("box-shadow", "none");
+    await expect
+      .poll(savedOrder)
+      .toEqual(["all", "newChapters (hidden)", "manga", "reading", "comics"]);
+  });
+
   test("swaps the rows without sliding when motion is reduced", async ({
     page,
   }) => {
