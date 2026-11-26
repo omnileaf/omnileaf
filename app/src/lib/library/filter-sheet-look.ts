@@ -28,13 +28,24 @@ export const ANDROID_SUGGESTION_CHIP = {
   plusSize: 18,
 } as const;
 
-const TAKES_ALL_SPARE_ROOM = "grow-1000";
-
 export const ANDROID_VIEW_SETTING = {
-  row: "flex flex-wrap items-center gap-x-lg gap-y-sm ps-lg pe-xl py-sm",
   stacked: "flex flex-col ps-lg pe-lg pbs-sm pbe-md",
-  words: TAKES_ALL_SPARE_ROOM,
-  line: "basis-full",
+  words: "",
+} as const;
+
+export const ANDROID_VIEW_SETTING_LOOKS = {
+  atRowEnd: {
+    setting: "flex flex-wrap items-center gap-x-lg gap-y-sm ps-lg pe-xl py-sm",
+    words: "flex-1",
+    line: "basis-full",
+    isAtRowEnd: true,
+  },
+  underName: {
+    setting: "flex flex-col gap-sm ps-lg pe-xl py-sm",
+    words: "",
+    line: "",
+    isAtRowEnd: false,
+  },
 } as const;
 
 export const MAC_INSPECTOR = {

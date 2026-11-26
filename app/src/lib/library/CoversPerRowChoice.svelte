@@ -1,12 +1,13 @@
 <script lang="ts">
   import type { LibraryView } from "#lib/ipc/bindings.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
+  import { TextScale } from "#lib/page/text-scale.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   import { AndroidPhone } from "./android-phone.svelte";
   import {
-    ANDROID_VIEW_SETTING,
+    ANDROID_VIEW_SETTING_LOOKS,
     FILTER_SETTING_LABEL_TYPE,
   } from "./filter-sheet-look";
 
@@ -46,11 +47,17 @@
 
   const labelId = $props.id();
   const android = new AndroidPhone();
+  const textScale = new TextScale();
+  const androidLook = $derived(
+    textScale.isLarge
+      ? ANDROID_VIEW_SETTING_LOOKS.underName
+      : ANDROID_VIEW_SETTING_LOOKS.atRowEnd,
+  );
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
 </script>
 
 {#if android.isOn}
-  <div class={ANDROID_VIEW_SETTING.row}>
+  <div class={androidLook.setting}>
     {@render choice()}
     {@render underneath()}
   </div>
@@ -69,7 +76,7 @@
   <p
     id={labelId}
     class={android.isOn
-      ? [ANDROID_VIEW_SETTING.words, FILTER_SETTING_LABEL_TYPE]
+      ? [androidLook.words, FILTER_SETTING_LABEL_TYPE]
       : (labelClass ?? "text-body font-semibold large:text-small")}
   >
     {m.library_covers_per_row()}
@@ -82,7 +89,7 @@
     size="small"
     hasWindowsLook
     hasEqualColumns
-    isAtRowEnd={android.isOn}
+    isAtRowEnd={android.isOn && androidLook.isAtRowEnd}
     onChoose={(choice: Choice) => {
       onFit(choice === "auto");
     }}
@@ -95,7 +102,7 @@
       <p
         class={[
           footnoteClass ?? "text-small text-muted",
-          android.isOn && ANDROID_VIEW_SETTING.line,
+          android.isOn && androidLook.line,
         ]}
       >
         {m.library_covers_fit_width({ count: numbers.format(drawn) })}
@@ -108,7 +115,7 @@
         count={view.coversPerRow[size]}
         {drawn}
         {mostThatFit}
-        class={[STEPPERS[size], android.isOn && ANDROID_VIEW_SETTING.line]}
+        class={[STEPPERS[size], android.isOn && androidLook.line]}
         onCount={(count: number) => {
           onCount(size, count);
         }}

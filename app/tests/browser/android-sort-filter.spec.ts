@@ -75,6 +75,7 @@ const SIDE_BY_SIDE = [
 ] as const;
 const SQUEEZED_WIDTH = 200;
 const LARGE_TEXT = [
+  { scale: 1.3, width: 390 },
   { scale: 1.3, width: 360 },
   { scale: 2, width: 390 },
 ] as const;
@@ -803,11 +804,13 @@ test.describe(
         const stepperRow = range.locator("xpath=../..");
 
         const rangeBox = await boxOf(range);
+        const stepperRowBox = await boxOf(stepperRow);
 
         expect(rangeBox.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
-        expect(
-          rangeBox.y - (groupBox.y + groupBox.height),
-        ).toBeGreaterThanOrEqual(SETTING_ROW_GAP - 0.5);
+        expect(stepperRowBox.y - (groupBox.y + groupBox.height)).toBeCloseTo(
+          SETTING_ROW_GAP,
+          0,
+        );
         await expect(stepperRow).toHaveCSS("column-gap", STEPPER_GAP);
       });
 

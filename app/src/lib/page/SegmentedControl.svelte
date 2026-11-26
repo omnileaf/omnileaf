@@ -222,7 +222,7 @@
         ? WINDOWS_LOOK.track
         : ["bg-chip", look.track],
     !isFullWidth && look.capped,
-    isAtRowEnd && ["shrink-0 grow", !isOneRow && "basis-full"],
+    isAtRowEnd && ["shrink-0", !isOneRow && "basis-full"],
     className,
   ]}
 >

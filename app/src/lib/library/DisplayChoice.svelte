@@ -12,11 +12,12 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
+  import { TextScale } from "#lib/page/text-scale.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { AndroidPhone } from "./android-phone.svelte";
   import {
-    ANDROID_VIEW_SETTING,
+    ANDROID_VIEW_SETTING_LOOKS,
     FILTER_SETTING_LABEL_TYPE,
   } from "./filter-sheet-look";
 
@@ -61,17 +62,23 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const android = new AndroidPhone();
+  const textScale = new TextScale();
+  const androidLook = $derived(
+    textScale.isLarge
+      ? ANDROID_VIEW_SETTING_LOOKS.underName
+      : ANDROID_VIEW_SETTING_LOOKS.atRowEnd,
+  );
   const showsIcons = $derived(
     platform !== "ios" && phoneOf(platform, width.current) === undefined,
   );
   const labelId = `${id}-label`;
 </script>
 
-<div class={android.isOn ? ANDROID_VIEW_SETTING.row : ""}>
+<div class={android.isOn ? androidLook.setting : ""}>
   <p
     id={labelId}
     class={android.isOn
-      ? [ANDROID_VIEW_SETTING.words, FILTER_SETTING_LABEL_TYPE]
+      ? [androidLook.words, FILTER_SETTING_LABEL_TYPE]
       : (labelClass ?? "text-body font-medium large:text-small")}
   >
     {m.library_view_display()}
@@ -85,7 +92,7 @@
     size="small"
     hasWindowsLook
     hasEqualColumns
-    isAtRowEnd={android.isOn}
+    isAtRowEnd={android.isOn && androidLook.isAtRowEnd}
     {onChoose}
     class={[!android.isOn && "mbs-sm large:mbs-icon-gap"]}
   />
