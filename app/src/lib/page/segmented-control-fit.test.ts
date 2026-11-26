@@ -171,6 +171,8 @@ test("gives a group at its row's end a line of its own across the row once it no
 test("keeps a group at its row's end on one row when the row has not a pixel to spare", async () => {
   const row = await renderAtRowEnd();
   const widths = NAMES.map(ownWidth);
+  row.style.inlineSize = `${String(Math.max(...widths))}px`;
+  await expect.poll(() => rows().length).toBe(NAMES.length);
 
   row.style.inlineSize = `${String(roomFor(widths) - SPARE)}px`;
 
