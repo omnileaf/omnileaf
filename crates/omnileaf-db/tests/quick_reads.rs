@@ -19,10 +19,11 @@ use omnileaf_db::{
         Page, PageRequest, PageSize, PersonRole, RootId, RootKind, RootLocator, ScannedBook,
         SearchText, SeriesFilter, SeriesFolder, SeriesListing, SeriesNaming, SeriesOrder,
         SeriesSearch, SeriesSort, SeriesSummary, Sourced, ValueSource, add_root,
-        category_series_count, category_series_page, folder_group_series_count,
-        folder_group_series_page, folder_series_count, folder_series_page, record_scanned_books,
-        search_count, search_page, series_count, series_page, writer_series_count,
-        writer_series_page, writerless_series_count, writerless_series_page,
+        category_series_count, category_series_page, categoryless_series_count,
+        categoryless_series_page, folder_group_series_count, folder_group_series_page,
+        folder_series_count, folder_series_page, record_scanned_books, search_count, search_page,
+        series_count, series_page, writer_series_count, writer_series_page,
+        writerless_series_count, writerless_series_page,
     },
     store::Store,
 };
@@ -291,6 +292,14 @@ impl Shelf {
                         })?,
                         count: category_series_count(connection, category, &filter)?,
                         holds: |number| number.is_multiple_of(EVERY_FOURTH_IN_A_CATEGORY),
+                    },
+                    Listed {
+                        name: "categoryless",
+                        titles: drain(|request| {
+                            categoryless_series_page(connection, &listing, request)
+                        })?,
+                        count: categoryless_series_count(connection, &filter)?,
+                        holds: |number| !number.is_multiple_of(EVERY_FOURTH_IN_A_CATEGORY),
                     },
                     Listed {
                         name: "writer",
