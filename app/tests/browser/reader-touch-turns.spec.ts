@@ -8,6 +8,7 @@ import {
   PAGE_COUNT,
   PAGE_HEIGHT,
   PAGE_WIDTH,
+  pageDrawnAtRest,
   pageIndexOf,
   readerBackend,
   readerBook,
@@ -36,6 +37,18 @@ const PAN_DOWN_PX = -120;
 const PAN_PAST_EDGE_PX = 3000;
 const DRAG_STEPS = 12;
 const CLOSE_PX = 4;
+const LONG_BOOK_PAGES = 200;
+const KEY_REPEAT_MS = 30;
+const HELD_KEY_MS = 2000;
+const TAP_BURST = 12;
+const TAP_BURST_GAP_MS = 40;
+const MOST_CELLS_DRAWN = 3;
+const MOST_PAGES_HELD = 7;
+const ARROW_RIGHT = {
+  key: "ArrowRight",
+  code: "ArrowRight",
+  windowsVirtualKeyCode: 39,
+};
 
 test.use({ backend: readerBackend(DEFAULT_BACKEND, OPENING) });
 
@@ -49,11 +62,17 @@ interface Point {
   readonly y: number;
 }
 
+interface PagesHeld {
+  readonly mostDrawn: number;
+  readonly mostMounted: number;
+}
+
 declare global {
   interface Window {
     omnileafGappedFrames?: number[];
     omnileafRecording?: boolean;
     omnileafControlsShown?: boolean;
+    omnileafPagesHeld?: { mostDrawn: number; mostMounted: number };
   }
 }
 
@@ -139,6 +158,13 @@ async function expectOnPage(page: Page, number: number): Promise<void> {
   );
 }
 
+async function pageNumber(page: Page): Promise<number> {
+  const said = await page
+    .getByRole("slider", { name: "Page" })
+    .getAttribute("aria-valuetext");
+  return Number(/Page (\d+)/.exec(said ?? "")?.[1]);
+}
+
 async function centreOf(locator: Locator): Promise<Point> {
   const box = await locator.boundingBox();
   if (box === null) {
@@ -180,16 +206,38 @@ async function tap(session: CDPSession, at: Point): Promise<void> {
 async function tapEvery(
   session: CDPSession,
   at: Point,
-  taps: number,
+  { taps, gapMs }: { taps: number; gapMs: number },
 ): Promise<void> {
   const start = Date.now();
   for (let index = 0; index < taps; index += 1) {
-    const due = start + index * TAP_GAP_MS - Date.now();
+    const due = start + index * gapMs - Date.now();
     if (due > 0) {
       await new Promise((ready) => setTimeout(ready, due));
     }
     await tap(session, at);
   }
+}
+
+async function holdKey(
+  session: CDPSession,
+  key: typeof ARROW_RIGHT,
+  forMs: number,
+): Promise<void> {
+  const start = Date.now();
+  let presses = 0;
+  while (Date.now() - start < forMs) {
+    await session.send("Input.dispatchKeyEvent", {
+      type: "keyDown",
+      ...key,
+      autoRepeat: presses > 0,
+    });
+    presses += 1;
+    const due = start + presses * KEY_REPEAT_MS - Date.now();
+    if (due > 0) {
+      await new Promise((ready) => setTimeout(ready, due));
+    }
+  }
+  await session.send("Input.dispatchKeyEvent", { type: "keyUp", ...key });
 }
 
 async function fingerDown(session: CDPSession, at: Point): Promise<void> {
@@ -282,6 +330,43 @@ async function stopRecording(page: Page): Promise<number[]> {
   });
 }
 
+async function recordPagesHeld(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    window.omnileafPagesHeld = { mostDrawn: 0, mostMounted: 0 };
+    window.omnileafRecording = true;
+    const record = (): void => {
+      if (window.omnileafRecording !== true) {
+        return;
+      }
+      const images = [
+        ...document.querySelectorAll<HTMLImageElement>(
+          'main img[alt^="Page "]',
+        ),
+      ];
+      const cells = new Set(
+        images.flatMap((image) => image.parentElement?.parentElement ?? []),
+      );
+      const drawn = [...cells].filter((cell) =>
+        cell.checkVisibility({ visibilityProperty: true }),
+      ).length;
+      const held = window.omnileafPagesHeld;
+      if (held !== undefined) {
+        held.mostDrawn = Math.max(held.mostDrawn, drawn);
+        held.mostMounted = Math.max(held.mostMounted, images.length);
+      }
+      requestAnimationFrame(record);
+    };
+    requestAnimationFrame(record);
+  });
+}
+
+async function stopRecordingPagesHeld(page: Page): Promise<PagesHeld> {
+  return page.evaluate(() => {
+    window.omnileafRecording = false;
+    return window.omnileafPagesHeld ?? { mostDrawn: 0, mostMounted: 0 };
+  });
+}
+
 async function slidesRunning(page: Page): Promise<number> {
   return page.evaluate(
     () =>
@@ -326,7 +411,7 @@ async function pageOffset(page: Page, number: number): Promise<Point> {
   if (box === null) {
     throw new Error("the page is not on screen");
   }
-  return { x: box.x, y: box.y };
+  return box;
 }
 
 async function pageAreaBox(page: Page): Promise<Point> {
@@ -334,7 +419,7 @@ async function pageAreaBox(page: Page): Promise<Point> {
   if (box === null) {
     throw new Error("the page area is not on screen");
   }
-  return { x: box.x, y: box.y };
+  return box;
 }
 
 test(
@@ -355,7 +440,7 @@ test(
     });
     await recordUncoveredFrames(page);
 
-    await tapEvery(session, next, QUICK_TAPS);
+    await tapEvery(session, next, { taps: QUICK_TAPS, gapMs: TAP_GAP_MS });
     await expectOnPage(page, 14 + QUICK_TAPS);
     await expect.poll(() => slidesRunning(page)).toBe(0);
     await waitFrames(page, FRAMES_TO_SETTLE);
@@ -384,6 +469,57 @@ test(
     ).toBe(false);
   },
 );
+
+test.describe("a long book", { tag: "@native" }, () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      openBook: () => readerBook(OPENING, LONG_BOOK_PAGES),
+    },
+  });
+
+  async function expectPagesKeptUp(
+    page: Page,
+    turn: (session: CDPSession) => Promise<void>,
+  ): Promise<void> {
+    await servePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    const session = await page.context().newCDPSession(page);
+    await recordPagesHeld(page);
+
+    await turn(session);
+    await expect.poll(() => slidesRunning(page)).toBe(0);
+    await waitFrames(page, FRAMES_TO_SETTLE);
+    const held = await stopRecordingPagesHeld(page);
+
+    expect(held.mostDrawn).toBeLessThanOrEqual(MOST_CELLS_DRAWN);
+    expect(held.mostMounted).toBeLessThanOrEqual(MOST_PAGES_HELD);
+    expect(await pageNumber(page)).toBeGreaterThan(14);
+    expect(await pageDrawnAtRest(page)).toBe(await pageNumber(page));
+  }
+
+  test("keeps at most three pages drawn, and the page drawn on its number, while a key is held", async ({
+    page,
+  }) => {
+    await expectPagesKeptUp(page, (session) =>
+      holdKey(session, ARROW_RIGHT, HELD_KEY_MS),
+    );
+  });
+
+  test("keeps at most three pages drawn, and the page drawn on its number, through a burst of taps", async ({
+    page,
+  }) => {
+    await expectPagesKeptUp(page, async (session) => {
+      const next = await centreOf(
+        page.getByRole("button", { name: "Next page" }),
+      );
+      await tapEvery(session, next, {
+        taps: TAP_BURST,
+        gapMs: TAP_BURST_GAP_MS,
+      });
+    });
+  });
+});
 
 async function expectZoomedPagePans(page: Page): Promise<void> {
   await servePages(page);

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ChevronRight, ImageOff, RefreshCw } from "@lucide/svelte";
-  import { type Snippet, untrack } from "svelte";
+  import { onDestroy, type Snippet, untrack } from "svelte";
   import type { Attachment } from "svelte/attachments";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
@@ -20,7 +20,11 @@
   import type { PageFit } from "#lib/reader/reader-settings.svelte.ts";
   import { spreadAt, type Spread } from "#lib/reader/spreads.ts";
   import { cellsAround } from "#lib/reader/page-cells.ts";
-  import { slideTiming, turnsOnScreen } from "#lib/reader/page-flight.ts";
+  import {
+    type SlideStart,
+    slideTiming,
+    turnsOnScreen,
+  } from "#lib/reader/page-flight.ts";
   import { pagesAround } from "#lib/reader/page-window.ts";
 
   /** Pages decoded ahead of the one shown, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
@@ -29,6 +33,8 @@
   const SPINNER_DELAY_MS = 100;
   const SPINNER_SIZE = 20;
   const RESTING_ZOOM = 1;
+  const LONGEST_DECODE_WAIT_MS = 250;
+  const LONGEST_SLIDE_SPREADS = 2;
   const PROBLEM_ICON_SIZE = 20;
   const BUTTON_ICON_SIZE = 16;
   /** Asks again for a page that failed once, as the core may have dropped its request for newer ones. */
@@ -74,6 +80,7 @@
 
   interface Flight {
     readonly from: number;
+    readonly start: SlideStart;
     readonly isFlying: boolean;
   }
 
@@ -96,6 +103,8 @@
   let flying: Animation[] = [];
   let lastPosition = untrack(() => position);
   let lastSlide = untrack(() => slide);
+  let lastSpreads = untrack(() => spreads);
+  let lastWidth = untrack(() => spaceWidth);
   const onScreen = $derived(
     turnsOnScreen(
       flight === undefined
@@ -116,27 +125,42 @@
       pagesAround(shown, pages.length, PAGES_AHEAD),
     ),
   );
-  const isFlightReady = $derived(
-    cells.every(
-      (cell) => !isPainted(cell.offset) || cell.spread.every(isReady),
-    ),
+  const isTargetReady = $derived(
+    cells.every((cell) => cell.offset !== 0 || cell.spread.every(isReady)),
   );
 
   $effect.pre(() => {
     const at = position;
     const across = slide;
     const settles = isSettling;
+    const laidOut = spreads;
+    const width = spaceWidth;
     untrack(() => {
+      if (laidOut !== lastSpreads || width !== lastWidth) {
+        cutTo(at, across);
+        lastSpreads = laidOut;
+        lastWidth = width;
+        return;
+      }
       followTurn(at, across, settles);
     });
   });
 
   $effect(() => {
-    if (flight === undefined || flight.isFlying || !isFlightReady) {
+    if (flight === undefined || flight.isFlying) {
       return;
     }
-    untrack(launch);
+    if (isTargetReady) {
+      untrack(launch);
+      return;
+    }
+    const waiting = setTimeout(launch, LONGEST_DECODE_WAIT_MS);
+    return () => {
+      clearTimeout(waiting);
+    };
   });
+
+  onDestroy(stopFlying);
   const isShownReady = $derived(
     isBlank || decoded.has(shown) || failed.has(shown),
   );
@@ -211,9 +235,21 @@
     const turned = at - lastPosition;
     const isLetGo = lastSlide !== 0 && across === 0;
     if (settles && (turned !== 0 || isLetGo)) {
-      const shift = flight === undefined ? lastSlide : shiftInFlight();
+      const isInMotion = flight !== undefined;
+      const shift = isInMotion ? shiftInFlight() : lastSlide;
       stopFlying();
-      flight = { from: shift + restOf(turned), isFlying: false };
+      const from = shift + restOf(turned);
+      flight =
+        Math.abs(from) < LONGEST_SLIDE_SPREADS * spaceWidth
+          ? {
+              from,
+              start: isInMotion ? "inMotion" : "fromRest",
+              isFlying: false,
+            }
+          : undefined;
+      if (flight === undefined) {
+        onSettled();
+      }
     } else if (!settles && flight !== undefined) {
       stopFlying();
       flight = undefined;
@@ -222,12 +258,23 @@
     lastSlide = across;
   }
 
+  function cutTo(at: number, across: number): void {
+    lastPosition = at;
+    lastSlide = across;
+    if (flight === undefined) {
+      return;
+    }
+    stopFlying();
+    flight = undefined;
+    onSettled();
+  }
+
   function launch(): void {
     const leaving = flight;
     if (leaving === undefined || scroller === undefined) {
       return;
     }
-    const timing = slideTiming(scroller);
+    const timing = slideTiming(scroller, leaving.start);
     const painted = [...scroller.querySelectorAll<HTMLElement>("[data-turns]")];
     if (timing.duration <= 0 || painted.length === 0) {
       land();
@@ -252,7 +299,7 @@
         }
       };
     }
-    flight = { from: leaving.from, isFlying: true };
+    flight = { ...leaving, isFlying: true };
   }
 
   function land(): void {

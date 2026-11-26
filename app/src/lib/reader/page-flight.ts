@@ -12,7 +12,12 @@ export interface TurnsOnScreen {
 
 const ONLY_THE_PAGE: TurnsOnScreen = { low: 0, high: 0 };
 const SLIDE_DURATION = "--transition-duration-slide";
-const SLIDE_EASING = "--ease-emphasized";
+const SLIDE_EASINGS = {
+  fromRest: "--ease-emphasized",
+  inMotion: "--ease-out",
+} as const satisfies Record<string, string>;
+
+export type SlideStart = keyof typeof SLIDE_EASINGS;
 
 export interface SlideTiming {
   readonly duration: number;
@@ -35,10 +40,10 @@ export function turnsOnScreen(
   return { low: Math.min(...ends), high: Math.max(...ends) };
 }
 
-export function slideTiming(element: Element): SlideTiming {
+export function slideTiming(element: Element, start: SlideStart): SlideTiming {
   const style = getComputedStyle(element);
   return {
     duration: durationMs(style.getPropertyValue(SLIDE_DURATION)),
-    easing: style.getPropertyValue(SLIDE_EASING).trim(),
+    easing: style.getPropertyValue(SLIDE_EASINGS[start]).trim(),
   };
 }

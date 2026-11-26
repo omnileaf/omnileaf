@@ -5,6 +5,7 @@ import {
   BOOK_ID,
   BOOK_TITLE,
   PAGE_COUNT,
+  pageDrawnAtRest,
   pinchTo,
   readerBackend,
   readerBook,
@@ -28,6 +29,7 @@ const SLOW_SLIDE_MS = 100_000;
 const SLIDE_MS = 350;
 const QUICK_TURN_MS = 50;
 const SMALL_MOVE_PX = 6;
+const NEVER_ARRIVING_PAGE = 16;
 const OPENING = {
   reading: { state: "started", page: 14 },
   startPage: 13,
@@ -39,10 +41,15 @@ type Side = typeof RIGHT | typeof LEFT;
 
 test.use({ backend: readerBackend(DEFAULT_BACKEND, OPENING) });
 
+interface Opening {
+  readonly stored?: Record<string, string>;
+  readonly pageArrives?: (index: number) => Promise<void>;
+}
+
 async function openBookWith(
   page: Page,
   look: object,
-  stored: Record<string, string> = {},
+  { stored = {}, pageArrives }: Opening = {},
 ): Promise<void> {
   await page.addInitScript(
     ({ key, value, guides, entries }) => {
@@ -61,7 +68,10 @@ async function openBookWith(
       entries: stored,
     },
   );
-  await servePages(page);
+  await servePages(
+    page,
+    pageArrives === undefined ? undefined : (_, index) => pageArrives(index),
+  );
   await page.goto(`/read/${BOOK_ID}`);
   await expect(
     page.getByRole("heading", { level: 1, name: BOOK_TITLE }),
@@ -555,7 +565,7 @@ const STILL_READERS = [
 for (const { why, stored, reducedMotion } of STILL_READERS) {
   test(`turns at once with Slide under ${why}`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion });
-    await openBookWith(page, { pageTurn: "slide" }, stored);
+    await openBookWith(page, { pageTurn: "slide" }, { stored });
     const start = await leftOf(shownPage(page, 14));
 
     await page.keyboard.press("ArrowRight");
@@ -784,6 +794,33 @@ test("leaves no slide waiting after a turn that moves nothing", async ({
   const { moving } = await framesOfTheTurn(page, [1]);
 
   expect(moving).toBe(0);
+});
+
+test("turns to a page that never arrives, showing it loading, and on past it", async ({
+  page,
+}) => {
+  await openBookWith(
+    page,
+    { pageTurn: "slide" },
+    {
+      pageArrives: (index) =>
+        index === NEVER_ARRIVING_PAGE - 1
+          ? new Promise<void>(() => undefined)
+          : Promise.resolve(),
+    },
+  );
+  await page.keyboard.press("ArrowRight");
+  await expectOnPage(page, NEVER_ARRIVING_PAGE - 1);
+
+  await page.keyboard.press("ArrowRight");
+  await expectOnPage(page, NEVER_ARRIVING_PAGE);
+  await expect(
+    page.getByText(`Loading page ${String(NEVER_ARRIVING_PAGE)}`),
+  ).toBeVisible();
+  await page.keyboard.press("ArrowRight");
+
+  await expectOnPage(page, NEVER_ARRIVING_PAGE + 1);
+  await expect.poll(() => pageDrawnAtRest(page)).toBe(NEVER_ARRIVING_PAGE + 1);
 });
 
 test.describe("pages whose size is not known yet", () => {
