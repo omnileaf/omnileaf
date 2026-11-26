@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
+
+  import { assertNever } from "#lib/assert-never.ts";
 
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import { reportFailure } from "#lib/errors/report-failure.ts";
@@ -20,10 +22,14 @@
   import {
     type ArrangedTab,
     arrangedTabs,
+    type CategoryTab,
     NEW_LIBRARY_TABS,
     tabKey,
   } from "#lib/library/library-tabs.ts";
+  import DeleteCategoryDialog from "#lib/library/DeleteCategoryDialog.svelte";
   import LibraryTabsList from "#lib/library/LibraryTabsList.svelte";
+  import RenameCategoryDialog from "#lib/library/RenameCategoryDialog.svelte";
+  import { NOTICE_WINDOW_MS } from "#lib/notices/notices.ts";
   import GroupedChoiceRow from "#lib/settings/GroupedChoiceRow.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
   import NewCategoryDialog from "#lib/library/NewCategoryDialog.svelte";
@@ -44,6 +50,17 @@
   let seriesCounts = $state<ReadonlyMap<string, number>>(new Map());
   let keepsLabels = $state(false);
   let isNaming = $state(false);
+  let renaming = $state<CategoryTab | undefined>();
+  let deleting = $state<CategoryTab | undefined>();
+  let isDeleting = $state(false);
+  let focusAfterDelete: string | undefined;
+  let announcement = $state("");
+  let quiet: ReturnType<typeof setTimeout> | undefined;
+  const namesBesideRenamed = $derived(
+    categories
+      .filter(({ id }) => id !== renaming?.id.id)
+      .map(({ name }) => name),
+  );
   const isMac = currentPlatform() === "macos";
   const isAndroid = currentPlatform() === "android";
   const arranged = $derived(
@@ -71,6 +88,79 @@
     { value: OPENS_ON_LAST_TAB, label: m.library_opens_on_last() },
     ...openable.map(({ key, name }) => ({ value: key, label: name })),
   ]);
+
+  function announce(text: string): void {
+    announcement = text;
+    clearTimeout(quiet);
+    quiet = setTimeout(() => {
+      announcement = "";
+    }, NOTICE_WINDOW_MS);
+  }
+
+  function moreButtonOf(key: string): HTMLElement | null {
+    return document.querySelector<HTMLElement>(
+      `[data-tab-row="${CSS.escape(key)}"] [data-tab-more]`,
+    );
+  }
+
+  function asCategory(tab: ArrangedTab): CategoryTab | undefined {
+    return tab.id.kind === "category" ? { ...tab, id: tab.id } : undefined;
+  }
+
+  function keyBeside(tab: CategoryTab): string | undefined {
+    const at = arranged.findIndex(({ id }) => tabKey(id) === tab.id.id);
+    const beside = arranged[at + 1] ?? arranged[at - 1];
+    return beside === undefined ? undefined : tabKey(beside.id);
+  }
+
+  async function rename(tab: CategoryTab, to: string): Promise<void> {
+    const renamed = await commands.renameLibraryCategory(tab.id.id, to);
+    if (renamed.status === "error") {
+      renaming = undefined;
+      reportError(renamed.error);
+      return;
+    }
+    await loadCategories();
+    switch (renamed.data.kind) {
+      case "renamed":
+        renaming = undefined;
+        announce(m.library_tabs_renamed({ tab: tab.name, name: to }));
+        return;
+      case "gone":
+        renaming = undefined;
+        return;
+      case "nameTaken":
+      case "nameEmpty":
+        return;
+      default:
+        assertNever(renamed.data);
+    }
+  }
+
+  async function remove(tab: CategoryTab): Promise<void> {
+    isDeleting = true;
+    focusAfterDelete = keyBeside(tab);
+    const removed = await commands.removeLibraryCategory(tab.id.id);
+    await loadCategories();
+    isDeleting = false;
+    deleting = undefined;
+    if (removed.status === "error") {
+      reportError(removed.error);
+      return;
+    }
+    announce(m.library_tabs_deleted({ tab: tab.name }));
+  }
+
+  async function focusBesideDeleted(event: Event): Promise<void> {
+    const key = focusAfterDelete;
+    focusAfterDelete = undefined;
+    if (key === undefined) {
+      return;
+    }
+    event.preventDefault();
+    await tick();
+    moreButtonOf(key)?.focus();
+  }
 
   function chooseOpensOn(choice: string): void {
     opensOn.choose(choice);
@@ -195,6 +285,16 @@
             isNaming = true;
           }
         : undefined}
+      onRename={keepsLabels
+        ? (tab: ArrangedTab) => {
+            renaming = asCategory(tab);
+          }
+        : undefined}
+      onDelete={keepsLabels
+        ? (tab: ArrangedTab) => {
+            deleting = asCategory(tab);
+          }
+        : undefined}
     />
   </div>
   {#if android.isOn}
@@ -256,4 +356,37 @@
       isNaming = false;
     }}
   />
+  <RenameCategoryDialog
+    name={renaming?.name}
+    otherNames={namesBesideRenamed}
+    onRename={(to: string) => {
+      if (renaming !== undefined) {
+        void rename(renaming, to);
+      }
+    }}
+    onClose={() => {
+      renaming = undefined;
+    }}
+  />
+  <DeleteCategoryDialog
+    category={deleting === undefined
+      ? undefined
+      : {
+          name: deleting.name,
+          seriesCount: seriesCounts.get(deleting.id.id),
+        }}
+    isBusy={isDeleting}
+    onDelete={() => {
+      if (deleting !== undefined) {
+        void remove(deleting);
+      }
+    }}
+    onCancel={() => {
+      deleting = undefined;
+    }}
+    onCloseAutoFocus={(event: Event) => {
+      void focusBesideDeleted(event);
+    }}
+  />
+  <p role="status" class="sr-only">{announcement}</p>
 </GroupedGround>

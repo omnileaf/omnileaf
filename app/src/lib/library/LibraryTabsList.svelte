@@ -413,6 +413,7 @@
                 {#snippet child({ props })}
                   <Button
                     {...props}
+                    data-tab-more
                     look="icon"
                     class={[
                       android.isOn &&

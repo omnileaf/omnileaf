@@ -249,4 +249,58 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
       /Reading/,
     ]);
   });
+  test("ends a category's menu with Rename and Delete, without the desktop's ellipsis", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+
+    await rowOf(page, "Manga")
+      .getByRole("button", { name: "More for Manga" })
+      .click();
+
+    await expect(page.getByRole("menuitem")).toHaveText([
+      "Move up",
+      "Move down",
+      "Hide this tab",
+      "Rename",
+      "Delete",
+    ]);
+  });
+
+  test("renames in a Material dialog with an outlined Name field", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+    await rowOf(page, "Manga")
+      .getByRole("button", { name: "More for Manga" })
+      .click();
+
+    await page.getByRole("menuitem", { name: "Rename" }).click();
+
+    const dialog = page.getByRole("dialog", { name: "Rename category" });
+    await expect(dialog).toHaveCSS("border-top-left-radius", "28px");
+    await expect(
+      dialog.locator("[data-slot=outlined-field]").getByRole("textbox", {
+        name: "Name",
+      }),
+    ).toHaveValue("Manga");
+  });
+
+  test("asks before deleting in the icon dialog, the bin above a centred title", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+    await rowOf(page, "Manga")
+      .getByRole("button", { name: "More for Manga" })
+      .click();
+
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+
+    const ask = page.getByRole("alertdialog", { name: "Delete Manga?" });
+    const title = ask.getByRole("heading", { name: "Delete Manga?" });
+    const icon = await boxOf(ask.locator("svg").first());
+    await expect(title).toHaveCSS("text-align", "center");
+    expect(icon.y + icon.height).toBeLessThan((await boxOf(title)).y);
+    await expect(ask).toContainText("Its 6 series stay in your library.");
+  });
 });
