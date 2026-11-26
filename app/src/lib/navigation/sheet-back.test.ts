@@ -2,7 +2,8 @@ import { expect, test } from "vitest";
 
 import { sheetBackProgressOf, sheetBackShape } from "./sheet-back";
 
-const LIBRARY_SHEET = { width: 392, height: 600 };
+const LIBRARY_SHEET = { width: 392, height: 600, fillableHeight: 600 };
+const FIT_SHEET = { ...LIBRARY_SHEET, fillableHeight: 0 };
 
 test("leaves a sheet at rest as it is", () => {
   expect(sheetBackShape(LIBRARY_SHEET, 0)).toEqual({
@@ -32,14 +33,13 @@ test("shrinks everything evenly by the horizontal factor, laying the sheet out t
   expect(layoutHeight).toBeGreaterThan(LIBRARY_SHEET.height);
 });
 
-test("shrinks a sheet in proportion to its own size", () => {
-  const { scale, layoutHeight } = sheetBackShape(
-    { width: 800, height: 300 },
+test("shrinks a sheet in proportion to its own width", () => {
+  const { scale } = sheetBackShape(
+    { width: 800, height: 300, fillableHeight: 300 },
     1,
   );
 
   expect(scale).toBeCloseTo(1 - 48 / 800);
-  expect(layoutHeight * scale).toBeCloseTo(300 - 24);
 });
 
 test("tells the progress a shape stands for", () => {
@@ -52,4 +52,31 @@ test("tells a sheet at rest has made no progress", () => {
   const shape = sheetBackShape(LIBRARY_SHEET, 0);
 
   expect(sheetBackProgressOf(LIBRARY_SHEET, shape)).toBe(0);
+});
+
+test("takes the uniform scale alone for a sheet whose content cannot take more height", () => {
+  const { scale, layoutHeight } = sheetBackShape(FIT_SHEET, 1);
+
+  expect(layoutHeight).toBe(600);
+  expect(layoutHeight * scale).toBeCloseTo(600 * scale);
+});
+
+test("grows a sheet's layout by only as much as its body can fill", () => {
+  const { layoutHeight } = sheetBackShape(
+    { ...LIBRARY_SHEET, fillableHeight: 10 },
+    1,
+  );
+
+  expect(layoutHeight).toBe(610);
+});
+
+test("never lays a sheet out shorter than it rests, however wide it is", () => {
+  const wide = { width: 800, height: 300, fillableHeight: 300 };
+
+  expect(
+    sheetBackShape({ ...wide, height: 100 }, 1).layoutHeight,
+  ).toBeGreaterThanOrEqual(100);
+  expect(
+    sheetBackShape({ ...wide, height: 100, fillableHeight: 0 }, 1).layoutHeight,
+  ).toBe(100);
 });

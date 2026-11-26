@@ -1,6 +1,7 @@
 export interface SheetBackSize {
   readonly width: number;
   readonly height: number;
+  readonly fillableHeight: number;
 }
 
 export interface SheetBackShape {
@@ -17,7 +18,9 @@ export function sheetBackShape(
 ): SheetBackShape {
   const scaleX = 1 - (SHEET_BACK.maxShrinkWidthPx / size.width) * progress;
   const scaleY = 1 - (SHEET_BACK.maxShrinkHeightPx / size.height) * progress;
-  return { scale: scaleX, layoutHeight: (size.height * scaleY) / scaleX };
+  const wanted = Math.max(0, (size.height * scaleY) / scaleX - size.height);
+  const growth = Math.min(wanted, size.fillableHeight);
+  return { scale: scaleX, layoutHeight: size.height + growth };
 }
 
 export function sheetBackProgressOf(
