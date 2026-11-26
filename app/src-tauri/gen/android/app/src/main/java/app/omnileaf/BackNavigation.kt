@@ -1,5 +1,7 @@
 package app.omnileaf
 
+import android.view.RoundedCorner
+import android.view.View
 import android.webkit.WebView
 import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
@@ -12,6 +14,8 @@ internal interface WebHistory {
 
 /** A page takes a frame or two to step back, so Android waits this long before deciding it did not. */
 private const val STEP_BACK_ALLOWANCE_MS = 400L
+
+private const val SCREEN_MIDDLE = 0.5f
 
 internal class WebViewHistory(
     private val webView: WebView,
@@ -33,9 +37,27 @@ internal class WebViewHistory(
     }
 }
 
+internal enum class SwipeSide(
+    val id: String,
+) {
+    LEFT("left"),
+    RIGHT("right"),
+}
+
+internal data class BackPosition(
+    val progress: Float,
+    val edge: SwipeSide,
+    val touchY: Float,
+    val cornerDp: Float,
+)
+
 internal sealed interface BackGesture {
+    data class Started(
+        val at: BackPosition,
+    ) : BackGesture
+
     data class Moved(
-        val progress: Float,
+        val at: BackPosition,
     ) : BackGesture
 
     data object Cancelled : BackGesture
@@ -45,8 +67,39 @@ internal fun interface BackGestures {
     fun report(gesture: BackGesture)
 }
 
+private val SCREEN_CORNERS =
+    listOf(
+        RoundedCorner.POSITION_TOP_LEFT,
+        RoundedCorner.POSITION_TOP_RIGHT,
+        RoundedCorner.POSITION_BOTTOM_RIGHT,
+        RoundedCorner.POSITION_BOTTOM_LEFT,
+    )
+
+internal fun largestCornerDp(
+    radiiPx: List<Int>,
+    density: Float,
+): Float = (radiiPx.maxOrNull() ?: 0) / density
+
+internal fun View.screenCornerDp(): Float {
+    val insets = rootWindowInsets ?: return 0f
+    val radiiPx = SCREEN_CORNERS.map { insets.getRoundedCorner(it)?.radius ?: 0 }
+    return largestCornerDp(radiiPx, resources.displayMetrics.density)
+}
+
+/** Android reports NaN as the touch of a back that comes from a button instead of a swipe. */
+private fun BackEventCompat.touchShareOf(heightPx: Float): Float? {
+    val fingerY = touchY.takeUnless(Float::isNaN) ?: return null
+    return heightPx.takeIf { it > 0f }?.let { fingerY / it }
+}
+
+internal class ScreenShape(
+    val heightPx: () -> Float,
+    val cornerDp: () -> Float,
+)
+
 internal class BackNavigation(
     private val history: WebHistory,
+    private val screen: ScreenShape,
     private val leaveTheApp: () -> Unit = {},
 ) : OnBackPressedCallback(false) {
     private var gestures: BackGestures? = null
@@ -73,12 +126,20 @@ internal class BackNavigation(
     }
 
     override fun handleOnBackStarted(backEvent: BackEventCompat) {
-        gestures?.report(BackGesture.Moved(backEvent.progress))
+        gestures?.report(BackGesture.Started(positionOf(backEvent)))
     }
 
     override fun handleOnBackProgressed(backEvent: BackEventCompat) {
-        gestures?.report(BackGesture.Moved(backEvent.progress))
+        gestures?.report(BackGesture.Moved(positionOf(backEvent)))
     }
+
+    private fun positionOf(backEvent: BackEventCompat): BackPosition =
+        BackPosition(
+            progress = backEvent.progress,
+            edge = if (backEvent.swipeEdge == BackEventCompat.EDGE_RIGHT) SwipeSide.RIGHT else SwipeSide.LEFT,
+            touchY = backEvent.touchShareOf(screen.heightPx()) ?: SCREEN_MIDDLE,
+            cornerDp = screen.cornerDp(),
+        )
 
     override fun handleOnBackCancelled() {
         gestures?.report(BackGesture.Cancelled)
