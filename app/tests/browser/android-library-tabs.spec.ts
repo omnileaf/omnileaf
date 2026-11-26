@@ -1,13 +1,24 @@
+import type { Locator, Page } from "@playwright/test";
+
 import type {
   LibraryCategory,
   LibraryTab,
 } from "../../src/lib/ipc/bindings.ts";
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  heldAnimations,
+  holdScriptedAnimations,
+  slowMoves,
+} from "./held-animations.ts";
 
 const CATEGORIES = [
   { id: "reading", name: "Reading" },
   { id: "manga", name: "Manga" },
 ] as LibraryCategory[];
+const DRAG_STEPS = 8;
+const PART_OF_A_ROW = 20;
+const INSIDE_THE_ROW = 2;
+const SHORT_OF_HALF = 3;
 const TABS: readonly LibraryTab[] = [
   { id: { kind: "all" }, isHidden: false },
   { id: { kind: "newChapters" }, isHidden: true },
@@ -28,6 +39,16 @@ test.use({
   },
 });
 
+function tabList(page: Page): Locator {
+  return page.getByRole("list", { name: "Library tabs" });
+}
+
+function rowOf(page: Page, name: string): Locator {
+  return tabList(page)
+    .getByRole("listitem")
+    .filter({ has: page.getByText(name, { exact: true }) });
+}
+
 test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
   test.beforeEach(({ platform }) => {
     test.skip(platform !== "android", "Android's list rows");
@@ -37,8 +58,8 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     page,
   }) => {
     await page.goto("/settings/library/tabs");
-    const list = page.getByRole("list", { name: "Library tabs" });
-    const row = list.getByRole("listitem").filter({ hasText: "Reading" });
+    const list = tabList(page);
+    const row = rowOf(page, "Reading");
 
     await expect(list).toHaveCSS("border-top-width", "0px");
     await expect(list).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
@@ -49,8 +70,7 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     page,
   }) => {
     await page.goto("/settings/library/tabs");
-    const list = page.getByRole("list", { name: "Library tabs" });
-    const row = list.getByRole("listitem").filter({ hasText: "Reading" });
+    const row = rowOf(page, "Reading");
     const name = row.getByText("Reading", { exact: true });
     const detail = row.getByText("Category · 6 series");
     const handle = row.getByRole("button", { name: /^Move Reading/ });
@@ -69,10 +89,9 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
 
   test("shows More as three dots one above the other", async ({ page }) => {
     await page.goto("/settings/library/tabs");
-    const more = page
-      .getByRole("listitem")
-      .filter({ hasText: "Reading" })
-      .getByRole("button", { name: "More for Reading" });
+    const more = rowOf(page, "Reading").getByRole("button", {
+      name: "More for Reading",
+    });
 
     await expect(more.locator("[data-icon=ellipsis]")).toBeVisible();
     await expect(more.locator("svg")).toHaveCount(0);
@@ -83,10 +102,7 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
   }) => {
     await page.goto("/settings/library/tabs");
     const add = page.getByRole("button", { name: "New category" });
-    const lastRow = page
-      .getByRole("list", { name: "Library tabs" })
-      .getByRole("listitem")
-      .last();
+    const lastRow = tabList(page).getByRole("listitem").last();
     const handle = lastRow.getByRole("button", { name: /^Move / });
     const plus = add.locator("[data-icon=plus]");
 
@@ -112,10 +128,9 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     page,
   }) => {
     await page.goto("/settings/library/tabs");
-    const badge = page
-      .getByRole("listitem")
-      .filter({ hasText: "New chapters" })
-      .getByText("Hidden", { exact: true });
+    const badge = rowOf(page, "New chapters").getByText("Hidden", {
+      exact: true,
+    });
     const note = page
       .locator("p")
       .filter({ hasText: "Drag to reorder. Hiding a tab" });
@@ -149,7 +164,7 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     page,
   }) => {
     await page.goto("/settings/library/tabs");
-    const row = page.getByRole("listitem").filter({ hasText: "Reading" });
+    const row = rowOf(page, "Reading");
     const handle = row.getByRole("button", { name: /^Move Reading/ });
     const box = await boxOf(handle);
 
@@ -162,5 +177,76 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     await expect(row).toHaveCSS("scale", "none");
     await page.mouse.up();
     await expect(row).toHaveCSS("translate", "none");
+  });
+
+  test("settles a dropped row from where it was lifted to where it rests, with no jump at either end", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+    await slowMoves(page);
+    const row = rowOf(page, "Reading");
+    const box = await boxOf(row.getByRole("button", { name: /^Move Reading/ }));
+    const x = box.x + box.width / 2;
+
+    await page.mouse.move(x, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x, box.y + box.height / 2 + PART_OF_A_ROW, {
+      steps: DRAG_STEPS,
+    });
+    const lifted = await boxOf(row);
+    await page.mouse.up();
+    const ends = await row.evaluate((element) => {
+      const settles = element.getAnimations();
+      for (const settle of settles) {
+        settle.pause();
+        settle.currentTime = 0;
+      }
+      const start = element.getBoundingClientRect().y;
+      for (const settle of settles) {
+        settle.finish();
+      }
+      return { start, end: element.getBoundingClientRect().y };
+    });
+    await expect(row).toHaveCSS("box-shadow", "none");
+    const rest = await boxOf(row);
+
+    expect(ends.start).toBeCloseTo(lifted.y, 0);
+    expect(ends.end).toBeCloseTo(rest.y, 0);
+  });
+
+  test("measures a new drag from the row's resting place while the last drop still settles", async ({
+    page,
+  }) => {
+    await holdScriptedAnimations(page);
+    await page.goto("/settings/library/tabs");
+    await slowMoves(page);
+    const row = rowOf(page, "Reading");
+    const handle = row.getByRole("button", { name: /^Move Reading/ });
+    const manga = await boxOf(rowOf(page, "Manga"));
+    const start = await boxOf(handle);
+    const x = start.x + start.width / 2;
+
+    await page.mouse.move(x, start.y + start.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x, manga.y + manga.height - INSIDE_THE_ROW, {
+      steps: DRAG_STEPS,
+    });
+    await page.mouse.up();
+    await expect.poll(async () => (await heldAnimations(page)).length).toBe(1);
+    const settling = await boxOf(handle);
+    const y = settling.y + settling.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y - (manga.height / 2 - SHORT_OF_HALF), {
+      steps: DRAG_STEPS,
+    });
+    await page.mouse.up();
+
+    await expect(tabList(page).getByRole("listitem")).toHaveText([
+      /All/,
+      /New chapters/,
+      /Manga/,
+      /Reading/,
+    ]);
   });
 });

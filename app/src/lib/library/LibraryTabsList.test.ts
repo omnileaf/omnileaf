@@ -1,4 +1,5 @@
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
+import { tick } from "svelte";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
@@ -6,11 +7,14 @@ import "../../app.css";
 
 import { followCorePlatform } from "#lib/page/platform.ts";
 
+import type { LibraryCategory } from "#lib/ipc/bindings.ts";
+
 import type { ArrangedTab } from "./library-tabs.ts";
 import LibraryTabsList from "./LibraryTabsList.svelte";
 
 afterEach(() => {
   delete document.documentElement.dataset.platform;
+  vi.restoreAllMocks();
 });
 
 const TABS: readonly ArrangedTab[] = [
@@ -23,6 +27,52 @@ const PROPS = {
   detailOf: () => "Built in",
   onArrange: () => undefined,
 };
+
+function categoryTab(id: string, name: string): ArrangedTab {
+  return {
+    id: { kind: "category", id: id as LibraryCategory["id"] },
+    name,
+    isHidden: false,
+  };
+}
+
+const CATEGORY_TABS: readonly ArrangedTab[] = [
+  ...TABS,
+  categoryTab("reading", "Reading"),
+  categoryTab("manga", "Manga"),
+];
+const FIRST_POINTER = 1;
+const SECOND_POINTER = 2;
+const NUDGE = 10;
+
+function rowNamed(name: string, within: ParentNode): HTMLElement {
+  const handle = element(`[aria-label^="Move ${name}"]`, within);
+  const row = handle.closest("[data-tab-row]");
+  if (!(row instanceof HTMLElement)) {
+    throw new Error(`no row holds the handle for ${name}`);
+  }
+  return row;
+}
+
+function press(row: HTMLElement, pointerId: number, type: string, by = 0) {
+  const handle = element("[data-tab-handle]", row);
+  const { top, height } = handle.getBoundingClientRect();
+  handle.dispatchEvent(
+    new PointerEvent(type, {
+      pointerId,
+      button: 0,
+      buttons: 1,
+      clientY: top + height / 2 + by,
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+}
+
+function liftBy(row: HTMLElement, pointerId: number, by: number): void {
+  press(row, pointerId, "pointerdown");
+  press(row, pointerId, "pointermove", by);
+}
 
 function element(selector: string, within: ParentNode): HTMLElement {
   const found = within.querySelector(selector);
@@ -141,3 +191,60 @@ for (const platform of ["android", "ios", "linux"] as const) {
     expect(getComputedStyle(status).clipPath).not.toBe("none");
   });
 }
+
+const CHANGES_UNDER_A_DRAG = {
+  "the dragged tab leaves the list": CATEGORY_TABS.filter(
+    ({ name }) => name !== "Reading",
+  ),
+  "a tab above it leaves the list": CATEGORY_TABS.filter(
+    ({ name }) => name !== "All",
+  ),
+  "a tab joins the list": [...CATEGORY_TABS, categoryTab("comics", "Comics")],
+} satisfies Record<string, readonly ArrangedTab[]>;
+
+for (const [change, tabs] of Object.entries(CHANGES_UNDER_A_DRAG)) {
+  test(`lets go of a drag when ${change}, so the next drag starts`, async () => {
+    vi.spyOn(Element.prototype, "setPointerCapture").mockImplementation(
+      () => undefined,
+    );
+    const screen = await render(LibraryTabsList, {
+      ...PROPS,
+      tabs: CATEGORY_TABS,
+    });
+    liftBy(rowNamed("Reading", screen.container), FIRST_POINTER, NUDGE);
+
+    await screen.rerender({ tabs });
+    const manga = rowNamed("Manga", screen.container);
+    const rest = manga.getBoundingClientRect().top;
+    liftBy(manga, SECOND_POINTER, -NUDGE);
+    await tick();
+
+    expect(manga.getBoundingClientRect().top).toBeCloseTo(rest - NUDGE, 0);
+  });
+}
+
+test("ignores Alt and the arrow keys while a tab is dragged", async () => {
+  vi.spyOn(Element.prototype, "setPointerCapture").mockImplementation(
+    () => undefined,
+  );
+  const onArrange = vi.fn();
+  const screen = await render(LibraryTabsList, {
+    ...PROPS,
+    tabs: CATEGORY_TABS,
+    onArrange,
+  });
+  liftBy(rowNamed("Reading", screen.container), FIRST_POINTER, NUDGE);
+
+  element(
+    "[data-tab-handle]",
+    rowNamed("Manga", screen.container),
+  ).dispatchEvent(
+    new KeyboardEvent("keydown", {
+      key: "ArrowUp",
+      altKey: true,
+      bubbles: true,
+    }),
+  );
+
+  expect(onArrange).not.toHaveBeenCalled();
+});
