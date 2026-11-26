@@ -56,28 +56,6 @@ jobs:
           fi
           echo "labels=$labels" | tee -a "$GITHUB_OUTPUT"
 
-      - name: Choose how much of the browser suite this run needs
-        id: suite
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EVENT: ${{ github.event_name }}
-          LABELS: ${{ steps.labels.outputs.labels }}
-          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
-          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          suite=whole
-          screens=
-          if [ "$EVENT" = pull_request ] && ! jq -e 'index("full-browser-tests")' <<< "$LABELS" > /dev/null; then
-            screens=phone,desktop
-            if [ "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY" ]; then
-              above=$(gh api -X GET "repos/$GITHUB_REPOSITORY/pulls" -f state=open -f base="$HEAD_BRANCH" --jq length)
-              if [ "$above" -gt 0 ]; then
-                suite=touched
-              fi
-            fi
-          fi
-          printf 'suite=%s\nscreens=%s\n' "$suite" "$screens" | tee -a "$GITHUB_OUTPUT"
-
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
@@ -100,6 +78,29 @@ jobs:
         run: |
           areas=$(cargo xtask changes ${BASE:+--base "$BASE"})
           echo "$areas" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Choose how much of the browser suite this run needs
+        id: suite
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          LABELS: ${{ steps.labels.outputs.labels }}
+          BROWSER_SETUP: ${{ steps.areas.outputs.browser-setup }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          suite=whole
+          screens=
+          if [ "$EVENT" = pull_request ] && ! jq -e 'index("full-browser-tests")' <<< "$LABELS" > /dev/null; then
+            screens=phone,desktop
+            if [ "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY" ] && [ "$BROWSER_SETUP" = false ]; then
+              above=$(gh api -X GET "repos/$GITHUB_REPOSITORY/pulls" -f state=open -f base="$HEAD_BRANCH" --jq length)
+              if [ "$above" -gt 0 ]; then
+                suite=touched
+              fi
+            fi
+          fi
+          printf 'suite=%s\nscreens=%s\n' "$suite" "$screens" | tee -a "$GITHUB_OUTPUT"
 
   changelog:
     name: changelog
