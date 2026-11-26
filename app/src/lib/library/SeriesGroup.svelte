@@ -64,6 +64,10 @@
     list.list.kind === "loaded" && list.list.items.length > 0,
   );
 
+  function isSettledEmpty(): boolean {
+    return list.list.kind !== "loading" && !isShown;
+  }
+
   async function recount(): Promise<void> {
     countsAsked += 1;
     const asked = countsAsked;
@@ -102,11 +106,21 @@
     }
     changesRead = libraryChanges;
     untrack(() => {
-      if (isNear || !isShown) {
+      if (isNear || isSettledEmpty()) {
         reloadSoon(undefined);
       } else {
         isStale = true;
       }
+    });
+  });
+
+  $effect(() => {
+    if (!isSettledEmpty() || !isStale) {
+      return;
+    }
+    isStale = false;
+    untrack(() => {
+      reloadSoon(undefined);
     });
   });
 </script>
