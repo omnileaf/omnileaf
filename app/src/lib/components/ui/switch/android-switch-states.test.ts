@@ -157,3 +157,25 @@ test("grows a pressed Android switch's thumb on the kit's spring while navigatio
   expect(moving.transitionDuration.split(", ")[0]).toBe("0.383s");
   expect(stillProperty).not.toContain("inline-size");
 });
+
+for (const checked of [false, true]) {
+  test(`draws a pressed ${checked ? "on" : "off"} Android switch's 48 state circle on its own, centred under the thumb`, async () => {
+    await renderSwitch("android", "light", checked);
+    const root = rootOf("Keep the screen on");
+    root.setAttribute("data-pressed", "");
+    const knob = knobOf("Keep the screen on");
+    for (const animation of knob.getAnimations()) {
+      animation.finish();
+    }
+
+    const halo = root.querySelector("[data-switch-halo]");
+    const thumb = knob.getBoundingClientRect();
+    const circle = halo?.getBoundingClientRect();
+
+    expect(getComputedStyle(knob, "::after").content).toBe("none");
+    expect(circle?.width).toBe(48);
+    expect(circle?.height).toBe(48);
+    expect((circle?.x ?? 0) + 24).toBeCloseTo(thumb.x + thumb.width / 2, 1);
+    expect((circle?.y ?? 0) + 24).toBeCloseTo(thumb.y + thumb.height / 2, 1);
+  });
+}

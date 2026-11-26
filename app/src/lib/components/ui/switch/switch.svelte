@@ -6,6 +6,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
 
   let {
     ref = $bindable(null),
@@ -30,8 +31,12 @@
   const ANDROID_PRESSED_THUMB =
     "android:relative android:motion-navigation:transition-[inline-size,block-size,margin] android:duration-morph android:ease-morph android:group-pressed/switch:block-native-switch-knob-pressed android:group-pressed/switch:inline-native-switch-knob-pressed android:group-pressed/switch:mx-[calc((var(--spacing-native-switch-knob)-var(--spacing-native-switch-knob-pressed))/2)] android:group-pressed/switch:group-aria-checked/switch:mx-[calc((var(--spacing-native-switch-knob-on)-var(--spacing-native-switch-knob-pressed))/2)] android:group-pressed/switch:bg-native-switch-thumb-pressed-off android:group-pressed/switch:group-aria-checked/switch:bg-native-switch-thumb-pressed android:group-focus-visible/switch:group-aria-checked/switch:bg-native-switch-thumb-pressed";
 
-  const ANDROID_PRESSED_HALO =
-    "android:group-pressed/switch:after:pointer-events-none android:group-pressed/switch:after:absolute android:group-pressed/switch:after:inset-[calc((100%-var(--spacing-native-target))/2)] android:group-pressed/switch:after:rounded-full android:group-pressed/switch:after:bg-native-switch-halo android:group-pressed/switch:group-aria-checked/switch:after:bg-native-switch-halo-on";
+  const ANDROID_TRACK = "android:relative android:isolate";
+
+  const ANDROID_HALO =
+    "pointer-events-none absolute z-behind rounded-full inline-native-target inset-y-[calc((100%-var(--spacing-native-target))/2)] inset-s-[calc(var(--spacing-native-switch-inset)+var(--spacing-native-switch-knob-length)/2-var(--spacing-native-target)/2)] group-aria-checked/switch:inset-s-auto group-aria-checked/switch:inset-e-[calc(var(--spacing-native-switch-inset-on)+var(--spacing-native-switch-knob-on-length)/2-var(--spacing-native-target)/2)] group-pressed/switch:bg-native-switch-halo group-pressed/switch:group-aria-checked/switch:bg-native-switch-halo-on";
+
+  const isAndroid = currentPlatform() === "android";
 </script>
 
 <SwitchPrimitive.Root
@@ -47,10 +52,15 @@
   {@render children?.()}
   <span
     aria-hidden="true"
-    class={[TRACK, children === undefined && ANDROID_FOCUSED_TRACK]}
+    class={[
+      TRACK,
+      ANDROID_TRACK,
+      children === undefined && ANDROID_FOCUSED_TRACK,
+    ]}
   >
-    <SwitchPrimitive.Thumb
-      class={[THUMB, ANDROID_PRESSED_THUMB, ANDROID_PRESSED_HALO]}
-    />
+    <SwitchPrimitive.Thumb class={[THUMB, ANDROID_PRESSED_THUMB]} />
+    {#if isAndroid}
+      <span data-switch-halo class={ANDROID_HALO}></span>
+    {/if}
   </span>
 </SwitchPrimitive.Root>
