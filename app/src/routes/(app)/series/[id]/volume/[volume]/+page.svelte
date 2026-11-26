@@ -38,7 +38,7 @@
   } from "#lib/series/series-stand-ins.ts";
   import SeriesBar from "#lib/series/SeriesBar.svelte";
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
-  import { watchTitleUnderBar } from "#lib/series/title-under-bar.ts";
+  import { watchTitleUnderBar } from "#lib/page/title-under-bar.ts";
   import VolumeAbout from "#lib/series/VolumeAbout.svelte";
   import type { ListingChange } from "#lib/series-sections/section-listing.ts";
 

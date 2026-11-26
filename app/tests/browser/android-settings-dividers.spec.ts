@@ -68,7 +68,7 @@ const PAGE_LINES: readonly PageLines[] = [
     settled: (page) =>
       page.getByRole("list", { name: "Tags" }).getByRole("listitem"),
   },
-  { route: "/settings/reading", lines: 3 },
+  { route: "/settings/reading", lines: 4 },
   { route: "/settings/privacy", lines: 1 },
   {
     route: "/settings/privacy/app-lock",

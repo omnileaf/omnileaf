@@ -285,6 +285,8 @@ test.describe("going back while picking", () => {
     id: SERIES_ID,
     title: SERIES_TITLE,
     bookCount: 2,
+    volumeCount: 0,
+    chapterCount: 0,
     unreadCount: 2,
     cover: null,
     language: null,

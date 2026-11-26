@@ -25,7 +25,7 @@
     ItemDescription,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { PLATED_LIST } from "#lib/page/plates.ts";
 
   import { FLUSH_LIST } from "./android-flush-look.ts";
@@ -35,7 +35,7 @@
   const ICON_SIZE = 18;
   const CHEVRON_SIZE = 18;
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
 </script>
 
 {#if android.isOn}

@@ -53,3 +53,21 @@ test("leaves the screen alone when reduced motion is on", async ({ page }) => {
     "matrix(1, 0, 0, 1, 0, 0)",
   );
 });
+
+test("puts the screen back when a finished back gesture closes something on the screen without leaving it", async ({
+  page,
+}) => {
+  await page.goto("/settings/privacy");
+  const screen = page.getByRole("main");
+  await page.evaluate(() => {
+    history.pushState(history.state, "", location.href);
+  });
+  await gesture({ kind: "moved", progress: 0.3 });
+  await expect(screen).not.toHaveCSS("transform", "none");
+
+  await page.goBack();
+
+  await expect(screen).toHaveCSS("transform", "none");
+  await expect(screen).toHaveCSS("border-top-left-radius", "0px");
+  expect(new URL(page.url()).pathname).toBe("/settings/privacy");
+});

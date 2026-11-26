@@ -29,6 +29,8 @@ function seriesTitled(number: number, title: string): WireSeries {
     id: `0190a3e4-0000-8000-8000-${String(number).padStart(12, "0")}`,
     title,
     bookCount: 1,
+    volumeCount: 0,
+    chapterCount: 0,
     unreadCount: 1,
     cover: null,
     language: null,

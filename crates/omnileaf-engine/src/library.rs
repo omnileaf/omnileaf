@@ -88,7 +88,9 @@ use crate::{
     rescan::{Rescan, rescan},
     rescan_conditions::{RescanConditions, Storage},
     rescan_schedule::{Check, RescanSchedule},
-    scan::{Target, find_books_in, saturating_u32, scan, walk},
+    saturating_u32::saturating_u32,
+    scan::{find_books_in, scan, walk},
+    scan_target::Target,
     series_details::shown_details,
 };
 
