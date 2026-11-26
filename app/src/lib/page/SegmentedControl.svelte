@@ -24,6 +24,7 @@
     readonly describedBy?: string | undefined;
     readonly size?: Size;
     readonly isFullWidth?: boolean;
+    readonly isAtRowEnd?: boolean;
     readonly isSetupRow?: boolean;
     readonly hasWindowsLook?: boolean;
     readonly hasEqualColumns?: boolean;
@@ -114,6 +115,7 @@
     describedBy,
     size = "regular",
     isFullWidth = false,
+    isAtRowEnd = false,
     isSetupRow = false,
     hasWindowsLook = false,
     hasEqualColumns = false,
@@ -183,6 +185,7 @@
       {
         fitsOneRowByWidest: hasEqualMacosColumns || fitsOneRowByWidest,
         spansLastRow,
+        room: isAtRowEnd ? (track.parentElement ?? undefined) : undefined,
       },
     );
   });
@@ -219,6 +222,7 @@
         ? WINDOWS_LOOK.track
         : ["bg-chip", look.track],
     !isFullWidth && look.capped,
+    isAtRowEnd && ["shrink-0 grow", !isOneRow && "basis-full"],
     className,
   ]}
 >

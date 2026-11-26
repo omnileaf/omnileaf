@@ -42,6 +42,33 @@ async function renderShowChoice(): Promise<HTMLElement> {
   return screen.container;
 }
 
+async function renderAtRowEnd(): Promise<HTMLElement> {
+  followCorePlatform("android");
+  await page.viewport(ANDROID_PHONE.width, ANDROID_PHONE.height);
+  const row = document.createElement("div");
+  row.style.display = "flex";
+  row.style.flexWrap = "wrap";
+  const heading = document.createElement("h2");
+  heading.id = "show-heading";
+  heading.textContent = "Show";
+  row.append(heading);
+  document.body.append(row);
+  await render(SegmentedControl<Option>, {
+    target: row,
+    props: {
+      options: OPTIONS,
+      labels: LABELS,
+      chosen: "all",
+      labelledBy: "show-heading",
+      size: "small",
+      isAtRowEnd: true,
+      class: "max-inline-full",
+      onChoose: () => undefined,
+    },
+  });
+  return row;
+}
+
 function asElement(node: Node): HTMLElement {
   if (!(node instanceof HTMLElement)) {
     throw new Error("the segmented control drew no element");
@@ -110,5 +137,32 @@ test("keeps Android's segments on one row at their own widths while three of the
   await expect.poll(rows).toEqual([NAMES]);
   expect(segment("All").getBoundingClientRect().width).toBeLessThan(
     segment("Bookmarked").getBoundingClientRect().width,
+  );
+});
+
+test("puts a group at its row's end back on one row once the row has room again", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+  row.style.inlineSize = `${String(Math.max(...widths))}px`;
+  await expect.poll(() => rows().length).toBe(NAMES.length);
+
+  row.style.inlineSize = `${String(roomFor(widths))}px`;
+
+  await expect.poll(rows).toEqual([NAMES]);
+});
+
+test("gives a group at its row's end a line of its own across the row once it no longer fits on one row", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+
+  row.style.inlineSize = `${String(roomFor(widths) - SPARE * 2)}px`;
+
+  await expect.poll(() => rows().length).toBeGreaterThan(1);
+  expect(track().getBoundingClientRect().width).toBeCloseTo(
+    row.getBoundingClientRect().width,
+    0,
+  );
+  expect(track().getBoundingClientRect().top).toBeGreaterThanOrEqual(
+    asElement(row.firstElementChild ?? row).getBoundingClientRect().bottom,
   );
 });
