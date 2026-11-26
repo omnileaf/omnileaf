@@ -4,8 +4,9 @@ import type {
   LibraryTabId,
 } from "#lib/ipc/bindings.ts";
 
-import { TabPage } from "./tab-page.svelte.ts";
+import { type KeptTabPage, TabPage } from "./tab-page.svelte.ts";
 import { tabKey } from "./library-tabs.ts";
+import { isSameValue } from "./same-value.ts";
 import { TabScroll } from "./tab-scroll.ts";
 
 export interface Showing {
@@ -13,6 +14,18 @@ export interface Showing {
   readonly tabs: readonly LibraryTabId[];
   readonly chosen: LibraryTabId;
   readonly reach: number;
+}
+
+export interface KeptHeldPage {
+  readonly key: string;
+  readonly page: KeptTabPage;
+}
+
+export interface KeptTabPages {
+  readonly basis: LibraryListing;
+  readonly chosen: string;
+  readonly pages: readonly KeptHeldPage[];
+  readonly scroll: ReadonlyMap<string, number>;
 }
 
 export interface HeldPage {
@@ -32,7 +45,7 @@ function withinReach(
 }
 
 export class TabPages {
-  readonly scroll = new TabScroll();
+  readonly scroll: TabScroll;
   held = $state.raw<readonly HeldPage[]>([]);
   readonly #idle: TabPage;
   #basis: LibraryListing | undefined;
@@ -41,12 +54,48 @@ export class TabPages {
   constructor(
     private readonly listedBy: () => LibraryListing,
     private readonly onFailure: (error: IpcError) => void,
+    kept?: KeptTabPages,
   ) {
     this.#idle = this.#open({ kind: "all" });
+    this.scroll = new TabScroll(kept?.scroll);
+    if (kept !== undefined) {
+      this.#basis = kept.basis;
+      this.#chosen = kept.chosen;
+      this.held = kept.pages.map(({ key, page }) => ({
+        key,
+        page: this.#open(page.tab, page),
+      }));
+    }
+  }
+
+  keep(shownOf: (key: string) => number): KeptTabPages | undefined {
+    if (this.#basis === undefined || this.#chosen === undefined) {
+      return undefined;
+    }
+    return {
+      basis: this.#basis,
+      chosen: this.#chosen,
+      pages: this.held.flatMap(({ key, page }) => {
+        const kept = page.kept(shownOf(key));
+        return kept === undefined ? [] : [{ key, page: kept }];
+      }),
+      scroll: this.scroll.kept(),
+    };
+  }
+
+  /** Reads every held page again from its start, each showing what it holds until its answer comes. */
+  refresh(): void {
+    for (const { page } of this.held) {
+      void page.series.load();
+      if (page.count.count !== undefined) {
+        void page.count.refresh();
+      }
+    }
   }
 
   show({ basis, tabs, chosen, reach }: Showing): void {
-    const isNewListing = basis !== this.#basis;
+    const isNewListing =
+      this.#basis === undefined || !isSameValue(basis, this.#basis);
     if (isNewListing) {
       this.scroll.forgetAll();
     }
@@ -101,12 +150,19 @@ export class TabPages {
     return page;
   }
 
-  #open(tab: LibraryTabId): TabPage {
-    const page: TabPage = new TabPage(tab, this.listedBy, (error) => {
-      if (this.#heldFor(this.#chosen) === page) {
-        this.onFailure(error);
-      }
-    });
+  #open(tab: LibraryTabId, kept?: KeptTabPage): TabPage {
+    const page: TabPage = new TabPage(
+      tab,
+      {
+        listedBy: this.listedBy,
+        onFailure: (error) => {
+          if (this.#heldFor(this.#chosen) === page) {
+            this.onFailure(error);
+          }
+        },
+      },
+      kept,
+    );
     return page;
   }
 }

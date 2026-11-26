@@ -1,7 +1,12 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test, vi } from "vitest";
 
-import type { LibraryCategory, LibraryTabId } from "#lib/ipc/bindings.ts";
+import type {
+  LibraryCategory,
+  LibraryListing,
+  LibrarySeries,
+  LibraryTabId,
+} from "#lib/ipc/bindings.ts";
 
 import { NEW_LIBRARY_LISTING } from "./library-listing";
 import { TabPages } from "./tab-pages.svelte";
@@ -13,6 +18,10 @@ const MANGA: LibraryTabId = { kind: "category", id: "manga" as CategoryId };
 const COMICS: LibraryTabId = { kind: "category", id: "comics" as CategoryId };
 const NOVELS: LibraryTabId = { kind: "category", id: "novels" as CategoryId };
 const TABS = [ALL, MANGA, COMICS, NOVELS];
+const NEWEST_FIRST: LibraryListing = {
+  ...NEW_LIBRARY_LISTING,
+  sort: { by: "title", direction: "descending" },
+};
 
 interface Asked {
   readonly command: string;
@@ -127,7 +136,7 @@ test("reads every held page again once the listing changes", async () => {
   asked.length = 0;
 
   pages.show({
-    basis: { ...NEW_LIBRARY_LISTING },
+    basis: NEWEST_FIRST,
     tabs: TABS,
     chosen: MANGA,
     reach: 1,
@@ -158,7 +167,7 @@ test("keeps each tab's scroll position while the listing stays, and forgets them
 
   const kept = [pages.scroll.recall("manga"), pages.scroll.recall("comics")];
   pages.show({
-    basis: { ...NEW_LIBRARY_LISTING },
+    basis: NEWEST_FIRST,
     tabs: TABS,
     chosen: COMICS,
     reach: 1,
@@ -216,7 +225,7 @@ test("keeps the chosen tab's page when the listing changes, so its series stay u
   const shown = pages.of(MANGA);
 
   pages.show({
-    basis: { ...NEW_LIBRARY_LISTING },
+    basis: NEWEST_FIRST,
     tabs: TABS,
     chosen: MANGA,
     reach: 0,
@@ -239,4 +248,176 @@ test("forgets the count of the page it shows another tab in, until that tab is c
   });
 
   expect(pages.of(NOVELS).count.count).toBeUndefined();
+});
+
+test("reads no held page again when shown the same listing anew", async () => {
+  const { asked, pages } = pagesAsked();
+  pages.show({ basis: NEW_LIBRARY_LISTING, tabs: TABS, chosen: ALL, reach: 0 });
+  await Promise.resolve();
+  asked.length = 0;
+
+  pages.show({
+    basis: { ...NEW_LIBRARY_LISTING },
+    tabs: TABS,
+    chosen: ALL,
+    reach: 0,
+  });
+  await Promise.resolve();
+
+  expect(tabsListed(asked)).toEqual([]);
+});
+
+function keptSeries(...titles: string[]): LibrarySeries[] {
+  return titles.map((title, index) => ({
+    id: `0190a3e4-0000-8000-8000-00000000000${String(index)}` as LibrarySeries["id"],
+    title,
+    bookCount: 1,
+    volumeCount: 0,
+    chapterCount: 0,
+    unreadCount: 1,
+    cover: null,
+    language: null,
+    hasDownloads: false,
+    isConnected: true,
+    isAdult: false,
+    continuesFrom: null,
+  }));
+}
+
+const KEPT = {
+  basis: NEW_LIBRARY_LISTING,
+  chosen: "manga",
+  pages: [
+    {
+      key: "all",
+      page: {
+        tab: ALL,
+        series: { items: keptSeries("All 1"), next: null },
+        count: 1,
+      },
+    },
+    {
+      key: "manga",
+      page: {
+        tab: MANGA,
+        series: { items: keptSeries("Manga 1"), next: null },
+        count: undefined,
+      },
+    },
+  ],
+  scroll: new Map([["all", 320]]),
+};
+
+function keptPagesAsked(): { asked: Asked[]; pages: TabPages } {
+  const { asked } = pagesAsked();
+  const pages = new TabPages(
+    () => NEW_LIBRARY_LISTING,
+    () => undefined,
+    KEPT,
+  );
+  return { asked, pages };
+}
+
+test("shows the pages kept from before at once, reading none of them again", async () => {
+  const { asked, pages } = keptPagesAsked();
+
+  pages.show({
+    basis: { ...NEW_LIBRARY_LISTING },
+    tabs: TABS,
+    chosen: MANGA,
+    reach: 1,
+  });
+  await Promise.resolve();
+
+  expect([
+    pages.of(ALL).series.list,
+    pages.of(MANGA).series.list,
+    pages.of(ALL).count.count,
+    pages.scroll.recall("all"),
+  ]).toEqual([
+    { kind: "loaded", items: keptSeries("All 1"), isComplete: true },
+    { kind: "loaded", items: keptSeries("Manga 1"), isComplete: true },
+    1,
+    320,
+  ]);
+  expect(tabsListed(asked)).toEqual(["comics"]);
+});
+
+test("reads every held page again on refresh, counting again only the counted ones", async () => {
+  const { asked, pages } = keptPagesAsked();
+  pages.show({
+    basis: NEW_LIBRARY_LISTING,
+    tabs: TABS,
+    chosen: MANGA,
+    reach: 1,
+  });
+  await vi.waitFor(() => {
+    expect(pages.of(COMICS).count.count).toBe(3);
+  });
+  asked.length = 0;
+
+  pages.refresh();
+  await Promise.resolve();
+
+  expect(new Set(tabsListed(asked))).toEqual(
+    new Set([undefined, "manga", "comics"]),
+  );
+  expect(new Set(tabsCounted(asked))).toEqual(new Set([undefined, "comics"]));
+});
+
+test("starts the kept pages again when shown another listing", async () => {
+  const { asked, pages } = keptPagesAsked();
+
+  pages.show({ basis: NEWEST_FIRST, tabs: TABS, chosen: MANGA, reach: 0 });
+  await Promise.resolve();
+
+  expect(tabsListed(asked)).toEqual(["manga"]);
+  expect(pages.of(MANGA).series.list.kind).toBe("loaded");
+});
+
+test("keeps each held page through the series it shows, with the listing, the chosen tab and each tab's scroll place", async () => {
+  const { pages } = pagesAsked();
+  pages.show({
+    basis: NEW_LIBRARY_LISTING,
+    tabs: TABS,
+    chosen: MANGA,
+    reach: 1,
+  });
+  await Promise.all(
+    [ALL, MANGA, COMICS].map((tab) => pages.of(tab).series.load()),
+  );
+  await pages.of(ALL).count.load();
+  pages.scroll.remember("comics", 120);
+
+  const kept = pages.keep((key) => (key === "manga" ? 3 : 0));
+
+  expect(kept).toEqual({
+    basis: NEW_LIBRARY_LISTING,
+    chosen: "manga",
+    pages: [
+      {
+        key: "all",
+        page: { tab: ALL, series: { items: [], next: null }, count: 3 },
+      },
+      {
+        key: "manga",
+        page: {
+          tab: MANGA,
+          series: { items: [], next: null },
+          count: undefined,
+        },
+      },
+      {
+        key: "comics",
+        page: { tab: COMICS, series: { items: [], next: null }, count: 3 },
+      },
+    ],
+    scroll: new Map([["comics", 120]]),
+  });
+});
+
+test("keeps nothing before it has shown a listing", () => {
+  const { pages } = pagesAsked();
+
+  expect(pages.keep(() => 0)).toBeUndefined();
 });
