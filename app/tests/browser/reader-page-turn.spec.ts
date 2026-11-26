@@ -786,6 +786,45 @@ test("leaves no slide waiting after a turn that moves nothing", async ({
   expect(moving).toBe(0);
 });
 
+test.describe("pages whose size is not known yet", () => {
+  test.use({
+    backend: {
+      ...readerBackend(DEFAULT_BACKEND, OPENING),
+      openBook: () => {
+        const book = readerBook(OPENING);
+        return {
+          ...book,
+          pages: book.pages.map((bookPage) => ({ ...bookPage, size: null })),
+        };
+      },
+    },
+  });
+
+  for (const { layout, shown } of [
+    { layout: "one", shown: [14] },
+    { layout: "two", shown: [14, 15] },
+  ] as const) {
+    test(`fits each page to the screen at rest, ${layout} at a time`, async ({
+      page,
+    }) => {
+      await openBookWith(page, { pageTurn: "slide", layout });
+      const area = await page.locator("[data-shown-page]").boundingBox();
+
+      for (const number of shown) {
+        const box = await shownPage(page, number).boundingBox();
+        expect(box).not.toBeNull();
+        expect(area).not.toBeNull();
+        expect(box?.width ?? Number.NaN).toBeLessThanOrEqual(
+          (area?.width ?? Number.NaN) / shown.length + CLOSE_PX,
+        );
+        expect(box?.height ?? Number.NaN).toBeLessThanOrEqual(
+          (area?.height ?? Number.NaN) + CLOSE_PX,
+        );
+      }
+    });
+  }
+});
+
 test("chooses Slide under Pages in Reading settings", async ({ page }) => {
   await openBookWith(page, {});
   await page

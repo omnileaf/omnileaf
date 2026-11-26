@@ -174,10 +174,13 @@
     ).height;
   }
 
-  function sizeOf(index: number, pagesShown: Spread, scale: number) {
+  function sizeOf(index: number, pagesShown: Spread, scale: number): Size {
     const ratio = ratioOf(index);
     if (ratio === undefined) {
-      return undefined;
+      return scaled(
+        { width: spaceWidth / pagesShown.length, height: spaceHeight },
+        scale,
+      );
     }
     const spreadHeight = heightOfSpread(pagesShown);
     return scaled(
@@ -444,21 +447,14 @@
             {@const isShown = spread.includes(index)}
             <div
               class={[
-                "relative my-auto shrink-0",
+                "relative my-auto shrink-0 reader-page-size",
                 isReversed
                   ? "first:me-auto last:ms-auto"
                   : "first:ms-auto last:me-auto",
                 decoded.has(index) && "bg-reader-page",
-                size === undefined
-                  ? "block-full inline-full"
-                  : "reader-page-size",
               ]}
-              style:--page-inline={size === undefined
-                ? undefined
-                : `${String(size.width)}px`}
-              style:--page-block={size === undefined
-                ? undefined
-                : `${String(size.height)}px`}
+              style:--page-inline="{size.width}px"
+              style:--page-block="{size.height}px"
             >
               {#if isBlank}
                 <div
