@@ -12,10 +12,7 @@ import {
 const TURNED_ON_AT = new Date("2026-10-03T21:14:00Z");
 const INTRO_GAP = 8;
 
-const OPTIONS = [
-  "Blank the pages in the reader",
-  "Show the Screenshot mode label",
-];
+const OPTIONS = ["Blank the pages in the reader", "Screenshot mode label"];
 
 async function openScreenshotMode(page: Page): Promise<void> {
   await page.goto("/settings");
@@ -36,7 +33,7 @@ function cardHolding(page: Page, part: Locator) {
 }
 
 function labelSwitch(page: Page) {
-  return page.getByRole("switch", { name: "Show the Screenshot mode label" });
+  return page.getByRole("switch", { name: "Screenshot mode label" });
 }
 
 test("turning it on says when it turns off again", async ({ page }) => {
@@ -174,7 +171,7 @@ test("says what it changes before the switch", async ({ page }) => {
 
   await expect(
     page.getByText(
-      "Swaps names and covers for stand-ins, hides 18+ and leaves it out of counts, so screenshots show nothing private. Progress, dates and settings stay real.",
+      "Swaps names and covers for stand-ins and hides 18+, so screenshots show nothing private. Progress, dates and settings stay real.",
     ),
   ).toBeVisible();
 });
@@ -225,7 +222,7 @@ test("the label is said to show at the top of the window on a computer", async (
   await openScreenshotMode(page);
 
   await expect(labelSwitch(page)).toHaveAccessibleDescription(
-    "At the top of the window, so you know it’s on.",
+    "At the top of the window",
   );
 });
 
@@ -238,7 +235,7 @@ test.describe("on a phone", () => {
     await openScreenshotMode(page);
 
     await expect(labelSwitch(page)).toHaveAccessibleDescription(
-      "At the top of the screen, so you know it’s on.",
+      "At the top of the screen",
     );
   });
 

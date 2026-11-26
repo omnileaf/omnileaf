@@ -25,8 +25,7 @@ const PAGE_STARTS: readonly PageStart[] = [
   },
   {
     route: "/settings/privacy/app-lock",
-    first: (page) =>
-      page.getByText(/^Omnileaf asks for your fingerprint/).locator(".."),
+    first: (page) => page.getByText(/^Asks for your fingerprint/).locator(".."),
   },
   {
     route: "/settings/advanced",

@@ -20,7 +20,7 @@ const READ_LOCK_AFTER = `return window.__TAURI_INTERNALS__.invoke("app_lock").th
 const PRIVACY_LINK = xpath("//main//a[@href='/settings/privacy']");
 const APP_LOCK_LINK = xpath("//main//a[@href='/settings/privacy/app-lock']");
 const APP_LOCK_NOTE = xpath(
-  "//main//p[starts-with(normalize-space(), 'Omnileaf asks for your fingerprint')]",
+  "//main//p[starts-with(normalize-space(), 'Asks for your fingerprint')]",
 );
 const LOCK_SWITCH = xpath(
   "//main//*[@role='switch'][normalize-space()='Lock Omnileaf']",

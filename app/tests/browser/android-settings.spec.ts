@@ -96,7 +96,7 @@ test.describe(
       await expect(group.getByRole("radio")).toHaveCount(3);
       await expect(ask).toBeChecked();
       await expect(ask).toHaveAccessibleDescription(
-        "You see a report before it's sent.",
+        "You see a report before it’s sent.",
       );
       await expect(group).toHaveCSS("border-top-width", "1px");
       expect((await boxOf(ask)).height).toBeGreaterThanOrEqual(ROW_MIN);

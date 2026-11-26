@@ -14,7 +14,7 @@ const ANDROID_PHONE_WIDTH = 412;
 const ANDROID_TABLET_WIDTH = 820;
 const SCREEN_HEIGHT = 900;
 const ART_SIZE = 80;
-const NOTE = /^Omnileaf asks for your fingerprint, face or screen lock/;
+const NOTE = /^Asks for your fingerprint, face or screen lock/;
 
 function note(): Element {
   return page.getByText(NOTE).element();

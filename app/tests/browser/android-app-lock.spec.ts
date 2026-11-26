@@ -22,7 +22,7 @@ const CARD_ROW_PX = 56;
 const TIMES_GAP_PX = 12;
 const LIGHT_SURFACE_FIELD = "rgb(219, 229, 220)";
 const DARK_SURFACE_FIELD = "rgb(31, 39, 33)";
-const NOTE = /^Omnileaf asks for your fingerprint, face or screen lock/;
+const NOTE = /^Asks for your fingerprint, face or screen lock/;
 const ONLY_WHEN_ON = "Available when app lock is on.";
 
 const NOT_CHANGED = "Couldn't change the app lock. Try again.";
@@ -244,7 +244,7 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     await page.goto("/settings/privacy");
     await expect(
       page.getByRole("link").filter({ hasText: "App lock" }),
-    ).toContainText("Fingerprint, face or screen lock · after 1 minute");
+    ).toContainText("On · after 1 minute");
   });
 
   test("leaves the lock off when the check is cancelled", async ({ page }) => {
@@ -333,7 +333,7 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
 
     await expect(
       page.getByRole("link").filter({ hasText: "App lock" }),
-    ).toContainText("Fingerprint, face or screen lock · after 30 minutes");
+    ).toContainText("On · after 30 minutes");
   });
 
   test("offers no switch for hiding content in the recent apps screen", async ({

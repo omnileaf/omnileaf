@@ -30,7 +30,7 @@ test("names what unlocks it and the delay once it is on", () => {
     lockAfter: "fiveMinutes",
   });
 
-  expect(summary).toBe("Fingerprint, face or screen lock · after 5 minutes");
+  expect(summary).toBe("On · after 5 minutes");
 });
 
 test("says it locks immediately when there is no delay", () => {
@@ -40,7 +40,7 @@ test("says it locks immediately when there is no delay", () => {
     lockAfter: "immediately",
   });
 
-  expect(summary).toBe("Fingerprint, face or screen lock · immediately");
+  expect(summary).toBe("On · immediately");
 });
 
 test("reads the app lock the phone keeps", async () => {

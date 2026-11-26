@@ -200,9 +200,7 @@ test("the label stays hidden once it's turned off in settings", async ({
   page,
 }) => {
   await open(page, "/settings/privacy/screenshot-mode");
-  await page
-    .getByRole("switch", { name: "Show the Screenshot mode label" })
-    .click();
+  await page.getByRole("switch", { name: "Screenshot mode label" }).click();
   await turnOnScreenshotMode(page);
 
   await open(page, "/");
