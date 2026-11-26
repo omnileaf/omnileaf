@@ -191,6 +191,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   }),
   categorySeries: () => ({ series: [], next: null }),
   categorySeriesCount: () => 0,
+  categorylessSeries: () => ({ series: [], next: null }),
+  categorylessSeriesCount: () => 0,
   orientScreen: () => null,
   changeFullScreen: () => false,
   openBook: () => {
