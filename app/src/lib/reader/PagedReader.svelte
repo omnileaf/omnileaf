@@ -114,7 +114,10 @@
   import { Swipe } from "#lib/reader/swipe.ts";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { followVolumeKeys, hasVolumeKeys } from "#lib/reader/volume-keys.ts";
-  import { moveWithinReader } from "#lib/reader/reader-origin.ts";
+  import {
+    forgetPagedInto,
+    moveWithinReader,
+  } from "#lib/reader/reader-origin.ts";
   import type { ReaderWayBack } from "#lib/reader/reader-way-back.ts";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
   import UpNext from "#lib/up-next/UpNext.svelte";
@@ -416,6 +419,23 @@
   const nextOpensOn = $derived(
     book.next === null ? undefined : pageOpenedOn(book.next),
   );
+  const previousLoading = $derived(
+    loadingLabel(previousOpensOn, named.previous),
+  );
+  const nextLoading = $derived(loadingLabel(nextOpensOn, named.next));
+  const leavingLabel = $derived.by(() => {
+    switch (leaving) {
+      case "previous":
+        return previousLoading;
+      case "next":
+        return nextLoading;
+      case undefined:
+        return undefined;
+    }
+  });
+  const isUpNextCurrent = $derived(
+    turner.isPastEnd && leaving === undefined && !isStripShown,
+  );
   const restingCount = $derived.by(() => {
     switch (leaving) {
       case "previous":
@@ -438,10 +458,23 @@
 
   function pageOpenedOn(neighbour: SeriesNeighbour): number | undefined {
     const { reading } = neighbour;
-    if (reading.state !== "started") {
-      return 1;
+    switch (reading.state) {
+      case "notStarted":
+        return 1;
+      case "started":
+        return reading.page ?? undefined;
+      case "read":
+        return undefined;
     }
-    return reading.page ?? undefined;
+  }
+
+  function loadingLabel(
+    page: number | undefined,
+    neighbour: SeriesNeighbour | null,
+  ): string {
+    return page === undefined
+      ? (neighbour?.title ?? "")
+      : m.reader_page_loading({ page });
   }
 
   function countOn(
@@ -504,7 +537,7 @@
   }
 
   $effect(() => {
-    const line = pageLine;
+    const line = leavingLabel ?? pageLine;
     const waiting = setTimeout(() => {
       if (!isSliderFocused()) {
         announced = line;
@@ -1133,7 +1166,7 @@
 
   function onSwipeMove(event: PointerEvent): void {
     const across = swipe.moved(event);
-    if (across === undefined) {
+    if (across === undefined || hasLeft) {
       return;
     }
     dropWaitingTap();
@@ -1164,6 +1197,7 @@
   }
 
   const swipeEvents = {
+    onclickcapture: swallowClickOfASwipe,
     onpointerdown: onSwipeStart,
     onpointermove: onSwipeMove,
     onpointerup: onSwipeEnd,
@@ -1228,6 +1262,27 @@
         }, reportFailure)
       : undefined,
   );
+
+  let wasUpNextCurrent = false;
+
+  $effect(() => {
+    const isCurrent = isUpNextCurrent;
+    untrack(() => {
+      if (wasUpNextCurrent && !isCurrent && isFocusLeftBehind()) {
+        heading?.focus({ preventScroll: true });
+      }
+      wasUpNextCurrent = isCurrent;
+    });
+  });
+
+  function isFocusLeftBehind(): boolean {
+    const focused = document.activeElement;
+    return (
+      focused === null ||
+      focused === document.body ||
+      focused.closest("[data-up-next]") !== null
+    );
+  }
 
   onMount(() => {
     if (isGuideDue || isPagedInto) {
@@ -1409,6 +1464,19 @@
   </div>
 {/snippet}
 
+{#snippet light()}
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-none bg-reader-black"
+    style:opacity={((100 - look.light.brightness) / 100) * DIMMEST}
+  ></div>
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-none bg-reader-warmth mix-blend-multiply"
+    style:opacity={(look.light.warmth / 100) * WARMEST}
+  ></div>
+{/snippet}
+
 {#snippet upNext(isShown: boolean)}
   <UpNext
     book={book.id}
@@ -1428,29 +1496,27 @@
 {/snippet}
 
 {#snippet upNextPage({ isCurrent }: EdgeView)}
-  <div class="contents" onclickcapture={swallowClickOfASwipe}>
-    {@render upNext(isCurrent)}
-  </div>
+  {@render upNext(isCurrent)}
 {/snippet}
 
-{#snippet bookLoading(view: EdgeView, page: number | undefined)}
+{#snippet bookLoading(view: EdgeView, label: string)}
   <div
     data-book-loading
-    role={view.isCurrent ? "status" : undefined}
+    aria-hidden="true"
     class="flex flex-col items-center justify-center gap-sm px-xl text-center block-full inline-full"
   >
     {#if view.isOnScreen}
-      <PageLoading {page} />
+      <PageLoading {label} />
     {/if}
   </div>
 {/snippet}
 
 {#snippet previousBookLoading(view: EdgeView)}
-  {@render bookLoading(view, previousOpensOn)}
+  {@render bookLoading(view, previousLoading)}
 {/snippet}
 
 {#snippet nextBookLoading(view: EdgeView)}
-  {@render bookLoading(view, nextOpensOn)}
+  {@render bookLoading(view, nextLoading)}
 {/snippet}
 
 <ReaderBackSwipe
@@ -1502,6 +1568,7 @@
                 if (!hasOpened) {
                   hasOpened = true;
                   controls.bookOpened();
+                  forgetPagedInto();
                 }
               }}
             />
@@ -1519,6 +1586,8 @@
               {zoom}
               isReversed={reading.direction === "rightToLeft"}
               overlay={turnZones}
+              ground={BACKGROUNDS[look.background]}
+              pageLight={look.light.isOn ? light : undefined}
               bookTitle={named.title}
               isBlank={screenshotMode.isOn &&
                 screenshotMode.options.blankReaderPages}
@@ -1539,23 +1608,15 @@
                 if (!hasOpened) {
                   hasOpened = true;
                   controls.bookOpened();
+                  forgetPagedInto();
                 }
               }}
             />
           {/if}
         {/key}
       {/if}
-      {#if look.light.isOn}
-        <div
-          aria-hidden="true"
-          class="pointer-events-none absolute inset-none bg-reader-black"
-          style:opacity={((100 - look.light.brightness) / 100) * DIMMEST}
-        ></div>
-        <div
-          aria-hidden="true"
-          class="pointer-events-none absolute inset-none bg-reader-warmth mix-blend-multiply"
-          style:opacity={(look.light.warmth / 100) * WARMEST}
-        ></div>
+      {#if look.light.isOn && isStripShown}
+        {@render light()}
       {/if}
     </div>
     <h1 bind:this={heading} tabindex="-1" class="sr-only">{named.title}</h1>

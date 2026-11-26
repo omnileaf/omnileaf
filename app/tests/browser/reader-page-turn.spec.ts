@@ -1,11 +1,20 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { DEFAULT_BACKEND, expect, settle, test } from "./fixtures.ts";
+import {
+  DEFAULT_BACKEND,
+  expect,
+  pixelAt,
+  pixelOf,
+  screenshotPixels,
+  settle,
+  test,
+} from "./fixtures.ts";
 import {
   BOOK_ID,
   BOOK_SERIES_ID,
   BOOK_TITLE,
   NEXT_BOOK,
+  NOT_STARTED,
   PAGE_COUNT,
   PAGE_HEIGHT,
   PAGE_WIDTH,
@@ -1099,6 +1108,8 @@ test.describe("turning between books", () => {
   const FIRST_PAGE = 'main img[alt="Page 1"]';
   const BOOK_LOADING = "[data-book-loading]";
   const NEXT_PAGE_COUNT = 184;
+  const BLANK_INSET_PX = 8;
+  const READ_NEXT_BOOK = { ...NEXT_BOOK, reading: { state: "read" } } as const;
   const SKIP_UP_NEXT_KEY = "omnileaf.skipUpNext";
   const SERIES_PAGE = new RegExp(`/series/${BOOK_SERIES_ID}$`);
   const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
@@ -1117,7 +1128,7 @@ test.describe("turning between books", () => {
           await nextBookOpened;
         }
         return {
-          ...readerBook(OPENING),
+          ...readerBook(id === NEXT_BOOK.id ? NOT_STARTED : OPENING),
           id,
           next: { ...NEXT_BOOK, pageCount: NEXT_PAGE_COUNT },
         };
@@ -1177,6 +1188,27 @@ test.describe("turning between books", () => {
       },
       { wanted: selectors, shares: TURN_SHARES },
     );
+  }
+
+  /** SvelteKit keeps a history entry's page state flattened by devalue under its own key, so a flat value is read back by its index. */
+  function entryState(page: Page, key: string): Promise<unknown> {
+    return page.evaluate((wanted) => {
+      const metadata: unknown = Reflect.get(
+        Object(history.state),
+        "sveltekit:metadata",
+      );
+      const serialized: unknown = Reflect.get(Object(metadata), "state");
+      if (typeof serialized !== "string") {
+        return undefined;
+      }
+      const flat: unknown = JSON.parse(serialized);
+      if (!Array.isArray(flat)) {
+        return undefined;
+      }
+      const values: readonly unknown[] = flat;
+      const index: unknown = Reflect.get(Object(values[0]), wanted);
+      return typeof index === "number" ? values[index] : undefined;
+    }, key);
   }
 
   async function pageArea(page: Page): Promise<{ x: number; width: number }> {
@@ -1403,7 +1435,7 @@ test.describe("turning between books", () => {
       BOOK_LOADING,
     ]);
     await expect(page).toHaveURL(NEXT_BOOK_PAGE);
-    await expect(shownPage(page, 14)).toBeVisible();
+    await expect(shownPage(page, 1)).toBeVisible();
 
     expect(moving).toBeGreaterThan(0);
     expectNear(frames[0]?.[1]?.x, area.x + area.width);
@@ -1433,7 +1465,7 @@ test.describe("turning between books", () => {
     ).toHaveCount(0);
     open();
     await expect(page).toHaveURL(NEXT_BOOK_PAGE);
-    await expect(shownPage(page, 14)).toBeVisible();
+    await expect(shownPage(page, 1)).toBeVisible();
     await expectBarsHidden(page);
   });
 
@@ -1447,8 +1479,102 @@ test.describe("turning between books", () => {
     await page.keyboard.press("ArrowRight");
 
     await expect(page).toHaveURL(NEXT_BOOK_PAGE);
-    await expect(shownPage(page, 14)).toBeVisible();
+    await expect(shownPage(page, 1)).toBeVisible();
     await expectBarsHidden(page);
+  });
+
+  test.describe("with a next book already read", () => {
+    test.use({
+      backend: {
+        ...DEFAULT_BACKEND,
+        openBook: (id) => ({
+          ...readerBook(OPENING),
+          id,
+          next: { ...READ_NEXT_BOOK, pageCount: NEXT_PAGE_COUNT },
+        }),
+      },
+    });
+
+    test("names the next book on its loading page, since the page it opens on is not known", async ({
+      page,
+    }) => {
+      await onUpNext(page, {});
+      await page.route(`**/read/${NEXT_BOOK.id}**`, () => undefined);
+
+      await page.keyboard.press("ArrowRight");
+
+      await expect(page.locator(BOOK_LOADING)).toHaveText(READ_NEXT_BOOK.title);
+    });
+  });
+
+  test("says the loading page in the reader's own status line, kept from before the turn", async ({
+    page,
+  }) => {
+    nextBookOpened = new Promise(() => undefined);
+    await onUpNext(page, {});
+    const said = await page.locator("main p[role=status]").elementHandle();
+
+    await page.keyboard.press("ArrowRight");
+
+    await expect
+      .poll(() => said.evaluate((status) => status.textContent))
+      .toContain("Loading page 1");
+  });
+
+  test("moves focus to the reader's heading when turning back from Up next", async ({
+    page,
+  }) => {
+    await onUpNext(page, {});
+
+    await page.keyboard.press("ArrowLeft");
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: BOOK_TITLE }),
+    ).toBeFocused();
+  });
+
+  test("keeps the loading page still under a drag once the next book is opening", async ({
+    page,
+  }) => {
+    nextBookOpened = new Promise(() => undefined);
+    await onUpNext(page, { pageTurn: "slide" });
+    await page.keyboard.press("ArrowRight");
+    await finishSlides(page);
+    const area = await pageArea(page);
+
+    await dragBy(page, DRAG_PX);
+
+    expectNear((await placeOf(page, BOOK_LOADING)).x, area.x);
+  });
+
+  test("keeps no mark on the history entry of a book paged into once it has opened", async ({
+    page,
+  }) => {
+    await onUpNext(page, {});
+    await page.keyboard.press("ArrowRight");
+    await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    await expect(shownPage(page, 1)).toBeVisible();
+
+    await expect.poll(() => entryState(page, "readerPagedInto")).not.toBe(true);
+  });
+
+  test("leaves Up next undimmed at the lowest light", async ({ page }) => {
+    await onUpNext(page, {
+      light: { isOn: true, brightness: 0, warmth: 0 },
+    });
+    const ground = await page
+      .locator(UP_NEXT)
+      .evaluate((upNext) => getComputedStyle(upNext).backgroundColor);
+    const area = await pageArea(page);
+
+    const pixels = await screenshotPixels(page, {
+      x: area.x + area.width - BLANK_INSET_PX,
+      y: BLANK_INSET_PX,
+      width: 1,
+      height: 1,
+    });
+
+    expect(pixelAt(pixels, 0, 0)).toEqual(await pixelOf(page, ground));
   });
 
   test.describe("read right to left", () => {

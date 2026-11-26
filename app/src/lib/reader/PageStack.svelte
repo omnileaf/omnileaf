@@ -54,6 +54,8 @@
     zoom,
     isReversed,
     overlay,
+    ground,
+    pageLight,
     bookTitle,
     isBlank,
     slide,
@@ -74,6 +76,8 @@
     zoom: number;
     isReversed: boolean;
     overlay: Snippet;
+    ground: string;
+    pageLight: Snippet | undefined;
     bookTitle: string;
     isBlank: boolean;
     slide: number;
@@ -523,7 +527,7 @@
   });
 </script>
 
-<div class="absolute inset-none contain-paint">
+<div class={["absolute inset-none contain-paint", ground]}>
   <div
     bind:this={scroller}
     bind:clientWidth={spaceWidth}
@@ -649,7 +653,7 @@
               })}
             </EmptyDescription>
           {:else if isSlow || isSlidingOntoUnready}
-            <PageLoading page={shown + 1} />
+            <PageLoading label={m.reader_page_loading({ page: shown + 1 })} />
           {/if}
         </div>
         {#if isShownFailed}
@@ -680,6 +684,11 @@
         {/if}
       </svelte:element>
     </div>
+    {#if pageLight !== undefined}
+      <div class="pointer-events-none fixed inset-none">
+        {@render pageLight()}
+      </div>
+    {/if}
     {#each edgeCells as edge (edge.at)}
       {@const isNeighbour = edge.offset !== 0}
       {@const isOnScreen = isPainted(edge.offset)}

@@ -72,6 +72,8 @@ test("sizes a page turned one at a time by its own image once another page takes
     zoom: 1,
     isReversed: false,
     overlay: NOTHING,
+    ground: "",
+    pageLight: undefined,
     bookTitle: "Sample",
     isBlank: false,
     slide: 0,

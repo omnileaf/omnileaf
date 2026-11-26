@@ -58,6 +58,17 @@ export function followReaderOrigin(): void {
   });
 }
 
+export function forgetPagedInto(): void {
+  if (page.state.readerPagedInto !== true) {
+    return;
+  }
+  goto(resolvedPathOf(new URL(page.url.href)), {
+    shallow: true,
+    replace: true,
+    state: { ...page.state, readerPagedInto: false },
+  }).catch(reportFailure);
+}
+
 export function moveWithinReader(
   href: ResolvedPathname,
   state: App.PageState = {},
