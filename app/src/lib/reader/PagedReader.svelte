@@ -42,10 +42,8 @@
   import OpenedOutsideLibrary from "#lib/reader/OpenedOutsideLibrary.svelte";
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
   import PageLoading from "#lib/reader/PageLoading.svelte";
-  import PageStack, {
-    type EdgePage,
-    type EdgeView,
-  } from "#lib/reader/PageStack.svelte";
+  import type { EdgePage, EdgeView } from "#lib/reader/page-cells.ts";
+  import PageStack from "#lib/reader/PageStack.svelte";
   import {
     type CroppedPages,
     croppedPages,

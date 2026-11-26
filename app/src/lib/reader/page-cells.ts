@@ -1,3 +1,5 @@
+import type { Snippet } from "svelte";
+
 import type { Spread } from "./spreads";
 
 export interface PageCell {
@@ -31,6 +33,16 @@ export function cellsAround(
     .map((spread, index) => ({ spread, index }))
     .filter(({ spread, index }) => isKept(spread, index))
     .map(({ spread, index }) => ({ spread, offset: index - inView.at }));
+}
+
+export interface EdgeView {
+  readonly isCurrent: boolean;
+  readonly isOnScreen: boolean;
+}
+
+export interface EdgePage {
+  readonly at: number;
+  readonly page: Snippet<[EdgeView]>;
 }
 
 export interface EdgeCell {

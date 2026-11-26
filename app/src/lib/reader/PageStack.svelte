@@ -18,7 +18,11 @@
   import { fittedTo, type Size } from "#lib/reader/page-fit.ts";
   import type { PageFit } from "#lib/reader/reader-settings.svelte.ts";
   import { spreadAt, type Spread } from "#lib/reader/spreads.ts";
-  import { cellsAround, edgesAround } from "#lib/reader/page-cells.ts";
+  import {
+    cellsAround,
+    type EdgePage,
+    edgesAround,
+  } from "#lib/reader/page-cells.ts";
   import {
     type SlideStart,
     slideTiming,
@@ -26,16 +30,6 @@
   } from "#lib/reader/page-flight.ts";
   import { pagesAround } from "#lib/reader/page-window.ts";
   import PageLoading from "#lib/reader/PageLoading.svelte";
-
-  export interface EdgeView {
-    readonly isCurrent: boolean;
-    readonly isOnScreen: boolean;
-  }
-
-  export interface EdgePage {
-    readonly at: number;
-    readonly page: Snippet<[EdgeView]>;
-  }
 
   /** Pages decoded ahead of the one shown, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
   const PAGES_AHEAD = 3;
