@@ -10,6 +10,7 @@ const READER_URL = /\/read\//;
 const SERIES_URL = new RegExp(`/series/${SERIES_ID}$`);
 const SCREEN_CORNER_PX = 32;
 const HALFWAY = 0.5;
+const WATCHED_BY_SERIES_TWICE = 2;
 const UNREAD = { state: "notStarted" } as const;
 const shelf = new FakeShelf([UNREAD, UNREAD, UNREAD]);
 const watched: FakeChannel<BackSwipe>[] = [];
@@ -124,6 +125,7 @@ test("previews a back gesture again on the series after coming back from the rea
   await openBook(page);
   await page.goBack();
   await expect(page).toHaveURL(SERIES_URL);
+  await expect.poll(() => watched.length).toBe(WATCHED_BY_SERIES_TWICE);
 
   await swipeAsAndroidDoes(started(), moved(HALFWAY));
 
@@ -139,6 +141,7 @@ test("leaves a gesture sent to the series' first listener without effect after c
   await openBook(page);
   await page.goBack();
   await expect(page).toHaveURL(SERIES_URL);
+  await expect.poll(() => watched.length).toBe(WATCHED_BY_SERIES_TWICE);
 
   await swipeAtFirstListener(started(), moved(HALFWAY));
 
