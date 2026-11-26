@@ -23,9 +23,9 @@
 
   import { AndroidPhone } from "./android-phone.svelte";
   import {
-    ANDROID_ADD_CHIP,
     ANDROID_FILTER_HEADING,
     ANDROID_FILTER_SHEET,
+    ANDROID_SUGGESTION_CHIP,
     FILTER_SETTING_LABEL_TYPE,
   } from "./filter-sheet-look";
 
@@ -33,7 +33,6 @@
 
   const ICON_SIZE = 16;
   const REMOVE_ICON_SIZE = 12;
-  const ANDROID_PLUS_SIZE = 18;
 
   let {
     isOpen = $bindable(false),
@@ -414,7 +413,7 @@
                     look="outline"
                     aria-label={m.library_add_named_tag({ tag })}
                     class={isAndroidSheet
-                      ? ANDROID_ADD_CHIP.chip
+                      ? ANDROID_SUGGESTION_CHIP.chip
                       : "flex items-center gap-xs rounded-control px-sm text-small font-medium block-search-chip max-inline-full touch:touch-target-around"}
                     onclick={() => {
                       addTag(tag);
@@ -422,11 +421,11 @@
                   >
                     <Plus
                       size={isAndroidSheet
-                        ? ANDROID_PLUS_SIZE
+                        ? ANDROID_SUGGESTION_CHIP.plusSize
                         : REMOVE_ICON_SIZE}
                       aria-hidden="true"
                       class={isAndroidSheet
-                        ? ANDROID_ADD_CHIP.plus
+                        ? ANDROID_SUGGESTION_CHIP.plus
                         : "shrink-0"}
                     />
                     <span class="truncate">{tag}</span>
