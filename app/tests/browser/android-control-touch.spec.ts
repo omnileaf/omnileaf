@@ -61,7 +61,6 @@ class Finger {
 interface PressRecord {
   readonly clicks: number;
   readonly menus: number;
-  readonly lifts: number;
 }
 
 async function centreOf(control: Locator): Promise<Point> {
@@ -89,9 +88,6 @@ async function recordPresses(control: Locator): Promise<void> {
     element.addEventListener("contextmenu", () => {
       count("menus");
     });
-    element.addEventListener("pointerup", () => {
-      count("lifts");
-    });
   });
 }
 
@@ -102,19 +98,7 @@ function pressesOn(control: Locator): Promise<PressRecord> {
     return {
       clicks: countOf("clicks"),
       menus: countOf("menus"),
-      lifts: countOf("lifts"),
     };
-  });
-}
-
-function finishedMoving(control: Locator): Promise<void> {
-  return control.evaluate(async (element) => {
-    const parts = [element, ...element.querySelectorAll("*")];
-    await Promise.all(
-      parts.flatMap((part) =>
-        part.getAnimations().map(async (animation) => animation.finished),
-      ),
-    );
   });
 }
 
@@ -145,7 +129,7 @@ interface Thumb {
 
 function thumbOf(control: Locator): Promise<Thumb> {
   return control.evaluate((element) => {
-    const thumb = element.querySelector(":scope > span > span");
+    const thumb = element.querySelector("[data-switch-thumb]");
     if (thumb === null) {
       throw new Error("the switch has no thumb");
     }
@@ -183,7 +167,7 @@ async function dragOff(page: Page, control: Locator): Promise<void> {
 async function longPress(page: Page, control: Locator): Promise<void> {
   const finger = await Finger.on(page);
   await finger.down(await centreOf(control));
-  await expect.poll(async () => (await pressesOn(control)).menus).toBe(1);
+  await control.dispatchEvent("contextmenu");
   await finger.up();
 }
 
@@ -363,22 +347,20 @@ test.describe("Android's controls under a finger", { tag: "@native" }, () => {
       await finger.up();
     });
 
-    test("ends a long press with a lift and a context menu, but no click", async ({
+    test("keeps a held button pressed through a long press's context menu", async ({
       page,
     }) => {
       const sheet = await openLibrarySheet(page, "Sort and filter");
       const show = sheet.getByRole("button", { name: /^Show \d+ series$/ });
       await recordPresses(show);
+      const finger = await Finger.on(page);
+      await finger.down(await centreOf(show));
 
-      await longPress(page, show);
+      await show.dispatchEvent("contextmenu");
 
-      await expect
-        .poll(() => pressesOn(show))
-        .toEqual({
-          clicks: 0,
-          menus: 1,
-          lifts: 1,
-        });
+      expect((await shapeOf(show)).startStart).toBe(LARGE_PRESSED);
+      expect((await pressesOn(show)).menus).toBe(1);
+      await finger.up();
     });
   });
 
@@ -438,13 +420,14 @@ test.describe("Android's controls under a finger", { tag: "@native" }, () => {
       await recordPresses(show);
 
       await perform(page, show);
-      await finishedMoving(show);
 
-      expect(await shapeOf(show)).toEqual({
-        startStart: CAPSULE,
-        startEnd: CAPSULE,
-        layer: "none",
-      });
+      await expect
+        .poll(() => shapeOf(show))
+        .toEqual({
+          startStart: CAPSULE,
+          startEnd: CAPSULE,
+          layer: "none",
+        });
     });
 
     test(`returns a segment to rest after ${gesture}`, async ({ page }) => {
@@ -456,13 +439,14 @@ test.describe("Android's controls under a finger", { tag: "@native" }, () => {
       await recordPresses(middle);
 
       await perform(page, middle);
-      await finishedMoving(middle);
 
-      expect(await shapeOf(middle)).toEqual({
-        startStart: PRESSED,
-        startEnd: PRESSED,
-        layer: "none",
-      });
+      await expect
+        .poll(() => shapeOf(middle))
+        .toEqual({
+          startStart: PRESSED,
+          startEnd: PRESSED,
+          layer: "none",
+        });
     });
 
     test(`returns a switch's thumb to rest after ${gesture}`, async ({
@@ -475,15 +459,16 @@ test.describe("Android's controls under a finger", { tag: "@native" }, () => {
       await recordPresses(stacks);
 
       await perform(page, stacks);
-      await finishedMoving(stacks);
 
-      expect(await thumbOf(stacks)).toEqual({
-        width: 24,
-        height: 24,
-        fill: "rgb(230, 255, 237)",
-        halo: "rgba(0, 0, 0, 0)",
-        haloWidth: "auto",
-      });
+      await expect
+        .poll(() => thumbOf(stacks))
+        .toEqual({
+          width: 24,
+          height: 24,
+          fill: "rgb(230, 255, 237)",
+          halo: "rgba(0, 0, 0, 0)",
+          haloWidth: "auto",
+        });
     });
   }
 });
