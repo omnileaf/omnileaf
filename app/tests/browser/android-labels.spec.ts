@@ -261,6 +261,24 @@ test.describe(
         }
       });
 
+      test("writes each suggestion in the foreground colour with its plus in the accent", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+        const foreground = await tokenColour(page, "--color-foreground");
+        const accent = await tokenColour(
+          page,
+          "--native-color-on-button-plain",
+        );
+
+        for (const tag of MANY_SUGGESTIONS) {
+          const chip = sheet.getByRole("button", { name: `Add ${tag}` });
+
+          await expect(chip).toHaveCSS("color", foreground);
+          await expect(chip.locator("svg")).toHaveCSS("color", accent);
+        }
+      });
+
       test("lines the suggestions up with Add a tag, under a Suggested label of their own", async ({
         page,
       }) => {
