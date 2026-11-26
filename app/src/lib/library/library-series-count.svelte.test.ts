@@ -126,3 +126,78 @@ test("drops the answer of a count started before it was cleared", async () => {
 
   expect(series.count).toBeUndefined();
 });
+
+test("reads as counted, still counting or failed", async () => {
+  let answer: CountResult = { status: "ok", data: 3 };
+  const series = new LibrarySeriesCount(
+    () => Promise.resolve(answer),
+    ignoreFailure,
+  );
+  await series.load();
+  const counted = series.reading;
+  answer = FAILED;
+  const pending = series.load();
+  const counting = series.reading;
+  await pending;
+
+  const failed = series.reading;
+
+  expect([counted, counting, failed]).toEqual([
+    { kind: "counted", count: 3 },
+    { kind: "counting" },
+    { kind: "failed" },
+  ]);
+});
+
+test("reads as counting once cleared after a failure", async () => {
+  const series = new LibrarySeriesCount(
+    () => Promise.resolve(FAILED),
+    ignoreFailure,
+  );
+  await series.load();
+
+  series.clear();
+
+  expect(series.reading).toEqual({ kind: "counting" });
+});
+
+test("says counting failed until the next count starts", async () => {
+  let answer: CountResult = FAILED;
+  const series = new LibrarySeriesCount(
+    () => Promise.resolve(answer),
+    ignoreFailure,
+  );
+  await series.load();
+  const hadFailed = series.reading;
+  answer = { status: "ok", data: 24 };
+
+  const next = series.load();
+
+  expect([hadFailed, series.reading]).toEqual([
+    { kind: "failed" },
+    { kind: "counting" },
+  ]);
+  await next;
+});
+
+test("keeps the number it holds while a refresh is pending, then holds the new one", async () => {
+  let answer: (result: CountResult) => void = () => undefined;
+  let isFirst = true;
+  const series = new LibrarySeriesCount(() => {
+    if (isFirst) {
+      isFirst = false;
+      return Promise.resolve({ status: "ok", data: 24 });
+    }
+    return new Promise((resolve) => {
+      answer = resolve;
+    });
+  }, ignoreFailure);
+  await series.load();
+
+  const refreshing = series.refresh();
+  const held = series.count;
+  answer({ status: "ok", data: 3 });
+  await refreshing;
+
+  expect([held, series.count]).toEqual([24, 3]);
+});

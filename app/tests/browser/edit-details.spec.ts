@@ -8,6 +8,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   EXPANDED_MIN_WIDTH,
+  lengthOf,
   MEDIUM_MIN_WIDTH,
   onPlatform,
   settle,
@@ -120,18 +121,6 @@ async function tap(target: Locator): Promise<void> {
   await target.dispatchEvent("pointerdown", touch);
   await target.dispatchEvent("pointerup", touch);
   await target.dispatchEvent("click");
-}
-
-async function lengthOf(page: Page, token: `--${string}`): Promise<number> {
-  return page.evaluate((name) => {
-    const probe = document.createElement("div");
-    probe.style.blockSize = `var(${name})`;
-    probe.style.position = "absolute";
-    document.body.append(probe);
-    const length = probe.getBoundingClientRect().height;
-    probe.remove();
-    return length;
-  }, token);
 }
 
 function seriesMenuButton(page: Page): Locator {

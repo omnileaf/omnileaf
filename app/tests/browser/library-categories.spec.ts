@@ -562,23 +562,6 @@ test.describe("with the tabs arranged in Settings", () => {
       "Plan to read",
     ]);
   });
-
-  test("says no series match under New chapters, and goes back to All on clearing", async ({
-    page,
-  }) => {
-    await openLibrary(page);
-
-    await tabs(page).getByRole("tab", { name: "New chapters" }).click();
-    await expect(
-      page.getByRole("heading", { name: "No series match these filters" }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: "Clear all filters" }).click();
-
-    await expect(tabs(page).getByRole("tab", { name: "All" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-  });
 });
 
 test.describe("opening on a chosen tab", () => {

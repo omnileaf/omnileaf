@@ -36,17 +36,27 @@
 
   import { IosPhone } from "./ios-phone.svelte.ts";
   import { type ArrangedTab, tabKey } from "./library-tabs.ts";
+  import { RowDrag, type Slot } from "./row-drag.ts";
+  import { poseOf, settleRow } from "./settle-row.ts";
   import { moved, shownAs } from "./tab-order.ts";
 
   const ICON_SIZE = 16;
   const BADGE_ICON_SIZE = 12;
   const ANDROID_BADGE_ICON_SIZE = 14;
+  const NO_BUTTONS = 0;
   const ANDROID_BADGE =
     "gap-xs rounded-label-badge bg-chip px-sm py-xs text-caption font-medium tracking-native-row-title";
 
   interface Drag {
     readonly key: string;
-    readonly order: readonly ArrangedTab[];
+    readonly pointerId: number;
+    readonly rowCount: number;
+    readonly rows: RowDrag;
+  }
+
+  interface Settling {
+    readonly key: string;
+    readonly easesNeighbours: boolean;
   }
 
   let {
@@ -87,9 +97,9 @@
   const IOS_ICON_SIZE = 20;
   let list = $state<HTMLElement | null>(null);
   let drag = $state<Drag | undefined>();
+  let settling = $state<Settling | undefined>();
   let announcement = $state("");
   let quiet: ReturnType<typeof setTimeout> | undefined;
-  const listed = $derived(drag?.order ?? tabs);
 
   function announce(text: string): void {
     announcement = text;
@@ -116,6 +126,51 @@
     );
   }
 
+  function rowOf(key: string): HTMLElement | null {
+    return (
+      list?.querySelector<HTMLElement>(`[data-tab-row="${CSS.escape(key)}"]`) ??
+      null
+    );
+  }
+
+  function listTop(): number {
+    return list?.getBoundingClientRect().top ?? 0;
+  }
+
+  function slotsOfRows(): Slot[] {
+    const origin = listTop();
+    return [
+      ...(list?.querySelectorAll<HTMLElement>("[data-tab-row]") ?? []),
+    ].map((row) => {
+      const { top, height } = row.getBoundingClientRect();
+      return { top: top - origin, height };
+    });
+  }
+
+  function finishSettling(): void {
+    for (const animation of list?.getAnimations({ subtree: true }) ?? []) {
+      animation.finish();
+    }
+    settling = undefined;
+  }
+
+  function isUnderTheDrag({ key, rowCount, rows }: Drag): boolean {
+    const tab = tabs[rows.from];
+    return (
+      tabs.length === rowCount && tab !== undefined && tabKey(tab.id) === key
+    );
+  }
+
+  $effect.pre(() => {
+    if (drag !== undefined && !isUnderTheDrag(drag)) {
+      void endDrag(false);
+    }
+  });
+
+  function isDragPointer(event: PointerEvent): boolean {
+    return drag?.pointerId === event.pointerId;
+  }
+
   async function move(from: number, to: number): Promise<void> {
     const tab = tabs[from];
     const next = moved(tabs, from, to);
@@ -130,53 +185,106 @@
 
   function moveWithKeys(event: KeyboardEvent, at: number): void {
     const step = { ArrowUp: -1, ArrowDown: 1 }[event.key];
-    if (!event.altKey || step === undefined) {
+    if (!event.altKey || step === undefined || drag !== undefined) {
       return;
     }
     event.preventDefault();
     void move(at, at + step);
   }
 
-  function startDrag(event: PointerEvent, tab: ArrangedTab): void {
-    if (event.button !== 0) {
+  function startDrag(event: PointerEvent, at: number): void {
+    const tab = tabs[at];
+    if (event.button !== 0 || tab === undefined || drag !== undefined) {
       return;
     }
     event.preventDefault();
+    finishSettling();
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    drag = { key: tabKey(tab.id), order: tabs };
-  }
-
-  function dragTo(event: PointerEvent): void {
-    if (drag === undefined || list === null) {
-      return;
-    }
-    const rows = [...list.querySelectorAll<HTMLElement>("[data-tab-row]")];
-    const over = rows.findIndex(
-      (row) => event.clientY < row.getBoundingClientRect().bottom,
-    );
-    const { key } = drag;
-    const from = drag.order.findIndex(({ id }) => tabKey(id) === key);
     drag = {
-      key,
-      order: moved(drag.order, from, over === -1 ? rows.length - 1 : over),
+      key: tabKey(tab.id),
+      pointerId: event.pointerId,
+      rowCount: tabs.length,
+      rows: new RowDrag(at, slotsOfRows(), event.clientY - listTop()),
     };
   }
 
-  function drop(): void {
+  function dragTo(event: PointerEvent): void {
+    if (drag === undefined || !isDragPointer(event)) {
+      return;
+    }
+    if (event.buttons === NO_BUTTONS) {
+      void endDrag(true);
+      return;
+    }
+    drag = { ...drag, rows: drag.rows.to(event.clientY - listTop()) };
+  }
+
+  async function endDrag(keepsGap: boolean): Promise<void> {
     if (drag === undefined) {
       return;
     }
-    const { key, order } = drag;
+    const { key, rows } = drag;
+    const tab = tabs[rows.from];
+    const isMoved =
+      keepsGap &&
+      tab !== undefined &&
+      tabKey(tab.id) === key &&
+      rows.gap !== rows.from;
+    const liftedRow = rowOf(key);
+    const lifted = liftedRow === null ? undefined : poseOf(liftedRow);
+    settling = { key, easesNeighbours: !isMoved };
     drag = undefined;
-    const from = tabs.findIndex(({ id }) => tabKey(id) === key);
-    const to = order.findIndex(({ id }) => tabKey(id) === key);
-    const tab = tabs[from];
-    if (tab !== undefined && from !== to) {
-      onArrange(order);
-      announceMove(tab, from, to);
+    if (isMoved) {
+      onArrange(moved(tabs, rows.from, rows.gap));
+      announceMove(tab, rows.from, rows.gap);
+    }
+    try {
+      await tick();
+      const row = rowOf(key);
+      const settle =
+        row === null || lifted === undefined
+          ? undefined
+          : settleRow(row, lifted);
+      await settle?.finished.then(
+        () => undefined,
+        () => undefined,
+      );
+    } finally {
+      stopSettling(key);
+    }
+  }
+
+  function stopSettling(key: string): void {
+    if (settling?.key === key) {
+      settling = undefined;
+    }
+  }
+
+  function drop(event: PointerEvent): void {
+    if (isDragPointer(event)) {
+      void endDrag(true);
+    }
+  }
+
+  function cancelDrag(event: PointerEvent): void {
+    if (isDragPointer(event)) {
+      void endDrag(false);
+    }
+  }
+
+  function cancelDragWhenHidden(): void {
+    if (document.visibilityState === "hidden") {
+      void endDrag(false);
     }
   }
 </script>
+
+<svelte:document onvisibilitychange={cancelDragWhenHidden} />
+<svelte:window
+  onblur={() => {
+    void endDrag(false);
+  }}
+/>
 
 <div
   data-settings-group
@@ -195,17 +303,32 @@
       isDesktopLook && "divide-y divide-border",
     ]}
   >
-    {#each listed as tab, at (tabKey(tab.id))}
+    {#each tabs as tab, at (tabKey(tab.id))}
       {@const key = tabKey(tab.id)}
+      {@const isLifted = drag?.key === key}
+      {@const isRaised = isLifted || settling?.key === key}
       <li
-        data-tab-row
+        data-tab-row={key}
+        style:inset-block-start={isLifted
+          ? `${String(drag?.rows.offset ?? 0)}px`
+          : undefined}
+        style:translate={drag !== undefined && !isLifted
+          ? `0 ${String(drag.rows.shiftOf(at))}px`
+          : undefined}
         class={[
           "flex items-center",
           rowLook,
-          drag?.key === key &&
+          !isRaised &&
+            (drag !== undefined || settling?.easesNeighbours === true) &&
+            "transition-transform duration-move ease-emphasized",
+          isRaised &&
             (android.isOn
-              ? "relative z-drag-box -translate-y-native-drag-lift rounded-native-segment bg-android-container-high shadow-dialog"
-              : "relative z-drag-box rounded-card bg-card shadow-dialog"),
+              ? "relative z-drag-box rounded-native-segment bg-android-container-high"
+              : "relative z-drag-box rounded-card bg-card"),
+          isLifted &&
+            (android.isOn
+              ? "-translate-y-native-drag-lift shadow-dialog"
+              : "shadow-dialog"),
         ]}
       >
         <button
@@ -221,11 +344,12 @@
             moveWithKeys(event, at);
           }}
           onpointerdown={(event) => {
-            startDrag(event, tab);
+            startDrag(event, at);
           }}
           onpointermove={dragTo}
           onpointerup={drop}
-          onpointercancel={drop}
+          onlostpointercapture={drop}
+          onpointercancel={cancelDrag}
         >
           {#if ios.isOn}
             <Menu size={IOS_ICON_SIZE} aria-hidden="true" />
@@ -314,7 +438,7 @@
               {m.library_tabs_move_up()}
             </DropdownMenuItem>
             <DropdownMenuItem
-              disabled={at === listed.length - 1}
+              disabled={at === tabs.length - 1}
               onSelect={() => {
                 void move(at, at + 1);
               }}

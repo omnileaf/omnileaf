@@ -1,6 +1,7 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
 
 import {
+  type ButtonLook,
   type ButtonSize,
   type ButtonVariant,
   variantClasses,
@@ -20,6 +21,15 @@ export type ActionRank = "main" | "other";
 export interface PhoneAction {
   readonly variant: ButtonVariant;
   readonly size: ButtonSize;
+  readonly fit: string;
+}
+
+export type ButtonChoice =
+  | { readonly look: ButtonLook }
+  | { readonly variant: ButtonVariant; readonly size: ButtonSize };
+
+export interface ActionLook {
+  readonly button: ButtonChoice;
   readonly fit: string;
 }
 
@@ -67,6 +77,18 @@ export function phoneAction(
   return actions === undefined
     ? undefined
     : { ...actions[rank], fit: actions.fit };
+}
+
+export function actionLookOn(
+  platform: Platform,
+  width: WidthClass,
+  rank: ActionRank,
+  elsewhere: ActionLook,
+): ActionLook {
+  const phone = phoneAction(platform, width, rank);
+  return phone === undefined
+    ? elsewhere
+    : { button: { variant: phone.variant, size: phone.size }, fit: phone.fit };
 }
 
 export function actionGroupLook(

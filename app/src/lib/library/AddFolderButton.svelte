@@ -5,8 +5,9 @@
   import { Button, type ButtonLook } from "#lib/components/ui/button/index.ts";
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
-  import { phoneAction } from "#lib/page/action-group.ts";
+  import { type ActionLook, actionLookOn } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { EMPTY_MAIN_ACTION } from "#lib/page/empty-action.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -33,8 +34,7 @@
   const PLACEMENTS = {
     "page-heading":
       "-my-sm gap-sm min-block-touch-target max-medium:rounded-full max-medium:text-accent max-medium:inline-touch-target medium:rounded-control medium:border medium:border-field medium:bg-card medium:ps-md medium:pe-lg medium:text-foreground desktop:text-label desktop:medium:-my-xs desktop:medium:min-block-pointer-button touch:max-medium:-me-sm",
-    "empty-state":
-      "gap-sm rounded-shadcn-button px-lg font-medium min-block-touch-target ios:max-medium:rounded-phone-button ios:max-medium:min-block-ios-control desktop:text-label desktop:min-block-pointer-button",
+    "empty-state": EMPTY_MAIN_ACTION,
     "card-foot":
       "gap-sm rounded-full border-foreground px-lg transition-control inline-full block-folders-button enabled:hover:tint-hover enabled:active:tint-pressed desktop:text-label",
     "below-list":
@@ -43,6 +43,8 @@
       "gap-sm rounded-control border-accent px-lg text-label transition-control min-block-pointer-target enabled:hover:tint-hover enabled:active:tint-pressed windows:rounded-shadcn-button windows:border-button-outline-edge windows:bg-button-outline windows:font-medium windows:border-be-windows-stroke-strong windows:min-block-shadcn-button",
     "list-row": `${ROW_FOCUS_RING} justify-start gap-native-row-gap ps-native-row-start pe-native-row-end text-accent text-native-row-title/native-row-title font-native-row-title tracking-native-row-title min-block-native-row inline-full`,
   } satisfies Record<Placement, string>;
+
+  const ANDROID_LIST_ROW = "rounded-none font-regular text-foreground";
 
   const ICON_SIZE = 16;
   const LIST_ROW_ICON_SIZE = 22;
@@ -61,10 +63,22 @@
   const isInHeading = $derived(placement === "page-heading");
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const phone = $derived(
+  const placedFit = $derived.by(() => {
+    if (placement !== "list-row") {
+      return `font-semibold ${PLACEMENTS[placement]}`;
+    }
+    return android.isOn
+      ? `${PLACEMENTS[placement]} ${ANDROID_LIST_ROW}`
+      : PLACEMENTS[placement];
+  });
+  const placed = $derived<ActionLook>({
+    button: { look: LOOKS[placement] },
+    fit: placedFit,
+  });
+  const shown = $derived(
     placement === "empty-state"
-      ? phoneAction(platform, width.current, "main")
-      : undefined,
+      ? actionLookOn(platform, width.current, "main", placed)
+      : placed,
   );
 </script>
 
@@ -80,20 +94,10 @@
   {#snippet child({ props })}
     <Button
       {...props}
-      {...phone === undefined
-        ? { look: LOOKS[placement] }
-        : { variant: phone.variant, size: phone.size }}
+      {...shown.button}
       class={[
         "inline-flex shrink-0 items-center justify-center disabled:opacity-60",
-        phone === undefined
-          ? [
-              placement !== "list-row" && "font-semibold",
-              PLACEMENTS[placement],
-              placement === "list-row" &&
-                android.isOn &&
-                "rounded-none font-regular text-foreground",
-            ]
-          : phone.fit,
+        shown.fit,
       ]}
     >
       {#if placement === "list-row" && android.isOn}
