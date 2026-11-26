@@ -44,6 +44,9 @@ const TAP_BURST = 12;
 const TAP_BURST_GAP_MS = 40;
 const MOST_CELLS_DRAWN = 3;
 const MOST_PAGES_HELD = 7;
+const WAIT_PAST_DOUBLE_TAP_MS = 600;
+const TURN_DRAG_PX = -150;
+const AWAY_FROM_THE_TAP = { x: 60, y: 160 };
 const ARROW_RIGHT = {
   key: "ArrowRight",
   code: "ArrowRight",
@@ -367,6 +370,20 @@ async function stopRecordingPagesHeld(page: Page): Promise<PagesHeld> {
   });
 }
 
+async function waitPastDoubleTap(page: Page): Promise<void> {
+  await page.evaluate(
+    (ms) =>
+      new Promise((past) => {
+        setTimeout(past, ms);
+      }),
+    WAIT_PAST_DOUBLE_TAP_MS,
+  );
+}
+
+async function controlsWereShown(page: Page): Promise<boolean> {
+  return page.evaluate(() => window.omnileafControlsShown ?? false);
+}
+
 async function slidesRunning(page: Page): Promise<number> {
   return page.evaluate(
     () =>
@@ -463,10 +480,63 @@ test(
     await watchForControls(page);
 
     await doubleTapToZoom(page, session);
+    await waitPastDoubleTap(page);
 
-    expect(
-      await page.evaluate(() => window.omnileafControlsShown ?? false),
-    ).toBe(false);
+    expect(await controlsWereShown(page)).toBe(false);
+  },
+);
+
+test(
+  "drops a tap waiting on the middle once a turn follows it",
+  { tag: "@native" },
+  async ({ page }) => {
+    await servePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    const session = await page.context().newCDPSession(page);
+    await hideControls(page, session);
+    await watchForControls(page);
+    const middle = await centreOf(
+      page.getByRole("button", { name: "Show the controls" }),
+    );
+    const next = await centreOf(
+      page.getByRole("button", { name: "Next page" }),
+    );
+
+    await tap(session, middle);
+    await tap(session, next);
+    await waitPastDoubleTap(page);
+
+    expect(await controlsWereShown(page)).toBe(false);
+    await expectOnPage(page, 15);
+  },
+);
+
+test(
+  "drops a tap waiting on the middle once a drag starts",
+  { tag: "@native" },
+  async ({ page }) => {
+    await servePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    const session = await page.context().newCDPSession(page);
+    await hideControls(page, session);
+    await watchForControls(page);
+    const middle = await centreOf(
+      page.getByRole("button", { name: "Show the controls" }),
+    );
+
+    const dragStart = movedBy(middle, AWAY_FROM_THE_TAP);
+    await tap(session, middle);
+    await fingerDown(session, dragStart);
+    await moveFinger(
+      session,
+      dragStart,
+      movedBy(dragStart, { x: TURN_DRAG_PX, y: 0 }),
+    );
+    await liftFinger(session);
+    await waitPastDoubleTap(page);
+
+    expect(await controlsWereShown(page)).toBe(false);
+    await expectOnPage(page, 15);
   },
 );
 

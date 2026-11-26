@@ -603,6 +603,7 @@
   });
 
   function turnBy(step: number): void {
+    dropWaitingTap();
     if (isStrip && !turner.isPastEnd) {
       scrollBy(step);
       return;
@@ -726,6 +727,7 @@
   }
 
   function zoomTo(scale: number): void {
+    dropWaitingTap();
     zoom = Math.min(ZOOM_MOST, Math.max(1, scale));
     controls.hide();
   }
@@ -751,6 +753,7 @@
   }
 
   function jumpTo(index: number): void {
+    dropWaitingTap();
     isSettling = false;
     turner.goTo(index);
   }
@@ -858,6 +861,7 @@
 
   let lastPointer = { x: Number.NaN, y: Number.NaN };
   let waitingTap: ReturnType<typeof setTimeout> | undefined;
+  let tappedWith = "";
 
   /** WebKit sends a pointermove whenever the page scrolls under a pointer that hasn't moved, so only a change of position counts. */
   function hasPointerMoved(event: PointerEvent): boolean {
@@ -879,15 +883,14 @@
   }
 
   function onMiddleTap(event: MouseEvent): void {
-    if (!isPointerClick(event)) {
+    if (!isPointerClick(event) || tappedWith !== "touch") {
       onZone(event, "toggleControls");
       return;
     }
     if (event.currentTarget instanceof HTMLElement) {
       event.currentTarget.blur();
     }
-    clearTimeout(waitingTap);
-    waitingTap = undefined;
+    dropWaitingTap();
     if (swipe.isClickASwipe() || event.detail > 1) {
       return;
     }
@@ -895,6 +898,11 @@
       waitingTap = undefined;
       act("toggleControls");
     }, DOUBLE_TAP_MS);
+  }
+
+  function dropWaitingTap(): void {
+    clearTimeout(waitingTap);
+    waitingTap = undefined;
   }
 
   function isPointerClick(event: MouseEvent): boolean {
@@ -920,12 +928,17 @@
 
   function onSwipeStart(event: PointerEvent): void {
     swipe.started(event);
+    tappedWith = event.pointerType;
     dragFrom = 0;
   }
 
   function onSwipeMove(event: PointerEvent): void {
     const across = swipe.moved(event);
-    if (across === undefined || look.pageTurn !== "slide" || isPagePanning) {
+    if (across === undefined) {
+      return;
+    }
+    dropWaitingTap();
+    if (look.pageTurn !== "slide" || isPagePanning) {
       return;
     }
     if (isSettling) {
@@ -1007,7 +1020,7 @@
     heading?.focus();
     return () => {
       controls.stop();
-      clearTimeout(waitingTap);
+      dropWaitingTap();
     };
   });
 
