@@ -1,14 +1,9 @@
-import {
-  defineConfig,
-  type Project,
-  type ReporterDescription,
-} from "@playwright/test";
+import { defineConfig, type Project } from "@playwright/test";
 
 import type { Platform } from "./src/lib/ipc/bindings.ts";
 
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
 import { previewPortFromEnvironment } from "./tests/preview-port.ts";
-import { retriesFromEnvironment } from "./tests/retries.ts";
 import { screensFromEnvironment } from "./tests/screens.ts";
 import { shardFromEnvironment } from "./tests/shard.ts";
 import {
@@ -53,10 +48,6 @@ const SCREEN_SWEEPS = new RegExp(`${SCREEN_SWEEP_TAG}\\b`);
 const shard = shardFromEnvironment(process.env.PLAYWRIGHT_SHARD);
 const group = testGroupFromEnvironment(process.env.PLAYWRIGHT_GROUP);
 const pickedScreens = screensFromEnvironment(process.env.PLAYWRIGHT_SCREENS);
-const reporters: ReporterDescription[] =
-  process.env.PLAYWRIGHT_JSON_OUTPUT_NAME === undefined
-    ? [["list"]]
-    : [["list"], ["json"]];
 
 /** Playwright gives each shard a contiguous run of tests in project order, and WebKit takes about twice as long as Chromium, so each shard pairs a Chromium project with a WebKit one. */
 const PROJECT_ORDER = [
@@ -102,7 +93,6 @@ const speedProject: Project = {
   testMatch: SPEED_SPECS,
   dependencies: [...screenProjects, ...nativeProjects].map(({ name }) => name),
   workers: 1,
-  retries: 0,
   use: { browserName: "chromium", ...SCREENS.desktop },
 };
 
@@ -117,12 +107,12 @@ export default defineConfig<PlatformOption>({
   testDir: "tests/browser",
   fullyParallel: true,
   forbidOnly: true,
-  retries: retriesFromEnvironment(process.env),
-  reporter: reporters,
+  retries: 0,
+  reporter: "list",
   use: {
     ...TEST_BROWSER_CONTEXT,
     baseURL: PREVIEW_URL,
-    trace: "retain-on-first-failure",
+    trace: "retain-on-failure",
   },
   projects,
   shard,
