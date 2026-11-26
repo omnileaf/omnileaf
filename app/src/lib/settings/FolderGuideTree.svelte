@@ -2,12 +2,7 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import {
-    ENTRY_ICONS,
-    EXAMPLE_FOLDER,
-    FOLDER_INDENTS,
-    kindOf,
-  } from "./folder-guide.ts";
+  import { ENTRY_ICONS, EXAMPLE_FOLDER, kindOf } from "./folder-guide.ts";
   import {
     ENTRY_TINTS,
     type NativeGuideLook,
@@ -19,11 +14,11 @@
 
 <ul aria-label={m.folder_guide_example()} class={["flex flex-col", look.tree]}>
   {#each EXAMPLE_FOLDER as entry (entry.name)}
-    <li class="flex px-lg py-folder-row">
+    <li class={["flex px-lg", look.treeRow]}>
       <div
         class={[
           "grid flex-1 grid-cols-details items-start gap-x-sm min-inline-none",
-          FOLDER_INDENTS[entry.depth],
+          look.treeIndents[entry.depth],
         ]}
       >
         <span class="flex shrink-0 inline-native-icon">
@@ -33,9 +28,7 @@
             class={["mbs-2xs", ENTRY_TINTS[kindOf(entry)]]}
           />
         </span>
-        <span
-          class="text-native-row-title/native-row-title tracking-native-row-title wrap-anywhere"
-        >
+        <span class={["wrap-anywhere", look.treeName]}>
           {entry.name}
         </span>
         <span class={["col-start-2", TREE_READING_TYPE]}>

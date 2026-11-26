@@ -3,13 +3,20 @@ import { GROUPED_GROUP_LOOK } from "#lib/library/group-look.ts";
 import { GROUP_PLATE } from "#lib/page/plates.ts";
 
 import { FLUSH_LIST, FLUSH_LIST_HEADING } from "./android-flush-look.ts";
-import type { EntryKind } from "./folder-guide.ts";
+import {
+  type EntryKind,
+  FOLDER_INDENTS,
+  type FolderDepth,
+} from "./folder-guide.ts";
 
 export interface NativeGuideLook {
   readonly page: string;
   readonly intro: string;
   readonly tree: string;
   readonly treeIconSize: number;
+  readonly treeRow: string;
+  readonly treeName: string;
+  readonly treeIndents: Readonly<Record<FolderDepth, string>>;
   readonly rulesHeading: string;
   readonly groupHeading: string;
   readonly rules: string;
@@ -25,6 +32,9 @@ export const ANDROID_GUIDE_LOOK: NativeGuideLook = {
   intro: `pbe-sm ${ROW_TITLE_TYPE}`,
   tree: "mbs-sm rounded-card px-lg py-xl inset-ring inset-ring-border",
   treeIconSize: 24,
+  treeRow: "py-folder-row",
+  treeName: ROW_TITLE_TYPE,
+  treeIndents: FOLDER_INDENTS,
   rulesHeading:
     "pbs-xl pbe-sm text-native-group-heading/native-group-heading font-native-group-heading tracking-native-group-heading",
   groupHeading: FLUSH_LIST_HEADING,
@@ -38,6 +48,9 @@ export const IOS_GUIDE_LOOK: NativeGuideLook = {
   intro: `px-lg ${ROW_TITLE_TYPE}`,
   tree: `py-sm ${GROUP_PLATE}`,
   treeIconSize: 18,
+  treeRow: "py-folder-row",
+  treeName: ROW_TITLE_TYPE,
+  treeIndents: FOLDER_INDENTS,
   rulesHeading: `px-lg pbs-sm font-semibold ${ROW_TITLE_TYPE}`,
   groupHeading: GROUPED_GROUP_LOOK.heading,
   rules: `row-rules overflow-hidden ${GROUP_PLATE}`,
