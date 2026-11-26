@@ -7,6 +7,8 @@ import "../../app.css";
 
 import { followCorePlatform } from "#lib/page/platform.ts";
 
+import type { LibraryCategory } from "#lib/ipc/bindings.ts";
+
 import type { ArrangedTab } from "./library-tabs.ts";
 import LibraryTabsList from "./LibraryTabsList.svelte";
 
@@ -26,10 +28,18 @@ const PROPS = {
   onArrange: () => undefined,
 };
 
+function categoryTab(id: string, name: string): ArrangedTab {
+  return {
+    id: { kind: "category", id: id as LibraryCategory["id"] },
+    name,
+    isHidden: false,
+  };
+}
+
 const CATEGORY_TABS: readonly ArrangedTab[] = [
   ...TABS,
-  { id: { kind: "category", id: "reading" }, name: "Reading", isHidden: false },
-  { id: { kind: "category", id: "manga" }, name: "Manga", isHidden: false },
+  categoryTab("reading", "Reading"),
+  categoryTab("manga", "Manga"),
 ];
 const FIRST_POINTER = 1;
 const SECOND_POINTER = 2;
@@ -189,10 +199,7 @@ const CHANGES_UNDER_A_DRAG = {
   "a tab above it leaves the list": CATEGORY_TABS.filter(
     ({ name }) => name !== "All",
   ),
-  "a tab joins the list": [
-    ...CATEGORY_TABS,
-    { id: { kind: "category", id: "comics" }, name: "Comics", isHidden: false },
-  ],
+  "a tab joins the list": [...CATEGORY_TABS, categoryTab("comics", "Comics")],
 } satisfies Record<string, readonly ArrangedTab[]>;
 
 for (const [change, tabs] of Object.entries(CHANGES_UNDER_A_DRAG)) {
