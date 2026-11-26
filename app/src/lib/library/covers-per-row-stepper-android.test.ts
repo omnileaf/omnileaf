@@ -118,3 +118,13 @@ for (const theme of THEMES) {
     );
   });
 }
+
+test("rounds Android's stepper buttons to half their height at rest", async () => {
+  await renderStepper("light");
+
+  const more = element("More covers per row");
+
+  expect(getComputedStyle(more).borderTopLeftRadius).toBe(
+    `${String(more.getBoundingClientRect().height / 2)}px`,
+  );
+});
