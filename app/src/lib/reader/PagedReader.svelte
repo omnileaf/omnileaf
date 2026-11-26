@@ -1073,6 +1073,9 @@
   }
 
   function zoomOnDoubleTap(event: MouseEvent): void {
+    if (isOffPages) {
+      return;
+    }
     if (isZoomedIn(viewportScale)) {
       fitPinch();
       return;
@@ -1111,7 +1114,9 @@
     tappedWith = event.pointerType;
     dragFrom = 0;
     isSecondTap =
-      waitingTap !== undefined && tapWindow.isSecondTap(tapPointOf(event));
+      waitingTap !== undefined &&
+      !isOffPages &&
+      tapWindow.isSecondTap(tapPointOf(event));
     if (isSecondTap) {
       dropWaitingTap();
     }

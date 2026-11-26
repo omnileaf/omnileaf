@@ -1085,6 +1085,77 @@ test.describe("at the end of a book", { tag: "@native" }, () => {
     });
   });
 
+  test.describe("on Up next", () => {
+    const QUICKER_THAN_A_DOUBLE_TAP_MS = 150;
+
+    test.use({ backend: readerBackend(DEFAULT_BACKEND, ON_THE_LAST_PAGE) });
+
+    async function openUpNext(page: Page): Promise<CDPSession> {
+      await openNear(page, PAGE_COUNT);
+      await page.keyboard.press("ArrowRight");
+      await expect(
+        page.getByRole("heading", { level: 2, name: FINISHED }),
+      ).toBeVisible();
+      await expect.poll(() => slidesRunning(page)).toBe(0);
+      return page.context().newCDPSession(page);
+    }
+
+    test("does not zoom on a double tap", async ({ page }) => {
+      const session = await openUpNext(page);
+      const blank = await page.evaluate(() => {
+        const x = window.innerWidth / 2;
+        for (let y = window.innerHeight - 1; y > 0; y -= 1) {
+          const name = document
+            .elementFromPoint(x, y)
+            ?.getAttribute("aria-label");
+          if (name === "Show the controls" || name === "Hide the controls") {
+            return { x, y };
+          }
+        }
+        throw new Error("Up next leaves no room to tap its page");
+      });
+
+      await tap(session, blank);
+      await waitFrames(page, FRAMES_BETWEEN_DOUBLE_TAPS);
+      await tap(session, blank);
+      await waitPastDoubleTap(page);
+
+      await expect(page.getByText("200%", { exact: false })).toHaveCount(0);
+      await expect(
+        page.getByRole("heading", { level: 2, name: FINISHED }),
+      ).toBeVisible();
+    });
+
+    test("presses a button at once on a tap, without waiting out a double tap", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+      const back = page.getByRole("link", { name: "Back to the series" });
+      await back.evaluate((link) => {
+        link.addEventListener(
+          "click",
+          (event) => {
+            event.preventDefault();
+            link.dataset.pressedAfter = String(
+              performance.now() - Number(link.dataset.liftedAt),
+            );
+          },
+          { capture: true },
+        );
+        link.addEventListener("pointerup", () => {
+          link.dataset.liftedAt = String(performance.now());
+        });
+      });
+
+      await tap(session, await centreOf(back));
+
+      await expect(back).toHaveAttribute("data-pressed-after");
+      expect(
+        Number(await back.getAttribute("data-pressed-after")),
+      ).toBeLessThan(QUICKER_THAN_A_DOUBLE_TAP_MS);
+    });
+  });
+
   test.describe("zoomed on its last page", () => {
     test.use({ backend: readerBackend(DEFAULT_BACKEND, ON_THE_LAST_PAGE) });
 
