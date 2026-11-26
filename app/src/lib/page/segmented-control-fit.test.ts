@@ -112,3 +112,18 @@ test("keeps Android's segments on one row at their own widths while three of the
     segment("Bookmarked").getBoundingClientRect().width,
   );
 });
+
+test("rounds Android's wrapped segments to half their height, so a press can tighten them smoothly", async () => {
+  const container = await renderShowChoice();
+  container.style.inlineSize = `${String(roomFor(NAMES.map(ownWidth)))}px`;
+  await expect.poll(rows).toEqual([["All", "Unread"], ["Bookmarked"]]);
+
+  const all = segment("All");
+  for (const animation of all.getAnimations()) {
+    animation.finish();
+  }
+
+  expect(getComputedStyle(all).borderTopLeftRadius).toBe(
+    `${String(all.getBoundingClientRect().height / 2)}px`,
+  );
+});

@@ -103,6 +103,8 @@
     segment: "rounded-full",
   };
 
+  const ANDROID_PILL_ROW = "rounded-[calc(var(--spacing-touch-target)/2)]";
+
   const ANDROID_PHONE_SMALL_FACE =
     "max-medium:gap-sm max-medium:px-lg max-medium:text-native-segment max-medium:leading-native-segment max-medium:tracking-native-segment";
 
@@ -303,7 +305,7 @@
           (chosen === option
             ? ANDROID_SEGMENT.chosenLayer
             : ANDROID_SEGMENT.unchosenLayer),
-        isPillRows && PILL_ROWS.segment,
+        isPillRows && (isAndroid ? ANDROID_PILL_ROW : PILL_ROWS.segment),
         segmentClass,
       ]}
     >
