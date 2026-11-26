@@ -36,4 +36,4 @@ BEGIN
     );
 END;
 
-CREATE INDEX series_in_no_category_by_stage ON series (reading_stage) WHERE kept_categories = 0;
+CREATE INDEX series_in_no_category ON series (kept_categories) WHERE kept_categories = 0;

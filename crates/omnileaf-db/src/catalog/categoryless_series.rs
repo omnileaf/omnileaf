@@ -28,7 +28,7 @@ macro_rules! in_no_category {
 macro_rules! in_no_category_candidates {
     () => {
         candidates! {
-            index: "series_in_no_category_by_stage",
+            index: "series_in_no_category",
             condition: in_no_category!(),
         }
     };
@@ -274,7 +274,7 @@ mod tests {
         for plan in plans {
             assert!(
                 plan.iter()
-                    .any(|step| step.contains("USING INDEX series_in_no_category_by_stage")),
+                    .any(|step| step.contains("USING INDEX series_in_no_category")),
                 "{plan:?}"
             );
         }
