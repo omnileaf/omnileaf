@@ -3,8 +3,12 @@ import type { Locator, Page } from "@playwright/test";
 import type {
   CategoryRename,
   LibraryCategory,
+  LibraryTab,
 } from "../../src/lib/ipc/bindings.ts";
-import { LIBRARY_OPENS_ON_KEY } from "../../src/lib/library/library-tab.svelte.ts";
+import {
+  LIBRARY_OPENS_ON_KEY,
+  LIBRARY_TAB_KEY,
+} from "../../src/lib/library/library-tab.svelte.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
@@ -19,15 +23,24 @@ const MEMBERS: Record<string, typeof LIBRARY> = {
 let categories: LibraryCategory[] = [];
 let renames: (readonly [string, string])[] = [];
 let removed: string[] = [];
+let tabs: LibraryTab[] = [];
+let renameWait: Promise<void> = Promise.resolve();
+
+function folded(name: string): string {
+  return name.trim().toLowerCase().replaceAll("ß", "ss");
+}
 
 function categoryNamed(id: string, name: string): LibraryCategory {
   return { id, name } as LibraryCategory;
 }
 
-function renameOutcome(category: string, to: string): CategoryRename {
+async function renameOutcome(
+  category: string,
+  to: string,
+): Promise<CategoryRename> {
+  await renameWait;
   const isTaken = categories.some(
-    ({ id, name }) =>
-      id !== category && name.toLowerCase() === to.trim().toLowerCase(),
+    ({ id, name }) => id !== category && folded(name) === folded(to),
   );
   if (isTaken) {
     return { kind: "nameTaken" };
@@ -57,6 +70,23 @@ const BACKEND: FakeBackend = {
   removeLibraryCategory: (category) => {
     removed = [...removed, category];
     categories = categories.filter(({ id }) => id !== category);
+    tabs = tabs.filter(
+      ({ id }) => !(id.kind === "category" && id.id === category),
+    );
+    return null;
+  },
+  libraryTabs: () => [...tabs],
+  setLibraryTabs: (kept) => {
+    tabs = kept as LibraryTab[];
+    return null;
+  },
+  labelSeries: (_series, changes) => {
+    categories = [
+      ...categories,
+      ...changes.categoriesCreated.map((name) =>
+        categoryNamed(name.toLowerCase(), name),
+      ),
+    ];
     return null;
   },
 };
@@ -75,6 +105,11 @@ test.beforeEach(({ platform }) => {
   ];
   renames = [];
   removed = [];
+  tabs = [
+    { id: { kind: "all" }, isHidden: false },
+    { id: { kind: "newChapters" }, isHidden: true },
+  ];
+  renameWait = Promise.resolve();
 });
 
 function tabList(page: Page): Locator {
@@ -235,7 +270,7 @@ test("opens the library on All once the category it opened on is deleted", async
 
   await expect(
     page.getByRole("combobox", { name: "The library opens on" }),
-  ).toHaveValue("all");
+  ).toHaveValue("last");
   await page.goto("/");
 
   const strip = page.getByRole("tablist", { name: "Categories" });
@@ -261,4 +296,86 @@ test("shows a renamed category's new name in the library's tabs", async ({
   const strip = page.getByRole("tablist", { name: "Categories" });
   await expect(strip.getByRole("tab", { name: "Later" })).toBeVisible();
   await expect(strip.getByRole("tab", { name: "Manga" })).toHaveCount(0);
+});
+
+test("shows the core's refusal of a name only the core folds to another's", async ({
+  page,
+}) => {
+  categories = [...categories, categoryNamed("strasse", "Strasse")];
+  await page.goto("/settings/library/tabs");
+  await chooseFromMenu(page, "Manga", "Rename…");
+  const dialog = page.getByRole("dialog", { name: "Rename category" });
+
+  await dialog.getByRole("textbox", { name: "Name" }).fill("Straße");
+  await dialog.getByRole("button", { name: "Rename", exact: true }).click();
+
+  await expect(dialog.getByText("Straße is already a category.")).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: "Rename", exact: true }),
+  ).toHaveAttribute("aria-disabled", "true");
+  expect(renames).toEqual([]);
+});
+
+test("sends one rename and says it once when Enter is pressed twice", async ({
+  page,
+}) => {
+  let answer = (): void => undefined;
+  renameWait = new Promise((resolve) => {
+    answer = resolve;
+  });
+  await page.goto("/settings/library/tabs");
+  await chooseFromMenu(page, "Manga", "Rename…");
+  const field = page
+    .getByRole("dialog", { name: "Rename category" })
+    .getByRole("textbox", { name: "Name" });
+
+  await field.fill("Later");
+  await field.press("Enter");
+  await field.press("Enter");
+  answer();
+
+  await expect(page.getByRole("status")).toHaveText("Manga renamed to Later");
+  expect(renames).toEqual([["manga", "Later"]]);
+});
+
+test("brings a deleted category's name back as a new shown tab the library does not open on", async ({
+  page,
+}) => {
+  tabs = [
+    { id: { kind: "category", id: "manga" }, isHidden: true },
+    ...tabs,
+  ] as LibraryTab[];
+  await page.addInitScript(
+    ({ opensOn, usedLast }) => {
+      if (sessionStorage.getItem("seeded") === null) {
+        sessionStorage.setItem("seeded", "yes");
+        localStorage.setItem(opensOn, "manga");
+        localStorage.setItem(usedLast, "manga");
+      }
+    },
+    { opensOn: LIBRARY_OPENS_ON_KEY, usedLast: LIBRARY_TAB_KEY },
+  );
+  await page.goto("/settings/library/tabs");
+  await chooseFromMenu(page, "Manga", "Delete…");
+  await page
+    .getByRole("alertdialog", { name: "Delete Manga?" })
+    .getByRole("button", { name: "Delete" })
+    .click();
+  await expect(rowOf(page, "Manga")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "New category" }).click();
+  const naming = page.getByRole("dialog", { name: "New category" });
+  await naming.getByRole("textbox", { name: "Name" }).fill("Manga");
+  await naming.getByRole("button", { name: "Add" }).click();
+
+  await expect
+    .poll(() => rowNames(page))
+    .toEqual(["All", "New chapters", "Reading", "Comics", "Manga"]);
+  await expect(rowOf(page, "Manga")).not.toContainText("Hidden");
+  await expect(
+    page.getByRole("combobox", { name: "The library opens on" }),
+  ).toHaveValue("last");
+  expect(
+    await page.evaluate((key) => localStorage.getItem(key), LIBRARY_TAB_KEY),
+  ).toBe("all");
 });

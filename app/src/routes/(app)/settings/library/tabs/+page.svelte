@@ -15,6 +15,7 @@
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import {
     ALL_SERIES,
+    forgetTabUsedLast,
     LibraryOpensOn,
     OPENS_ON_LAST_TAB,
   } from "#lib/library/library-tab.svelte.ts";
@@ -28,6 +29,7 @@
   } from "#lib/library/library-tabs.ts";
   import DeleteCategoryDialog from "#lib/library/DeleteCategoryDialog.svelte";
   import LibraryTabsList from "#lib/library/LibraryTabsList.svelte";
+  import type { RefusedName } from "#lib/library/category-name.ts";
   import RenameCategoryDialog from "#lib/library/RenameCategoryDialog.svelte";
   import GroupedChoiceRow from "#lib/settings/GroupedChoiceRow.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
@@ -50,6 +52,8 @@
   let keepsLabels = $state(false);
   let isNaming = $state(false);
   let renaming = $state<CategoryTab | undefined>();
+  let isRenaming = $state(false);
+  let refused = $state<RefusedName | undefined>();
   let deleting = $state<CategoryTab | undefined>();
   let isDeleting = $state(false);
   let focusAfterDelete: string | undefined;
@@ -108,7 +112,12 @@
   }
 
   async function rename(tab: CategoryTab, to: string): Promise<void> {
+    if (isRenaming) {
+      return;
+    }
+    isRenaming = true;
     const renamed = await commands.renameLibraryCategory(tab.id.id, to);
+    isRenaming = false;
     if (renamed.status === "error") {
       renaming = undefined;
       reportError(renamed.error);
@@ -124,7 +133,10 @@
         renaming = undefined;
         return;
       case "nameTaken":
+        refused = { name: to, problem: "taken" };
+        return;
       case "nameEmpty":
+        refused = { name: to, problem: "empty" };
         return;
       default:
         assertNever(renamed.data);
@@ -135,7 +147,7 @@
     isDeleting = true;
     focusAfterDelete = keyBeside(tab);
     const removed = await commands.removeLibraryCategory(tab.id.id);
-    await loadCategories();
+    await Promise.all([loadCategories(), loadTabs()]);
     isDeleting = false;
     deleting = undefined;
     if (removed.status === "error") {
@@ -143,6 +155,8 @@
       reportError(removed.error);
       return;
     }
+    opensOn.forget(tab.id.id);
+    forgetTabUsedLast(tab.id.id);
     announce(m.library_tabs_deleted({ tab: tab.name }));
   }
 
@@ -282,6 +296,7 @@
         : undefined}
       onRename={keepsLabels
         ? (tab: ArrangedTab) => {
+            refused = undefined;
             renaming = asCategory(tab);
           }
         : undefined}
@@ -355,6 +370,8 @@
   <RenameCategoryDialog
     name={renaming?.name}
     otherNames={namesBesideRenamed}
+    {refused}
+    isBusy={isRenaming}
     onRename={(to: string) => {
       if (renaming !== undefined) {
         void rename(renaming, to);
