@@ -433,6 +433,9 @@
       : 0,
   );
   const isPaging = $derived(pagesBesideChosen > 0);
+  const opensOnPaddedGroupHead = $derived(
+    androidPhone.isOn && groups.length > 0,
+  );
   const isIosPhone = $derived(
     phoneOf(data.appInfo.platform, width.current) === "ios",
   );
@@ -1491,7 +1494,10 @@
         <div
           class={[
             PAGE_BLEED,
-            !isPaging && emptyCause === undefined && COVERS_GAP,
+            !isPaging &&
+              emptyCause === undefined &&
+              !opensOnPaddedGroupHead &&
+              COVERS_GAP,
             "flex flex-1 flex-col overflow-x-clip",
           ]}
         >
