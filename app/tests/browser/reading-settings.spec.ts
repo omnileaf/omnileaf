@@ -8,7 +8,7 @@ const INTRO_GAP_PX = 8;
 function cards(page: Page): Locator[] {
   return [
     page
-      .getByRole("combobox", { name: "Reading mode for new series" })
+      .getByRole("combobox", { name: "Reading mode", exact: true })
       .locator("xpath=ancestor::section[1]"),
     page.getByRole("region", { name: "Tap zones" }),
     page.getByRole("region", { name: "End of a book" }),
@@ -51,12 +51,30 @@ test("lists Reader among the settings sections and titles its page Reader", asyn
   ).toBeVisible();
 });
 
+test(
+  "describes the reading mode select with how Automatic picks a mode",
+  { tag: "@native" },
+  async ({ page, platform }) => {
+    test.skip(platform === "android", "Android's choice dialog");
+    await page.goto("/settings/reading");
+
+    const mode = page.getByRole("combobox", {
+      name: "Reading mode",
+      exact: true,
+    });
+
+    await expect(mode).toHaveAccessibleDescription(
+      "Automatic picks paged or long strip from the details and the pages.",
+    );
+  },
+);
+
 test("sets its cards 24px apart, the first 8px under the intro", async ({
   page,
 }) => {
   await page.goto("/settings/reading");
   const intro = await boxOf(
-    page.getByText("Defaults for every series without its own."),
+    page.getByText("Used for every series, unless you change it"),
   );
   const boxes = await Promise.all(cards(page).map((card) => boxOf(card)));
 

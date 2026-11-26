@@ -52,20 +52,20 @@ test.describe("the tap guide", { tag: "@native" }, () => {
     page,
   }) => {
     await page.goto("/settings/reading");
-    await expect(setting(page, "Show the tap guide")).toBeChecked();
+    await expect(setting(page, "Tap guide")).toBeChecked();
 
-    await setting(page, "Show the tap guide").click();
+    await setting(page, "Tap guide").click();
     await openBook(page);
 
     await expect(guide(page)).toBeHidden();
   });
 
-  test("plays once more from Show the guide again, even with the guide off", async ({
+  test("plays once more from Replay the tap guide, even with the guide off", async ({
     page,
   }) => {
     await page.goto("/settings/reading");
-    await setting(page, "Show the tap guide").click();
-    await page.getByRole("button", { name: "Show the guide again" }).click();
+    await setting(page, "Tap guide").click();
+    await page.getByRole("button", { name: "Replay the tap guide" }).click();
     await expect(
       page
         .getByRole("region", { name: "Notifications F6" })

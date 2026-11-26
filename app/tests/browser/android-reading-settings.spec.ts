@@ -22,17 +22,14 @@ test.describe(
       page,
     }) => {
       await page.goto("/settings/reading");
-      const mode = page.getByRole("button", {
-        name: /^Reading mode for new series/,
-      });
+      const mode = page.getByRole("button", { name: /^Reading mode/ });
       const zones = page.getByRole("button", { name: /^Tap zones/ });
 
       await expect(mode).toHaveAttribute("aria-haspopup", "dialog");
-      await expect(mode).toContainText("Automatic");
-      await expect(mode).toContainText("Automatic picks paged or long strip");
+      await expect(mode).toHaveText("Reading mode Automatic");
       await expect(zones).toContainText("Edges");
       expect((await boxOf(zones)).x).toBe(0);
-      await expect(mode.getByText("Reading mode for new series")).toHaveCSS(
+      await expect(mode.getByText("Reading mode")).toHaveCSS(
         "letter-spacing",
         "0.5px",
       );
@@ -44,6 +41,20 @@ test.describe(
         .getByRole("radio", { name: "L shape" })
         .click();
       await expect(zones).toContainText("L shape");
+    });
+
+    test("explains Automatic under its option in the reading mode dialog", async ({
+      page,
+    }) => {
+      await page.goto("/settings/reading");
+      await page.getByRole("button", { name: /^Reading mode/ }).click();
+      const automatic = page
+        .getByRole("dialog", { name: "Reading mode" })
+        .getByRole("radio", { name: "Automatic" });
+      const hint = "Picks paged or long strip from the details and the pages.";
+
+      await expect(automatic.getByText(hint)).toBeVisible();
+      await expect(automatic).toHaveAccessibleDescription(hint);
     });
 
     test("draws no card around any section and heads End of a book in the accent at 14px", async ({
@@ -80,12 +91,12 @@ test.describe(
       await expect(right).toContainText("Nothing");
     });
 
-    test("sets the tap guide and the guide again as flush rows with a line of help, and offers no resume notice", async ({
+    test("sets the tap guide and its replay as flush one-line rows, and offers no resume notice", async ({
       page,
     }) => {
       await page.goto("/settings/reading");
-      const guide = page.getByRole("switch", { name: "Show the tap guide" });
-      const again = page.getByRole("button", { name: "Show the guide again" });
+      const guide = page.getByRole("switch", { name: "Tap guide" });
+      const again = page.getByRole("button", { name: "Replay the tap guide" });
       const resume = page.getByRole("switch", {
         name: "Show the resume notice",
       });
@@ -96,14 +107,12 @@ test.describe(
         expect((await boxOf(row)).x).toBe(0);
         await expect(row).toHaveCSS("border-top-width", "0px");
       }
-      expect((await boxOf(guide.getByText("Show the tap guide"))).x).toBe(
+      expect((await boxOf(guide.getByText("Tap guide"))).x).toBe(ROW_START);
+      expect((await boxOf(again.getByText("Replay the tap guide"))).x).toBe(
         ROW_START,
       );
-      expect((await boxOf(again.getByText("Show the guide again"))).x).toBe(
-        ROW_START,
-      );
-      await expect(guide).toContainText("Off, it never shows.");
-      await expect(again).toContainText("even with the guide off");
+      await expect(guide).toHaveAccessibleDescription("");
+      await expect(again).toHaveAccessibleDescription("");
     });
 
     test("sets Smart features flush, its switches level with the other rows", async ({
