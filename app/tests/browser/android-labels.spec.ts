@@ -8,6 +8,8 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  LARGEST_TEXT_SCALE,
+  setTextScale,
   settle,
   sidewaysOverflow,
   test,
@@ -15,9 +17,12 @@ import {
 } from "./fixtures.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import { sampleSeries } from "./series-catalog.ts";
+import { overlaps, textClippedUnmarked } from "./text-fit.ts";
 
 const HELD_MS = 800;
 const CHIP_GAP_PX = 8;
+const UNBROKEN_TAG_LENGTH = 60;
+const UNBROKEN_TAG = "Unbroken".padEnd(UNBROKEN_TAG_LENGTH, "o");
 const MANY_SUGGESTIONS = [
   "Action",
   "Dark Fantasy",
@@ -66,11 +71,10 @@ test.use({
 async function openLabels(page: Page): Promise<Locator> {
   await page.goto("/");
   const list = page.getByRole("list", { name: "Series" });
-  await expect(list.getByRole("listitem")).toHaveCount(LIBRARY.length);
+  const second = list.getByRole("listitem").nth(1);
+  await expect(second).toBeVisible();
   const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
-  await list
-    .getByRole("listitem")
-    .nth(1)
+  await second
     .getByRole("link")
     .first()
     .dispatchEvent("pointerdown", touch);
@@ -231,6 +235,20 @@ test.describe(
         );
       });
 
+      test("draws each suggestion as a 32px chip with an 8px corner and an 18px plus", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+
+        for (const tag of MANY_SUGGESTIONS) {
+          const chip = sheet.getByRole("button", { name: `Add ${tag}` });
+
+          expect((await boxOf(chip)).height).toBeCloseTo(32, 0);
+          await expect(chip).toHaveCSS("border-top-left-radius", "8px");
+          expect((await boxOf(chip.locator("svg"))).width).toBeCloseTo(18, 0);
+        }
+      });
+
       test("lines the suggestions up with Add a tag, under a Suggested label of their own", async ({
         page,
       }) => {
@@ -276,6 +294,37 @@ test.describe(
         expect(
           (nextLine?.y ?? 0) - ((first?.y ?? 0) + (first?.height ?? 0)),
         ).toBeCloseTo(CHIP_GAP_PX, 0);
+      });
+    });
+
+    test.describe("with a suggestion of 60 letters and no spaces", () => {
+      test.use({ backend: suggesting([...MANY_SUGGESTIONS, UNBROKEN_TAG]) });
+
+      test("keeps the suggestions inside the sheet without one chip overlapping another", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+
+        await expect(
+          sheet.getByRole("button", { name: `Add ${UNBROKEN_TAG}` }),
+        ).toBeVisible();
+        expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+        expect(await overlaps(page)).toEqual([]);
+      });
+
+      test("keeps the suggestions inside the sheet at the largest text, none overlapping or cut off", async ({
+        page,
+      }) => {
+        await setTextScale(page, LARGEST_TEXT_SCALE);
+
+        const sheet = await openLabels(page);
+
+        await expect(
+          sheet.getByRole("button", { name: `Add ${UNBROKEN_TAG}` }),
+        ).toBeVisible();
+        expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+        expect(await overlaps(page)).toEqual([]);
+        expect(await textClippedUnmarked(page)).toEqual([]);
       });
     });
   },
