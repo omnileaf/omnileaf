@@ -34,13 +34,6 @@ pub(crate) enum KeyPress {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "Android hands the volume key turns to the interface without Rust making any"
-    )
-)]
 pub(crate) struct VolumeKeyTurn {
     turn: PageTurn,
     press: KeyPress,
@@ -162,15 +155,22 @@ mod tests {
     use super::{KeyPress, PageTurn, VolumeKeyTurn};
 
     #[test]
-    fn names_a_held_volume_key_turn_as_android_sends_it() {
-        let turn = VolumeKeyTurn {
-            turn: PageTurn::Next,
-            press: KeyPress::Held,
-        };
+    fn names_a_volume_key_turn_and_its_press_as_android_sends_them() {
+        let turns = [KeyPress::Pressed, KeyPress::Held].map(|press| {
+            serde_json::to_value(VolumeKeyTurn {
+                turn: PageTurn::Next,
+                press,
+            })
+            .unwrap()
+        });
 
-        let sent = serde_json::to_value(turn).unwrap();
-
-        assert_eq!(sent, serde_json::json!({ "turn": "next", "press": "held" }));
+        assert_eq!(
+            turns,
+            [
+                serde_json::json!({ "turn": "next", "press": "pressed" }),
+                serde_json::json!({ "turn": "next", "press": "held" }),
+            ]
+        );
     }
 
     #[test]
