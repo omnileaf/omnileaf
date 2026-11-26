@@ -11,6 +11,7 @@ import {
 import { sampleLibraryOn } from "./screens.ts";
 import { chapters, SectionShelf, volumes } from "./series-sections-shelf.ts";
 import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
+import { withCountsUnderCovers } from "./view-options.ts";
 
 const PHONE = { width: 412, height: 700 };
 const LIBRARY_DOWN = 1200;
@@ -121,6 +122,8 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
     test.use({
       backend: {
         ...sample,
+        libraryView: async () =>
+          withCountsUnderCovers(await sample.libraryView()),
         librarySeries: async (...asked) => {
           const listed = await sample.librarySeries(...asked);
           return {

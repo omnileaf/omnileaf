@@ -6,6 +6,7 @@ import { emitFakeEvent, type FakeChannel } from "./fake-backend.ts";
 import { sampleLibraryOn } from "./screens.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
+import { withCountsUnderCovers } from "./view-options.ts";
 import {
   DEFAULT_BACKEND,
   EXPANDED_MIN_WIDTH,
@@ -39,6 +40,7 @@ const SERIES_DOWN = 250;
 const LIBRARY_DOWN = 1200;
 const SCROLL_SLACK_PX = 2;
 const LONG_LIBRARY = sampleSeries(400);
+const sampleOnAndroid = sampleLibraryOn("android");
 
 const SPRING_BACK_SETTLED_MS = 200;
 const PAUSED_AFTER_MS = 1000;
@@ -410,7 +412,9 @@ test.describe("a back gesture the page keeps for itself", () => {
 test.describe("going back to a list scrolled down", () => {
   test.use({
     backend: {
-      ...sampleLibraryOn("android"),
+      ...sampleOnAndroid,
+      libraryView: async () =>
+        withCountsUnderCovers(await sampleOnAndroid.libraryView()),
       watchBackSwipes: (channel) => {
         gestures = channel;
         return null;
@@ -622,7 +626,9 @@ test.describe("going back to a list scrolled down", () => {
   test.describe("with a library long enough for a fast-scroll handle", () => {
     test.use({
       backend: {
-        ...sampleLibraryOn("android"),
+        ...sampleOnAndroid,
+        libraryView: async () =>
+          withCountsUnderCovers(await sampleOnAndroid.libraryView()),
         librarySeries: pagedSeries(() => LONG_LIBRARY),
         librarySeriesCount: () => LONG_LIBRARY.length,
         watchBackSwipes: (channel) => {
