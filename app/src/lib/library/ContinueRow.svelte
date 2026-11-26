@@ -102,7 +102,7 @@
     }
   });
 
-  $effect(() => keeps?.(() => books.keptThrough(0)));
+  $effect(() => keeps?.(() => books.pagesThroughShown(0)));
 
   onMount(() => {
     void (keptAtStart === undefined ? books.start() : books.load());

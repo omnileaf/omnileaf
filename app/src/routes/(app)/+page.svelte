@@ -1143,7 +1143,7 @@
 
   onMount(() => {
     if (returnedTo !== undefined) {
-      pages.refresh();
+      pages.readHeldAgain();
     }
     void chooseTagFromLink();
     void view.load();

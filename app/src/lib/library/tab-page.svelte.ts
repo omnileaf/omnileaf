@@ -85,7 +85,7 @@ export class TabPage {
   }
 
   kept(shown: number): KeptTabPage | undefined {
-    const series = this.series.keptThrough(shown);
+    const series = this.series.pagesThroughShown(shown);
     return series === undefined
       ? undefined
       : { tab: this.#tab, series, count: this.count.count };

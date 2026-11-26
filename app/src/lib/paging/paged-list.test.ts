@@ -152,7 +152,7 @@ test("keeps the pages from the start through the one holding the last item shown
   await list.loadMore();
   await list.loadMore();
 
-  const kept = [1, 3, 4, 5].map((shown) => list.keptThrough(shown));
+  const kept = [1, 3, 4, 5].map((shown) => list.pagesThroughShown(shown));
 
   expect(kept).toEqual([
     { items: [0, 1], next: 2 },
@@ -167,7 +167,7 @@ test("keeps the first page of a list that shows none of its items", async () => 
   await list.load();
   await list.loadMore();
 
-  expect(list.keptThrough(0)).toEqual({ items: [0, 1], next: 2 });
+  expect(list.pagesThroughShown(0)).toEqual({ items: [0, 1], next: 2 });
 });
 
 test("keeps a whole list that ends on the page shown", async () => {
@@ -175,7 +175,7 @@ test("keeps a whole list that ends on the page shown", async () => {
   await list.load();
   await list.loadMore();
 
-  expect(list.keptThrough(3)).toEqual({ items: [0, 1, 2], next: null });
+  expect(list.pagesThroughShown(3)).toEqual({ items: [0, 1, 2], next: null });
 });
 
 test("keeps the pages of a list read again from its start as the pages they were read in", async () => {
@@ -186,7 +186,7 @@ test("keeps the pages of a list read again from its start as the pages they were
 
   await list.load();
 
-  expect(list.keptThrough(3)).toEqual({ items: [0, 1, 2, 3], next: 4 });
+  expect(list.pagesThroughShown(3)).toEqual({ items: [0, 1, 2, 3], next: 4 });
 });
 
 test("keeps the pages read on from a kept list", async () => {
@@ -198,15 +198,18 @@ test("keeps the pages read on from a kept list", async () => {
       status: "ok" as const,
       data: { items: [start, start + 1], next: start + 2 },
     });
-  }, list.keptThrough(2));
+  }, list.pagesThroughShown(2));
 
   await returned.loadMore();
 
-  expect(returned.keptThrough(3)).toEqual({ items: [0, 1, 2, 3], next: 4 });
+  expect(returned.pagesThroughShown(3)).toEqual({
+    items: [0, 1, 2, 3],
+    next: 4,
+  });
 });
 
 test("keeps nothing of a list not read yet", () => {
   const { list } = numbers(3);
 
-  expect(list.keptThrough(1)).toBeUndefined();
+  expect(list.pagesThroughShown(1)).toBeUndefined();
 });

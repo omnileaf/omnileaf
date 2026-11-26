@@ -83,8 +83,7 @@ export class TabPages {
     };
   }
 
-  /** Reads every held page again from its start, each showing what it holds until its answer comes. */
-  refresh(): void {
+  readHeldAgain(): void {
     for (const { page } of this.held) {
       void page.series.load();
       if (page.count.count !== undefined) {

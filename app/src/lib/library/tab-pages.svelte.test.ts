@@ -343,7 +343,7 @@ test("shows the pages kept from before at once, reading none of them again", asy
   expect(tabsListed(asked)).toEqual(["comics"]);
 });
 
-test("reads every held page again on refresh, counting again only the counted ones", async () => {
+test("reads every held page again from its start, counting again only the counted ones", async () => {
   const { asked, pages } = keptPagesAsked();
   pages.show({
     basis: NEW_LIBRARY_LISTING,
@@ -356,7 +356,7 @@ test("reads every held page again on refresh, counting again only the counted on
   });
   asked.length = 0;
 
-  pages.refresh();
+  pages.readHeldAgain();
   await Promise.resolve();
 
   expect(new Set(tabsListed(asked))).toEqual(

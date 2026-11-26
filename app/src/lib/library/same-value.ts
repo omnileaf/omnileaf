@@ -12,7 +12,6 @@ function inOneOrder(value: unknown): unknown {
   return value;
 }
 
-/** Compares two values as the core sends them, plain data whose fields may come in any order. */
 export function isSameValue(one: unknown, other: unknown): boolean {
   return JSON.stringify(inOneOrder(one)) === JSON.stringify(inOneOrder(other));
 }

@@ -64,13 +64,13 @@ export class PagedList<Item, Cursor> {
     }
   }
 
-  /** The pages from the start through the one holding the last of the items shown, at least the first. */
-  keptThrough(shown: number): KeptPages<Item, Cursor> | undefined {
+  pagesThroughShown(itemsShown: number): KeptPages<Item, Cursor> | undefined {
     if (this.list.kind !== "loaded") {
       return undefined;
     }
     const ending =
-      this.#pageEnds.find(({ end }) => end >= shown) ?? this.#pageEnds.at(-1);
+      this.#pageEnds.find(({ end }) => end >= itemsShown) ??
+      this.#pageEnds.at(-1);
     return ending === undefined
       ? undefined
       : { items: this.list.items.slice(0, ending.end), next: ending.next };

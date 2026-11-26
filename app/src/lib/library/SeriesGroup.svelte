@@ -102,7 +102,7 @@
   }
 
   function keptNow(): KeptGroup | undefined {
-    const series = list.keptThrough(
+    const series = list.pagesThroughShown(
       section === undefined ? 0 : itemsDrawnIn(section),
     );
     return series === undefined ? undefined : { series, count };

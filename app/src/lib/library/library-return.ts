@@ -51,7 +51,6 @@ export interface LibraryScreen {
 
 export type KeepGroup = () => KeptGroup | undefined;
 
-/** The Library as it was last left, so coming back to it within a session draws it at once while it reads itself again. */
 export class LibraryReturn {
   #screen: LibraryScreen | undefined;
 

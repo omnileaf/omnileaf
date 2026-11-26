@@ -43,7 +43,6 @@ function answerDelayOf(command: string): number {
   return SHORTEST_ANSWER_MS + sum;
 }
 
-/** Answers every command after a delay between 50 and 150 ms that stays the same for each command, as the core answers on a phone. */
 export function answeringLikeAPhone(backend: FakeBackend): FakeBackend {
   return Object.fromEntries(
     Object.entries(backend).map(([name, answer]) => [
@@ -177,7 +176,6 @@ function isAtRest(frames: readonly LibraryFrame[]): boolean {
   );
 }
 
-/** Records until the Library has shown, every command has answered and nothing has changed for a while. */
 export async function framesUntilAtRest(page: Page): Promise<LibraryFrame[]> {
   await expect
     .poll(
