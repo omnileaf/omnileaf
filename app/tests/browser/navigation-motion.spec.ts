@@ -11,7 +11,9 @@ import {
   testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
+import { tabBarLook } from "../../src/lib/navigation/tab-bar.ts";
 import { slowMoves } from "./held-animations.ts";
+import { bookTitle, entry } from "./history-entries.ts";
 
 const FADE = "0.15s ease-out";
 const GROW = "0.2s cubic-bezier(0.2, 0, 0, 1)";
@@ -29,28 +31,53 @@ interface IconMove {
 }
 
 const ICON_MOVES: readonly IconMove[] = [
-  ["Library", "/settings", "book-open"],
-  ["Browse", "/", "needle-swing"],
-  ["History", "/", "hands-sweep"],
-  ["Settings", "/", "gear-turn"],
-].map(([label = "", startFrom = "", move = ""]) => ({
-  label,
-  startFrom,
-  move,
-  timing: ICON_MOVE_TIMING,
-}));
+  {
+    label: "Library",
+    startFrom: "/settings",
+    move: "book-open",
+    timing: ICON_MOVE_TIMING,
+  },
+  {
+    label: "Browse",
+    startFrom: "/",
+    move: "needle-swing",
+    timing: ICON_MOVE_TIMING,
+  },
+  {
+    label: "History",
+    startFrom: "/",
+    move: "hands-sweep",
+    timing: ICON_MOVE_TIMING,
+  },
+  {
+    label: "Settings",
+    startFrom: "/",
+    move: "gear-turn",
+    timing: ICON_MOVE_TIMING,
+  },
+];
 
 const ANDROID_ICON_MOVES: readonly IconMove[] = [
-  ["Library", "/settings", "book-pop", ICON_MOVE_TIMING],
-  ["Browse", "/", "needle-sway", SWAY_TIMING],
-  ["History", "/", "clock-rewind", SWAY_TIMING],
-  ["Settings", "/", "gear-turn", ICON_MOVE_TIMING],
-].map(([label = "", startFrom = "", move = "", timing = ""]) => ({
-  label,
-  startFrom,
-  move,
-  timing,
-}));
+  {
+    label: "Library",
+    startFrom: "/settings",
+    move: "book-pop",
+    timing: ICON_MOVE_TIMING,
+  },
+  { label: "Browse", startFrom: "/", move: "needle-sway", timing: SWAY_TIMING },
+  {
+    label: "History",
+    startFrom: "/",
+    move: "clock-rewind",
+    timing: SWAY_TIMING,
+  },
+  {
+    label: "Settings",
+    startFrom: "/",
+    move: "gear-turn",
+    timing: ICON_MOVE_TIMING,
+  },
+];
 
 const MOVE_SAMPLES = [0, 0.25, 0.5, 0.75, 0.999] as const;
 const ONE_TOOTH_DEG = 60;
@@ -62,8 +89,11 @@ const TAP_MS = 50;
 const MOVE_MS = 300;
 const FRAME_MS = 16;
 const FINGER_PRESS_MS = [350, 450, 1000] as const;
-const LATE_FIRST_FRAME_TURN_DEG = 5;
+const CLICKING_PRESS_MS = [350, 450] as const;
 const BLOCKED_FRAME_MS = 80;
+const LATE_START_BOUND_MS = BLOCKED_FRAME_MS / 2;
+const FRAMES_BEFORE_A_LATE_CLICK = [1, 2] as const;
+const READ_BOOK = 7;
 const NEEDLE_OUT_DEG = 30;
 const NEEDLE_BACK_DEG = -8;
 const CLOCK_BACK_DEG = -50;
@@ -369,6 +399,77 @@ function showsAPill({ isPressed, isHeld, isTinted, pill }: PillFrame): boolean {
   return ((isPressed || isHeld) && isTinted) || pill >= 1;
 }
 
+async function clickFramesAfterTheLift(
+  link: Locator,
+  frames: number,
+): Promise<void> {
+  await link.evaluate((element, count) => {
+    element.addEventListener(
+      "pointerup",
+      () => {
+        let left = count;
+        const wait = () => {
+          if (left > 0) {
+            left -= 1;
+            requestAnimationFrame(wait);
+            return;
+          }
+          if (element instanceof HTMLElement) {
+            element.click();
+          }
+        };
+        requestAnimationFrame(wait);
+      },
+      { once: true },
+    );
+  }, frames);
+}
+
+interface TabAtItsChoosing {
+  readonly isLabelCurrent: boolean;
+  readonly isIconFilled: boolean;
+}
+
+async function tabAsItIsChosen(
+  page: Page,
+  label: string,
+  currentLabel: string,
+): Promise<TabAtItsChoosing> {
+  const link = tab(page, label);
+  const seen = await link.evaluateHandle((root, currentClass) => {
+    const found: { atChoosing: TabAtItsChoosing | undefined } = {
+      atChoosing: undefined,
+    };
+    const watcher = new MutationObserver(() => {
+      if (root.getAttribute("aria-current") !== "page") {
+        return;
+      }
+      watcher.disconnect();
+      const filledGlyph = root.querySelector("[data-icon][data-filled]");
+      found.atChoosing = {
+        isLabelCurrent:
+          root.getAttribute("class")?.includes(currentClass) === true,
+        isIconFilled:
+          filledGlyph === null
+            ? root.querySelector('svg [fill="currentColor"]') !== null
+            : filledGlyph.getAttribute("class")?.includes("opacity-0") !== true,
+      };
+    });
+    watcher.observe(root, {
+      attributes: true,
+      attributeFilter: ["aria-current"],
+    });
+    return found;
+  }, currentLabel);
+  await link.click();
+  await expect(link).toHaveAttribute("aria-current", "page");
+  const { atChoosing } = await seen.jsonValue();
+  if (atChoosing === undefined) {
+    throw new Error(`${label} was never chosen`);
+  }
+  return atChoosing;
+}
+
 function holderOf(page: Page, label: string): Locator {
   return tab(page, label)
     .locator('[data-slot="navigation-pill"]')
@@ -399,7 +500,7 @@ async function heldWhile(
 }
 
 interface FirstPaintedMove {
-  readonly rotate: number;
+  readonly moveMs: number;
   readonly pillGrowMs: number;
 }
 
@@ -449,9 +550,11 @@ async function firstPaintedMoveAfterABlockedFrame(
         requestAnimationFrame(watch);
         return;
       }
-      const rotate = getComputedStyle(icon).rotate;
+      const move = icon
+        .getAnimations()
+        .find((animation) => animation instanceof CSSAnimation);
       found.painted = {
-        rotate: rotate === "none" ? 0 : parseFloat(rotate),
+        moveMs: Number(move?.currentTime),
         pillGrowMs: Number(grow.currentTime),
       };
     };
@@ -907,7 +1010,7 @@ test.describe("on Android", () => {
     { from: "/browse", label: "History", pressMs: TAP_MS },
     { from: "/history", label: "Settings", pressMs: TAP_MS },
     { from: "/settings", label: "Library", pressMs: TAP_MS },
-    ...FINGER_PRESS_MS.map((pressMs) => ({
+    ...CLICKING_PRESS_MS.map((pressMs) => ({
       from: "/browse",
       label: "History",
       pressMs,
@@ -999,6 +1102,103 @@ test.describe("on Android", () => {
     await expect(tab(page, "Library")).toHaveAttribute("aria-current", "page");
   });
 
+  test("turns the new tab's label with its pill, not before", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
+    await page.goto("/");
+    await settle(navigation(page));
+
+    const atChoosing = await tabAsItIsChosen(
+      page,
+      "Browse",
+      tabBarLook("android").currentTab,
+    );
+    await settle(navigation(page));
+
+    expect(atChoosing).toEqual({ isLabelCurrent: false, isIconFilled: false });
+    await expect(tab(page, "Browse")).toHaveClass(
+      new RegExp(tabBarLook("android").currentTab),
+    );
+  });
+
+  test.describe("passing back through History on the way to Settings", () => {
+    test.use({
+      backend: {
+        ...onPlatform("android").backend,
+        readingHistory: () => ({
+          entries: [
+            entry(READ_BOOK, "2026-10-08T21:40:00.000Z", { state: "end" }),
+          ],
+          next: null,
+        }),
+      },
+    });
+
+    test("keeps Settings pressed and leaves History still", async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "bar and rail only",
+      );
+      await page.goto("/");
+      await settle(navigation(page));
+      const finger = await fingerOn(page);
+      await finger.tap(tab(page, "History"), TAP_MS);
+      await expect(tab(page, "History")).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      await page
+        .getByRole("button", { name: `More for ${bookTitle(READ_BOOK)}` })
+        .click();
+      await page.getByRole("menuitem", { name: "Open the series" }).click();
+      await expect(page).toHaveURL(/\/series\//);
+      await settle(navigation(page));
+      const history = await watchAnimationsIn(tab(page, "History"));
+
+      const frames = await pillFramesWhilePressing(
+        page,
+        "Settings",
+        (_, link) => finger.tap(link, TAP_MS),
+      );
+      await finger.lift();
+
+      expect(frames.filter((frame) => !showsAPill(frame))).toEqual([]);
+      expect(await history.evaluate(({ started }) => started)).toEqual([]);
+    });
+  });
+
+  for (const frames of FRAMES_BEFORE_A_LATE_CLICK) {
+    test(`keeps a pill on a lifted tab whose click comes ${String(frames)} frames late`, async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "bar and rail only",
+      );
+      await page.goto("/browse");
+      await settle(navigation(page));
+      const finger = await fingerOn(page);
+
+      const shown = await pillFramesWhilePressing(
+        page,
+        "History",
+        async (_, link) => {
+          await clickFramesAfterTheLift(link, frames);
+          await finger.tapWithoutAClick(link, TAP_MS);
+        },
+      );
+      await finger.lift();
+
+      expect(shown.filter((frame) => !showsAPill(frame))).toEqual([]);
+    });
+  }
+
   test("starts the new tab's motion only once the new page has painted", async ({
     page,
   }) => {
@@ -1011,8 +1211,8 @@ test.describe("on Android", () => {
 
     const first = await firstPaintedMoveAfterABlockedFrame(page, "Browse");
 
-    expect(Math.abs(first.rotate)).toBeLessThan(LATE_FIRST_FRAME_TURN_DEG);
-    expect(first.pillGrowMs).toBeLessThanOrEqual(FRAME_MS);
+    expect(first.moveMs).toBeLessThanOrEqual(LATE_START_BOUND_MS);
+    expect(first.pillGrowMs).toBeLessThanOrEqual(LATE_START_BOUND_MS);
   });
 
   for (const { label, move, from, peaks, largestStep } of [
@@ -1088,6 +1288,33 @@ test.describe("on Android", () => {
     ).toBeVisible();
     await expect(heldPresses(page)).toHaveCount(0);
     await expect(tab(page, "Library")).toHaveAttribute("aria-current", "page");
+  });
+
+  test("tints no tab when a page link is tapped after a long press on a tab", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
+    await page.addInitScript(() => {
+      localStorage.setItem("omnileaf.sidebar", "hidden");
+    });
+    await page.goto("/settings");
+    await settle(navigation(page));
+    await page.clock.install();
+    await longPress(page, tab(page, "History"));
+
+    const held = await heldWhile(page, async () => {
+      const pageLink = page
+        .getByRole("main")
+        .getByRole("link", { name: "About" });
+      await pageLink.dispatchEvent("pointerdown", FINGER);
+      await pageLink.dispatchEvent("pointerup", FINGER);
+      await pageLink.dispatchEvent("click");
+    });
+
+    expect(held).toEqual([]);
   });
 
   test("leaves no grey on a tab overtaken by a second tap", async ({
@@ -1287,6 +1514,22 @@ test.describe("on iOS", () => {
     );
 
     expect(started).toContainEqual({ tab: "History", animation: ICON_POP });
+  });
+
+  test("fills the new tab's icon and label as soon as it is chosen", async ({
+    page,
+  }) => {
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/");
+    await settle(navigation(page));
+
+    const atChoosing = await tabAsItIsChosen(
+      page,
+      "History",
+      tabBarLook("ios").currentTab,
+    );
+
+    expect(atChoosing).toEqual({ isLabelCurrent: true, isIconFilled: true });
   });
 
   test("runs the new tab's bounce to its end when the tab is tapped", async ({

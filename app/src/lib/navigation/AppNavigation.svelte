@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { type Snippet, untrack } from "svelte";
+  import type { Snippet } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
+  import { afterNavigate, beforeNavigate } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { navigating } from "$app/state";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { paneFoldQuery } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -17,6 +19,7 @@
   import PaneToggle from "./PaneToggle.svelte";
   import { type Section, SECTION_ROUTE_IDS } from "./sections";
   import { getSidebarSetting } from "./sidebar.svelte.ts";
+  import { TabPress } from "./tab-press.svelte.ts";
   import { COLLAPSED_TAB_BAR_LOOK, tabBarLook } from "./tab-bar.ts";
 
   const ICON_SIZE = 22;
@@ -26,11 +29,13 @@
     attention,
     isCollapsed = false,
     onOpenTabTap,
+    isPassingThrough = () => false,
   }: {
     current: Section;
     attention?: Snippet<[{ isFolded: boolean }]> | undefined;
     isCollapsed?: boolean;
     onOpenTabTap?: ((event: MouseEvent) => void) | undefined;
+    isPassingThrough?: () => boolean;
   } = $props();
 
   const platform = currentPlatform();
@@ -46,27 +51,37 @@
 
   let navigation: HTMLElement | undefined = $state();
   let arriving: Section | undefined = $state();
-  let heldPress: Section | undefined = $state();
-  let stillShown: Section | undefined = $state();
-  const shown = $derived(stillShown ?? current);
+  let shownSection: Section | undefined = $state();
+  const shown = $derived(shownSection ?? current);
+  const waitsForThePagesFirstPaint = platform === "android";
   let previous: Section | undefined;
-  let pressedTab: Section | undefined;
-  let isPressRouted = false;
+  let settling: number | undefined;
+  const press = new TabPress({
+    request: (callback) => requestAnimationFrame(callback),
+    cancel: (handle) => {
+      cancelAnimationFrame(handle);
+    },
+  });
 
   $effect(() => {
     const next = current;
     const leaving = previous;
     previous = next;
-    if (leaving === undefined || leaving === next) {
+    if (leaving === undefined) {
+      shownSection = next;
       return;
     }
-    untrack(() => {
-      stillShown ??= leaving;
-      releasePressUnless(next);
-    });
+    if (leaving === next || isPassingThrough()) {
+      return;
+    }
+    if (!waitsForThePagesFirstPaint) {
+      shownSection = next;
+      arriving = next;
+      return;
+    }
     let frame = requestAnimationFrame(() => {
       frame = requestAnimationFrame(() => {
-        stillShown = undefined;
+        shownSection = next;
         arriving = next;
       });
     });
@@ -85,6 +100,32 @@
     };
   });
 
+  $effect(() => () => {
+    press.stop();
+    if (settling !== undefined) {
+      cancelAnimationFrame(settling);
+    }
+  });
+
+  beforeNavigate(({ complete }) => {
+    complete.catch(() => {
+      settling = requestAnimationFrame(settleUnlessStillMoving);
+    });
+  });
+
+  afterNavigate(() => {
+    if (!isPassingThrough()) {
+      press.settled(current);
+    }
+  });
+
+  function settleUnlessStillMoving(): void {
+    settling = undefined;
+    if (navigating.to === null && !isPassingThrough()) {
+      press.settled(current);
+    }
+  }
+
   function endArrivalOnceStill(): void {
     const isMoving = navigation
       ?.getAnimations({ subtree: true })
@@ -92,67 +133,31 @@
     if (isMoving === true) {
       return;
     }
-    releasePress(arriving);
+    if (arriving !== undefined) {
+      press.arrived(arriving);
+    }
     arriving = undefined;
   }
 
-  function startTabPress(section: Section): void {
-    pressedTab = section;
-    isPressRouted = false;
-  }
-
-  /** SvelteKit lets the browser paint once between a link's click and its navigation, so the press is held across that frame. */
-  function holdPressUntilChosen(event: PointerEvent, section: Section): void {
-    const isMainButton = event.button === 0;
-    if (!isMainButton || pressedTab !== section || section === current) {
-      pressedTab = undefined;
-      return;
+  function tabUnder(target: EventTarget | null): Section | undefined {
+    const tab = target instanceof Element ? target.closest("[data-tab]") : null;
+    if (tab === null || navigation?.contains(tab) !== true) {
+      return undefined;
     }
-    heldPress = section;
-    requestAnimationFrame(() => {
-      if (!isPressRouted) {
-        pressedTab = undefined;
-        releasePress(section);
-      }
-    });
-  }
-
-  function keepPressIfRouted(event: MouseEvent): void {
-    const pressed = pressedTab;
-    pressedTab = undefined;
-    if (!event.defaultPrevented) {
-      heldPress = undefined;
-      return;
-    }
-    isPressRouted = true;
-    if (pressed !== undefined && pressed !== current) {
-      heldPress = pressed;
-    }
-  }
-
-  function forgetPress(): void {
-    pressedTab = undefined;
-    heldPress = undefined;
-  }
-
-  function dropHeldPress(): void {
-    heldPress = undefined;
-  }
-
-  function releasePress(section: Section | undefined): void {
-    if (heldPress === section) {
-      heldPress = undefined;
-    }
-  }
-
-  function releasePressUnless(section: Section): void {
-    if (heldPress !== section) {
-      heldPress = undefined;
-    }
+    return DESTINATIONS.find(
+      ({ section }) => section === tab.getAttribute("data-tab"),
+    )?.section;
   }
 </script>
 
-<svelte:window onclick={keepPressIfRouted} onpointerdown={dropHeldPress} />
+<svelte:window
+  onpointerdown={(event: PointerEvent) => {
+    press.pointerWentDown(tabUnder(event.target));
+  }}
+  onclick={(event: MouseEvent) => {
+    press.clicked(tabUnder(event.target), event.defaultPrevented, current);
+  }}
+/>
 
 <nav
   data-app-navigation
@@ -222,14 +227,15 @@
           label={isFolded ? destination.label() : undefined}
           side={document.documentElement.dir === "rtl" ? "left" : "right"}
           onclick={isSelected && !isWayBack ? onOpenTabTap : undefined}
-          onpointerdown={() => {
-            startTabPress(destination.section);
-          }}
           onpointerup={(event: PointerEvent) => {
-            holdPressUntilChosen(event, destination.section);
+            press.lifted(destination.section, event.button, current);
           }}
-          onpointercancel={forgetPress}
-          oncontextmenu={forgetPress}
+          onpointercancel={() => {
+            press.longPressed();
+          }}
+          oncontextmenu={() => {
+            press.longPressed();
+          }}
         >
           {#snippet child({ props })}
             <a
@@ -238,13 +244,14 @@
               aria-current={isSelected && !isWayBack ? "page" : undefined}
               aria-label={isWayBack ? m.search_back() : undefined}
               data-back-link={isWayBack || undefined}
+              data-tab={destination.section}
               class={[
                 "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label windows:focus-visible:ring-1 windows:focus-visible:ring-native-focus-ring-inner windows:focus-visible:focus-ring desktop-shell:flex-row desktop-shell:gap-sm desktop-shell:rounded-sidebar-row desktop-shell:px-sm desktop-shell:py-none desktop-shell:block-sidebar-row desktop-shell:min-block-sidebar-row sidebar-hidden:justify-center sidebar-hidden:px-none",
                 look.tab,
-                isSelected
+                isShown
                   ? "font-bold text-accent expanded:bg-accent-soft windows:before:absolute windows:before:inset-y-none windows:before:inset-s-none windows:before:my-auto windows:before:rounded-full windows:before:bg-native-nav-indicator windows:before:block-windows-indicator-length windows:before:inline-windows-indicator desktop-shell:bg-sidebar-selection desktop-shell:font-medium desktop-shell:text-on-sidebar-selection"
                   : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed desktop-shell:font-regular desktop-shell:hover:bg-sidebar-accent desktop-shell:hover:text-on-sidebar-accent windows:desktop-shell:active:bg-native-nav-item-pressed windows:desktop-shell:active:text-on-sidebar-accent",
-                isSelected ? look.currentTab : look.otherTab,
+                isShown ? look.currentTab : look.otherTab,
               ]}
             >
               <span
@@ -255,7 +262,8 @@
                     "max-expanded:group-hover:tint-hover max-expanded:group-active:tint-pressed",
                   "android:max-expanded:motion-navigation:data-held-press:tint-pressed",
                 ]}
-                data-held-press={heldPress === destination.section || undefined}
+                data-held-press={press.held === destination.section ||
+                  undefined}
               >
                 <span
                   data-slot="navigation-pill"
