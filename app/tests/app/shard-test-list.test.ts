@@ -8,6 +8,7 @@ import {
   shardTests,
   testDurations,
   testListMismatch,
+  testListSize,
   testPath,
   testsOnScreens,
   type Timings,
@@ -486,4 +487,26 @@ test("keeps every test when every screen is picked", () => {
   const tests = [listed("webkit-tablet", "a"), listed("chromium-phone", "a")];
 
   expect(testsOnScreens(tests, null)).toEqual(tests);
+});
+
+test("sizes a test list by its lines and the time its tests take, counting a test missing from the timings at the median", () => {
+  const tests = [
+    listed("p", "Settings", "opens"),
+    listed("p", "Settings", "closes"),
+    listed("p", "other"),
+    listed("p", "new"),
+  ];
+  const timings = {
+    "a.spec.ts › Settings › opens": { p: 10 },
+    "a.spec.ts › Settings › closes": { p: 20 },
+    "a.spec.ts › other": { p: 30 },
+  };
+
+  const size = testListSize(tests, timings);
+
+  expect(size).toEqual({ lines: 4, durationMs: 80 });
+});
+
+test("sizes an empty test list as nothing", () => {
+  expect(testListSize([], {})).toEqual({ lines: 0, durationMs: 0 });
 });
