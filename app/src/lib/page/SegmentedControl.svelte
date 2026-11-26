@@ -9,7 +9,7 @@
   } from "#lib/components/ui/radio-group/index.ts";
 
   import { currentPlatform, hasNativeLook } from "./platform";
-  import { followFittingColumns } from "./segment-columns";
+  import { followFittingColumns, followLineOfItsOwn } from "./segment-columns";
   import SegmentFace from "./SegmentFace.svelte";
 
   type Size = "small" | "regular";
@@ -190,6 +190,17 @@
     );
   });
 
+  let hasLineOfItsOwn = $state(false);
+
+  $effect(() => {
+    if (!isAtRowEnd || track === null) {
+      return;
+    }
+    return followLineOfItsOwn(track, (isOwnLine) => {
+      hasLineOfItsOwn = isOwnLine;
+    });
+  });
+
   $effect(() => {
     if (fittedColumns !== undefined) {
       onFit?.(isOneRow);
@@ -222,7 +233,11 @@
         ? WINDOWS_LOOK.track
         : ["bg-chip", look.track],
     !isFullWidth && look.capped,
-    isAtRowEnd && ["shrink-0", !isOneRow && "basis-full"],
+    isAtRowEnd && [
+      "shrink-0",
+      hasLineOfItsOwn && "grow",
+      !isOneRow && "basis-full",
+    ],
     className,
   ]}
 >

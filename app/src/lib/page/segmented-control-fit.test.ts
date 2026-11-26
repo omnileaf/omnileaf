@@ -10,6 +10,7 @@ import SegmentedControl from "./SegmentedControl.svelte";
 const ANDROID_PHONE = { width: 390, height: 844 };
 const SPARE = 1;
 const SUBPIXEL_SHORTFALL = 0.25;
+const ROOM_BESIDE_NAME = 20;
 
 const OPTIONS = ["all", "unread", "bookmarked"] as const;
 type Option = (typeof OPTIONS)[number];
@@ -189,5 +190,38 @@ test("gives a group at its row's end a line of its own when the row is a quarter
   expect(track().getBoundingClientRect().width).toBeCloseTo(
     row.getBoundingClientRect().width,
     0,
+  );
+});
+
+test("gives a group at its row's end the whole line once it wraps under its name, though it still fits one row", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+
+  row.style.inlineSize = `${String(roomFor(widths) + ROOM_BESIDE_NAME)}px`;
+
+  await expect
+    .poll(() => track().getBoundingClientRect().width)
+    .toBeCloseTo(row.getBoundingClientRect().width, 0);
+  expect(rows()).toEqual([NAMES]);
+  expect(track().getBoundingClientRect().top).toBeGreaterThanOrEqual(
+    asElement(row.firstElementChild ?? row).getBoundingClientRect().bottom,
+  );
+});
+
+test("hands the whole line back once a wrapped group at its row's end fits beside its name again", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+  row.style.inlineSize = `${String(roomFor(widths) + ROOM_BESIDE_NAME)}px`;
+  await expect
+    .poll(() => track().getBoundingClientRect().width)
+    .toBeCloseTo(row.getBoundingClientRect().width, 0);
+
+  row.style.inlineSize = `${String(roomFor(widths) * 2)}px`;
+
+  await expect
+    .poll(() => track().getBoundingClientRect().width)
+    .toBeCloseTo(roomFor(widths) - SPARE, 0);
+  expect(track().getBoundingClientRect().top).toBeLessThan(
+    asElement(row.firstElementChild ?? row).getBoundingClientRect().bottom,
   );
 });

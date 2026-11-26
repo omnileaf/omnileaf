@@ -123,3 +123,31 @@ export function followFittingColumns(
     cancelAnimationFrame(frame);
   };
 }
+
+export function followLineOfItsOwn(
+  track: HTMLElement,
+  onLine: (hasLineOfItsOwn: boolean) => void,
+): () => void {
+  const name = track.previousElementSibling;
+  const row = track.parentElement;
+  if (name === null || row === null) {
+    return () => undefined;
+  }
+  const check = (): void => {
+    onLine(
+      track.getBoundingClientRect().top >= name.getBoundingClientRect().bottom,
+    );
+  };
+  let frame = 0;
+  const resizes = new ResizeObserver(() => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(check);
+  });
+  for (const element of [track, name, row]) {
+    resizes.observe(element);
+  }
+  return () => {
+    resizes.disconnect();
+    cancelAnimationFrame(frame);
+  };
+}
