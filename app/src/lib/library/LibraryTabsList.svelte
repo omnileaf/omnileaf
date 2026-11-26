@@ -309,7 +309,9 @@
       {@const isRaised = isLifted || settling?.key === key}
       <li
         data-tab-row={key}
-        style:top={isLifted ? `${String(drag?.rows.offset ?? 0)}px` : undefined}
+        style:inset-block-start={isLifted
+          ? `${String(drag?.rows.offset ?? 0)}px`
+          : undefined}
         style:translate={drag !== undefined && !isLifted
           ? `0 ${String(drag.rows.shiftOf(at))}px`
           : undefined}
