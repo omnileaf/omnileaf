@@ -248,3 +248,80 @@ test("ignores Alt and the arrow keys while a tab is dragged", async () => {
 
   expect(onArrange).not.toHaveBeenCalled();
 });
+
+function menuItemNames(): readonly string[] {
+  return [...document.querySelectorAll('[role="menuitem"]')].map((item) =>
+    item.textContent.trim(),
+  );
+}
+
+const RENAMING_PROPS = {
+  ...PROPS,
+  tabs: CATEGORY_TABS,
+  onRename: () => undefined,
+  onDelete: () => undefined,
+};
+
+test("ends a category's menu with Rename and then Delete in the danger colour", async () => {
+  followCorePlatform("android");
+  const screen = await render(LibraryTabsList, RENAMING_PROPS);
+
+  await screen.getByRole("button", { name: "More for Manga" }).click();
+
+  expect(menuItemNames()).toEqual([
+    "Move up",
+    "Move down",
+    "Hide this tab",
+    "Rename",
+    "Delete",
+  ]);
+  const remove = screen.getByRole("menuitem", { name: "Delete" }).element();
+  expect(remove.classList.contains("text-danger")).toBe(true);
+  expect(remove.querySelector("svg")).not.toBeNull();
+  expect(
+    screen
+      .getByRole("menuitem", { name: "Rename" })
+      .element()
+      .querySelector("svg"),
+  ).not.toBeNull();
+  expect(
+    document.querySelectorAll('[role="menu"] [role="separator"]'),
+  ).toHaveLength(2);
+});
+
+test("offers neither Rename nor Delete for the built-in tabs", async () => {
+  followCorePlatform("android");
+  const screen = await render(LibraryTabsList, RENAMING_PROPS);
+
+  await screen.getByRole("button", { name: "More for New chapters" }).click();
+
+  expect(menuItemNames()).toEqual(["Move up", "Move down", "Show this tab"]);
+});
+
+test("asks with an ellipsis before renaming or deleting on a desktop", async () => {
+  followCorePlatform("linux");
+  const screen = await render(LibraryTabsList, RENAMING_PROPS);
+
+  await screen.getByRole("button", { name: "More for Reading" }).click();
+
+  expect(menuItemNames().slice(-2)).toEqual(["Rename…", "Delete…"]);
+});
+
+test("hands the category chosen to onRename and onDelete", async () => {
+  followCorePlatform("linux");
+  const onRename = vi.fn();
+  const onDelete = vi.fn();
+  const screen = await render(LibraryTabsList, {
+    ...RENAMING_PROPS,
+    onRename,
+    onDelete,
+  });
+
+  await screen.getByRole("button", { name: "More for Manga" }).click();
+  await screen.getByRole("menuitem", { name: "Rename…" }).click();
+  await screen.getByRole("button", { name: "More for Reading" }).click();
+  await screen.getByRole("menuitem", { name: "Delete…" }).click();
+
+  expect(onRename).toHaveBeenCalledWith(CATEGORY_TABS[3]);
+  expect(onDelete).toHaveBeenCalledWith(CATEGORY_TABS[2]);
+});

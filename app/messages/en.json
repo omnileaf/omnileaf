@@ -269,6 +269,31 @@
   "library_tabs_new_category": "New category",
   "library_tabs_category_name": "Name",
   "library_tabs_add": "Add",
+  "library_tabs_rename": "Rename",
+  "library_tabs_rename_ask": "Rename…",
+  "library_tabs_delete": "Delete",
+  "library_tabs_delete_ask": "Delete…",
+  "library_tabs_rename_title": "Rename category",
+  "library_tabs_name_empty": "Enter a name.",
+  "library_tabs_name_taken": "{name} is already a category.",
+  "library_tabs_renamed": "{tab} renamed to {name}",
+  "library_tabs_delete_title": "Delete {tab}?",
+  "library_tabs_delete_kept": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Its {formattedCount} series stays in your library.",
+        "countPlural=other": "Its {formattedCount} series stay in your library."
+      }
+    }
+  ],
+  "library_tabs_delete_kept_uncounted": "Its series stay in your library.",
+  "library_tabs_deleted": "{tab} deleted",
   "library_tabs_category_count": [
     {
       "declarations": [
