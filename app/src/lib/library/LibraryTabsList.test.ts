@@ -325,3 +325,13 @@ test("hands the category chosen to onRename and onDelete", async () => {
   expect(onRename).toHaveBeenCalledWith(CATEGORY_TABS[3]);
   expect(onDelete).toHaveBeenCalledWith(CATEGORY_TABS[2]);
 });
+
+test("says what the page hands it in the same status as a move", async () => {
+  const screen = await render(LibraryTabsList, PROPS);
+
+  await screen.rerender({ said: { text: "Manga deleted" } });
+
+  await expect
+    .element(screen.getByRole("status"))
+    .toHaveTextContent("Manga deleted");
+});

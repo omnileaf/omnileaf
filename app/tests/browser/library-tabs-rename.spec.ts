@@ -128,9 +128,7 @@ test("renames a category in its place, says so and keeps focus on its row", asyn
   await expect
     .poll(() => rowNames(page))
     .toEqual(["All", "New chapters", "Reading", "Later", "Comics"]);
-  await expect(page.getByRole("status").last()).toHaveText(
-    "Manga renamed to Later",
-  );
+  await expect(page.getByRole("status")).toHaveText("Manga renamed to Later");
   await expect(moreFor(page, "Later")).toBeFocused();
 });
 
@@ -203,7 +201,7 @@ test("deletes a category, says so and moves focus to the row after it", async ({
   await expect
     .poll(() => rowNames(page))
     .toEqual(["All", "New chapters", "Reading", "Comics"]);
-  await expect(page.getByRole("status").last()).toHaveText("Manga deleted");
+  await expect(page.getByRole("status")).toHaveText("Manga deleted");
   await expect(moreFor(page, "Comics")).toBeFocused();
 });
 

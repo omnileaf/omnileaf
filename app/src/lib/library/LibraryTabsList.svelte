@@ -68,6 +68,7 @@
     onNewCategory,
     onRename,
     onDelete,
+    said,
   }: {
     tabs: readonly ArrangedTab[];
     detailOf: (tab: ArrangedTab) => string;
@@ -75,6 +76,7 @@
     onNewCategory?: (() => void) | undefined;
     onRename?: ((tab: ArrangedTab) => void) | undefined;
     onDelete?: ((tab: ArrangedTab) => void) | undefined;
+    said?: { readonly text: string } | undefined;
   } = $props();
 
   const android = androidListLook();
@@ -115,6 +117,12 @@
       announcement = "";
     }, NOTICE_WINDOW_MS);
   }
+
+  $effect(() => {
+    if (said !== undefined) {
+      announce(said.text);
+    }
+  });
 
   function announceMove(tab: ArrangedTab, from: number, to: number): void {
     const place = { tab: tab.name, position: to + 1, count: tabs.length };

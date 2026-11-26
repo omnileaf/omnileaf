@@ -29,7 +29,6 @@
   import DeleteCategoryDialog from "#lib/library/DeleteCategoryDialog.svelte";
   import LibraryTabsList from "#lib/library/LibraryTabsList.svelte";
   import RenameCategoryDialog from "#lib/library/RenameCategoryDialog.svelte";
-  import { NOTICE_WINDOW_MS } from "#lib/notices/notices.ts";
   import GroupedChoiceRow from "#lib/settings/GroupedChoiceRow.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
   import NewCategoryDialog from "#lib/library/NewCategoryDialog.svelte";
@@ -54,8 +53,7 @@
   let deleting = $state<CategoryTab | undefined>();
   let isDeleting = $state(false);
   let focusAfterDelete: string | undefined;
-  let announcement = $state("");
-  let quiet: ReturnType<typeof setTimeout> | undefined;
+  let said = $state<{ readonly text: string } | undefined>();
   const namesBesideRenamed = $derived(
     categories
       .filter(({ id }) => id !== renaming?.id.id)
@@ -90,11 +88,7 @@
   ]);
 
   function announce(text: string): void {
-    announcement = text;
-    clearTimeout(quiet);
-    quiet = setTimeout(() => {
-      announcement = "";
-    }, NOTICE_WINDOW_MS);
+    said = { text };
   }
 
   function moreButtonOf(key: string): HTMLElement | null {
@@ -290,6 +284,7 @@
             renaming = asCategory(tab);
           }
         : undefined}
+      {said}
       onDelete={keepsLabels
         ? (tab: ArrangedTab) => {
             deleting = asCategory(tab);
@@ -388,5 +383,4 @@
       void focusBesideDeleted(event);
     }}
   />
-  <p role="status" class="sr-only">{announcement}</p>
 </GroupedGround>
