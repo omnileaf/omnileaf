@@ -365,6 +365,44 @@ test.describe(
         });
       }
 
+      test("draws no blank frame and no hidden tab after hiding the chosen tab in Settings", async ({
+        page,
+      }) => {
+        await page.goto("/");
+        await libraryAtRest(page);
+        await page.getByRole("tab", { name: LATER.name }).click();
+        await expect(
+          page.getByRole("tab", { name: LATER.name, selected: true }),
+        ).toBeVisible();
+        await leaveFor(page, "Settings");
+        await main(page)
+          .getByRole("link", { name: /^Library/ })
+          .click();
+        await main(page)
+          .getByRole("link", { name: /^Library tabs/ })
+          .click();
+        await page
+          .getByRole("button", { name: `More for ${LATER.name}` })
+          .click();
+        await page.getByRole("menuitem", { name: "Hide this tab" }).click();
+        await expect
+          .poll(async () => (await commandsAsked(page)).unanswered)
+          .toBe(0);
+
+        const frames = await framesComingBack(page, tapLibrary);
+
+        expect(
+          frames.filter(
+            (frame) =>
+              frame.chosenTab === LATER.name ||
+              (frame.skeletonTiles === 0 &&
+                frame.covers === 0 &&
+                frame.emptyTitle === undefined),
+          ),
+          describeFrames(frames),
+        ).toEqual([]);
+      });
+
       test("keeps the count on screen while counting again after a library change", async ({
         page,
       }) => {

@@ -28,3 +28,11 @@ test("never lets the skeleton show once it stops waiting", () => {
 
   expect(delay.isDue).toBe(false);
 });
+
+test("lets the skeleton show at once once it is due now", () => {
+  const delay = new SkeletonDelay();
+
+  delay.dueNow();
+
+  expect(delay.isDue).toBe(true);
+});

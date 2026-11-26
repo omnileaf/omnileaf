@@ -16,6 +16,7 @@ import type { KeptHistory } from "#lib/history/history-list.svelte.ts";
 import { shownListing } from "#lib/screenshot-mode/shown-listing.ts";
 
 import type { KeptSeries } from "./library-series.svelte.ts";
+import { type ArrangedTab, arrangedTabs } from "./library-tabs.ts";
 import { isSameValue } from "./same-value.ts";
 import type { KeptTabPages } from "./tab-pages.svelte.ts";
 import type { KeptCounts } from "./unfiltered-counts.svelte.ts";
@@ -53,6 +54,21 @@ export type KeepGroup = () => KeptGroup | undefined;
 
 export class LibraryReturn {
   #screen: LibraryScreen | undefined;
+  #wasLeft = false;
+
+  get wasLeft(): boolean {
+    return this.#wasLeft;
+  }
+
+  forgetUnlessTabsAre(tabs: readonly ArrangedTab[]): void {
+    const screen = this.#screen;
+    if (
+      screen !== undefined &&
+      !isSameValue(arrangedTabs(screen.tabs, screen.categories), tabs)
+    ) {
+      this.forget();
+    }
+  }
 
   screenFor(usesStandIns: boolean): LibraryScreen | undefined {
     const screen = this.#screen;
@@ -66,6 +82,7 @@ export class LibraryReturn {
   }
 
   keep(screen: LibraryScreen | undefined): void {
+    this.#wasLeft = true;
     this.#screen = screen;
   }
 

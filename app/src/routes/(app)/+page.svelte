@@ -197,6 +197,9 @@
   const groupKeepers = new GroupKeepers();
   let keepContinueRow: (() => KeptHistory | undefined) | undefined;
   const skeleton = new SkeletonDelay();
+  if (libraryReturn.wasLeft) {
+    skeleton.dueNow();
+  }
   const animations = getAnimationsSetting();
   const screenshotMode = getScreenshotMode();
   const returnedTo = untrack(() =>

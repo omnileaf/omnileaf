@@ -6,7 +6,7 @@ import { shownListing } from "#lib/screenshot-mode/shown-listing.ts";
 import { NEW_ADULT_CONTENT } from "./adult-content";
 import { type LibraryScreen, LibraryReturn } from "./library-return";
 import { NEW_LIBRARY_LISTING, NO_FILTER_CHOICES } from "./library-listing";
-import { NEW_LIBRARY_TABS } from "./library-tabs";
+import { arrangedTabs, NEW_LIBRARY_TABS } from "./library-tabs";
 
 function screenDrawn(usesStandIns: boolean): LibraryScreen {
   return {
@@ -63,4 +63,36 @@ test("forgets the Library before a change that replaces what it holds", () => {
   const answer = library.forgetting(change)();
 
   expect([answer, library.screenFor(false)]).toEqual(["changed", undefined]);
+});
+
+test("knows the Library was left once it has been, even with nothing kept", () => {
+  const library = new LibraryReturn();
+  const before = library.wasLeft;
+
+  library.keep(undefined);
+
+  expect([before, library.wasLeft]).toEqual([false, true]);
+});
+
+test("keeps the Library while its tabs stay as they were", () => {
+  const library = new LibraryReturn();
+  library.keep(screenDrawn(false));
+
+  library.forgetUnlessTabsAre(arrangedTabs(NEW_LIBRARY_TABS, []));
+
+  expect(library.screenFor(false)).toBeDefined();
+});
+
+test("forgets the Library once its tabs are arranged differently", () => {
+  const library = new LibraryReturn();
+  library.keep(screenDrawn(false));
+
+  library.forgetUnlessTabsAre(
+    arrangedTabs(
+      NEW_LIBRARY_TABS.map((tab) => ({ ...tab, isHidden: true })),
+      [],
+    ),
+  );
+
+  expect(library.screenFor(false)).toBeUndefined();
 });
