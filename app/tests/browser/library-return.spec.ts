@@ -84,34 +84,50 @@ interface OpenedSeries {
   readonly top: number;
 }
 
-async function openSeriesInView(page: Page): Promise<OpenedSeries> {
-  const opened = await main(page).evaluate((scroller) => {
+function seriesInView(page: Page): Promise<OpenedSeries | undefined> {
+  return main(page).evaluate((scroller) => {
     const shown = scroller.getBoundingClientRect();
     const link = [
       ...scroller.querySelectorAll<HTMLAnchorElement>("a[href^='/series/']"),
     ].find((candidate) => {
       const box = candidate.getBoundingClientRect();
       return (
-        box.top > shown.top + shown.height / 3 && box.bottom < shown.bottom
+        candidate.closest("[inert]") === null &&
+        box.top > shown.top + shown.height / 3 &&
+        box.bottom < shown.bottom
       );
     });
     const href = link?.getAttribute("href");
     const top = link?.getBoundingClientRect().top;
-    link?.click();
     return href === undefined || href === null || top === undefined
       ? undefined
       : { href, top };
   });
+}
+
+async function openSeriesInView(page: Page): Promise<OpenedSeries> {
+  await expect
+    .poll(() => seriesInView(page), { message: "no series in view" })
+    .toBeDefined();
+  const opened = await seriesInView(page);
   if (opened === undefined) {
     throw new Error("no series in view");
   }
+  await main(page)
+    .locator(`a[href='${opened.href}']:not([inert] a)`)
+    .first()
+    .evaluate((link) => {
+      if (link instanceof HTMLElement) {
+        link.click();
+      }
+    });
   await expect(page).toHaveURL(opened.href);
   return opened;
 }
 
 function cardTop(page: Page, href: string): Promise<number> {
   return main(page)
-    .locator(`a[href='${href}']`)
+    .locator(`a[href='${href}']:not([inert] a)`)
     .first()
     .evaluate((card) => card.getBoundingClientRect().top);
 }
