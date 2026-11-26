@@ -352,7 +352,7 @@
         style:translate={placeOf(cell.offset)}
         style:min-width="{spaceWidth}px"
         style:min-height="{spaceHeight}px"
-        style:width={isNeighbour ? `${String(spaceWidth)}px` : undefined}
+        style:width={isNeighbour ? `${String(spaceWidth)}px` : "max-content"}
         style:height={isNeighbour ? `${String(spaceHeight)}px` : undefined}
         ontransitionend={settleOnceStill}
         ontransitioncancel={settleOnceStill}
