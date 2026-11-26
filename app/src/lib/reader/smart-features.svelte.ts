@@ -95,6 +95,17 @@ export class SmartFeatures {
     return this.#choices.showsPagePreviews;
   }
 
+  get areAllOff(): boolean {
+    return (
+      !this.choosesReadingMode &&
+      !this.learnsReadingSpeed &&
+      !this.showsTimeLeft &&
+      !this.showsBookSummary &&
+      !this.autoScrollsAtMyPace &&
+      !this.showsPagePreviews
+    );
+  }
+
   turn(feature: SmartFeature, isOn: boolean): void {
     this.#keep({ ...this.#choices, [feature]: isOn });
   }
