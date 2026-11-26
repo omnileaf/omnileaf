@@ -1,3 +1,4 @@
+import type { IconName } from "#lib/icons/names.ts";
 import { m } from "#lib/paraglide/messages.js";
 
 export type FolderDepth = 0 | 1 | 2 | 3;
@@ -87,12 +88,89 @@ export const EXAMPLE_FOLDER: readonly ExampleEntry[] = [
   },
 ];
 
-export const FOLDER_RULES: readonly (() => string)[] = [
-  m.folder_guide_rule_series,
-  m.folder_guide_rule_numbers,
-  m.folder_guide_rule_volume_folder,
-  m.folder_guide_rule_specials,
-  m.folder_guide_rule_one_shot,
-  m.folder_guide_rule_above,
-  m.folder_guide_rule_details,
+export type EntryKind = "folder" | "file";
+
+export interface NamingRule {
+  readonly title: () => string;
+  readonly names: readonly string[];
+  readonly note?: () => string;
+}
+
+export interface NamingRuleGroup {
+  readonly kind: EntryKind;
+  readonly heading: () => string;
+  readonly rules: readonly NamingRule[];
+}
+
+export const NAME_SEPARATOR = " · ";
+
+export const NAMING_RULES: readonly NamingRuleGroup[] = [
+  {
+    kind: "folder",
+    heading: m.folder_guide_folders,
+    rules: [
+      {
+        title: m.folder_guide_rule_series,
+        names: ["Sample Series 04 (2019)"],
+        note: m.folder_guide_rule_series_note,
+      },
+      {
+        title: m.folder_guide_rule_volume_folder,
+        names: ["Volume 03"],
+        note: m.folder_guide_rule_volume_folder_note,
+      },
+      {
+        title: m.folder_guide_rule_specials,
+        names: ["Specials"],
+        note: m.folder_guide_rule_specials_note,
+      },
+      {
+        title: m.folder_guide_rule_above,
+        names: ["Author B"],
+        note: m.folder_guide_rule_above_note,
+      },
+    ],
+  },
+  {
+    kind: "file",
+    heading: m.folder_guide_files,
+    rules: [
+      {
+        title: m.folder_guide_rule_volume,
+        names: ["Volume 1", "Vol. 01", "v01"],
+      },
+      {
+        title: m.folder_guide_rule_chapter,
+        names: ["Chapter 12", "Ch. 12", "c012"],
+      },
+      {
+        title: m.folder_guide_rule_one_shot,
+        names: [],
+        note: m.folder_guide_rule_one_shot_note,
+      },
+      {
+        title: m.folder_guide_rule_other_names,
+        names: [],
+        note: m.folder_guide_rule_other_names_note,
+      },
+      {
+        title: m.folder_guide_rule_details,
+        names: ["ComicInfo.xml"],
+        note: m.folder_guide_rule_details_note,
+      },
+    ],
+  },
 ];
+
+export const ENTRY_ICONS = {
+  folder: "folder",
+  file: "file-text",
+} satisfies Record<EntryKind, IconName>;
+
+export function takesThreeLines(rule: NamingRule): boolean {
+  return rule.names.length > 0 && rule.note !== undefined;
+}
+
+export function kindOf(entry: ExampleEntry): EntryKind {
+  return entry.isFolder ? "folder" : "file";
+}

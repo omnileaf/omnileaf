@@ -65,11 +65,6 @@ const PAGE_STARTS: readonly PageStart[] = [
     first: (page) => page.getByText(/^All four are on until you turn them off/),
   },
   {
-    route: "/settings/library/folders",
-    first: (page) =>
-      page.getByText(/^Omnileaf reads your files where they are/),
-  },
-  {
     route: "/settings/privacy/screenshot-mode",
     first: (page) => page.getByText(/^Swaps names and covers for stand-ins/),
   },
