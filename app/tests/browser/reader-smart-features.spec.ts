@@ -1,7 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
 
 import type { FakeBackend } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  DEFAULT_BACKEND,
+  expect,
+  fakeAppInfo,
+  onPlatform,
+  test,
+} from "./fixtures.ts";
 import {
   BOOK_ID,
   BOOK_TITLE,
@@ -22,6 +28,8 @@ const TIMED: FakeBackend = {
   ...readerBackend(DEFAULT_BACKEND, STARTED_ON_14),
   openBook: () => ({ ...readerBook(STARTED_ON_14), secondsPerPage: 15 }),
 };
+
+const DESKTOPS = ["linux", "macos", "windows"] as const;
 
 function smartFeatures(page: Page): Locator {
   return page.getByRole("region", { name: "Smart features" });
@@ -116,34 +124,47 @@ test.describe("in the reader", () => {
     await page.mouse.up();
   });
 
-  test("turns every smart feature off at once", async ({ page }) => {
-    await openReader(page);
-    await openSettings(page);
+  test.describe("on iOS", () => {
+    test.use({ backend: { ...TIMED, appInfo: () => fakeAppInfo("ios") } });
 
-    await smartFeatures(page)
-      .getByRole("button", { name: "Turn all off" })
-      .click();
+    test("turns every smart feature off at once", async ({ page }) => {
+      await openReader(page);
+      await openSettings(page);
 
-    for (const name of [
-      "Learn my reading speed",
-      "Show time left",
-      "Page previews while dragging the slider",
-    ]) {
-      await expect(featureSwitch(page, name)).not.toBeChecked();
-    }
+      await smartFeatures(page)
+        .getByRole("button", { name: "Turn all off" })
+        .click();
+
+      for (const name of [
+        "Learn my reading speed",
+        "Show time left",
+        "Page previews while dragging the slider",
+      ]) {
+        await expect(featureSwitch(page, name)).not.toBeChecked();
+      }
+    });
+
+    test("says All off once every smart feature is off", async ({ page }) => {
+      await openReader(page);
+      await openSettings(page);
+
+      await smartFeatures(page)
+        .getByRole("button", { name: "Turn all off" })
+        .click();
+
+      await expect(
+        smartFeatures(page).getByRole("button", { name: "All off" }),
+      ).toBeDisabled();
+    });
   });
 
-  test("says All off once every smart feature is off", async ({ page }) => {
+  test("offers no Turn all off on the desktop", async ({ page }) => {
     await openReader(page);
+
     await openSettings(page);
 
-    await smartFeatures(page)
-      .getByRole("button", { name: "Turn all off" })
-      .click();
-
-    await expect(
-      smartFeatures(page).getByRole("button", { name: "All off" }),
-    ).toBeDisabled();
+    await expect(featureSwitch(page, "Show time left")).toBeVisible();
+    await expect(smartFeatures(page).getByRole("button")).toHaveCount(0);
   });
 });
 
@@ -173,28 +194,45 @@ test.describe("in Settings > Reader", () => {
     });
   });
 
-  test("keeps every smart feature off once they are turned off at once", async ({
-    page,
-  }) => {
-    await page.goto("/settings/reading");
-    await smartFeatures(page)
-      .getByRole("button", { name: "Turn all off" })
-      .click();
+  test.describe("on iOS", () => {
+    test.use(onPlatform("ios"));
 
-    await page.reload();
+    test("keeps every smart feature off once they are turned off at once", async ({
+      page,
+    }) => {
+      await page.goto("/settings/reading");
+      await smartFeatures(page)
+        .getByRole("button", { name: "Turn all off" })
+        .click();
 
-    await expect(
-      smartFeatures(page).getByRole("button", { name: "All off" }),
-    ).toBeDisabled();
-    expect(await storedFeatures(page)).toEqual({
-      choosesReadingMode: false,
-      learnsReadingSpeed: false,
-      showsTimeLeft: false,
-      showsBookSummary: false,
-      autoScrollsAtMyPace: false,
-      showsPagePreviews: false,
+      await page.reload();
+
+      await expect(
+        smartFeatures(page).getByRole("button", { name: "All off" }),
+      ).toBeDisabled();
+      expect(await storedFeatures(page)).toEqual({
+        choosesReadingMode: false,
+        learnsReadingSpeed: false,
+        showsTimeLeft: false,
+        showsBookSummary: false,
+        autoScrollsAtMyPace: false,
+        showsPagePreviews: false,
+      });
     });
   });
+
+  for (const desktop of DESKTOPS) {
+    test.describe(`on ${desktop}`, () => {
+      test.use(onPlatform(desktop));
+
+      test("offers no Turn all off", async ({ page }) => {
+        await page.goto("/settings/reading");
+
+        await expect(featureSwitch(page, "Book summary")).toBeVisible();
+        await expect(smartFeatures(page).getByRole("button")).toHaveCount(0);
+      });
+    });
+  }
 
   test("turns the book summary off for every series", async ({ page }) => {
     await page.goto("/settings/reading");
