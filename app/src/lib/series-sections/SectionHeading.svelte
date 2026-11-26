@@ -5,6 +5,7 @@
 
   let {
     id,
+    fieldId,
     heading,
     isFinding,
     isSorting,
@@ -13,6 +14,7 @@
     findButton = $bindable(null),
   }: {
     id: string;
+    fieldId: string;
     heading: string;
     isFinding: boolean;
     isSorting: boolean;
@@ -37,6 +39,7 @@
     iconOnly
     label={m.series_find_book()}
     aria-expanded={isFinding}
+    aria-controls={isFinding ? fieldId : undefined}
     class="shrink-0"
     onclick={onFind}
   >

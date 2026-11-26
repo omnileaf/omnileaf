@@ -79,6 +79,7 @@
   const tabsLook = $derived(sectionTabsLook(screen.platform, screen.width));
   const hasHeading = $derived(hasSectionHeading(kinds, screen));
   const headingId = $props.id();
+  const findFieldId = `${headingId}-find`;
   const tabs = $derived(sectionTabs(sections, screen));
   const section = $derived(shownSection(listing, kinds));
   const view = $derived(sectionView(listing, kinds, screen));
@@ -205,6 +206,7 @@
   <SectionHeading
     bind:findButton
     id={headingId}
+    fieldId={findFieldId}
     heading={sectionCount(headed)}
     {isFinding}
     {isSorting}
@@ -221,6 +223,7 @@
   <div class="mbs-xs flex">
     <BookSearchBar
       bind:field={findField}
+      id={findFieldId}
       search={choices.search}
       onSearch={choices.onSearch}
       onClose={() => {

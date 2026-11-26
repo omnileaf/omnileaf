@@ -772,6 +772,24 @@ test.describe(
       });
     });
 
+    test("points Find a book at the field only while it is open", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await expect(findButton(page)).not.toHaveAttribute("aria-controls");
+
+      await findButton(page).click();
+
+      const fieldId = await findField(page).getAttribute("id");
+      expect(fieldId).toBeTruthy();
+      await expect(findButton(page)).toHaveAttribute(
+        "aria-controls",
+        fieldId ?? "",
+      );
+      await closeButton(page).click();
+      await expect(findButton(page)).not.toHaveAttribute("aria-controls");
+    });
+
     test("closes from Close the search, clearing it and going back to Find a book", async ({
       page,
     }) => {
