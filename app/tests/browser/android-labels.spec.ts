@@ -2,19 +2,43 @@ import type { Locator, Page } from "@playwright/test";
 
 import type {
   LibraryCategory,
+  Platform,
   SeriesLabels,
 } from "../../src/lib/ipc/bindings.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  fakeAppInfo,
+  LARGEST_TEXT_SCALE,
+  screenSizeOf,
+  setTextScale,
   settle,
+  sidewaysOverflow,
   test,
   tokenColour,
 } from "./fixtures.ts";
+import type { FakeBackend } from "./fake-backend.ts";
 import { sampleSeries } from "./series-catalog.ts";
+import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
+import { overlaps, textClippedUnmarked } from "./text-fit.ts";
 
 const HELD_MS = 800;
+const CHIP_GAP_PX = 8;
+const NARROW_PHONE_WIDTHS = [360, 320];
+const PHONE_HEIGHT = 800;
+const SERIES_PICKED = 3;
+const UNBROKEN_TAG_LENGTH = 60;
+const UNBROKEN_TAG = "Unbroken".padEnd(UNBROKEN_TAG_LENGTH, "o");
+const MANY_SUGGESTIONS = [
+  "Action",
+  "Dark Fantasy",
+  "Fantasy",
+  "Steampunk",
+  "Superhero",
+  "Psychological thriller",
+  "Slice of life",
+];
 const LIBRARY = sampleSeries(6);
 const CATEGORIES = [
   { id: "reading", name: "Reading" },
@@ -33,6 +57,15 @@ function labelsFor(series: readonly string[]): SeriesLabels {
   };
 }
 
+function suggesting(suggestedTags: string[]): FakeBackend {
+  return {
+    ...new FakeShelf([{ state: "notStarted" }]).backend(),
+    librarySeries: () => ({ series: LIBRARY, next: null }),
+    librarySeriesCount: () => LIBRARY.length,
+    seriesLabels: (series) => ({ ...labelsFor(series), suggestedTags }),
+  };
+}
+
 test.use({
   backend: {
     ...DEFAULT_BACKEND,
@@ -42,29 +75,72 @@ test.use({
   },
 });
 
-async function openLabels(page: Page): Promise<Locator> {
+function holdingUnbrokenOnOne(): FakeBackend {
+  return {
+    ...suggesting([]),
+    seriesLabels: (series) => ({
+      ...labelsFor(series),
+      tags: [
+        { tag: "Sea", holding: series.length },
+        { tag: UNBROKEN_TAG, holding: 1 },
+      ],
+      suggestedTags: [],
+    }),
+  };
+}
+
+async function openLabels(page: Page, seriesPicked = 1): Promise<Locator> {
   await page.goto("/");
   const list = page.getByRole("list", { name: "Series" });
-  await expect(list.getByRole("listitem")).toHaveCount(LIBRARY.length);
+  const second = list.getByRole("listitem").nth(1);
+  await expect(second).toBeVisible();
   const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
-  await list
-    .getByRole("listitem")
-    .nth(1)
-    .getByRole("link")
-    .first()
-    .dispatchEvent("pointerdown", touch);
+  await second.getByRole("link").first().dispatchEvent("pointerdown", touch);
   await page.waitForTimeout(HELD_MS);
   const picked = list.getByRole("checkbox", { name: LIBRARY[1]?.title ?? "" });
   await picked.dispatchEvent("pointerup", touch);
   await picked.dispatchEvent("click");
+  for (const { title } of LIBRARY.slice(2, seriesPicked + 1)) {
+    const next = list.getByRole("checkbox", { name: title });
+    await next.dispatchEvent("pointerdown", touch);
+    await next.dispatchEvent("pointerup", touch);
+    await next.dispatchEvent("click");
+  }
   await page
     .getByRole("group", { name: "Selected series" })
     .getByRole("button", { name: "Categories" })
     .click();
+  return shownLabels(page);
+}
+
+async function openLabelsFromSeries(page: Page): Promise<Locator> {
+  await page.goto(`/series/${SERIES_ID}`);
+  await page
+    .getByRole("button", { name: `More for ${SERIES_TITLE}`, exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Categories and tags…" }).click();
+  return shownLabels(page);
+}
+
+async function shownLabels(page: Page): Promise<Locator> {
   const sheet = page.getByRole("dialog", { name: "Categories and tags" });
   await expect(sheet).toBeVisible();
   await settle(sheet);
   return sheet;
+}
+
+function segmentLabelType(
+  page: Page,
+): Promise<{ readonly size: string; readonly weight: string }> {
+  return page.evaluate(() => {
+    const probe = document.createElement("span");
+    probe.style.fontSize = "var(--native-text-segment)";
+    probe.style.fontWeight = "var(--native-weight-segment)";
+    document.body.append(probe);
+    const { fontSize, fontWeight } = getComputedStyle(probe);
+    probe.remove();
+    return { size: fontSize, weight: fontWeight };
+  });
 }
 
 test.describe(
@@ -192,5 +268,310 @@ test.describe(
         0,
       );
     });
+
+    test.describe("with many suggested tags", () => {
+      test.use({ backend: suggesting(MANY_SUGGESTIONS) });
+
+      test("sets the Suggested label in the sheet's label type and colour", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+        const label = sheet.getByText("Suggested", { exact: true });
+        const type = await segmentLabelType(page);
+
+        await expect(label).toHaveCSS("font-size", type.size);
+        await expect(label).toHaveCSS("font-weight", type.weight);
+        await expect(label).toHaveCSS(
+          "color",
+          await tokenColour(page, "--color-foreground"),
+        );
+      });
+
+      test("draws each suggestion as a 32px chip with an 8px corner and an 18px plus", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+
+        for (const tag of MANY_SUGGESTIONS) {
+          const chip = sheet.getByRole("button", { name: `Add ${tag}` });
+
+          expect((await boxOf(chip)).height).toBeCloseTo(32, 0);
+          await expect(chip).toHaveCSS("border-top-left-radius", "8px");
+          expect((await boxOf(chip.locator("svg"))).width).toBeCloseTo(18, 0);
+        }
+      });
+
+      test("writes each suggestion in the foreground colour with its plus in the accent", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+        const foreground = await tokenColour(page, "--color-foreground");
+        const accent = await tokenColour(
+          page,
+          "--native-color-on-button-plain",
+        );
+
+        for (const tag of MANY_SUGGESTIONS) {
+          const chip = sheet.getByRole("button", { name: `Add ${tag}` });
+
+          await expect(chip).toHaveCSS("color", foreground);
+          await expect(chip.locator("svg")).toHaveCSS("color", accent);
+        }
+      });
+
+      test("lines the suggestions up with Add a tag, under a Suggested label of their own", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+        const field = await boxOf(
+          sheet.getByRole("textbox", { name: "Add a tag" }).locator("xpath=.."),
+        );
+        const label = await boxOf(
+          sheet.getByText("Suggested", { exact: true }),
+        );
+        const chips = await Promise.all(
+          MANY_SUGGESTIONS.map((tag) =>
+            boxOf(sheet.getByRole("button", { name: `Add ${tag}` })),
+          ),
+        );
+        const lines = [...new Set(chips.map(({ y }) => y))];
+
+        expect(label.x).toBeCloseTo(field.x, 0);
+        expect(label.y + label.height).toBeLessThanOrEqual(Math.min(...lines));
+        expect(Math.min(...chips.map(({ x }) => x))).toBeCloseTo(field.x, 0);
+        expect(
+          Math.max(...chips.map(({ x, width }) => x + width)),
+        ).toBeLessThanOrEqual(field.x + field.width);
+        expect(lines.length).toBeGreaterThan(1);
+        expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+      });
+
+      test("puts the suggestions 8px under the Suggested label, 8px apart in a row and between rows", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+        const label = await boxOf(
+          sheet.getByText("Suggested", { exact: true }),
+        );
+        const chips = await Promise.all(
+          MANY_SUGGESTIONS.map((tag) =>
+            boxOf(sheet.getByRole("button", { name: `Add ${tag}` })),
+          ),
+        );
+        const [first, second] = chips;
+        const nextLine = chips.find(({ y }) => y > (first?.y ?? 0));
+
+        expect((first?.y ?? 0) - (label.y + label.height)).toBeCloseTo(
+          CHIP_GAP_PX,
+          0,
+        );
+        expect(
+          (second?.x ?? 0) - ((first?.x ?? 0) + (first?.width ?? 0)),
+        ).toBeCloseTo(CHIP_GAP_PX, 0);
+        expect(
+          (nextLine?.y ?? 0) - ((first?.y ?? 0) + (first?.height ?? 0)),
+        ).toBeCloseTo(CHIP_GAP_PX, 0);
+      });
+    });
+
+    test.describe("with a suggestion of 60 letters and no spaces", () => {
+      test.use({ backend: suggesting([...MANY_SUGGESTIONS, UNBROKEN_TAG]) });
+
+      test("keeps the suggestions inside the sheet without one chip overlapping another", async ({
+        page,
+      }) => {
+        const sheet = await openLabels(page);
+
+        await expect(
+          sheet.getByRole("button", { name: `Add ${UNBROKEN_TAG}` }),
+        ).toBeVisible();
+        expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+        expect(await overlaps(page)).toEqual([]);
+      });
+
+      test("keeps the suggestions inside the sheet at the largest text, none overlapping or cut off", async ({
+        page,
+      }) => {
+        await setTextScale(page, LARGEST_TEXT_SCALE);
+
+        const sheet = await openLabels(page);
+
+        await expect(
+          sheet.getByRole("button", { name: `Add ${UNBROKEN_TAG}` }),
+        ).toBeVisible();
+        expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+        expect(await overlaps(page)).toEqual([]);
+        expect(await textClippedUnmarked(page)).toEqual([]);
+      });
+
+      for (const width of NARROW_PHONE_WIDTHS) {
+        test.describe(`on a phone ${String(width)}px wide`, () => {
+          test.use({ viewport: { width, height: PHONE_HEIGHT } });
+
+          test("keeps the tag and its whole Remove button inside the sheet once it is added", async ({
+            page,
+          }) => {
+            const sheet = await openLabels(page);
+
+            await addUnbrokenTag(sheet);
+
+            await expectUnbrokenTagInside(page, sheet);
+          });
+        });
+      }
+    });
+
+    test.describe("with a 60-letter tag on only one of the series", () => {
+      test.use({ backend: holdingUnbrokenOnOne() });
+
+      for (const width of NARROW_PHONE_WIDTHS) {
+        test(`keeps how many series hold it in sight on a phone ${String(width)}px wide`, async ({
+          page,
+        }) => {
+          await page.setViewportSize({ width, height: PHONE_HEIGHT });
+
+          const sheet = await openLabels(page, SERIES_PICKED);
+
+          await expectHoldingCountInside(page, sheet);
+        });
+      }
+    });
   },
 );
+
+test.describe("a 60-letter tag on only one of the picked series", () => {
+  test.use({ backend: holdingUnbrokenOnOne() });
+
+  test("keeps how many series hold it in sight", async ({ page }) => {
+    const sheet = await openLabels(page, SERIES_PICKED);
+
+    await expectHoldingCountInside(page, sheet);
+  });
+});
+
+async function expectHoldingCountInside(
+  page: Page,
+  sheet: Locator,
+): Promise<void> {
+  const holding = `· 1 of ${String(SERIES_PICKED)}`;
+  const chip = sheet.getByRole("listitem").filter({ hasText: UNBROKEN_TAG });
+  const count = chip.getByText(holding, { exact: true });
+  await expect(count).toBeVisible();
+  const sheetBox = await boxOf(sheet);
+  const countBox = await boxOf(count);
+
+  expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+  expect(countBox.x).toBeGreaterThanOrEqual(sheetBox.x);
+  expect(countBox.x + countBox.width).toBeLessThanOrEqual(
+    sheetBox.x + sheetBox.width,
+  );
+  await expect(chip).toHaveText(`${UNBROKEN_TAG} ${holding}`);
+}
+
+async function addUnbrokenTag(sheet: Locator): Promise<void> {
+  await sheet.getByRole("button", { name: `Add ${UNBROKEN_TAG}` }).click();
+}
+
+async function expectUnbrokenTagInside(
+  page: Page,
+  sheet: Locator,
+): Promise<void> {
+  const removeName = { name: `Remove ${UNBROKEN_TAG}`, exact: true };
+  const remove = sheet.getByRole("button", removeName);
+  const chip = sheet
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("button", removeName) });
+  await expect(remove).toBeVisible();
+  const sheetBox = await boxOf(sheet);
+  const removeBox = await boxOf(remove);
+
+  expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+  expect(removeBox.x).toBeGreaterThanOrEqual(sheetBox.x);
+  expect(removeBox.x + removeBox.width).toBeLessThanOrEqual(
+    sheetBox.x + sheetBox.width,
+  );
+  await expect(chip).toContainText(UNBROKEN_TAG);
+}
+
+function testSuggestedTags(
+  backend: FakeBackend,
+  open: (page: Page, platform: Platform | undefined) => Promise<Locator>,
+): void {
+  test.use({ backend });
+
+  test("holds every suggestion in a group named Suggested", async ({
+    page,
+    platform,
+  }) => {
+    const sheet = await open(page, platform);
+
+    await expect(
+      sheet.getByRole("group", { name: "Suggested" }).getByRole("button"),
+    ).toHaveText([...MANY_SUGGESTIONS, UNBROKEN_TAG]);
+  });
+
+  test("keeps a 60-letter suggestion inside the dialog", async ({
+    page,
+    platform,
+  }) => {
+    const sheet = await open(page, platform);
+
+    await expect(
+      sheet.getByRole("button", { name: `Add ${UNBROKEN_TAG}` }),
+    ).toBeVisible();
+    expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+  });
+
+  test("keeps a 60-letter tag inside the dialog once it is added", async ({
+    page,
+    platform,
+  }) => {
+    const sheet = await open(page, platform);
+
+    await addUnbrokenTag(sheet);
+
+    await expectUnbrokenTagInside(page, sheet);
+  });
+}
+
+test.describe("the suggested tags", { tag: "@native" }, () => {
+  testSuggestedTags(
+    suggesting([...MANY_SUGGESTIONS, UNBROKEN_TAG]),
+    (page, platform) =>
+      platform === "ios" ? openLabelsFromSeries(page) : openLabels(page),
+  );
+});
+
+test.describe("the suggested tags on an iPad", () => {
+  test.beforeEach(({ browserName, page }) => {
+    test.skip(
+      browserName !== "webkit" || screenSizeOf(page) !== "tablet",
+      "an iPad is WebKit at a tablet's size",
+    );
+  });
+
+  testSuggestedTags(
+    {
+      ...suggesting([...MANY_SUGGESTIONS, UNBROKEN_TAG]),
+      appInfo: () => fakeAppInfo("ios"),
+    },
+    (page) => openLabels(page),
+  );
+});
+
+test.describe("the suggested tags on an Android tablet", () => {
+  test.beforeEach(({ browserName, page }) => {
+    test.skip(
+      browserName !== "chromium" || screenSizeOf(page) !== "tablet",
+      "an Android tablet is Chromium at a tablet's size",
+    );
+  });
+
+  testSuggestedTags(
+    {
+      ...suggesting([...MANY_SUGGESTIONS, UNBROKEN_TAG]),
+      appInfo: () => fakeAppInfo("android"),
+    },
+    (page) => openLabels(page),
+  );
+});

@@ -22,6 +22,12 @@ export const ANDROID_FILTER_CHIP = {
   other: "border-native-button-outline-edge text-muted",
 } as const;
 
+export const ANDROID_SUGGESTION_CHIP = {
+  chip: `${ANDROID_FILTER_CHIP.chip} border-native-button-outline-edge text-foreground max-inline-full`,
+  plus: "shrink-0 text-native-on-button-plain",
+  plusSize: 18,
+} as const;
+
 export const ANDROID_VIEW_SETTING = {
   row: "flex flex-wrap items-center justify-between gap-md ps-lg pe-xl min-block-touch-target",
   stacked: "flex flex-col ps-lg pe-lg pbs-sm pbe-md",

@@ -27,6 +27,8 @@
   import {
     ANDROID_FILTER_HEADING,
     ANDROID_FILTER_SHEET,
+    ANDROID_SUGGESTION_CHIP,
+    FILTER_SETTING_LABEL_TYPE,
   } from "./filter-sheet-look";
 
   type Choice = "all" | "some" | "none";
@@ -62,6 +64,7 @@
   let sheet = $state<HTMLElement | null>(null);
 
   const android = new AndroidPhone();
+  const suggestedLabelId = $props.id();
   const actionOrder = alertLook(currentPlatform()).actionOrder;
   const count = $derived(series.length);
   const ANDROID_ROW =
@@ -351,29 +354,37 @@
             >
               {#each tagsShown as { tag, holding } (tag)}
                 <li
-                  class={android.isOn && view !== "wide"
-                    ? [
-                        ANDROID_FILTER_CHIP_LOOK.chip,
-                        "flex items-center",
-                        holding >= count
-                          ? "border-transparent bg-native-accent-soft text-foreground"
-                          : "",
-                      ]
-                    : [
-                        "flex items-center gap-2xs rounded-control border ps-sm pe-2xs text-small font-medium block-search-chip",
-                        holding >= count
-                          ? "border-transparent bg-chip"
-                          : "border-border bg-card",
-                      ]}
+                  class={[
+                    "max-inline-full min-inline-none",
+                    android.isOn && view !== "wide"
+                      ? [
+                          ANDROID_FILTER_CHIP_LOOK.chip,
+                          "flex items-center",
+                          holding >= count
+                            ? "border-transparent bg-native-accent-soft text-foreground"
+                            : "",
+                        ]
+                      : [
+                          "flex items-center gap-2xs rounded-control border ps-sm pe-2xs text-small font-medium block-search-chip",
+                          holding >= count
+                            ? "border-transparent bg-chip"
+                            : "border-border bg-card",
+                        ],
+                  ]}
                 >
-                  {holding >= count
-                    ? tag
-                    : m.library_tag_on_some({ tag, holding, count })}
+                  <span class="flex gap-xs min-inline-none">
+                    <span class="truncate">{tag}</span>
+                    {#if holding < count}
+                      <span class="shrink-0">
+                        {m.library_tag_holding({ holding, count })}
+                      </span>
+                    {/if}
+                  </span>
                   <Button
                     type="button"
                     look="icon"
                     aria-label={m.library_remove_tag({ tag })}
-                    class="block-chip-remove inline-chip-remove touch:touch-target-around"
+                    class="shrink-0 block-chip-remove inline-chip-remove touch:touch-target-around"
                     onclick={() => {
                       removeTag(tag);
                     }}
@@ -391,24 +402,50 @@
             </ul>
           {/if}
           {#if suggested.length > 0}
-            <div class="flex flex-wrap items-center gap-sm">
-              <span class="text-detail text-muted">
+            {@const isAndroidSheet = android.isOn && view !== "wide"}
+            <div
+              class={isAndroidSheet
+                ? "flex flex-col gap-sm px-lg"
+                : "flex flex-wrap items-center gap-sm"}
+            >
+              <span
+                id={suggestedLabelId}
+                class={isAndroidSheet
+                  ? FILTER_SETTING_LABEL_TYPE
+                  : "text-detail text-muted"}
+              >
                 {m.library_suggested_tags()}
               </span>
-              {#each suggested as tag (tag)}
-                <Button
-                  type="button"
-                  look="outline"
-                  aria-label={m.library_add_named_tag({ tag })}
-                  class="flex items-center gap-xs rounded-control px-sm text-small font-medium block-search-chip touch:touch-target-around"
-                  onclick={() => {
-                    addTag(tag);
-                  }}
-                >
-                  <Plus size={REMOVE_ICON_SIZE} aria-hidden="true" />
-                  {tag}
-                </Button>
-              {/each}
+              <div
+                role="group"
+                aria-labelledby={suggestedLabelId}
+                class={isAndroidSheet ? "flex flex-wrap gap-sm" : "contents"}
+              >
+                {#each suggested as tag (tag)}
+                  <Button
+                    type="button"
+                    look="outline"
+                    aria-label={m.library_add_named_tag({ tag })}
+                    class={isAndroidSheet
+                      ? ANDROID_SUGGESTION_CHIP.chip
+                      : "flex items-center gap-xs rounded-control px-sm text-small font-medium block-search-chip max-inline-full touch:touch-target-around"}
+                    onclick={() => {
+                      addTag(tag);
+                    }}
+                  >
+                    <Plus
+                      size={isAndroidSheet
+                        ? ANDROID_SUGGESTION_CHIP.plusSize
+                        : REMOVE_ICON_SIZE}
+                      aria-hidden="true"
+                      class={isAndroidSheet
+                        ? ANDROID_SUGGESTION_CHIP.plus
+                        : "shrink-0"}
+                    />
+                    <span class="truncate">{tag}</span>
+                  </Button>
+                {/each}
+              </div>
             </div>
           {/if}
         </section>

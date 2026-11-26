@@ -531,6 +531,7 @@
   ],
   "library_in_some": "⟦{holding} öƒ ţĥé {count} áŕé íñ íţ··············⟧",
   "library_tag_on_some": "⟦{tag} · {holding} öƒ {count}············⟧",
+  "library_tag_holding": "⟦· {holding} öƒ {count}·········⟧",
   "library_new_category": "⟦Ñéŵ çáţéĝöŕý·····⟧",
   "library_add_tag": "⟦Áðð á ţáĝ····⟧",
   "library_add_named_tag": "⟦Áðð {tag}····⟧",
