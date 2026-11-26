@@ -5,7 +5,10 @@
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   import { AndroidPhone } from "./android-phone.svelte";
-  import { FILTER_SETTING_LABEL_TYPE } from "./filter-sheet-look";
+  import {
+    ANDROID_VIEW_SETTING,
+    FILTER_SETTING_LABEL_TYPE,
+  } from "./filter-sheet-look";
 
   import CoversPerRowStepper from "./CoversPerRowStepper.svelte";
   import { SCREEN_SIZES, type ScreenSize } from "./library-view";
@@ -46,34 +49,55 @@
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
 </script>
 
-<div class={["flex flex-col gap-sm", android.isOn && "ps-lg pe-xl"]}>
-  <div
-    class="flex items-center justify-between gap-md ios:flex-col ios:items-stretch ios:medium:gap-sm"
-  >
-    <p
-      id={labelId}
-      class={android.isOn
-        ? FILTER_SETTING_LABEL_TYPE
-        : (labelClass ?? "text-body font-semibold large:text-small")}
-    >
-      {m.library_covers_per_row()}
-    </p>
-    <SegmentedControl
-      options={CHOICES}
-      labels={LABELS}
-      chosen={view.fitsCoversToWidth ? "auto" : "choose"}
-      labelledBy={labelId}
-      size="small"
-      hasWindowsLook
-      hasEqualColumns
-      onChoose={(choice: Choice) => {
-        onFit(choice === "auto");
-      }}
-    />
+{#if android.isOn}
+  <div class={ANDROID_VIEW_SETTING.row}>
+    {@render choice()}
+    {@render underneath()}
   </div>
+{:else}
+  <div class="flex flex-col gap-sm">
+    <div
+      class="flex items-center justify-between gap-md ios:flex-col ios:items-stretch ios:medium:gap-sm"
+    >
+      {@render choice()}
+    </div>
+    {@render underneath()}
+  </div>
+{/if}
+
+{#snippet choice()}
+  <p
+    id={labelId}
+    class={android.isOn
+      ? [ANDROID_VIEW_SETTING.words, FILTER_SETTING_LABEL_TYPE]
+      : (labelClass ?? "text-body font-semibold large:text-small")}
+  >
+    {m.library_covers_per_row()}
+  </p>
+  <SegmentedControl
+    options={CHOICES}
+    labels={LABELS}
+    chosen={view.fitsCoversToWidth ? "auto" : "choose"}
+    labelledBy={labelId}
+    size="small"
+    hasWindowsLook
+    hasEqualColumns
+    isAtRowEnd={android.isOn}
+    onChoose={(choice: Choice) => {
+      onFit(choice === "auto");
+    }}
+  />
+{/snippet}
+
+{#snippet underneath()}
   {#if view.fitsCoversToWidth}
     {#if drawn !== undefined}
-      <p class={footnoteClass ?? "text-small text-muted"}>
+      <p
+        class={[
+          footnoteClass ?? "text-small text-muted",
+          android.isOn && ANDROID_VIEW_SETTING.line,
+        ]}
+      >
         {m.library_covers_fit_width({ count: numbers.format(drawn) })}
       </p>
     {/if}
@@ -84,11 +108,11 @@
         count={view.coversPerRow[size]}
         {drawn}
         {mostThatFit}
-        class={STEPPERS[size]}
+        class={[STEPPERS[size], android.isOn && ANDROID_VIEW_SETTING.line]}
         onCount={(count: number) => {
           onCount(size, count);
         }}
       />
     {/each}
   {/if}
-</div>
+{/snippet}

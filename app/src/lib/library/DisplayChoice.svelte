@@ -85,9 +85,8 @@
     size="small"
     hasWindowsLook
     hasEqualColumns
+    isAtRowEnd={android.isOn}
     {onChoose}
-    class={android.isOn
-      ? "ms-auto flex-none max-inline-full"
-      : "mbs-sm large:mbs-icon-gap"}
+    class={[!android.isOn && "mbs-sm large:mbs-icon-gap"]}
   />
 </div>

@@ -28,10 +28,13 @@ export const ANDROID_SUGGESTION_CHIP = {
   plusSize: 18,
 } as const;
 
+const TAKES_ALL_SPARE_ROOM = "grow-1000";
+
 export const ANDROID_VIEW_SETTING = {
-  row: "flex flex-wrap items-center justify-between gap-md ps-lg pe-xl min-block-touch-target",
+  row: "flex flex-wrap items-center gap-x-lg gap-y-sm ps-lg pe-xl py-sm",
   stacked: "flex flex-col ps-lg pe-lg pbs-sm pbe-md",
-  words: "",
+  words: TAKES_ALL_SPARE_ROOM,
+  line: "basis-full",
 } as const;
 
 export const MAC_INSPECTOR = {
