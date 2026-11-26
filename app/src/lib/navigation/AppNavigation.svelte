@@ -224,9 +224,9 @@
                   look.iconHolder,
                   !isSelected &&
                     "max-expanded:group-hover:tint-hover max-expanded:group-active:tint-pressed",
-                  heldPress === destination.section &&
-                    "android:max-expanded:tint-pressed",
+                  "android:max-expanded:motion-navigation:data-held-press:tint-pressed",
                 ]}
+                data-held-press={heldPress === destination.section || undefined}
               >
                 <span
                   data-slot="navigation-pill"

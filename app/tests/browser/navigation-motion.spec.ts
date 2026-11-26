@@ -45,6 +45,7 @@ const ONE_TOOTH_DEG = 60;
 const REST_TOLERANCE = 0.01;
 const VISIBLY_MOVED = 0.05;
 const PRESS_FRAMES = 4;
+const FINGER = { pointerType: "touch", isPrimary: true } as const;
 const HAND_OVER_FRAMES = 40;
 
 const HALFWAY = "0.5";
@@ -244,6 +245,8 @@ function distanceFromRest(sample: MoveSample | undefined): number {
 
 interface PillFrame {
   readonly isPressed: boolean;
+  readonly isHeld: boolean;
+  readonly isTinted: boolean;
   readonly pill: number;
 }
 
@@ -261,7 +264,9 @@ async function pillFramesWhilePressing(
     const frames: PillFrame[] = [];
     const record = () => {
       frames.push({
-        isPressed: getComputedStyle(holder).backgroundImage !== "none",
+        isPressed: root.matches(":active"),
+        isHeld: holder.hasAttribute("data-held-press"),
+        isTinted: getComputedStyle(holder).backgroundImage !== "none",
         pill: Number(getComputedStyle(pill).opacity),
       });
       requestAnimationFrame(record);
@@ -283,6 +288,23 @@ async function pillFramesWhilePressing(
     .toBeGreaterThan(pressedAt + HAND_OVER_FRAMES);
   const frames = await recording.jsonValue();
   return frames.slice(frames.findIndex(({ isPressed }) => isPressed));
+}
+
+function showsAPill({ isPressed, isHeld, isTinted, pill }: PillFrame): boolean {
+  return ((isPressed || isHeld) && isTinted) || pill >= 1;
+}
+
+function heldPresses(page: Page): Locator {
+  return navigation(page).locator("[data-held-press]");
+}
+
+async function turnNavigationMotionOff(page: Page): Promise<void> {
+  await page.goto("/settings/advanced");
+  await page.getByRole("link", { name: "Animations" }).click();
+  await page.getByRole("switch", { name: "Navigation" }).click();
+  await expect(
+    page.getByRole("switch", { name: "Navigation" }),
+  ).not.toBeChecked();
 }
 
 async function iconPixels(page: Page, icon: Locator): Promise<number[]> {
@@ -709,10 +731,75 @@ test.describe("on Android", () => {
     const frames = await pillFramesWhilePressing(page, "History");
 
     expect(frames.length).toBeGreaterThan(HAND_OVER_FRAMES);
-    expect(
-      frames.filter(({ isPressed, pill }) => !isPressed && pill < 1),
-    ).toEqual([]);
+    expect(frames.filter((frame) => !showsAPill(frame))).toEqual([]);
+    expect(frames.some(({ isHeld }) => isHeld)).toBe(true);
   });
+
+  test("leaves no grey on the open tab when it is tapped", async ({ page }) => {
+    await page.goto("/history");
+    await settle(navigation(page));
+
+    await tab(page, "History").tap();
+    await settle(navigation(page));
+
+    await expect(heldPresses(page)).toHaveCount(0);
+  });
+
+  test("leaves no grey on a tab overtaken by a second tap", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await settle(navigation(page));
+
+    await tab(page, "History").click();
+    await tab(page, "Browse").click();
+    await expect(tab(page, "Browse")).toHaveAttribute("aria-current", "page");
+    await settle(navigation(page));
+
+    await expect(heldPresses(page)).toHaveCount(0);
+  });
+
+  test("lets go of a press lifted without a tap at the next touch", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await settle(navigation(page));
+    await tab(page, "History").dispatchEvent("pointerup", FINGER);
+
+    await page.getByRole("main").dispatchEvent("pointerdown", FINGER);
+
+    await expect(heldPresses(page)).toHaveCount(0);
+    await expect(tab(page, "Library")).toHaveAttribute("aria-current", "page");
+  });
+
+  for (const { motionOff, turnOff } of [
+    {
+      motionOff: "with reduce motion",
+      turnOff: (page: Page) => page.emulateMedia({ reducedMotion: "reduce" }),
+    },
+    {
+      motionOff: "with Navigation animations off",
+      turnOff: turnNavigationMotionOff,
+    },
+  ]) {
+    test(`holds no grey after a press ${motionOff}`, async ({ page }) => {
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "bar and rail only",
+      );
+      await turnOff(page);
+      await page.goto("/");
+      await settle(navigation(page));
+
+      const frames = await pillFramesWhilePressing(page, "History");
+
+      expect(
+        frames.filter(
+          ({ isPressed, isHeld, isTinted }) => isHeld && !isPressed && isTinted,
+        ),
+      ).toEqual([]);
+    });
+  }
 
   test("keeps the History icon at full strength halfway through its crossfade", async ({
     page,
