@@ -10,7 +10,6 @@ import {
   testOnlyInItsWebview,
 } from "./fixtures.ts";
 
-const PHONE_HINT = "Omnileaf uses your phone's language unless you pick one.";
 const POINTER_ROW_HEIGHT = 44;
 
 function languageRow(page: Page) {
@@ -102,7 +101,6 @@ test.describe("on a desktop", () => {
     const row = await boxOf(languageRow(page));
 
     expect(row.height).toBe(POINTER_ROW_HEIGHT);
-    await expect(page.getByText(PHONE_HINT)).toBeHidden();
   });
 });
 

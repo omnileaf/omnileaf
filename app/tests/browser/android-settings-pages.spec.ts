@@ -38,7 +38,7 @@ const PAGE_STARTS: readonly PageStart[] = [
   },
   {
     route: "/settings/general/language",
-    first: (page) => page.getByText(/Each language is shown/),
+    first: (page) => page.getByText(/^Changes straight away/),
   },
   {
     route: "/settings/about/licences",

@@ -22,7 +22,7 @@ test.describe("General settings on an iPhone", { tag: "@native" }, () => {
     await expect(time).toBeVisible();
     await expect(page.getByRole("radio")).toHaveCount(0);
     await expect(
-      page.getByText("The reader, where you left it", { exact: false }),
+      page.getByText("Where you left off", { exact: false }),
     ).toHaveCount(0);
   });
 

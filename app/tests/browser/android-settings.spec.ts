@@ -241,7 +241,7 @@ test.describe("General on an Android phone", { tag: "@native" }, () => {
     await page.goto("/settings/general");
 
     await expect(
-      page.getByText("The reader, where you left it", { exact: false }),
+      page.getByText("Where you left off", { exact: false }),
     ).toHaveCount(0);
   });
 });
@@ -420,7 +420,7 @@ test.describe("Permissions on an Android phone", { tag: "@native" }, () => {
   }) => {
     const intros = [
       ["/settings/privacy/permissions", /^Omnileaf asks for each one/],
-      ["/settings/general/language", /^Each language is shown/],
+      ["/settings/general/language", /^Changes straight away/],
       ["/settings/about/licences", /^Made from the packages/],
     ] as const;
 

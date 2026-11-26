@@ -44,9 +44,6 @@
   const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
   const isIosPhone = $derived(data.appInfo.platform === "ios" && onPhone);
 
-  const id = $props.id();
-  const hintId = `${id}-hint`;
-
   const android = androidListLook();
   const language = getLanguageSetting();
   const dateHeading = radiosLook(true).heading;
@@ -193,37 +190,29 @@
           opensOn.choose(place);
         }}
       />
-      <div class="flex flex-col gap-sm">
-        <div class="rounded-list border border-border bg-card">
-          <a
-            href={resolve("/(app)/settings/general/language")}
-            aria-describedby={onPhone ? hintId : undefined}
-            class={[
-              "flex items-center gap-md rounded-list py-xs ps-lg pe-md transition-control min-block-phone-row hover:bg-hover active:bg-pressed",
-              "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
-              "desktop:py-none desktop:ps-list-row desktop:min-block-settings-row",
-            ]}
+      <div class="rounded-list border border-border bg-card">
+        <a
+          href={resolve("/(app)/settings/general/language")}
+          class={[
+            "flex items-center gap-md rounded-list py-xs ps-lg pe-md transition-control min-block-phone-row hover:bg-hover active:bg-pressed",
+            "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
+            "desktop:py-none desktop:ps-list-row desktop:min-block-settings-row",
+          ]}
+        >
+          <span class="flex-1 font-semibold desktop:text-callout">
+            {m.language_label()}
+          </span>
+          <span
+            lang={getLocale()}
+            class="text-callout text-muted touch:medium:text-label desktop:text-label"
           >
-            <span class="flex-1 font-semibold desktop:text-callout">
-              {m.language_label()}
-            </span>
-            <span
-              lang={getLocale()}
-              class="text-callout text-muted touch:medium:text-label desktop:text-label"
-            >
-              {languageName(getLocale())}
-            </span>
-            <ChevronRight
-              size={CHEVRON_SIZE}
-              class="shrink-0 text-muted rtl:-scale-x-100"
-            />
-          </a>
-        </div>
-        {#if onPhone}
-          <p id={hintId} class="px-xs text-footnote text-muted">
-            {m.language_phone_hint()}
-          </p>
-        {/if}
+            {languageName(getLocale())}
+          </span>
+          <ChevronRight
+            size={CHEVRON_SIZE}
+            class="shrink-0 text-muted rtl:-scale-x-100"
+          />
+        </a>
       </div>
       <SettingRadios
         title={m.general_time_format()}
