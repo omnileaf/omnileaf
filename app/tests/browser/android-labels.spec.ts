@@ -13,6 +13,7 @@ import {
   test,
   tokenColour,
 } from "./fixtures.ts";
+import type { FakeBackend } from "./fake-backend.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
 const HELD_MS = 800;
@@ -41,6 +42,15 @@ function labelsFor(series: readonly string[]): SeriesLabels {
     ],
     tags: [{ tag: "Sea", holding: series.length }],
     suggestedTags: ["Letters"],
+  };
+}
+
+function suggesting(suggestedTags: string[]): FakeBackend {
+  return {
+    ...DEFAULT_BACKEND,
+    librarySeries: () => ({ series: LIBRARY, next: null }),
+    librarySeriesCount: () => LIBRARY.length,
+    seriesLabels: (series) => ({ ...labelsFor(series), suggestedTags }),
   };
 }
 
@@ -205,17 +215,7 @@ test.describe(
     });
 
     test.describe("with many suggested tags", () => {
-      test.use({
-        backend: {
-          ...DEFAULT_BACKEND,
-          librarySeries: () => ({ series: LIBRARY, next: null }),
-          librarySeriesCount: () => LIBRARY.length,
-          seriesLabels: (series) => ({
-            ...labelsFor(series),
-            suggestedTags: MANY_SUGGESTIONS,
-          }),
-        },
-      });
+      test.use({ backend: suggesting(MANY_SUGGESTIONS) });
 
       test("lines the suggestions up with Add a tag, under a Suggested label of their own", async ({
         page,
@@ -266,3 +266,21 @@ test.describe(
     });
   },
 );
+
+test.describe("the suggested tags", { tag: "@native" }, () => {
+  test.use({ backend: suggesting(MANY_SUGGESTIONS) });
+
+  test.beforeEach(({ platform }) => {
+    test.skip(platform === "ios", "iOS draws a sheet of its own");
+  });
+
+  test("holds every suggestion in a group named Suggested", async ({
+    page,
+  }) => {
+    const sheet = await openLabels(page);
+
+    await expect(
+      sheet.getByRole("group", { name: "Suggested" }).getByRole("button"),
+    ).toHaveText(MANY_SUGGESTIONS);
+  });
+});

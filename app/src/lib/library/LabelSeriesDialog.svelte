@@ -59,6 +59,7 @@
   let tagField = $state<HTMLInputElement | null>(null);
 
   const android = new AndroidPhone();
+  const suggestedLabelId = $props.id();
   const actionOrder = alertLook(currentPlatform()).actionOrder;
   const count = $derived(series.length);
   const ANDROID_ROW =
@@ -388,6 +389,7 @@
                 : "flex flex-wrap items-center gap-sm"}
             >
               <span
+                id={suggestedLabelId}
                 class={isAndroidSheet
                   ? `${FILTER_SETTING_LABEL_TYPE} text-muted`
                   : "text-detail text-muted"}
@@ -395,6 +397,8 @@
                 {m.library_suggested_tags()}
               </span>
               <div
+                role="group"
+                aria-labelledby={suggestedLabelId}
                 class={isAndroidSheet ? "flex flex-wrap gap-sm" : "contents"}
               >
                 {#each suggested as tag (tag)}
