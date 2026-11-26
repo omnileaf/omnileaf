@@ -492,7 +492,9 @@ test.describe(
           .click();
         await page.getByRole("menuitem", { name: "Show the folder" }).click();
 
-        await expect(page.getByText("Couldn't open the folder.")).toBeVisible();
+        await expect(
+          page.getByText("Couldn’t open the folder. Try again."),
+        ).toBeVisible();
       });
     });
 

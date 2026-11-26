@@ -56,7 +56,7 @@ const CHECKBOX = {
 const RATED_NOTE =
   "Rated 18+ in the file. To change that, turn off Use age ratings from book details in Settings › Library.";
 const RATINGS_OFF_NOTE =
-  "The file rates it Adults Only 18+, but Use age ratings from book details is off in Settings › Library, so only this box counts.";
+  "The file rates it 18+, but age ratings are off in Settings › Library › 18+ content, so only this box counts.";
 
 let details: SeriesDetails = FROM_FILES;
 let sent: boolean[] = [];

@@ -59,7 +59,7 @@ test("offers only Find the folder without a way to check again", async () => {
   followCorePlatform("android");
   const screen = await render(SeriesNotConnectedCard, {
     title: "2 of 8 books aren’t connected",
-    body: "Volumes 7 and 8 are on a drive that is not there.",
+    body: "Volumes 7 and 8 are on a drive that isn’t connected.",
     onFind: () => undefined,
   });
 

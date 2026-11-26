@@ -968,7 +968,7 @@
   "report_saved_in_files_phone": "In Files › On My iPhone › Omnileaf › Reports",
   "report_saved_in_files_tablet": "In Files › On My iPad › Omnileaf › Reports",
   "report_save_failed": "Couldn't save the report. Try again.",
-  "report_folder_unavailable": "Couldn't open the folder. Try again.",
+  "report_folder_unavailable": "Couldn’t open the folder. Try again.",
   "your_reports_title": "Your reports",
   "your_reports_intro_phone": "Each report has a random code kept on this phone; nothing else identifies you.",
   "your_reports_intro_tablet": "Each report has a random code kept on this tablet; nothing else identifies you.",
@@ -1739,8 +1739,8 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "Volume {volumes} is on a drive that is not there.",
-        "countPlural=other": "Volumes {volumes} are on a drive that is not there."
+        "countPlural=one": "Volume {volumes} is on a drive that isn’t connected.",
+        "countPlural=other": "Volumes {volumes} are on a drive that isn’t connected."
       }
     }
   ],
@@ -1753,8 +1753,8 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "{names} is on a drive that is not there.",
-        "countPlural=other": "{names} are on a drive that is not there."
+        "countPlural=one": "{names} is on a drive that isn’t connected.",
+        "countPlural=other": "{names} are on a drive that isn’t connected."
       }
     }
   ],
@@ -1763,8 +1763,8 @@
       "declarations": ["input count", "local countPlural = count: plural"],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "It’s on a drive that is not there.",
-        "countPlural=other": "They’re on a drive that is not there."
+        "countPlural=one": "It’s on a drive that isn’t connected.",
+        "countPlural=other": "They’re on a drive that isn’t connected."
       }
     }
   ],
@@ -2089,7 +2089,7 @@
   "creator_empty": "No series by {name} in your library",
   "creator_empty_body": "Their files may have moved or been removed. Nothing else in your library has changed.",
   "creator_back_to": "Back to {title}",
-  "creator_failed": "Couldn't read the series by {name}",
+  "creator_failed": "Couldn’t load the series by {name}",
   "series_related_writer": "Same writer",
   "series_related_artist": "Same artist",
   "series_related_tag": "Same tag",
@@ -2348,8 +2348,8 @@
   "edit_details_from_file_quoted": "From the file: “{value}”",
   "edit_details_from_file_listed": "From the file: {values}",
   "edit_details_file_title": "The file’s title",
-  "edit_details_title_left_empty": "Left empty, so the file’s title shows: “{value}”. Type to set your own.",
-  "edit_details_summary_left_empty": "Left empty, so the file’s summary shows. Type to set your own.",
+  "edit_details_title_left_empty": "Left empty, the file’s title shows: “{value}”",
+  "edit_details_summary_left_empty": "Left empty, the file’s summary shows.",
   "edit_details_person": "{role} · {name}",
   "edit_details_remove_named": "Remove {name}",
   "edit_details_show_all": "Show all {count}",
@@ -2359,8 +2359,8 @@
   "edit_details_mark_adult_note": "The file has no age rating. Marked series follow Settings › Library › 18+ content.",
   "edit_details_mark_adult_rated": "Rated 18+ in the file. To change that, turn off Use age ratings from book details in {link}.",
   "edit_details_settings_library": "Settings › Library",
-  "edit_details_mark_adult_ratings_off": "The file rates it Adults Only 18+, but Use age ratings from book details is off in Settings › Library, so only this switch counts.",
-  "edit_details_mark_adult_ratings_off_box": "The file rates it Adults Only 18+, but Use age ratings from book details is off in Settings › Library, so only this box counts.",
+  "edit_details_mark_adult_ratings_off": "The file rates it 18+, but age ratings are off in Settings › Library › 18+ content, so only this switch counts.",
+  "edit_details_mark_adult_ratings_off_box": "The file rates it 18+, but age ratings are off in Settings › Library › 18+ content, so only this box counts.",
   "edit_details_title_back": "Title back to the file’s",
   "edit_details_people_back": "People back to the file’s",
   "edit_details_tags_back": "Tags back to the file’s",
@@ -2780,7 +2780,7 @@
   "reader_start_over": "Start over",
   "reader_show_file": "Show the file",
   "reader_show_in_folder": "Show in folder",
-  "show_file_failed": "Couldn't open the folder.",
+  "show_file_failed": "Couldn’t open the folder. Try again.",
   "show_in_files": "Show in Files",
   "show_in_finder": "Show in Finder",
   "show_in_file_explorer": "Show in File Explorer",

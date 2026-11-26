@@ -99,7 +99,7 @@ test("tells the reader when the file's folder could not be opened", async () => 
     expect(notices.show).toHaveBeenCalledWith(
       expect.objectContaining({
         tone: "warning",
-        title: "Couldn't open the folder.",
+        title: "Couldn’t open the folder. Try again.",
       }),
     );
   });

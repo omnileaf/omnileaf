@@ -1325,7 +1325,9 @@ test.describe("when showing a book's folder fails", () => {
       .click();
     await page.getByRole("menuitem", { name: "Show in folder" }).click();
 
-    await expect(page.getByText("Couldn't open the folder.")).toBeVisible();
+    await expect(
+      page.getByText("Couldn’t open the folder. Try again."),
+    ).toBeVisible();
   });
 });
 

@@ -82,7 +82,7 @@ function backendFailingWhileAsked(): FakeBackend {
 function failureHeading(page: Page): Locator {
   return page.getByRole("heading", {
     level: 1,
-    name: `Couldn't read the series by ${CREATOR}`,
+    name: `Couldn’t load the series by ${CREATOR}`,
   });
 }
 

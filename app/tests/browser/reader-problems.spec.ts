@@ -242,7 +242,9 @@ test.describe("a book whose folder can't be shown", () => {
       .getByRole("button", { name: /^Show (the file|in folder)$/ })
       .click();
 
-    await expect(page.getByText("Couldn't open the folder.")).toBeVisible();
+    await expect(
+      page.getByText("Couldn’t open the folder. Try again."),
+    ).toBeVisible();
   });
 });
 
