@@ -72,6 +72,127 @@ test("disables the Android time left switch once reading speed is off", async ()
     .toBeDisabled();
 });
 
+const LOOKS = [
+  { platform: "android", size: "regular" },
+  { platform: "android", size: "flat" },
+  { platform: "ios", size: "regular" },
+  { platform: "ios", size: "small" },
+  { platform: "linux", size: "regular" },
+  { platform: "linux", size: "small" },
+] as const;
+
+for (const { platform, size } of LOOKS) {
+  test(`ends the ${platform} ${size} list with Turn all off as a row as wide as the switches`, async () => {
+    followCorePlatform(platform);
+    const screen = await render(SmartFeaturesSection, { heading: "h2", size });
+
+    const row = screen
+      .getByRole("button", { name: "Turn all off" })
+      .element();
+    const lastSwitch = screen.getByRole("switch").last().element();
+    const rowBox = row.getBoundingClientRect();
+    const switchBox = lastSwitch.getBoundingClientRect();
+
+    expect(row.previousElementSibling).toBe(lastSwitch);
+    expect(row.nextElementSibling).toBeNull();
+    expect(rowBox.left).toBeCloseTo(switchBox.left, 0);
+    expect(rowBox.width).toBeCloseTo(switchBox.width, 0);
+  });
+
+  test(`leads the ${platform} ${size} Turn all off row with a power icon`, async () => {
+    followCorePlatform(platform);
+    const screen = await render(SmartFeaturesSection, { heading: "h2", size });
+
+    const row = screen
+      .getByRole("button", { name: "Turn all off" })
+      .element();
+    const icon = row.querySelector("[data-icon='power']");
+    const label = screen.getByText("Turn all off").element();
+
+    expect(icon).not.toBeNull();
+    expect(icon?.getBoundingClientRect().right).toBeLessThan(
+      label.getBoundingClientRect().left,
+    );
+  });
+
+  test(`says All off on the ${platform} ${size} row and disables it once every smart feature is off`, async () => {
+    followCorePlatform(platform);
+    const screen = await render(SmartFeaturesSection, { heading: "h2", size });
+
+    await screen.getByRole("button", { name: "Turn all off" }).click();
+
+    await expect
+      .element(screen.getByRole("button", { name: "All off" }))
+      .toBeDisabled();
+    await expect
+      .element(screen.getByRole("button", { name: "Turn all off" }))
+      .not.toBeInTheDocument();
+  });
+}
+
+test("offers Turn all off again once a smart feature is turned back on", async () => {
+  const screen = await render(SmartFeaturesSection, {
+    heading: "h2",
+    size: "regular",
+  });
+  await screen.getByRole("button", { name: "Turn all off" }).click();
+
+  await screen.getByRole("switch", { name: /^Book summary/ }).click();
+
+  await expect
+    .element(screen.getByRole("button", { name: "Turn all off" }))
+    .toBeEnabled();
+});
+
+test("sets the Android settings Turn all off row 56px tall, its icon at 16px and its words at 56px", async () => {
+  followCorePlatform("android");
+  const screen = await render(SmartFeaturesSection, {
+    heading: "h2",
+    size: "regular",
+  });
+
+  const row = screen.getByRole("button", { name: "Turn all off" }).element();
+  const icon = row.querySelector("[data-icon='power']");
+  const label = screen.getByText("Turn all off").element();
+  const start = row.getBoundingClientRect().left;
+
+  expect(row.getBoundingClientRect().height).toBeCloseTo(56, 0);
+  expect(icon?.getBoundingClientRect().left).toBeCloseTo(start + 16, 0);
+  expect(label.getBoundingClientRect().left - start).toBeCloseTo(56, 0);
+});
+
+test("draws the iOS Turn all off row in the accent", async () => {
+  followCorePlatform("ios");
+  const screen = await render(SmartFeaturesSection, {
+    heading: "h2",
+    size: "regular",
+  });
+  const accent = document.createElement("span");
+  accent.className = "text-accent";
+  document.body.append(accent);
+
+  const accentColour = getComputedStyle(accent).color;
+  accent.remove();
+
+  const label = screen.getByText("Turn all off").element();
+
+  expect(getComputedStyle(label).color).toBe(accentColour);
+});
+
+test("draws the desktop Turn all off row in the same colour as the switches", async () => {
+  const screen = await render(SmartFeaturesSection, {
+    heading: "h2",
+    size: "regular",
+  });
+
+  const label = screen.getByText("Turn all off").element();
+  const switchLabel = screen.getByText("Book summary").element();
+
+  expect(getComputedStyle(label).color).toBe(
+    getComputedStyle(switchLabel).color,
+  );
+});
+
 test("turns a single Android switch off when it is pressed", async () => {
   followCorePlatform("android");
   const screen = await render(SmartFeaturesSection, {

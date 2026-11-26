@@ -2,8 +2,10 @@
   import SmartFeaturesSection from "./SmartFeaturesSection.svelte";
   import { SmartFeatures, setSmartFeatures } from "./smart-features.svelte.ts";
 
-  let { heading, size }: { heading: "h2" | "h3"; size?: "small" | "regular" } =
-    $props();
+  let {
+    heading,
+    size,
+  }: { heading: "h2" | "h3"; size?: "small" | "regular" | "flat" } = $props();
 
   setSmartFeatures(new SmartFeatures(undefined));
 </script>
