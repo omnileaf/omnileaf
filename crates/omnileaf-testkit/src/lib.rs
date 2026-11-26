@@ -6,6 +6,7 @@ mod encoded_page;
 mod error;
 mod generated_library;
 mod header_only;
+mod in_flight;
 mod library;
 mod page;
 mod rar;
@@ -14,6 +15,7 @@ mod scratch_folder;
 mod speed_trial;
 mod strip;
 mod timing_budget;
+mod waiting;
 
 pub use archive::{ArchiveEntry, Compression, cbz, cut_inside_entry};
 #[cfg(feature = "log-capture")]
@@ -26,6 +28,7 @@ pub use encoded_page::{
 pub use error::FixtureError;
 pub use generated_library::{GENERATED_LIBRARY_NAME, GeneratedLibrary, write_generated_library};
 pub use header_only::{jxl_header_only, webp_header_only};
+pub use in_flight::{Entered, InFlight};
 pub use library::{
     SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, SeriesLayout, SeriesSpec, write_sample_library,
 };
@@ -39,3 +42,4 @@ pub use scratch_folder::ScratchFolder;
 pub use speed_trial::{Pass, Sampling, SpeedTrial, Statistic, TIMED_PASSES, TrialOutcome};
 pub use strip::strip_jpeg;
 pub use timing_budget::{BUDGET_SLACK_VARIABLE, InvalidBudgetSlack, TimingBudget};
+pub use waiting::{Deadline, GENEROUS_WAIT, wait_until, wait_until_deadline, yield_times};

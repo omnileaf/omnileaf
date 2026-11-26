@@ -21,7 +21,7 @@
   import type { CountingLook } from "./counting-look";
   import type { FolderAdding } from "./folder-adding.svelte";
   import FolderCounting from "./FolderCounting.svelte";
-  import { AndroidPhone } from "./android-phone.svelte";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { folderLocation } from "./folder-location";
   import { folderTitle, type ShownFolder } from "./folder-title";
   import FolderNotice from "./FolderNotice.svelte";
@@ -74,7 +74,7 @@
   const isInCard = $derived(addPlacement === "card");
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const isSwipeable = $derived(isNative && isInCard);
 
   const rows: Record<LibraryFolder["id"], HTMLLIElement> = {};
@@ -275,7 +275,8 @@
           (!android.isOn || !isInCard) &&
             "divide-y divide-border ios:divide-y-0",
           !isInCard &&
-            "rounded-card border border-border bg-card android:max-medium:bg-transparent windows:flex windows:flex-col windows:gap-xs windows:divide-y-0 windows:rounded-none windows:border-0 windows:bg-transparent",
+            "rounded-card border border-border windows:flex windows:flex-col windows:gap-xs windows:divide-y-0 windows:rounded-none windows:border-0 windows:bg-transparent",
+          !isInCard && (android.isOn ? "bg-transparent" : "bg-card"),
         ]}
       >
         {#if beingAdded !== undefined && isCountedFirst}

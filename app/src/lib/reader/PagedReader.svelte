@@ -1411,8 +1411,10 @@
               chrome.floats
                 ? [READER_CAPSULE, "px-md"]
                 : "bg-reader-glass text-reader-muted",
-            )}>{spreadPosition(spread, pageCount)}</span
+            )}
           >
+            {spreadPosition(spread, pageCount)}
+          </span>
         </div>
       {/if}
     {/if}

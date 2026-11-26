@@ -14,7 +14,7 @@
   } from "#lib/language/language.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPhone } from "#lib/page/platform.ts";
   import { radiosLook } from "#lib/settings/radios-look.ts";
@@ -34,7 +34,7 @@
   const width = new WindowWidth();
   const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const look = $derived(radiosLook(android.isOn));
   const system = systemLanguage();
   const systemName = languageName(system);
@@ -61,7 +61,7 @@
   title={m.language_label()}
   parent={{ route: "/(app)/settings/general", title: m.general_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none">
+<div class="mbs-pane-gap flex flex-col gap-sm android:mbs-none">
   <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
     {m.language_intro()}
   </p>
@@ -115,8 +115,10 @@
             <span
               id={systemNameId}
               lang={system}
-              class="text-detail font-regular text-muted">{systemName}</span
+              class="text-detail font-regular text-muted"
             >
+              {systemName}
+            </span>
           </span>
         {:else}
           <span lang={choice} class="flex-1">{languageName(choice)}</span>

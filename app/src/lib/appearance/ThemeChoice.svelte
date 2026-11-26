@@ -3,7 +3,7 @@
   import type { ClassValue } from "svelte/elements";
 
   import { CHOICE_ROW } from "#lib/first-launch/choice-row.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
@@ -73,7 +73,7 @@
     class?: ClassValue;
   } = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const look = $derived(
     android.isOn && placement === "settings"
       ? ANDROID_SETTINGS

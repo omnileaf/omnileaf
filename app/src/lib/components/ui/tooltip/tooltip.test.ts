@@ -7,8 +7,8 @@ import TooltipHarness from "./TooltipHarness.svelte";
 
 const LONG_PRESS_MS = 500;
 
-function touch(element: Element, type: string): void {
-  element.dispatchEvent(
+function touch(element: Element, type: string): boolean {
+  return element.dispatchEvent(
     new PointerEvent(type, {
       pointerType: "touch",
       bubbles: true,
@@ -38,8 +38,9 @@ afterEach(() => {
 async function showLabelledAction(
   label: string | undefined,
   onclick: () => void,
+  onpointerup?: () => void,
 ) {
-  const screen = await render(TooltipHarness, { onclick, label });
+  const screen = await render(TooltipHarness, { onclick, label, onpointerup });
   const action = screen.getByRole("button", { name: "Rescan Sample Comics" });
   await expect.element(action).toBeVisible();
   return { action };
@@ -107,6 +108,28 @@ test("doesn't run the action a long press ends with", async () => {
   element.click();
 
   expect(onclick).not.toHaveBeenCalled();
+});
+
+test("keeps the lift that ends a long press from the action's own pointer handler", async () => {
+  const onpointerup = vi.fn();
+  const { action } = await showLabelledAction("Rescan", vi.fn(), onpointerup);
+  const element = action.element() as HTMLElement;
+  holdFor(element, LONG_PRESS_MS);
+  await expect.element(shownLabel()).toBeVisible();
+
+  const isLiftLetThrough = touch(element, "pointerup");
+
+  expect(onpointerup).not.toHaveBeenCalled();
+  expect(isLiftLetThrough).toBe(false);
+});
+
+test("passes a tap's lift on to the action's own pointer handler", async () => {
+  const onpointerup = vi.fn();
+  const { action } = await showLabelledAction("Rescan", vi.fn(), onpointerup);
+
+  tap(action.element() as HTMLElement);
+
+  expect(onpointerup).toHaveBeenCalledOnce();
 });
 
 test("runs the action on a tap without showing the label", async () => {

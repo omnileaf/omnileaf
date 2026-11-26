@@ -36,8 +36,9 @@
     <span
       role="status"
       class="truncate text-native-title-bar-status/native-title-bar-status font-native-title-bar-status text-muted"
-      >{status ?? ""}</span
     >
+      {status ?? ""}
+    </span>
   </div>
   <div data-title-bar-actions class="ms-auto flex items-center"></div>
 </div>

@@ -19,9 +19,9 @@
     <TabsTrigger value="chapters" data-label={chapters}>{chapters}</TabsTrigger>
     <TabsTrigger value="specials" data-label={specials}>{specials}</TabsTrigger>
     {#if hasTurnedOffTab}
-      <TabsTrigger value="extras" data-label="Extras" disabled
-        >Extras</TabsTrigger
-      >
+      <TabsTrigger value="extras" data-label="Extras" disabled>
+        Extras
+      </TabsTrigger>
     {/if}
   </TabsList>
   <TabsContent value={chosen}>{chosen}</TabsContent>

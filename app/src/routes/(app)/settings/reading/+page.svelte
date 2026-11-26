@@ -2,8 +2,9 @@
   import { CircleCheck } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
+  import { Slider } from "#lib/components/ui/slider/index.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import {
     newSeriesReadingMode,
@@ -16,6 +17,7 @@
   } from "#lib/reader/reader-names.ts";
   import {
     readerDefaults,
+    SCREENS_PER_MINUTE,
     TAP_ZONES,
     type TapZones,
   } from "#lib/reader/reader-settings.svelte.ts";
@@ -38,6 +40,7 @@
     FLUSH_FOOTER,
     FLUSH_LIST_HEADING,
     FLUSH_NOTE,
+    FLUSH_STACKED_ROW,
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingActionRow from "#lib/settings/SettingActionRow.svelte";
@@ -67,7 +70,7 @@
   const hints = readerHints();
   const notices = getNotices();
   const width = new WindowWidth();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const isAndroid = currentPlatform() === "android";
   const isOnPhone = $derived(isPhone(currentPlatform(), width.current));
 
@@ -77,6 +80,7 @@
   const tapZonesId = `${swipesId}-zones`;
   const modeId = `${swipesId}-mode`;
   const endId = `${swipesId}-end`;
+  const speedId = `${swipesId}-speed`;
   const newSeries = newSeriesReadingMode();
 
   const newSeriesChoices = $derived(
@@ -177,7 +181,7 @@
 <SectionHeading title={m.reading_title()} />
 <div
   class={[
-    "mbs-pane-gap flex flex-col android:max-medium:mbs-none",
+    "mbs-pane-gap flex flex-col android:mbs-none",
     !android.isOn && "gap-xl",
   ]}
 >
@@ -261,6 +265,34 @@
     </section>
   {/if}
   {#if android.isOn}
+    <div data-settings-group class="flex flex-col">
+      <h2 class={FLUSH_LIST_HEADING}>{m.reader_auto_scroll()}</h2>
+      <div class={FLUSH_STACKED_ROW}>
+        <p id={speedId}>
+          {m.reading_long_strip_speed({
+            count: defaults.look.screensPerMinute,
+          })}
+        </p>
+        <Slider
+          aria-labelledby={speedId}
+          min={SCREENS_PER_MINUTE.slowest}
+          max={SCREENS_PER_MINUTE.fastest}
+          step={SCREENS_PER_MINUTE.step}
+          bind:value={
+            () => defaults.look.screensPerMinute,
+            (screens: number) => {
+              defaults.change("screensPerMinute", screens);
+            }
+          }
+        />
+        <p class="text-native-row-subtitle/native-row-subtitle text-muted">
+          {m.reading_long_strip_speed_help({
+            slowest: SCREENS_PER_MINUTE.slowest,
+            fastest: SCREENS_PER_MINUTE.fastest,
+          })}
+        </p>
+      </div>
+    </div>
     <div data-settings-group class="flex flex-col">
       <h2 id={endId} class={FLUSH_LIST_HEADING}>{m.reader_end_of_book()}</h2>
       {@render skipSwitch()}

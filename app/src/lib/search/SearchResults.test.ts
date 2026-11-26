@@ -350,6 +350,8 @@ const AWAY: LibrarySeries = {
   id: "0190a3e4-0000-8000-8000-0000000000a2" as LibrarySeries["id"],
   title: "The Harbour Letters",
   bookCount: 3,
+  volumeCount: 0,
+  chapterCount: 0,
   unreadCount: 3,
   cover: null,
   language: null,

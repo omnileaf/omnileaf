@@ -11,7 +11,7 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { FLUSH_BLEED } from "#lib/settings/android-flush-look.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import WidthWording from "#lib/page/WidthWording.svelte";
   import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
   import { isPointer } from "#lib/page/platform.ts";
@@ -46,7 +46,7 @@
   let { data }: PageProps = $props();
 
   const note: Snippet = nothingLeaves;
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const crashReports = getCrashReportSetting();
   const screenshotMode = getScreenshotMode();
   const timeFormat = getTimeFormatSetting();
@@ -91,7 +91,7 @@
 {/snippet}
 
 <SectionHeading title={m.privacy_title()} />
-<div class="mbs-pane-gap flex flex-col gap-lg android:max-medium:mbs-none">
+<div class="mbs-pane-gap flex flex-col gap-lg android:mbs-none">
   <SettingsEntries
     entries={[
       ...(data.appLock.kind === "unavailable"

@@ -18,6 +18,7 @@ export class BackSwipeScreens {
       return;
     }
     switch (swipe.kind) {
+      case "started":
       case "moved":
         this.placement = placeScreens(
           swipe.progress ?? 0,

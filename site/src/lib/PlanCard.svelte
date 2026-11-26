@@ -19,8 +19,9 @@
 >
   <span
     class="self-start rounded-full px-2.5 py-0.5 text-label font-semibold {badge.class}"
-    >{badge.label}</span
   >
+    {badge.label}
+  </span>
   <h3 class="m-0 text-lead font-semibold">{plan.title}</h3>
   <p class="m-0 text-muted">{plan.summary}</p>
 </article>

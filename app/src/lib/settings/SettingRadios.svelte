@@ -5,7 +5,7 @@
     RadioGroup,
     RadioGroupItem,
   } from "#lib/components/ui/radio-group/index.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
 
   import { currentPlatform } from "#lib/page/platform.ts";
 
@@ -34,16 +34,13 @@
   } = $props();
 
   const id = $props.id();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const platform = currentPlatform();
   const look = $derived(radiosLookFor(platform, android.isOn));
 </script>
 
 <section data-settings-group aria-labelledby="{id}-title" class={look.section}>
-  <h2
-    id="{id}-title"
-    class={[look.heading, startsPage && "android:max-medium:pbs-none"]}
-  >
+  <h2 id="{id}-title" class={[look.heading, startsPage && "android:pbs-none"]}>
     {title}
   </h2>
   <RadioGroup
