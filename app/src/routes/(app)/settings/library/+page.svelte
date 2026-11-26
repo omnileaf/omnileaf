@@ -48,7 +48,9 @@
   const adultContent = new StoredChoice<AdultContent>(
     {
       read: () => commands.libraryAdultContent(),
-      store: (chosen: AdultContent) => commands.setLibraryAdultContent(chosen),
+      store: libraryReturn.forgetting((chosen: AdultContent) =>
+        commands.setLibraryAdultContent(chosen),
+      ),
       fallback: NEW_ADULT_CONTENT,
     },
     (error) => {

@@ -22,6 +22,7 @@ import {
   touch,
   watchLibraryFrames,
 } from "./library-frames.ts";
+import { sampleSeriesId } from "../../src/lib/sample-library/sample-library.ts";
 import { sampleLibraryOn } from "./screens.ts";
 import {
   pagedSeries,
@@ -234,6 +235,13 @@ function withSeriesAddedOnceAsked(backend: FakeBackend): FakeBackend {
 }
 
 const SAMPLE = sampleLibraryOn("android");
+const ADULT_SERIES = [13, 17];
+
+declare global {
+  interface Window {
+    __omnileafAdultShown?: Set<string>;
+  }
+}
 
 test.describe(
   "coming back to the Library on an Android phone",
@@ -360,6 +368,56 @@ test.describe(
             Math.abs((await cardTop(page, opened.href)) - opened.top),
           )
           .toBeLessThanOrEqual(SLACK_PX);
+      });
+    });
+
+    test.describe("after hiding 18+ series in Settings", () => {
+      test.use({ backend: answeringLikeAPhone(SAMPLE) });
+
+      test("draws none of the hidden series in any frame", async ({ page }) => {
+        const adult = ADULT_SERIES.map(
+          (number) => `/series/${sampleSeriesId(number)}`,
+        );
+        await page.goto("/");
+        await libraryAtRest(page);
+        await expect(
+          main(page)
+            .locator(`a[href='${adult[0] ?? ""}']`)
+            .first(),
+        ).toBeAttached();
+        await leaveFor(page, "Settings");
+        await main(page)
+          .getByRole("link", { name: /^Library/ })
+          .click();
+        await main(page)
+          .getByRole("link", { name: /^18\+ content/ })
+          .click();
+        await main(page).getByText("Hide", { exact: true }).click();
+        await expect
+          .poll(async () => (await commandsAsked(page)).unanswered)
+          .toBe(0);
+        await page.evaluate((hidden) => {
+          const shown = new Set<string>();
+          window.__omnileafAdultShown = shown;
+          const look = (): void => {
+            if (location.pathname === "/") {
+              for (const href of hidden) {
+                if (document.querySelector(`main a[href='${href}']`) !== null) {
+                  shown.add(href);
+                }
+              }
+            }
+            requestAnimationFrame(look);
+          };
+          requestAnimationFrame(look);
+        }, adult);
+
+        await tapLibrary(page, await slowTheCpu(page));
+        await libraryAtRest(page);
+
+        expect(
+          await page.evaluate(() => [...(window.__omnileafAdultShown ?? [])]),
+        ).toEqual([]);
       });
     });
 
