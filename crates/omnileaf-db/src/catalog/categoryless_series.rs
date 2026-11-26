@@ -1,13 +1,13 @@
-use rusqlite::Connection;
+use rusqlite::{Connection, named_params};
 
 use crate::{
     Error,
     catalog::{
         cursor::Position,
-        gathering::{candidates, sorted_directions},
+        gathering::sorted_directions,
         page::{Page, PageRequest},
         series_listing::{
-            FilterParams, SeriesFilter, SeriesListing, SeriesOrder, SortDirection, StageParams,
+            FilterParams, SeriesFilter, SeriesListing, SeriesOrder, SortDirection,
             counted_conditions,
         },
         series_page::{
@@ -19,59 +19,59 @@ use crate::{
     },
 };
 
-macro_rules! in_no_category {
+macro_rules! series_in_a_category {
     () => {
-        "series.kept_categories = 0"
+        "SELECT series_local_id FROM series_kept_categories WHERE kept > 0"
     };
 }
 
 macro_rules! in_no_category_candidates {
     () => {
-        candidates! {
-            index: "series_in_no_category",
-            condition: in_no_category!(),
-        }
+        " FROM series_kept_categories INDEXED BY series_in_no_category
+            CROSS JOIN series ON series.local_id = series_kept_categories.series_local_id
+            WHERE series_kept_categories.kept = 0
+                AND series.reading_stage IN (:unstarted, :in_progress, :finished)"
     };
 }
 
 const BY_TITLE: Directions<TitlePlace> = directions! {
-    with: "",
-    condition: concat!(" AND ", in_no_category!()),
+    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
+    condition: " AND series.local_id NOT IN in_a_category",
     key: "title_key",
     sort_position: title_place,
 };
 
 const BY_DATE_ADDED: Directions<Position> = directions! {
-    with: "",
-    condition: concat!(" AND ", in_no_category!()),
+    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
+    condition: " AND series.local_id NOT IN in_a_category",
     key: "added_at_ms",
     sort_position: added_place,
 };
 
 const BY_LAST_READ: Directions<Position> = directions! {
-    with: "",
-    condition: concat!(" AND ", in_no_category!()),
+    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
+    condition: " AND series.local_id NOT IN in_a_category",
     key: "last_read_at_ms",
     sort_position: last_read_place,
 };
 
 const BY_LAST_UPDATED: Directions<Position> = directions! {
-    with: "",
-    condition: concat!(" AND ", in_no_category!()),
+    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
+    condition: " AND series.local_id NOT IN in_a_category",
     key: "updated_at_ms",
     sort_position: last_updated_place,
 };
 
 const BY_UNREAD_COUNT: Directions<Position> = directions! {
-    with: "",
-    condition: concat!(" AND ", in_no_category!()),
+    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
+    condition: " AND series.local_id NOT IN in_a_category",
     key: "unread_count",
     sort_position: unread_count_place,
 };
 
 const BY_TIME_LEFT: Directions<Position> = directions! {
-    with: "",
-    condition: concat!(" AND ", in_no_category!()),
+    with: concat!("WITH in_a_category AS MATERIALIZED (", series_in_a_category!(), ") "),
+    condition: " AND series.local_id NOT IN in_a_category",
     key: "time_left_key",
     sort_position: time_left_place,
 };
@@ -115,15 +115,21 @@ const BY_TIME_LEFT_SORTED: Directions<Position> = sorted_directions! {
 /// Sorting the series in no category beats walking each stage up to about this many, since a walk passes every categorised series on the way.
 const FEW_IN_NO_CATEGORY: i64 = 1_500;
 
-const IN_NO_CATEGORY_ARE_FEW: &str = concat!(
-    "SELECT count(*) < :few FROM (SELECT 1",
+const IN_NO_CATEGORY_ARE_FEW: &str = "SELECT count(*) < :few FROM (
+    SELECT 1 FROM series_kept_categories INDEXED BY series_in_no_category WHERE kept = 0 LIMIT :few)";
+
+const FEW_SERIES_IN_NO_CATEGORY: &str = concat!(
+    "SELECT count(*)",
     in_no_category_candidates!(),
-    " LIMIT :few)"
+    counted_conditions!()
 );
 
 const SERIES_IN_NO_CATEGORY: &str = concat!(
-    "SELECT count(*)",
-    in_no_category_candidates!(),
+    "SELECT count(*) FROM series
+    WHERE reading_stage IN (:unstarted, :in_progress, :finished)
+        AND local_id NOT IN (",
+    series_in_a_category!(),
+    ")",
     counted_conditions!()
 );
 
@@ -135,13 +141,12 @@ fn listing_toward<'a, P>(
     if few { sorted } else { in_stages }.toward(direction)
 }
 
-fn in_no_category_are_few(connection: &Connection, filter: &SeriesFilter) -> Result<bool, Error> {
-    let stages = StageParams::of(filter);
-    let mut params = stages.named().to_vec();
-    params.push((":few", &FEW_IN_NO_CATEGORY));
+fn in_no_category_are_few(connection: &Connection) -> Result<bool, Error> {
     Ok(connection
         .prepare_cached(IN_NO_CATEGORY_ARE_FEW)?
-        .query_row(params.as_slice(), |row| row.get(0))?)
+        .query_row(named_params! { ":few": FEW_IN_NO_CATEGORY }, |row| {
+            row.get(0)
+        })?)
 }
 
 #[tracing::instrument(skip_all, fields(?listing, size = ?request.size))]
@@ -156,7 +161,7 @@ pub fn categoryless_series_page(
         limit: request.size.rows_to_fetch(),
         bound: &[],
     };
-    let few = in_no_category_are_few(connection, &listing.filter)?;
+    let few = in_no_category_are_few(connection)?;
     let after = request.after.as_ref().map(|cursor| &cursor.0);
     let direction = listing.sort.direction;
     let rows = match listing.sort.order {
@@ -199,9 +204,14 @@ pub fn categoryless_series_count(
     connection: &Connection,
     filter: &SeriesFilter,
 ) -> Result<u32, Error> {
+    let counted = if in_no_category_are_few(connection)? {
+        FEW_SERIES_IN_NO_CATEGORY
+    } else {
+        SERIES_IN_NO_CATEGORY
+    };
     let filter = FilterParams::of(filter);
     Ok(connection
-        .prepare_cached(SERIES_IN_NO_CATEGORY)?
+        .prepare_cached(counted)?
         .query_row(filter.named().as_slice(), |row| row.get(0))?)
 }
 
@@ -268,13 +278,13 @@ mod tests {
 
         let plans = SORTED_LISTINGS
             .into_iter()
-            .chain([IN_NO_CATEGORY_ARE_FEW, SERIES_IN_NO_CATEGORY])
+            .chain([IN_NO_CATEGORY_ARE_FEW, FEW_SERIES_IN_NO_CATEGORY])
             .map(|query| scratch.query_plan(query));
 
         for plan in plans {
             assert!(
                 plan.iter()
-                    .any(|step| step.contains("USING INDEX series_in_no_category")),
+                    .any(|step| step.contains("INDEX series_in_no_category")),
                 "{plan:?}"
             );
         }
@@ -367,14 +377,20 @@ mod tests {
         }
     }
 
-    fn kept_and_recounted(connection: &Connection) -> Vec<(i64, i64)> {
+    fn kept_and_recounted(connection: &Connection) -> Vec<(Option<i64>, Option<i64>)> {
         connection
             .prepare(
-                "SELECT series.kept_categories, (
+                "SELECT (
+                    SELECT kept FROM series_kept_categories
+                    WHERE series_kept_categories.series_local_id = series.local_id
+                ), (
                     SELECT count(*) FROM series_category
                     JOIN category ON category.category_id = series_category.category_id
                     WHERE series_category.series_id = series.id
-                ) FROM series ORDER BY local_id",
+                ) FROM series
+                UNION ALL
+                SELECT kept, NULL FROM series_kept_categories
+                WHERE series_local_id NOT IN (SELECT local_id FROM series)",
             )
             .unwrap()
             .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
@@ -421,7 +437,7 @@ mod tests {
         drop(Database::open(&scratch.config).unwrap());
 
         let kept: Vec<i64> = connection
-            .prepare("SELECT kept_categories FROM series ORDER BY local_id")
+            .prepare("SELECT kept FROM series_kept_categories ORDER BY series_local_id")
             .unwrap()
             .query_map([], |row| row.get(0))
             .unwrap()
