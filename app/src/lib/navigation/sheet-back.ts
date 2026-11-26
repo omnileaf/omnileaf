@@ -4,9 +4,8 @@ export interface SheetBackSize {
 }
 
 export interface SheetBackShape {
-  readonly scaleX: number;
-  readonly scaleY: number;
-  readonly contentScaleY: number;
+  readonly scale: number;
+  readonly layoutHeight: number;
 }
 
 /** Material Components for Android's bottom container back animation: `maxScaleXDistance` and `maxScaleYDistance`. */
@@ -18,12 +17,12 @@ export function sheetBackShape(
 ): SheetBackShape {
   const scaleX = 1 - (SHEET_BACK.maxShrinkWidthPx / size.width) * progress;
   const scaleY = 1 - (SHEET_BACK.maxShrinkHeightPx / size.height) * progress;
-  return { scaleX, scaleY, contentScaleY: scaleX / scaleY };
+  return { scale: scaleX, layoutHeight: (size.height * scaleY) / scaleX };
 }
 
 export function sheetBackProgressOf(
   size: SheetBackSize,
   shape: SheetBackShape,
 ): number {
-  return ((1 - shape.scaleX) * size.width) / SHEET_BACK.maxShrinkWidthPx;
+  return ((1 - shape.scale) * size.width) / SHEET_BACK.maxShrinkWidthPx;
 }

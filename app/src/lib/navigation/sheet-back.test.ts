@@ -6,38 +6,40 @@ const LIBRARY_SHEET = { width: 392, height: 600 };
 
 test("leaves a sheet at rest as it is", () => {
   expect(sheetBackShape(LIBRARY_SHEET, 0)).toEqual({
-    scaleX: 1,
-    scaleY: 1,
-    contentScaleY: 1,
+    scale: 1,
+    layoutHeight: 600,
   });
 });
 
 test("makes a sheet 48 px narrower and 24 px shorter at full progress", () => {
-  const { scaleX, scaleY } = sheetBackShape(LIBRARY_SHEET, 1);
+  const { scale, layoutHeight } = sheetBackShape(LIBRARY_SHEET, 1);
 
-  expect(LIBRARY_SHEET.width * scaleX).toBeCloseTo(392 - 48);
-  expect(LIBRARY_SHEET.height * scaleY).toBeCloseTo(600 - 24);
+  expect(LIBRARY_SHEET.width * scale).toBeCloseTo(392 - 48);
+  expect(layoutHeight * scale).toBeCloseTo(600 - 24);
 });
 
 test("makes it half as much narrower and shorter at half progress", () => {
-  const { scaleX, scaleY } = sheetBackShape(LIBRARY_SHEET, 0.5);
+  const { scale, layoutHeight } = sheetBackShape(LIBRARY_SHEET, 0.5);
 
-  expect(LIBRARY_SHEET.width * scaleX).toBeCloseTo(392 - 24);
-  expect(LIBRARY_SHEET.height * scaleY).toBeCloseTo(600 - 12);
+  expect(LIBRARY_SHEET.width * scale).toBeCloseTo(392 - 24);
+  expect(layoutHeight * scale).toBeCloseTo(600 - 12);
 });
 
-test("scales the content back so it shrinks evenly by the horizontal factor", () => {
-  const { scaleX, scaleY, contentScaleY } = sheetBackShape(LIBRARY_SHEET, 1);
+test("shrinks everything evenly by the horizontal factor, laying the sheet out taller to make up the height", () => {
+  const { scale, layoutHeight } = sheetBackShape(LIBRARY_SHEET, 1);
 
-  expect(scaleX).toBeCloseTo(0.878, 3);
-  expect(scaleY * contentScaleY).toBeCloseTo(scaleX);
+  expect(scale).toBeCloseTo(0.878, 3);
+  expect(layoutHeight).toBeGreaterThan(LIBRARY_SHEET.height);
 });
 
 test("shrinks a sheet in proportion to its own size", () => {
-  const { scaleX, scaleY } = sheetBackShape({ width: 800, height: 300 }, 1);
+  const { scale, layoutHeight } = sheetBackShape(
+    { width: 800, height: 300 },
+    1,
+  );
 
-  expect(scaleX).toBeCloseTo(1 - 48 / 800);
-  expect(scaleY).toBeCloseTo(1 - 24 / 300);
+  expect(scale).toBeCloseTo(1 - 48 / 800);
+  expect(layoutHeight * scale).toBeCloseTo(300 - 24);
 });
 
 test("tells the progress a shape stands for", () => {
