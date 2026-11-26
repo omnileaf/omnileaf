@@ -24,8 +24,8 @@
 
   const ICON_SIZE = 16;
   const CARD =
-    "flex flex-col rounded-card border border-border bg-card px-xl py-xs";
-  const CARD_HEADING = "pbs-md text-small font-medium";
+    "flex flex-col rounded-card border border-border bg-card px-xl py-2xs";
+  const CARD_HEADING = "pbs-lg text-small font-medium";
   const RULE_ICON_TINTS = {
     folder: "text-foreground",
     file: "text-muted",
@@ -42,7 +42,7 @@
     <p class="text-small text-muted">{m.folder_guide_intro_desktop()}</p>
     <section aria-labelledby={exampleId} class={CARD}>
       <h2 id={exampleId} class={CARD_HEADING}>{m.folder_guide_example()}</h2>
-      <Table aria-labelledby={exampleId} class="mbs-sm table-fixed">
+      <Table aria-labelledby={exampleId} class="mbs-sm mbe-xs table-fixed">
         <TableHeader>
           <TableRow>
             <TableHead
@@ -102,10 +102,10 @@
       </Table>
     </section>
   </div>
-  <section aria-labelledby={rulesId} class={CARD}>
+  <section aria-labelledby={rulesId} class={["@container", CARD]}>
     <h2 id={rulesId} class={CARD_HEADING}>{m.folder_guide_rules()}</h2>
     <div
-      class="mbs-sm grid grid-cols-1 gap-x-xl gap-y-sm pbe-xs large:grid-cols-2"
+      class="mbs-sm grid grid-cols-1 gap-x-xl gap-y-sm pbe-xs naming-rules-beside:grid-cols-2"
     >
       {#each NAMING_RULES as group (group.kind)}
         {@const groupId = `${rulesId}-${group.kind}`}
@@ -116,7 +116,7 @@
           <ul aria-labelledby={groupId} class="flex flex-col">
             {#each group.rules as rule (rule.title)}
               <li
-                class="flex items-start gap-sm py-sm not-first:border-bs not-first:border-border"
+                class="flex items-start gap-folder-rule-gap py-sm not-first:border-bs not-first:border-border"
               >
                 <Icon
                   name={ENTRY_ICONS[group.kind]}

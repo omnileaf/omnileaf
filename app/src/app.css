@@ -75,6 +75,11 @@
     }
   }
 }
+@custom-variant naming-rules-beside {
+  @container (width >= 36em) {
+    @slot;
+  }
+}
 @custom-variant heading-crowded (&:where([data-crowded] *));
 @custom-variant more-contrast (&:where([data-contrast="more"] *));
 @custom-variant picked (&:where([data-picked] *));
@@ -369,6 +374,7 @@
   --spacing-folder-depth-2: 2.5rem;
   --spacing-folder-depth-3: 3.75rem;
   --spacing-folder-row: 0.375rem;
+  --spacing-folder-rule-gap: 0.625rem;
   --spacing-cover-stack-room: 0.625rem;
   --spacing-cover-sheet: 1.5rem;
   --spacing-cover-sheet-far: 0.875rem;

@@ -4,6 +4,11 @@ import { boxOf, expect, test, tokenColour } from "./fixtures.ts";
 
 const WIDE_WINDOW = { width: 1280, height: 1300 };
 const RULE_ICON = 16;
+const RULE_ICON_GAP = 10;
+const CARD_SIDE = 24;
+const CARD_TO_HEADING = 18;
+const HEADING_TO_CONTENT = 8;
+const CARD_BOTTOM = 6;
 const MONOSPACE = /monospace/;
 const INTRO =
   "Omnileaf reads your files where they are and never moves, renames or changes them.";
@@ -76,6 +81,51 @@ test("puts the example and the naming rules each in a card under its own heading
   ).toHaveCount(2);
 });
 
+test("pads each card as drawn: 24px at the sides, 18px above its heading, 8px under it and 6px at the foot", async ({
+  page,
+}) => {
+  await page.setViewportSize(WIDE_WINDOW);
+  await openGuide(page);
+  const card = sectionOf(page, "An example folder");
+  const cardBox = await boxOf(card);
+  const headingText = card.getByRole("heading", { name: "An example folder" });
+  const heading = await boxOf(headingText);
+  const headingTop = await headingText.evaluate(
+    (element) =>
+      element.getBoundingClientRect().top +
+      Number.parseFloat(getComputedStyle(element).paddingTop),
+  );
+  const table = await boxOf(card.getByRole("table"));
+
+  expect(heading.x - cardBox.x).toBeCloseTo(CARD_SIDE + 1, 0);
+  expect(headingTop - cardBox.y).toBeCloseTo(CARD_TO_HEADING + 1, 0);
+  expect(table.y - (heading.y + heading.height)).toBeCloseTo(
+    HEADING_TO_CONTENT,
+    0,
+  );
+  expect(cardBox.y + cardBox.height - (table.y + table.height)).toBeCloseTo(
+    CARD_BOTTOM + 1,
+    0,
+  );
+});
+
+test("hides the middle dots between example names from screen readers", async ({
+  page,
+}) => {
+  await openGuide(page);
+  const volume = rules(page, "Files").getByRole("listitem").first();
+
+  await expect(volume.locator("code")).toHaveText([
+    "Volume 1",
+    "Vol. 01",
+    "v01",
+  ]);
+  for (const dot of await volume.getByText("·", { exact: true }).all()) {
+    await expect(dot).toHaveAttribute("aria-hidden", "true");
+  }
+  await expect(volume.getByText("·", { exact: true })).toHaveCount(2);
+});
+
 test("puts Files beside Folders in a wide window", async ({ page }) => {
   await page.setViewportSize(WIDE_WINDOW);
   await openGuide(page);
@@ -99,7 +149,11 @@ test("leads each rule with a 16px icon and sets its example names in monospace",
     "font-weight",
     "500",
   );
-  await expect(row.locator("code")).toHaveCSS("font-family", MONOSPACE);
+  await expect(row.locator("code").first()).toHaveCSS("font-family", MONOSPACE);
+  expect(
+    (await boxOf(row.getByText("Volume", { exact: true }))).x -
+      (await boxOf(icon)).x,
+  ).toBeCloseTo(RULE_ICON + RULE_ICON_GAP, 0);
   await expect(
     rules(page, "Folders").getByRole("listitem").first().locator("[data-icon]"),
   ).toHaveAttribute("data-icon", "folder");

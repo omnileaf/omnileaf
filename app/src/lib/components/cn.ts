@@ -358,6 +358,7 @@ export const TOKEN_THEME = {
     "folder-depth-2",
     "folder-depth-3",
     "folder-row",
+    "folder-rule-gap",
     "folders-button",
     "group-label-top",
     "gutter",
