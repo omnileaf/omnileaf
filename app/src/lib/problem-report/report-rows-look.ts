@@ -1,5 +1,5 @@
-import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
 import { PLATED_LIST } from "#lib/page/plates.ts";
+import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
 import {
   FLUSH_LIST,
   FLUSH_LIST_HEADING,
@@ -23,7 +23,7 @@ export const REPORT_HEADINGS = {
 } satisfies Record<ReportRowsLook, string>;
 
 export class CurrentReportRowsLook {
-  readonly #android = new AndroidPhone();
+  readonly #android = androidListLook();
 
   get current(): ReportRowsLook {
     return this.#android.isOn ? "flush" : "card";

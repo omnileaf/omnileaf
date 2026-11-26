@@ -154,59 +154,37 @@ test.describe(
       test.skip(platform !== "android", "Android's tablet look");
     });
 
-    test("plates the reply email's card like the rows above it", async ({
+    test("draws the reply email as the phone's outlined field, flat on the page", async ({
       page,
     }) => {
       await page.goto("/settings/about/report");
-      const card = page
-        .getByRole("textbox", { name: "Email for a reply (optional)" })
-        .locator("xpath=..");
+      const field = page.getByRole("textbox", { name: REPLY_EMAIL });
 
-      await expect(card).toHaveCSS(
+      await expect(field).toHaveCSS("border-top-left-radius", "4px");
+      await expect(field).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      await expect(field.locator("xpath=..")).toHaveCSS(
         "background-color",
-        await tokenColour(page, "--native-color-card"),
+        "rgba(0, 0, 0, 0)",
       );
     });
 
-    test("fills the reply email and sizes Send to Omnileaf to it, as the plated card does elsewhere", async ({
-      page,
-    }) => {
-      await page.goto("/settings/about/report");
-      const field = page.getByRole("textbox", {
-        name: "Email for a reply (optional)",
-      });
-      const send = page.getByRole("button", { name: "Send to Omnileaf" });
-
-      await expect(field).toHaveCSS(
-        "background-color",
-        await tokenColour(page, "--color-input-fill"),
-      );
-      expect((await boxOf(send)).height).toBeCloseTo(
-        (await boxOf(field)).height,
-        0,
-      );
-    });
-
-    for (const group of ["What's included", "Other ways to send it"]) {
-      test(`keeps ${group} as rows with tiled icons and a line between them`, async ({
+    for (const { name, icon } of ROWS) {
+      test(`sets ${name} flush as on a phone, its bare 24px icon 16px into the row and its name 56px in`, async ({
         page,
       }) => {
         await page.goto("/settings/about/report");
-        const list = page
-          .getByRole("region", { name: group })
-          .getByRole("list");
+        const row = page
+          .getByRole("listitem")
+          .filter({ has: page.getByText(name, { exact: true }) });
 
-        await expect(
-          list.getByRole("listitem").first().locator("span[aria-hidden]"),
-        ).toHaveCSS("border-top-width", "1px");
-        await expect(list.getByRole("listitem").first()).toHaveCSS(
-          "border-bottom-width",
-          "1px",
-        );
-        await expect(list.getByRole("listitem").last()).toHaveCSS(
-          "border-bottom-width",
-          "0px",
-        );
+        const rowStart = (await boxOf(row)).x;
+        const glyph = await boxOf(row.locator(`[data-icon=${icon}]`));
+        const label = await boxOf(row.getByText(name, { exact: true }));
+
+        expect(glyph.x - rowStart).toBe(16);
+        expect(glyph.width).toBe(24);
+        expect(label.x - rowStart).toBe(56);
+        await expect(row).toHaveCSS("border-bottom-width", "0px");
       });
     }
   },
