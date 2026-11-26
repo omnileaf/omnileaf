@@ -2,8 +2,11 @@ import type { Locator, Page } from "@playwright/test";
 
 import type {
   LibraryCategory,
+  LibraryFilter,
+  LibraryListing,
   SeriesDetails,
 } from "../../src/lib/ipc/bindings.ts";
+import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 import {
   DEFAULT_BACKEND,
   expect,
@@ -202,5 +205,123 @@ test.describe("a navigation that starts inside an overlay on Android", () => {
     await expect
       .poll(() => pathOf(page), { timeout: TAB_SETTLES_MS })
       .toBe("/");
+  });
+});
+
+const TAGGED_SHELF = new FakeShelf([{ state: "notStarted" }], {
+  tags: ["Seinen", "Sea"],
+});
+const TAGGED = new Set([LIBRARY[0]?.id, LIBRARY[2]?.id]);
+let stored: LibraryListing = NEW_LIBRARY_LISTING;
+let asked: LibraryFilter[] = [];
+
+test.describe("a tag tapped on the series page while an overlay holds an entry", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      appInfo: () => fakeAppInfo("android"),
+      seriesOverview: (id) => TAGGED_SHELF.backend().seriesOverview(id),
+      seriesBooks: (id, listing, after) =>
+        TAGGED_SHELF.backend().seriesBooks(id, listing, after),
+      librarySeries: (_after, listing) => {
+        asked.push(listing.filter);
+        const wanted = listing.filter.tags;
+        return {
+          series: LIBRARY.filter(
+            (one) => wanted.length === 0 || TAGGED.has(one.id),
+          ),
+          next: null,
+        };
+      },
+      librarySeriesCount: () => LIBRARY.length,
+      libraryListing: () => stored,
+      setLibraryListing: (listing) => {
+        stored = listing;
+        return null;
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    stored = NEW_LIBRARY_LISTING;
+    asked = [];
+  });
+
+  async function tapTag(page: Page): Promise<void> {
+    await page
+      .getByRole("list", { name: "Tags" })
+      .getByRole("link", { name: "Seinen" })
+      .click();
+    await expect(
+      page.getByRole("list", { name: "Series" }).getByRole("listitem"),
+    ).toHaveCount(TAGGED.size);
+    expect(asked.at(-1)?.tags).toEqual(["Seinen"]);
+  }
+
+  test("filters the Library by the tag with the find field open", async ({
+    page,
+  }) => {
+    await page.goto(`/series/${SERIES_ID}`);
+    await page.getByRole("button", { name: "Find a book" }).click();
+    await expect(
+      page.getByRole("searchbox", { name: "Find a book" }),
+    ).toBeFocused();
+
+    await tapTag(page);
+  });
+
+  test("filters the Library by the tag while books are being selected", async ({
+    page,
+  }) => {
+    await page.goto(`/series/${SERIES_ID}`);
+    await page
+      .getByRole("button", { name: `More for ${TAGGED_SHELF.titleOf(0)}` })
+      .click();
+    await page
+      .getByRole("dialog", { name: TAGGED_SHELF.titleOf(0) })
+      .getByRole("button", { name: "Select", exact: true })
+      .click();
+    await expect(page.getByText("1 selected").first()).toBeVisible();
+
+    await tapTag(page);
+  });
+});
+
+test.describe("tabs after a step back SvelteKit ignores or a menu stacked on a sheet", () => {
+  test("recovers when a step back lands on a copy of the entry it leaves", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    await page.evaluate(() => {
+      history.pushState(history.state, "", location.href);
+    });
+
+    await tab(page, "Library").click();
+
+    await expect
+      .poll(() => pathOf(page), { timeout: TAB_SETTLES_MS })
+      .toBe("/");
+    await expect(
+      page.getByRole("list", { name: "Series" }).getByRole("listitem").first(),
+    ).toBeVisible({ timeout: TAB_SETTLES_MS });
+  });
+
+  test("leaves one history entry for a tab tapped under a menu opened from a sheet, and the tabs keep working", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    const before = await entriesBehind(page);
+    await page.getByRole("button", { name: /^Sort and filter/ }).click();
+    const sheet = page.getByRole("dialog", { name: "Sort and filter" });
+    await expect(sheet).toBeVisible();
+    await settle(sheet);
+    await sheet.getByRole("combobox", { name: "Sort by" }).click();
+    await expect(page.getByRole("listbox", { name: "Sort by" })).toBeVisible();
+
+    await tab(page, "Settings").dispatchEvent("click");
+
+    await expect.poll(() => pathOf(page)).toBe("/settings");
+    expect(await entriesBehind(page)).toBe(before + 1);
+    await expectTabsStillNavigate(page);
   });
 });

@@ -1,4 +1,4 @@
-import { goto, onNavigate, type OnNavigate } from "$app/navigation";
+import { onNavigate, type OnNavigate } from "$app/navigation";
 import type { ResolvedPathname } from "$app/types";
 import { page } from "$app/state";
 
@@ -11,6 +11,7 @@ import {
   originOnArrival,
   type ReaderArrival,
 } from "./reader-way-back";
+import { navigateTo } from "#lib/navigation/navigate-to.ts";
 
 function arrivalOf(navigation: OnNavigate): ReaderArrival {
   const { from } = navigation;
@@ -27,7 +28,7 @@ function keepOnEntry(origin: OriginPage | undefined, url: URL): Promise<void> {
   if (origin === undefined) {
     return Promise.resolve();
   }
-  return goto(resolvedPathOf(url), {
+  return navigateTo(resolvedPathOf(url), {
     shallow: true,
     replace: true,
     state: { ...page.state, readerOrigin: origin },
@@ -62,7 +63,7 @@ export function moveWithinReader(
   href: ResolvedPathname,
   state: App.PageState = {},
 ): Promise<void> {
-  return goto(href, {
+  return navigateTo(href, {
     replace: true,
     state: { ...state, readerOrigin: page.state.readerOrigin ?? null },
   }).catch(reportFailure);

@@ -4,29 +4,44 @@ import { expect, test } from "vitest";
 import {
   type BackGuardEnvironment,
   makeBackGoUp,
-  TRAVERSAL_SETTLE_MS,
+  STEP_BACK_SILENCE_MS,
 } from "./back-goes-up";
 
 type Registered<T> = (navigation: T) => void;
 
 interface Entry {
-  readonly path: string;
-  readonly index: number;
+  path: string;
+  state: string;
 }
 
+interface Overlays {
+  holds: boolean;
+  leave: () => Promise<void>;
+}
+
+const SLOW_NAVIGATION_MS = 2000;
+
 class FakeBrowser {
-  #entries: Entry[] = [{ path: "/", index: 0 }];
+  #entries: Entry[] = [{ path: "/", state: "s0" }];
   #at = 0;
   #shown = "/";
+  #states = 0;
   #now = 0;
   #timers: { due: number; run: () => void; isCancelled: boolean }[] = [];
   #after: Registered<AfterNavigate>[] = [];
   #on: Registered<AfterNavigate>[] = [];
   #before: Registered<BeforeNavigate>[] = [];
+  #popstates: (() => void)[] = [];
   readonly gone: string[] = [];
-  readonly stepsBack: number[] = [];
-  ignoresIndexes = new Set<number>();
+  readonly acrossOverlays: string[] = [];
+  readonly cancelled: string[] = [];
+  ignoredLandings = 0;
+  slowNavigations = false;
   losesStepsBack = false;
+  readonly overlays: Overlays = {
+    holds: false,
+    leave: () => Promise.resolve(),
+  };
 
   readonly environment: BackGuardEnvironment = {
     beforeNavigate: (run: Registered<BeforeNavigate>) => {
@@ -38,15 +53,18 @@ class FakeBrowser {
     onNavigate: ((run: Registered<AfterNavigate>) => {
       this.#on.push(run);
     }) as BackGuardEnvironment["onNavigate"],
-    goto: (target, options) => {
-      this.gone.push(`${options?.replace === true ? "replace " : ""}${target}`);
-      this.#arrive(target, options?.replace === true ? "replace" : "push");
-      return Promise.resolve();
-    },
+    goto: (target, options) => this.#goto(target, options, false),
+    gotoAcrossOverlays: (target, options) => this.#goto(target, options, true),
     stepBackBy: (steps) => {
-      this.stepsBack.push(steps);
       this.#stepBack(steps);
     },
+    onStepBack: (run) => {
+      this.#popstates.push(run);
+      return () => {
+        this.#popstates = this.#popstates.filter((one) => one !== run);
+      };
+    },
+    historyState: () => this.#entries[this.#at]?.state ?? "",
     browserAt: () =>
       new URL(`https://app.test${this.#entries[this.#at]?.path ?? "/"}`),
     pageAt: () => new URL(`https://app.test${this.#shown}`),
@@ -57,16 +75,33 @@ class FakeBrowser {
         timer.isCancelled = true;
       };
     },
-    mustLeaveOverlays: () => false,
-    leaveOverlaysThen: () => undefined,
+    mustLeaveOverlays: () => this.overlays.holds,
+    leaveOverlays: () => this.overlays.leave(),
   };
 
+  get timersPending(): number {
+    return this.#timers.filter((timer) => !timer.isCancelled).length;
+  }
+
   enter(): void {
-    this.#notify("enter", "/", 0);
+    this.#notify("enter", "/");
   }
 
   open(path: string): void {
     this.#arrive(path, "push");
+  }
+
+  showsPage(path: string): void {
+    this.#shown = path;
+  }
+
+  copyEntry(): void {
+    const current = this.#entries[this.#at];
+    if (current === undefined) {
+      return;
+    }
+    this.#entries = [...this.#entries.slice(0, this.#at + 1), { ...current }];
+    this.#at += 1;
   }
 
   click(path: string): void {
@@ -81,7 +116,9 @@ class FakeBrowser {
         },
         cancel: () => {
           cancelled.isCancelled = true;
+          this.cancelled.push(path);
         },
+        complete: Promise.resolve(),
       } as unknown as BeforeNavigate);
     }
     if (!cancelled.isCancelled) {
@@ -99,40 +136,77 @@ class FakeBrowser {
     }
   }
 
+  #goto(
+    target: string,
+    options: { readonly replace?: boolean } | undefined,
+    isAcrossOverlays: boolean,
+  ): Promise<void> {
+    if (isAcrossOverlays) {
+      this.acrossOverlays.push(target);
+    }
+    this.gone.push(`${options?.replace === true ? "replace " : ""}${target}`);
+    this.#arrive(target, options?.replace === true ? "replace" : "push");
+    return Promise.resolve();
+  }
+
   #arrive(path: string, how: "push" | "replace"): void {
-    const index =
-      (this.#entries[this.#at]?.index ?? 0) + (how === "push" ? 1 : 0);
+    this.#states += 1;
+    const entry = { path, state: `s${String(this.#states)}` };
     if (how === "push") {
-      this.#entries = [
-        ...this.#entries.slice(0, this.#at + 1),
-        { path, index },
-      ];
+      this.#entries = [...this.#entries.slice(0, this.#at + 1), entry];
       this.#at += 1;
     } else {
-      this.#entries[this.#at] = { path, index };
+      this.#entries[this.#at] = entry;
     }
     this.#shown = path;
-    this.#notify("goto", path, index);
+    this.#notify("goto", path);
   }
 
   #stepBack(steps: number): void {
     if (this.losesStepsBack) {
       return;
     }
-    const from = this.#entries[this.#at];
+    const savedState = this.#entries[this.#at]?.state;
     this.#at -= steps;
     const landed = this.#entries[this.#at];
-    if (landed === undefined || from === undefined) {
+    if (landed === undefined) {
       return;
     }
-    if (this.ignoresIndexes.has(landed.index) || landed.index === from.index) {
+    const isIgnored = landed.state === savedState;
+    for (const run of this.#popstates) {
+      run();
+    }
+    if (isIgnored) {
+      this.ignoredLandings += 1;
       return;
     }
-    this.#shown = landed.path;
-    this.#notify("popstate", landed.path, landed.index, -steps);
+    const completes = this.slowNavigations
+      ? new Promise<void>((resolve) => {
+          this.#timers.push({
+            due: this.#now + SLOW_NAVIGATION_MS,
+            run: () => {
+              this.#shown = landed.path;
+              this.#notify("popstate", landed.path, -steps);
+              resolve();
+            },
+            isCancelled: false,
+          });
+        })
+      : Promise.resolve();
+    for (const run of this.#before) {
+      run({
+        type: "popstate",
+        complete: completes,
+        cancel: () => undefined,
+      } as unknown as BeforeNavigate);
+    }
+    if (!this.slowNavigations) {
+      this.#shown = landed.path;
+      this.#notify("popstate", landed.path, -steps);
+    }
   }
 
-  #notify(type: string, path: string, _index: number, delta = 0): void {
+  #notify(type: string, path: string, delta = 0): void {
     const navigation = {
       type,
       delta,
@@ -147,12 +221,9 @@ class FakeBrowser {
   }
 }
 
-async function waitOutTraversals(browser: FakeBrowser): Promise<void> {
-  for (let round = 0; round < 4; round += 1) {
-    browser.pass(TRAVERSAL_SETTLE_MS);
-    for (let tick = 0; tick < 6; tick += 1) {
-      await Promise.resolve();
-    }
+async function ticks(count = 40): Promise<void> {
+  for (let tick = 0; tick < count; tick += 1) {
+    await Promise.resolve();
   }
 }
 
@@ -163,41 +234,73 @@ function guarded() {
   return { browser, guard };
 }
 
-test("settles a step back whose arrival SvelteKit ignores, and carries out the link queued behind it", async () => {
+test("recovers at once from a step back onto an entry SvelteKit ignores, with no timer needed", async () => {
+  const { browser, guard } = guarded();
+  browser.open("/history");
+  browser.copyEntry();
+
+  void guard.followLinkTo("/");
+  await ticks();
+
+  expect(browser.ignoredLandings).toBe(1);
+  expect(browser.gone).toContain("replace /");
+  expect(browser.timersPending).toBe(0);
+});
+
+test("carries a link out after recovering, though the step back it planned was ignored", async () => {
   const { browser, guard } = guarded();
   browser.open("/history");
   browser.open("/series/1");
-  browser.ignoresIndexes.add(1);
+  browser.copyEntry();
   const settled = { isDone: false };
 
   void guard.followLinkTo("/history").then(() => {
     settled.isDone = true;
   });
   browser.click("/settings");
-  const whileWaiting = settled.isDone;
-  await waitOutTraversals(browser);
+  await ticks();
 
-  expect(whileWaiting).toBe(false);
   expect(settled.isDone).toBe(true);
   expect(browser.gone.some((target) => target.includes("/settings"))).toBe(
     true,
   );
 });
 
-test("looks where the browser really is when a step back is ignored, and shows that page", async () => {
+test("rebuilds the guard's entries from where the browser is when it landed elsewhere", async () => {
   const { browser, guard } = guarded();
   browser.open("/history");
   browser.open("/series/1");
-  browser.ignoresIndexes.add(1);
+  browser.copyEntry();
 
   void guard.followLinkTo("/history");
-  await waitOutTraversals(browser);
+  await ticks();
 
-  expect(browser.gone).toContain("replace /history");
-  expect(guard.entries.at(-1)).toBe("/history");
+  expect(guard.entries.at(-1)).not.toBe("/series/1");
+  expect(guard.entries.length).toBeLessThanOrEqual(2);
 });
 
-test("settles a step back that never arrives and leaves later links unqueued", async () => {
+test("does not recover from a step back whose navigation is only slow", async () => {
+  const { browser, guard } = guarded();
+  browser.open("/history");
+  browser.open("/series/1");
+  browser.slowNavigations = true;
+  const settled = { isDone: false };
+
+  void guard.followLinkTo("/history").then(() => {
+    settled.isDone = true;
+  });
+  browser.pass(STEP_BACK_SILENCE_MS * 2);
+  await ticks();
+  const whileSlow = [settled.isDone, [...browser.gone]];
+  browser.pass(SLOW_NAVIGATION_MS);
+  await ticks();
+
+  expect(whileSlow).toEqual([false, []]);
+  expect(settled.isDone).toBe(true);
+  expect(browser.gone).toEqual([]);
+});
+
+test("settles a step back that never produces a popstate, and carries out the link queued behind it", async () => {
   const { browser, guard } = guarded();
   browser.open("/history");
   browser.open("/series/1");
@@ -205,16 +308,16 @@ test("settles a step back that never arrives and leaves later links unqueued", a
 
   void guard.followLinkTo("/history");
   browser.click("/settings");
-  await waitOutTraversals(browser);
+  browser.pass(STEP_BACK_SILENCE_MS);
+  await ticks();
   browser.losesStepsBack = false;
-  browser.click("/browse");
-  await waitOutTraversals(browser);
+  browser.pass(STEP_BACK_SILENCE_MS);
+  await ticks();
 
   expect(browser.gone.some((target) => target.includes("/settings"))).toBe(
     true,
   );
   expect(guard.isPassingThrough).toBe(false);
-  expect(browser.gone.at(-1)).toContain("/browse");
 });
 
 test("lets a step back that arrives in time settle without looking again", async () => {
@@ -223,22 +326,63 @@ test("lets a step back that arrives in time settle without looking again", async
   browser.open("/series/1");
 
   await guard.followLinkTo("/history");
-  browser.pass(TRAVERSAL_SETTLE_MS);
+  browser.pass(STEP_BACK_SILENCE_MS);
 
   expect(browser.gone).toEqual([]);
   expect(guard.entries).toEqual(["/", "/history"]);
 });
 
-test("leaves the overlays' entries first for a link into the app's tabs", () => {
-  const { browser } = guarded();
-  const left: string[] = [];
-  browser.environment.mustLeaveOverlays = () => true;
-  browser.environment.leaveOverlaysThen = (go) => {
-    left.push("left");
-    void go();
-  };
+test("counts as moving while it gives overlays back, queues later links, and follows the last one afterwards", async () => {
+  const { browser, guard } = guarded();
+  browser.open("/history");
+  const givenBack = { finish: (): void => undefined };
+  browser.overlays.holds = true;
+  browser.overlays.leave = () =>
+    new Promise<void>((resolve) => {
+      givenBack.finish = resolve;
+    });
 
   browser.click("/settings");
+  const whileLeaving = guard.isPassingThrough;
+  browser.click("/browse");
+  const goneWhileLeaving = [...browser.gone];
+  browser.overlays.holds = false;
+  givenBack.finish();
+  await ticks();
 
-  expect(left).toEqual(["left"]);
+  expect(whileLeaving).toBe(true);
+  expect(goneWhileLeaving).toEqual([]);
+  expect(browser.cancelled).toEqual(["/settings", "/browse"]);
+  expect(browser.gone.some((target) => target.includes("/browse"))).toBe(true);
+  expect(browser.gone.some((target) => target.includes("/settings"))).toBe(
+    false,
+  );
+  expect(guard.isPassingThrough).toBe(false);
+});
+
+test("follows a link to its target once the overlays have been given back", async () => {
+  const { browser } = guarded();
+  browser.open("/history");
+  browser.overlays.holds = true;
+
+  browser.click("/settings");
+  browser.overlays.holds = false;
+  await ticks();
+
+  expect(browser.cancelled).toEqual(["/settings"]);
+  expect(browser.gone.some((target) => target.includes("/settings"))).toBe(
+    true,
+  );
+});
+
+test("shows the page the browser is on without being held up by an overlay that opened meanwhile", async () => {
+  const { browser, guard } = guarded();
+  browser.open("/history");
+  browser.copyEntry();
+  browser.showsPage("/settings");
+
+  void guard.followLinkTo("/");
+  await ticks();
+
+  expect(browser.acrossOverlays).toEqual(["/history"]);
 });
