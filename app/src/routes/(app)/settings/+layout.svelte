@@ -54,8 +54,9 @@
               <span
                 data-label={section.label()}
                 class="room-for-bold-label min-inline-none"
-                >{section.label()}</span
               >
+                {section.label()}
+              </span>
             </a>
           </li>
         {/each}

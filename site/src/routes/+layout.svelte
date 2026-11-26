@@ -26,21 +26,24 @@
     <img src={iconUrl} alt="" class="block-10 inline-10" />
     <span
       class="font-display text-title font-bold tracking-tight text-foreground"
-      >Omnileaf</span
     >
+      Omnileaf
+    </span>
   </a>
   <nav aria-label="Main" class="flex flex-wrap gap-1">
     <a
       href={resolve("/#security")}
       class="inline-flex items-center rounded-control px-3.5 font-medium text-foreground no-underline min-block-11"
-      >Security</a
     >
+      Security
+    </a>
     <a
       href={SOURCE_URL}
       rel="external"
       class="inline-flex items-center rounded-control px-3.5 font-medium text-foreground no-underline min-block-11"
-      >GitHub</a
     >
+      GitHub
+    </a>
   </nav>
 </header>
 
@@ -52,8 +55,9 @@
   >
     <span>© {year} Omnileaf Pty Ltd</span>
     <div class="flex flex-wrap gap-5">
-      <a href={SOURCE_URL} rel="external" class="text-muted">Source on GitHub</a
-      >
+      <a href={SOURCE_URL} rel="external" class="text-muted">
+        Source on GitHub
+      </a>
       <span>Licence GPL-3.0-only</span>
       <a href={asset(SECURITY_TXT_ASSET)} class="text-muted">security.txt</a>
     </div>

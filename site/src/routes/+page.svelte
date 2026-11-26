@@ -23,8 +23,9 @@
     <div class="flex grow basis-110 flex-col gap-6 min-inline-0">
       <span
         class="self-start rounded-full bg-accent-soft px-3 py-1.5 text-small font-semibold text-accent-ink"
-        >Coming soon · in early development</span
       >
+        Coming soon · in early development
+      </span>
       <h1 class="m-0 font-display text-hero font-bold tracking-tight">
         {TAGLINE}.
       </h1>
@@ -38,13 +39,15 @@
           href={SOURCE_URL}
           rel="external"
           class="inline-flex items-center rounded-control bg-accent px-5.5 font-semibold text-on-accent no-underline min-block-12"
-          >Follow on GitHub</a
         >
+          Follow on GitHub
+        </a>
         <a
           href="#security"
           class="inline-flex items-center rounded-control border border-border px-5.5 font-semibold text-foreground no-underline min-block-12"
-          >Security</a
         >
+          Security
+        </a>
       </div>
     </div>
     <Shelf />

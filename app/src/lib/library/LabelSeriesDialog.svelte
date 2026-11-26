@@ -248,9 +248,9 @@
                     : category.name}
                 />
                 <span class="flex flex-1 flex-col">
-                  <span class={titleClass(view === "wide")}
-                    >{category.name}</span
-                  >
+                  <span class={titleClass(view === "wide")}>
+                    {category.name}
+                  </span>
                   {#if choice === "some"}
                     <span
                       class={android.isOn && view !== "wide"
@@ -274,9 +274,9 @@
                   }
                   aria-label={name}
                 />
-                <span class={["flex-1", titleClass(view === "wide")]}
-                  >{name}</span
-                >
+                <span class={["flex-1", titleClass(view === "wide")]}>
+                  {name}
+                </span>
               </label>
             {/each}
           </div>
