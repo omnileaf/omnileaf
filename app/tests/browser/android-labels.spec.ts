@@ -27,6 +27,7 @@ const HELD_MS = 800;
 const CHIP_GAP_PX = 8;
 const NARROW_PHONE_WIDTHS = [360, 320];
 const PHONE_HEIGHT = 800;
+const SERIES_PICKED = 3;
 const UNBROKEN_TAG_LENGTH = 60;
 const UNBROKEN_TAG = "Unbroken".padEnd(UNBROKEN_TAG_LENGTH, "o");
 const MANY_SUGGESTIONS = [
@@ -74,7 +75,21 @@ test.use({
   },
 });
 
-async function openLabels(page: Page): Promise<Locator> {
+function holdingUnbrokenOnOne(): FakeBackend {
+  return {
+    ...suggesting([]),
+    seriesLabels: (series) => ({
+      ...labelsFor(series),
+      tags: [
+        { tag: "Sea", holding: series.length },
+        { tag: UNBROKEN_TAG, holding: 1 },
+      ],
+      suggestedTags: [],
+    }),
+  };
+}
+
+async function openLabels(page: Page, seriesPicked = 1): Promise<Locator> {
   await page.goto("/");
   const list = page.getByRole("list", { name: "Series" });
   const second = list.getByRole("listitem").nth(1);
@@ -85,6 +100,12 @@ async function openLabels(page: Page): Promise<Locator> {
   const picked = list.getByRole("checkbox", { name: LIBRARY[1]?.title ?? "" });
   await picked.dispatchEvent("pointerup", touch);
   await picked.dispatchEvent("click");
+  for (const { title } of LIBRARY.slice(2, seriesPicked + 1)) {
+    const next = list.getByRole("checkbox", { name: title });
+    await next.dispatchEvent("pointerdown", touch);
+    await next.dispatchEvent("pointerup", touch);
+    await next.dispatchEvent("click");
+  }
   await page
     .getByRole("group", { name: "Selected series" })
     .getByRole("button", { name: "Categories" })
@@ -399,8 +420,53 @@ test.describe(
         });
       }
     });
+
+    test.describe("with a 60-letter tag on only one of the series", () => {
+      test.use({ backend: holdingUnbrokenOnOne() });
+
+      for (const width of NARROW_PHONE_WIDTHS) {
+        test(`keeps how many series hold it in sight on a phone ${String(width)}px wide`, async ({
+          page,
+        }) => {
+          await page.setViewportSize({ width, height: PHONE_HEIGHT });
+
+          const sheet = await openLabels(page, SERIES_PICKED);
+
+          await expectHoldingCountInside(page, sheet);
+        });
+      }
+    });
   },
 );
+
+test.describe("a 60-letter tag on only one of the picked series", () => {
+  test.use({ backend: holdingUnbrokenOnOne() });
+
+  test("keeps how many series hold it in sight", async ({ page }) => {
+    const sheet = await openLabels(page, SERIES_PICKED);
+
+    await expectHoldingCountInside(page, sheet);
+  });
+});
+
+async function expectHoldingCountInside(
+  page: Page,
+  sheet: Locator,
+): Promise<void> {
+  const holding = `· 1 of ${String(SERIES_PICKED)}`;
+  const chip = sheet.getByRole("listitem").filter({ hasText: UNBROKEN_TAG });
+  const count = chip.getByText(holding, { exact: true });
+  await expect(count).toBeVisible();
+  const sheetBox = await boxOf(sheet);
+  const countBox = await boxOf(count);
+
+  expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+  expect(countBox.x).toBeGreaterThanOrEqual(sheetBox.x);
+  expect(countBox.x + countBox.width).toBeLessThanOrEqual(
+    sheetBox.x + sheetBox.width,
+  );
+  await expect(chip).toHaveText(`${UNBROKEN_TAG} ${holding}`);
+}
 
 async function addUnbrokenTag(sheet: Locator): Promise<void> {
   await sheet.getByRole("button", { name: `Add ${UNBROKEN_TAG}` }).click();
@@ -489,7 +555,7 @@ test.describe("the suggested tags on an iPad", () => {
       ...suggesting([...MANY_SUGGESTIONS, UNBROKEN_TAG]),
       appInfo: () => fakeAppInfo("ios"),
     },
-    openLabels,
+    (page) => openLabels(page),
   );
 });
 
@@ -506,6 +572,6 @@ test.describe("the suggested tags on an Android tablet", () => {
       ...suggesting([...MANY_SUGGESTIONS, UNBROKEN_TAG]),
       appInfo: () => fakeAppInfo("android"),
     },
-    openLabels,
+    (page) => openLabels(page),
   );
 });

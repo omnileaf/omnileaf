@@ -526,6 +526,7 @@
   ],
   "library_in_some": "{holding} of the {count} are in it",
   "library_tag_on_some": "{tag} · {holding} of {count}",
+  "library_tag_holding": "· {holding} of {count}",
   "library_new_category": "New category",
   "library_add_tag": "Add a tag",
   "library_add_named_tag": "Add {tag}",

@@ -361,10 +361,13 @@
                         ],
                   ]}
                 >
-                  <span class="truncate">
-                    {holding >= count
-                      ? tag
-                      : m.library_tag_on_some({ tag, holding, count })}
+                  <span class="flex gap-xs min-inline-none">
+                    <span class="truncate">{tag}</span>
+                    {#if holding < count}
+                      <span class="shrink-0">
+                        {m.library_tag_holding({ holding, count })}
+                      </span>
+                    {/if}
                   </span>
                   <Button
                     type="button"
