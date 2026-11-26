@@ -6,10 +6,14 @@
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import DragBox from "#lib/library/DragBox.svelte";
   import { DragSelect } from "#lib/library/drag-select.svelte.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { Selection } from "#lib/page/selection.svelte.ts";
   import { endsOnBack } from "#lib/page/selection-back.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { ANDROID_PICKING } from "#lib/series/phone-picking.ts";
+  import PickingToolbar from "#lib/series/PickingToolbar.svelte";
+  import PickingTopBar from "#lib/series/PickingTopBar.svelte";
   import SelectionBar from "#lib/series/SelectionBar.svelte";
   import { shortcut } from "#lib/shortcut.ts";
 
@@ -60,9 +64,25 @@
   });
   const pickedBooks = $derived(booksPicked(tiles, (key) => selection.has(key)));
   const platform = currentPlatform();
+  const width = new WindowWidth();
+  const countId = $props.id();
+  const isAndroidPhonePicking = $derived(
+    phoneOf(platform, width.current) === "android" && selection.isSelecting,
+  );
   let outcome: Outcome = $state({ kind: "none" });
   let area: HTMLElement | undefined = $state();
   let bar: HTMLElement | undefined = $state();
+  let topBar: HTMLElement | undefined = $state();
+  let isPickingAll = $state(false);
+  let lastPickedCount = 0;
+
+  $effect(() => {
+    const count = selection.count;
+    if (isAndroidPhonePicking && count === 0 && lastPickedCount > 0) {
+      void end();
+    }
+    lastPickedCount = count;
+  });
 
   $effect(() => {
     const report = onPickedCount;
@@ -86,7 +106,7 @@
     return (
       focused === null ||
       focused === document.body ||
-      [area, bar].some((part) => part?.contains(focused) === true)
+      [area, bar, topBar].some((part) => part?.contains(focused) === true)
     );
   }
 
@@ -111,11 +131,18 @@
 
   async function pickAll(): Promise<void> {
     selection.begin();
-    await onLoadAll();
+    isPickingAll = true;
+    try {
+      await onLoadAll();
+    } finally {
+      isPickingAll = false;
+    }
     await tick();
     selection.pickAll(pickKeysOf(tiles));
     await tick();
-    outcome = { kind: "pickedAll", count: pickedBooks.length };
+    if (!isAndroidPhonePicking) {
+      outcome = { kind: "pickedAll", count: pickedBooks.length };
+    }
   }
 
   endsOnBack(
@@ -195,14 +222,46 @@
   )}
 />
 
-<div bind:this={area} class="contents" onfocusin={noteFocusedBook}>
+<div
+  bind:this={area}
+  data-picking={isAndroidPhonePicking || undefined}
+  class="contents"
+  onfocusin={noteFocusedBook}
+>
   <div class="relative" {@attach dragSelect.attach}>
     <SectionCovers {...covers} {tiles} {selection} />
     {#if dragSelect.box !== undefined}
       <DragBox box={dragSelect.box} />
     {/if}
   </div>
-  {#if pickedBooks.length > 0}
+  {#if isAndroidPhonePicking}
+    <PickingTopBar
+      bind:element={topBar}
+      picking={ANDROID_PICKING}
+      look={ANDROID_PICKING.overTopBar}
+      count={pickedBooks.length}
+      {countId}
+      {isPickingAll}
+      isAllPicked={false}
+      onEnd={() => {
+        void end();
+      }}
+      onPickAll={() => {
+        void pickAll();
+      }}
+      onPickNone={() => {
+        selection.pickOnly([]);
+      }}
+    />
+    <PickingToolbar
+      bind:element={bar}
+      picking={ANDROID_PICKING}
+      count={pickedBooks.length}
+      onMark={(read: ReadMark) => {
+        void mark(read);
+      }}
+    />
+  {:else if pickedBooks.length > 0}
     <SelectionBar
       bind:element={bar}
       count={pickedBooks.length}
