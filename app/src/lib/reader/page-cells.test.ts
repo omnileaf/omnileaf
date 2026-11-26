@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { cellsAround } from "./page-cells";
+import { cellsAround, edgesAround } from "./page-cells";
 
 const SINGLES = [[0], [1], [2], [3], [4], [5], [6]];
 const PAIRS = [[0], [1, 2], [3, 4], [5, 6], [7, 8]];
@@ -58,4 +58,33 @@ test("has nothing before the first spread", () => {
     { spread: [0], offset: 0 },
     { spread: [1], offset: 1 },
   ]);
+});
+
+test("keeps a page past either end only while it is on screen or a turn away", () => {
+  const edges = edgesAround([-1, SINGLES.length, SINGLES.length + 1], {
+    at: SINGLES.length - 1,
+    low: SINGLES.length - 1,
+    high: SINGLES.length - 1,
+  });
+
+  expect(edges).toEqual([{ at: SINGLES.length, offset: 1 }]);
+});
+
+test("keeps the pages past the end a run of turns passed through", () => {
+  const edges = edgesAround([-1, SINGLES.length, SINGLES.length + 1], {
+    at: SINGLES.length + 1,
+    low: SINGLES.length - 1,
+    high: SINGLES.length + 1,
+  });
+
+  expect(edges).toEqual([
+    { at: SINGLES.length, offset: -1 },
+    { at: SINGLES.length + 1, offset: 0 },
+  ]);
+});
+
+test("places the page before the first spread one turn back", () => {
+  const edges = edgesAround([-1, SINGLES.length], { at: 0, low: -1, high: 0 });
+
+  expect(edges).toEqual([{ at: -1, offset: -1 }]);
 });
