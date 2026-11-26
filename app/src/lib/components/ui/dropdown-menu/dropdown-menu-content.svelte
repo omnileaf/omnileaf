@@ -5,6 +5,7 @@
   } from "bits-ui";
 
   import { cn } from "#lib/components/cn.ts";
+  import { closesOnBack } from "#lib/navigation/overlay-back.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
   import { menuLook } from "../menu-look.ts";
@@ -24,6 +25,7 @@
 <DropdownMenuPrimitive.Portal {to}>
   <DropdownMenuPrimitive.Content
     bind:ref
+    {@attach closesOnBack}
     sideOffset={OPENER_GAP_PX}
     collisionPadding={SCREEN_EDGE_GAP_PX}
     class={cn(

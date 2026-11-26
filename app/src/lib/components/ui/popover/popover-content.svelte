@@ -7,6 +7,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
+  import { closesOnBack } from "#lib/navigation/overlay-back.ts";
 
   const OPENER_GAP_PX = 8;
   const SCREEN_EDGE_GAP_PX = 8;
@@ -27,6 +28,7 @@
   <PopoverPrimitive.Overlay class="fixed inset-none z-dialog" />
   <PopoverPrimitive.Content
     bind:ref
+    {@attach closesOnBack}
     role="dialog"
     sideOffset={OPENER_GAP_PX}
     collisionPadding={SCREEN_EDGE_GAP_PX}
