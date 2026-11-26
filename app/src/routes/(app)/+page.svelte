@@ -521,24 +521,32 @@
       ),
     ),
   );
+  const tabsCountedForChosen = $derived<readonly LibraryTabId[]>([
+    ...(listsNothing && narrowsLibrary({ listedTab, isFilterOn })
+      ? [ALL_TAB]
+      : []),
+    ...(listsNothing && listedTab !== undefined && listedTabKey !== ALL_SERIES
+      ? [listedTab.id]
+      : []),
+  ]);
+  const tabsCountedBeside = $derived<readonly LibraryTabId[]>(
+    emptyBesideTabs.length === 0
+      ? []
+      : [
+          ALL_TAB,
+          ...(isListingFiltered
+            ? emptyBesideTabs
+                .map(({ id }) => id)
+                .filter((id) => tabKey(id) !== ALL_SERIES)
+            : []),
+        ],
+  );
   const unfilteredCounts = new UnfilteredCounts(
     (tab) => countOf(tab, NEW_LIBRARY_LISTING),
     (error) => {
       reportError(error);
     },
   );
-  const tabsCountedUnfiltered = $derived<readonly LibraryTabId[]>([
-    ...((listsNothing && narrowsLibrary({ listedTab, isFilterOn })) ||
-    emptyBesideTabs.length > 0
-      ? [ALL_TAB]
-      : []),
-    ...(listsNothing && listedTab !== undefined && listedTabKey !== ALL_SERIES
-      ? [listedTab.id]
-      : []),
-    ...emptyBesideTabs
-      .map(({ id }) => id)
-      .filter((id) => tabKey(id) !== ALL_SERIES),
-  ]);
   const emptyCause = $derived(
     listsNothing
       ? emptyCauseOf({
@@ -685,7 +693,7 @@
   });
 
   $effect.pre(() => {
-    const tabs = tabsCountedUnfiltered;
+    const tabs = [...tabsCountedForChosen, ...tabsCountedBeside];
     untrack(() => {
       unfilteredCounts.ask(tabs);
     });

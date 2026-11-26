@@ -8,7 +8,11 @@ import {
   type Platform,
 } from "../../src/lib/ipc/bindings.ts";
 import { filtersOn } from "../../src/lib/library/library-listing.ts";
-import type { FakeBackend } from "./fake-backend.ts";
+import {
+  commandsAsked,
+  emitFakeEvent,
+  type FakeBackend,
+} from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -604,6 +608,56 @@ test.describe("loading the categories beside the chosen one", () => {
 
     expect(listed).toEqual(["manga"]);
     await expect(page.locator("[data-pager-page]")).toHaveCount(0);
+  });
+});
+
+test.describe("counting an empty category beside the chosen one", () => {
+  const counted: string[] = [];
+  const holding = backendWith(EMPTY_COMICS, "android");
+
+  test.use({
+    backend: {
+      ...holding,
+      categorySeriesCount: (category, filter) => {
+        counted.push(category);
+        return holding.categorySeriesCount(category, filter);
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    counted.length = 0;
+  });
+
+  async function answered(page: Page): Promise<void> {
+    await expect
+      .poll(async () => (await commandsAsked(page)).unanswered)
+      .toBe(0);
+  }
+
+  test("counts it once when the library changes with no filter on", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "only phones page between categories",
+    );
+    await openLibrary(page);
+    await chosenTab(page, "Manga").click();
+    await expect(chosenCovers(page)).toHaveCount(MANGA.length);
+    await expect.poll(() => counted.includes("comics")).toBe(true);
+    await answered(page);
+    const countedBefore = counted.filter((tab) => tab === "comics").length;
+
+    await emitFakeEvent(page, "library-changed");
+    await expect
+      .poll(() => counted.filter((tab) => tab === "comics").length)
+      .toBeGreaterThan(countedBefore);
+    await answered(page);
+
+    expect(counted.filter((tab) => tab === "comics").length).toBe(
+      countedBefore + 1,
+    );
   });
 });
 
