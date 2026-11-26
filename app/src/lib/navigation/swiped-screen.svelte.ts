@@ -1,4 +1,3 @@
-import { Channel } from "@tauri-apps/api/core";
 import type { ClassValue } from "svelte/elements";
 import { prefersReducedMotion } from "svelte/motion";
 
@@ -72,12 +71,11 @@ export class SwipedScreen {
       if (!way.isOn()) {
         return;
       }
-      watchBackSwipes(
-        new Channel((swipe) => {
-          this.#follow(swipe);
-        }),
-      );
+      const stopWatching = watchBackSwipes((swipe) => {
+        this.#follow(swipe);
+      });
       return () => {
+        stopWatching();
         this.#allowedFor = undefined;
         this.#allowance.withdraw();
         this.#screens.arrived();
