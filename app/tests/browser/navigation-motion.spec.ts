@@ -47,7 +47,7 @@ const VISIBLY_MOVED = 0.05;
 const PRESS_FRAMES = 4;
 const LONG_PRESS_MS = 800;
 const TAP_MS = 50;
-const FINGER_LONG_PRESS_MS = 1000;
+const FINGER_PRESS_MS = [350, 450, 1000] as const;
 const FINGER = { pointerType: "touch", isPrimary: true } as const;
 const HAND_OVER_FRAMES = 40;
 
@@ -260,33 +260,42 @@ async function pressWithTheMouse(page: Page, link: Locator): Promise<void> {
   await page.mouse.up();
 }
 
-async function holdAFinger(
-  page: Page,
-  target: Locator,
-  durationMs: number,
-): Promise<void> {
-  const { x, y, width, height } = await boxOf(target);
-  const browser = await page.context().newCDPSession(page);
-  await browser.send("Input.synthesizeTapGesture", {
-    x: x + width / 2,
-    y: y + height / 2,
-    duration: durationMs,
-    gestureSourceType: "touch",
-  });
+interface Finger {
+  readonly tap: (target: Locator, durationMs: number) => Promise<void>;
+  readonly tapWithoutAClick: (
+    target: Locator,
+    durationMs: number,
+  ) => Promise<void>;
+  readonly lift: () => Promise<void>;
 }
 
-async function tapWithAFinger(page: Page, link: Locator): Promise<void> {
-  const { x, y, width, height } = await boxOf(link);
+async function fingerOn(page: Page): Promise<Finger> {
   const browser = await page.context().newCDPSession(page);
-  await browser.send("Input.dispatchTouchEvent", {
-    type: "touchStart",
-    touchPoints: [{ x: x + width / 2, y: y + height / 2 }],
-  });
-  await page.waitForTimeout(TAP_MS);
-  await browser.send("Input.dispatchTouchEvent", {
-    type: "touchEnd",
-    touchPoints: [],
-  });
+  const middleOf = async (target: Locator) => {
+    const { x, y, width, height } = await boxOf(target);
+    return { x: x + width / 2, y: y + height / 2 };
+  };
+  return {
+    tap: async (target, durationMs) => {
+      await browser.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [await middleOf(target)],
+      });
+      await page.waitForTimeout(durationMs);
+      await browser.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+      });
+    },
+    tapWithoutAClick: async (target, durationMs) => {
+      await browser.send("Input.synthesizeTapGesture", {
+        ...(await middleOf(target)),
+        duration: durationMs,
+        gestureSourceType: "touch",
+      });
+    },
+    lift: () => browser.detach(),
+  };
 }
 
 async function pillFramesWhilePressing(
@@ -331,6 +340,35 @@ async function pillFramesWhilePressing(
 
 function showsAPill({ isPressed, isHeld, isTinted, pill }: PillFrame): boolean {
   return ((isPressed || isHeld) && isTinted) || pill >= 1;
+}
+
+function holderOf(page: Page, label: string): Locator {
+  return tab(page, label)
+    .locator('[data-slot="navigation-pill"]')
+    .locator("..");
+}
+
+async function heldWhile(
+  page: Page,
+  act: () => Promise<void>,
+): Promise<string[]> {
+  const held = await navigation(page).evaluateHandle((root) => {
+    const seen: string[] = [];
+    const watcher = new MutationObserver(() => {
+      for (const holder of root.querySelectorAll("[data-held-press]")) {
+        seen.push(holder.closest("a")?.textContent.trim() ?? "");
+      }
+    });
+    watcher.observe(root, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-held-press"],
+    });
+    return seen;
+  });
+  await act();
+  await settle(navigation(page));
+  return held.jsonValue();
 }
 
 function heldPresses(page: Page): Locator {
@@ -766,13 +804,18 @@ test.describe("on Android", () => {
     expect(samples[2]?.scaleX).toBeGreaterThan(1);
   });
 
-  for (const { from, label } of [
-    { from: "/", label: "History" },
-    { from: "/browse", label: "History" },
-    { from: "/history", label: "Settings" },
-    { from: "/settings", label: "Library" },
+  for (const { from, label, pressMs } of [
+    { from: "/", label: "History", pressMs: TAP_MS },
+    { from: "/browse", label: "History", pressMs: TAP_MS },
+    { from: "/history", label: "Settings", pressMs: TAP_MS },
+    { from: "/settings", label: "Library", pressMs: TAP_MS },
+    ...FINGER_PRESS_MS.map((pressMs) => ({
+      from: "/browse",
+      label: "History",
+      pressMs,
+    })),
   ]) {
-    test(`keeps a pill on ${label} from a finger's tap on ${from} until it is chosen`, async ({
+    test(`keeps a pill on ${label} from a ${String(pressMs)} ms touch on ${from} that clicks`, async ({
       page,
     }) => {
       test.skip(
@@ -781,8 +824,12 @@ test.describe("on Android", () => {
       );
       await page.goto(from);
       await settle(navigation(page));
+      const finger = await fingerOn(page);
 
-      const frames = await pillFramesWhilePressing(page, label, tapWithAFinger);
+      const frames = await pillFramesWhilePressing(page, label, (_, link) =>
+        finger.tap(link, pressMs),
+      );
+      await finger.lift();
 
       expect(frames.length).toBeGreaterThan(HAND_OVER_FRAMES);
       expect(frames.filter((frame) => !showsAPill(frame))).toEqual([]);
@@ -790,7 +837,35 @@ test.describe("on Android", () => {
     });
   }
 
-  test("leaves no grey after a finger's long press on a tab", async ({
+  for (const pressMs of FINGER_PRESS_MS) {
+    test(`leaves no grey after a ${String(pressMs)} ms touch that does not click`, async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "bar and rail only",
+      );
+      await page.goto("/");
+      await settle(navigation(page));
+      const finger = await fingerOn(page);
+
+      await finger.tapWithoutAClick(tab(page, "Browse"), pressMs);
+      await finger.lift();
+      await settle(navigation(page));
+
+      await expect(heldPresses(page)).toHaveCount(0);
+      await expect(holderOf(page, "Browse")).toHaveCSS(
+        "background-image",
+        "none",
+      );
+      await expect(tab(page, "Library")).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+    });
+  }
+
+  test("holds nothing after a press the browser calls a long press", async ({
     page,
   }) => {
     test.skip(
@@ -799,15 +874,30 @@ test.describe("on Android", () => {
     );
     await page.goto("/");
     await settle(navigation(page));
-    const holder = tab(page, "Browse")
-      .locator('[data-slot="navigation-pill"]')
-      .locator("..");
 
-    await holdAFinger(page, tab(page, "Browse"), FINGER_LONG_PRESS_MS);
+    const held = await heldWhile(page, async () => {
+      await tab(page, "Browse").dispatchEvent("pointerdown", FINGER);
+      await tab(page, "Browse").dispatchEvent("contextmenu");
+      await tab(page, "Browse").dispatchEvent("pointerup", FINGER);
+    });
+
+    expect(held).toEqual([]);
+  });
+
+  test("holds nothing after a right click on a tab", async ({ page }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
+    await page.goto("/");
     await settle(navigation(page));
+    const { x, y, width, height } = await boxOf(tab(page, "Browse"));
 
-    await expect(heldPresses(page)).toHaveCount(0);
-    await expect(holder).toHaveCSS("background-image", "none");
+    const held = await heldWhile(page, () =>
+      page.mouse.click(x + width / 2, y + height / 2, { button: "right" }),
+    );
+
+    expect(held).toEqual([]);
     await expect(tab(page, "Library")).toHaveAttribute("aria-current", "page");
   });
 
