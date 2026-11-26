@@ -1141,8 +1141,10 @@ test.describe("turning between books", () => {
           .getAnimations()
           .filter(
             (animation) =>
-              animation instanceof CSSTransition &&
-              animation.transitionProperty === "translate",
+              animation.effect instanceof KeyframeEffect &&
+              animation.effect
+                .getKeyframes()
+                .some((frame) => "translate" in frame),
           );
         for (const animation of moving) {
           animation.pause();
