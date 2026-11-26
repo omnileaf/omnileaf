@@ -58,8 +58,8 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     page,
   }) => {
     await page.goto("/settings/library/tabs");
-    const list = page.getByRole("list", { name: "Library tabs" });
-    const row = list.getByRole("listitem").filter({ hasText: "Reading" });
+    const list = tabList(page);
+    const row = rowOf(page, "Reading");
 
     await expect(list).toHaveCSS("border-top-width", "0px");
     await expect(list).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
@@ -70,8 +70,7 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     page,
   }) => {
     await page.goto("/settings/library/tabs");
-    const list = page.getByRole("list", { name: "Library tabs" });
-    const row = list.getByRole("listitem").filter({ hasText: "Reading" });
+    const row = rowOf(page, "Reading");
     const name = row.getByText("Reading", { exact: true });
     const detail = row.getByText("Category · 6 series");
     const handle = row.getByRole("button", { name: /^Move Reading/ });
@@ -90,10 +89,9 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
 
   test("shows More as three dots one above the other", async ({ page }) => {
     await page.goto("/settings/library/tabs");
-    const more = page
-      .getByRole("listitem")
-      .filter({ hasText: "Reading" })
-      .getByRole("button", { name: "More for Reading" });
+    const more = rowOf(page, "Reading").getByRole("button", {
+      name: "More for Reading",
+    });
 
     await expect(more.locator("[data-icon=ellipsis]")).toBeVisible();
     await expect(more.locator("svg")).toHaveCount(0);
@@ -104,10 +102,7 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
   }) => {
     await page.goto("/settings/library/tabs");
     const add = page.getByRole("button", { name: "New category" });
-    const lastRow = page
-      .getByRole("list", { name: "Library tabs" })
-      .getByRole("listitem")
-      .last();
+    const lastRow = tabList(page).getByRole("listitem").last();
     const handle = lastRow.getByRole("button", { name: /^Move / });
     const plus = add.locator("[data-icon=plus]");
 
@@ -133,10 +128,9 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     page,
   }) => {
     await page.goto("/settings/library/tabs");
-    const badge = page
-      .getByRole("listitem")
-      .filter({ hasText: "New chapters" })
-      .getByText("Hidden", { exact: true });
+    const badge = rowOf(page, "New chapters").getByText("Hidden", {
+      exact: true,
+    });
     const note = page
       .locator("p")
       .filter({ hasText: "Drag to reorder. Hiding a tab" });
@@ -170,7 +164,7 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     page,
   }) => {
     await page.goto("/settings/library/tabs");
-    const row = page.getByRole("listitem").filter({ hasText: "Reading" });
+    const row = rowOf(page, "Reading");
     const handle = row.getByRole("button", { name: /^Move Reading/ });
     const box = await boxOf(handle);
 
