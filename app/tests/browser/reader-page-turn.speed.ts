@@ -70,8 +70,8 @@ async function slidesOnScreen(): Promise<number> {
     .getAnimations()
     .filter(
       (animation) =>
-        animation instanceof CSSTransition &&
-        animation.transitionProperty === "translate",
+        animation.effect instanceof KeyframeEffect &&
+        animation.effect.getKeyframes().some((frame) => "translate" in frame),
     );
   for (const animation of sliding) {
     animation.finish();

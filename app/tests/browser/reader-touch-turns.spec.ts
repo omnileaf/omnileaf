@@ -1,10 +1,14 @@
 import type { CDPSession, Locator, Page } from "@playwright/test";
 
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { fakeProtocolRoute } from "./fake-backend.ts";
 import {
   BOOK_ID,
   BOOK_TITLE,
   PAGE_COUNT,
+  PAGE_HEIGHT,
+  PAGE_WIDTH,
+  pageIndexOf,
   readerBackend,
   readerBook,
   servePages,
@@ -19,8 +23,14 @@ const OPENING = {
   reading: { state: "started", page: 14 },
   startPage: 13,
 } as const;
+const JPEG_QUALITY = 0.92;
+const CPU_SLOWDOWN = 4;
+const QUICK_TAPS = 4;
+const TAP_GAP_MS = 120;
+const FRAMES_TO_SETTLE = 7;
 const FRAMES_BETWEEN_DOUBLE_TAPS = 2;
 const FRAMES_FOR_A_SCROLL = 2;
+const COVER_SAMPLES = 20;
 const PAN_ACROSS_PX = -120;
 const PAN_DOWN_PX = -120;
 const PAN_PAST_EDGE_PX = 3000;
@@ -34,15 +44,69 @@ test.skip(
   "real touches go through Chromium's DevTools protocol on a touch screen",
 );
 
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
 declare global {
   interface Window {
+    omnileafGappedFrames?: number[];
+    omnileafRecording?: boolean;
     omnileafControlsShown?: boolean;
   }
 }
 
-interface Point {
-  readonly x: number;
-  readonly y: number;
+async function largeNoisePage(page: Page): Promise<Buffer> {
+  const dataUrl = await page.evaluate(
+    async ({ width, height, quality }) => {
+      const canvas = new OffscreenCanvas(width, height);
+      const context = canvas.getContext("2d");
+      if (context === null) {
+        throw new Error("no 2d canvas to draw a large page");
+      }
+      const pixels = context.createImageData(width, height);
+      const chunk = 65_536;
+      for (let start = 0; start < pixels.data.length; start += chunk) {
+        crypto.getRandomValues(
+          pixels.data.subarray(
+            start,
+            Math.min(start + chunk, pixels.data.length),
+          ),
+        );
+      }
+      context.putImageData(pixels, 0, 0);
+      const blob = await canvas.convertToBlob({ type: "image/jpeg", quality });
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === "string") {
+            resolve(reader.result);
+          } else {
+            reject(new Error("read the large page as text"));
+          }
+        };
+        reader.onerror = () => {
+          reject(new Error("read the large page"));
+        };
+        reader.readAsDataURL(blob);
+      });
+    },
+    { width: PAGE_WIDTH, height: PAGE_HEIGHT, quality: JPEG_QUALITY },
+  );
+  return Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64");
+}
+
+async function serveLargePages(page: Page): Promise<void> {
+  const jpeg = await largeNoisePage(page);
+  await servePages(page);
+  await page.route(fakeProtocolRoute("omni"), async (route) => {
+    if (pageIndexOf(route.request().url()) === undefined) {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({ contentType: "image/jpeg", body: jpeg });
+  });
 }
 
 async function openBookWith(page: Page, look: object): Promise<void> {
@@ -113,6 +177,21 @@ async function tap(session: CDPSession, at: Point): Promise<void> {
   });
 }
 
+async function tapEvery(
+  session: CDPSession,
+  at: Point,
+  taps: number,
+): Promise<void> {
+  const start = Date.now();
+  for (let index = 0; index < taps; index += 1) {
+    const due = start + index * TAP_GAP_MS - Date.now();
+    if (due > 0) {
+      await new Promise((ready) => setTimeout(ready, due));
+    }
+    await tap(session, at);
+  }
+}
+
 async function fingerDown(session: CDPSession, at: Point): Promise<void> {
   await session.send("Input.dispatchTouchEvent", {
     type: "touchStart",
@@ -147,6 +226,69 @@ async function liftFinger(session: CDPSession): Promise<void> {
     type: "touchEnd",
     touchPoints: [],
   });
+}
+
+async function recordUncoveredFrames(page: Page): Promise<void> {
+  await page.evaluate((samples) => {
+    window.omnileafGappedFrames = [];
+    window.omnileafRecording = true;
+    const isDrawn = (image: HTMLImageElement): boolean =>
+      image.complete &&
+      image.naturalWidth > 0 &&
+      image.checkVisibility({ visibilityProperty: true });
+    const record = (): void => {
+      if (window.omnileafRecording !== true) {
+        return;
+      }
+      const area = document
+        .querySelector("[data-shown-page]")
+        ?.getBoundingClientRect();
+      if (area !== undefined) {
+        const drawn = [
+          ...new Set(
+            [
+              ...document.querySelectorAll<HTMLImageElement>(
+                'main img[alt^="Page "]',
+              ),
+            ].flatMap((image) => image.parentElement?.parentElement ?? []),
+          ),
+        ].filter(
+          (cell) =>
+            cell.checkVisibility({ visibilityProperty: true }) &&
+            [...cell.querySelectorAll("img")].every(isDrawn),
+        );
+        const gaps = Array.from(
+          { length: samples },
+          (_, step) => area.left + ((step + 0.5) * area.width) / samples,
+        ).filter(
+          (x) =>
+            !drawn.some((cell) => {
+              const box = cell.getBoundingClientRect();
+              return box.left <= x && x <= box.right;
+            }),
+        ).length;
+        window.omnileafGappedFrames?.push(gaps);
+      }
+      requestAnimationFrame(record);
+    };
+    requestAnimationFrame(record);
+  }, COVER_SAMPLES);
+}
+
+async function stopRecording(page: Page): Promise<number[]> {
+  return page.evaluate(() => {
+    window.omnileafRecording = false;
+    return window.omnileafGappedFrames ?? [];
+  });
+}
+
+async function slidesRunning(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      document
+        .getAnimations()
+        .filter((animation) => animation.playState === "running").length,
+  );
 }
 
 async function watchForControls(page: Page): Promise<void> {
@@ -195,6 +337,54 @@ async function pageAreaBox(page: Page): Promise<Point> {
   return { x: box.x, y: box.y };
 }
 
+test(
+  "keeps the screen covered by drawn pages through four quick taps on a slow phone",
+  { tag: "@native" },
+  async ({ page }) => {
+    await serveLargePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    await expect(
+      page.getByRole("main").locator('img[alt="Page 17"]'),
+    ).not.toHaveClass(/invisible/, { timeout: 15_000 });
+    const session = await page.context().newCDPSession(page);
+    const next = await centreOf(
+      page.getByRole("button", { name: "Next page" }),
+    );
+    await session.send("Emulation.setCPUThrottlingRate", {
+      rate: CPU_SLOWDOWN,
+    });
+    await recordUncoveredFrames(page);
+
+    await tapEvery(session, next, QUICK_TAPS);
+    await expectOnPage(page, 14 + QUICK_TAPS);
+    await expect.poll(() => slidesRunning(page)).toBe(0);
+    await waitFrames(page, FRAMES_TO_SETTLE);
+    const gapped = await stopRecording(page);
+    await session.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+
+    expect(gapped.length).toBeGreaterThan(0);
+    expect(gapped.filter((gaps) => gaps > 0)).toEqual([]);
+  },
+);
+
+test(
+  "zooms on a double tap without showing the controls first",
+  { tag: "@native" },
+  async ({ page }) => {
+    await servePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    const session = await page.context().newCDPSession(page);
+    await hideControls(page, session);
+    await watchForControls(page);
+
+    await doubleTapToZoom(page, session);
+
+    expect(
+      await page.evaluate(() => window.omnileafControlsShown ?? false),
+    ).toBe(false);
+  },
+);
+
 async function expectZoomedPagePans(page: Page): Promise<void> {
   await servePages(page);
   await openBookWith(page, { pageTurn: "slide" });
@@ -227,24 +417,6 @@ async function expectZoomedPagePans(page: Page): Promise<void> {
   expect(Math.abs(clamped.y - area.y)).toBeLessThan(CLOSE_PX);
   await expectOnPage(page, 14);
 }
-
-test(
-  "zooms on a double tap without showing the controls first",
-  { tag: "@native" },
-  async ({ page }) => {
-    await servePages(page);
-    await openBookWith(page, { pageTurn: "slide" });
-    const session = await page.context().newCDPSession(page);
-    await hideControls(page, session);
-    await watchForControls(page);
-
-    await doubleTapToZoom(page, session);
-
-    expect(
-      await page.evaluate(() => window.omnileafControlsShown ?? false),
-    ).toBe(false);
-  },
-);
 
 test(
   "pans a page zoomed by a double tap both ways under the finger, stopping at its edges, without turning it",

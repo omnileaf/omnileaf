@@ -19,7 +19,8 @@
   import { fittedTo, type Size } from "#lib/reader/page-fit.ts";
   import type { PageFit } from "#lib/reader/reader-settings.svelte.ts";
   import { spreadAt, type Spread } from "#lib/reader/spreads.ts";
-  import { cellsAround, type SpreadsInView } from "#lib/reader/page-cells.ts";
+  import { cellsAround } from "#lib/reader/page-cells.ts";
+  import { slideTiming, turnsOnScreen } from "#lib/reader/page-flight.ts";
   import { pagesAround } from "#lib/reader/page-window.ts";
 
   /** Pages decoded ahead of the one shown, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
@@ -71,6 +72,11 @@
     onSettled: () => void;
   } = $props();
 
+  interface Flight {
+    readonly from: number;
+    readonly isFlying: boolean;
+  }
+
   let scroller: HTMLDivElement | undefined = $state();
 
   const decoded = new SvelteSet<number>();
@@ -86,28 +92,50 @@
   const spread = $derived(spreads[shownSpread] ?? [shown]);
   const position = $derived(isPastEnd ? spreads.length : shownSpread);
   const nextSide = $derived(isReversed ? -1 : 1);
-  const revealed = $derived(position + turnsRevealed(slide));
-  let inView: SpreadsInView = $state.raw(
-    untrack(() => ({ at: position, low: position, high: position })),
+  let flight: Flight | undefined = $state.raw();
+  let flying: Animation[] = [];
+  let lastPosition = untrack(() => position);
+  let lastSlide = untrack(() => slide);
+  const onScreen = $derived(
+    turnsOnScreen(
+      flight === undefined
+        ? { from: slide, to: slide }
+        : { from: flight.from, to: 0 },
+      spaceWidth,
+      nextSide,
+    ),
   );
   const cells = $derived(
-    cellsAround(spreads, inView, pagesAround(shown, pages.length, PAGES_AHEAD)),
+    cellsAround(
+      spreads,
+      {
+        at: position,
+        low: position + onScreen.low,
+        high: position + onScreen.high,
+      },
+      pagesAround(shown, pages.length, PAGES_AHEAD),
+    ),
+  );
+  const isFlightReady = $derived(
+    cells.every(
+      (cell) => !isPainted(cell.offset) || cell.spread.every(isReady),
+    ),
   );
 
   $effect.pre(() => {
     const at = position;
-    const low = Math.min(at, revealed);
-    const high = Math.max(at, revealed);
-    const isMoving = isSettling || slide !== 0;
+    const across = slide;
+    const settles = isSettling;
     untrack(() => {
-      inView = isMoving
-        ? {
-            at,
-            low: Math.min(inView.low, low),
-            high: Math.max(inView.high, high),
-          }
-        : { at, low, high };
+      followTurn(at, across, settles);
     });
+  });
+
+  $effect(() => {
+    if (flight === undefined || flight.isFlying || !isFlightReady) {
+      return;
+    }
+    untrack(launch);
   });
   const isShownReady = $derived(
     isBlank || decoded.has(shown) || failed.has(shown),
@@ -164,35 +192,90 @@
     );
   }
 
-  function settleOnceStill(
-    event: TransitionEvent & { currentTarget: HTMLElement },
-  ): void {
-    if (event.currentTarget.getAnimations().length === 0) {
-      onSettled();
+  function isReady(index: number): boolean {
+    return isBlank || decoded.has(index) || failed.has(index);
+  }
+
+  function isPainted(offset: number): boolean {
+    return offset >= onScreen.low && offset <= onScreen.high;
+  }
+
+  function restOf(offset: number): number {
+    return offset * nextSide * spaceWidth;
+  }
+
+  function followTurn(at: number, across: number, settles: boolean): void {
+    const turned = at - lastPosition;
+    const isLetGo = lastSlide !== 0 && across === 0;
+    if (settles && (turned !== 0 || isLetGo)) {
+      const shift = flight === undefined ? lastSlide : shiftInFlight();
+      stopFlying();
+      flight = { from: shift + restOf(turned), isFlying: false };
+    } else if (!settles && flight !== undefined) {
+      stopFlying();
+      flight = undefined;
     }
+    lastPosition = at;
+    lastSlide = across;
+  }
+
+  function launch(): void {
+    const leaving = flight;
+    if (leaving === undefined || scroller === undefined) {
+      return;
+    }
+    const timing = slideTiming(scroller);
+    const painted = [...scroller.querySelectorAll<HTMLElement>("[data-turns]")];
+    if (timing.duration <= 0 || painted.length === 0) {
+      land();
+      return;
+    }
+    const batch = painted.map((cell) => {
+      const rest = restOf(Number(cell.dataset.turns));
+      return cell.animate(
+        [
+          { translate: `${String(rest + leaving.from)}px 0` },
+          { translate: `${String(rest)}px 0` },
+        ],
+        timing,
+      );
+    });
+    flying = batch;
+    const [first] = batch;
+    if (first !== undefined) {
+      first.onfinish = () => {
+        if (flying === batch) {
+          land();
+        }
+      };
+    }
+    flight = { from: leaving.from, isFlying: true };
+  }
+
+  function land(): void {
+    flying = [];
+    flight = undefined;
+    onSettled();
+  }
+
+  function stopFlying(): void {
+    for (const animation of flying) {
+      animation.cancel();
+    }
+    flying = [];
   }
 
   function placeOf(offset: number): string | undefined {
-    const across = offset * nextSide * spaceWidth + slide;
-    return across === 0 && !isSettling ? undefined : `${String(across)}px 0`;
+    const shift =
+      flight === undefined ? slide : flight.isFlying ? 0 : flight.from;
+    const across = restOf(offset) + shift;
+    return across === 0 && flight === undefined
+      ? undefined
+      : `${String(across)}px 0`;
   }
 
   function scaled(size: { width: number; height: number }, scale: number) {
     return { width: size.width * scale, height: size.height * scale };
-  }
-
-  function turnsRevealed(across: number): number {
-    if (across === 0 || spaceWidth <= 0) {
-      return 0;
-    }
-    return (
-      -Math.sign(across * nextSide) * Math.ceil(Math.abs(across) / spaceWidth)
-    );
-  }
-
-  function isInView(offset: number): boolean {
-    const index = position + offset;
-    return index >= inView.low && index <= inView.high;
   }
 
   export function shiftInFlight(): number {
@@ -202,9 +285,7 @@
     }
     const [across = ""] = getComputedStyle(cell).translate.split(" ");
     const shift = Number.parseFloat(across);
-    return Number.isNaN(shift)
-      ? 0
-      : shift - Number(cell.dataset.turns) * nextSide * spaceWidth;
+    return Number.isNaN(shift) ? 0 : shift - restOf(Number(cell.dataset.turns));
   }
 
   /** Starts each spread at its top, since a page fitted to the width scrolls down. */
@@ -334,28 +415,23 @@
   >
     {#each cells as cell (cell.spread[0])}
       {@const isNeighbour = cell.offset !== 0}
-      {@const isPainted = isInView(cell.offset)}
+      {@const isOnScreen = isPainted(cell.offset)}
       <div
         aria-hidden={isNeighbour ? "true" : undefined}
-        data-turns={isPainted ? cell.offset : undefined}
+        data-turns={isOnScreen ? cell.offset : undefined}
         class={[
           "flex",
           isNeighbour
             ? "fixed inset-s-none inset-bs-none overflow-hidden"
             : "col-start-1 row-start-1",
-          !isPainted && "invisible",
+          !isOnScreen && "invisible",
           isReversed && "flex-row-reverse",
-          isSettling &&
-            isPainted &&
-            "motion-reader:transition-transform motion-reader:duration-slide motion-reader:ease-emphasized",
         ]}
         style:translate={placeOf(cell.offset)}
         style:min-width="{spaceWidth}px"
         style:min-height="{spaceHeight}px"
         style:width={isNeighbour ? `${String(spaceWidth)}px` : "max-content"}
         style:height={isNeighbour ? `${String(spaceHeight)}px` : undefined}
-        ontransitionend={settleOnceStill}
-        ontransitioncancel={settleOnceStill}
       >
         {#each cell.spread as index (index)}
           {@const page = pages[index]}
