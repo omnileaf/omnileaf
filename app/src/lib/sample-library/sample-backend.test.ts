@@ -504,7 +504,7 @@ test("lists and counts only the series in no category", async () => {
     tagsRemoved: [],
   });
   const pages = await Promise.all(
-    categories.map(({ id }) =>
+    categories.map(async ({ id }) =>
       backend.categorySeries(id, null, NEW_LIBRARY_LISTING),
     ),
   );
