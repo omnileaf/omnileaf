@@ -11,6 +11,7 @@ import { ANDROID_BACK_SPRING, type BackGestureStep } from "./back-preview";
 import {
   type SheetBackShape,
   type SheetBackSize,
+  sheetBackProgressOf,
   sheetBackShape,
 } from "./sheet-back";
 
@@ -66,6 +67,8 @@ export class SheetBackPreview {
   #phase: Phase | undefined = $state();
   #shape: SheetBackShape = $state.raw(AT_REST);
   #size: SheetBackSize | undefined;
+  #reached = 0;
+  #watching: MutationObserver | undefined;
   #parts: readonly HTMLElement[] = [];
   #springs: readonly Animation[] = [];
   #stopSettling: (() => void) | undefined;
@@ -129,6 +132,16 @@ export class SheetBackPreview {
     const reached = this.#phase === undefined ? AT_REST : shapeReachedBy(sheet);
     this.#release();
     this.#size = { width: sheet.offsetWidth, height: sheet.offsetHeight };
+    this.#reached = sheetBackProgressOf(this.#size, reached);
+    this.#watching = new MutationObserver(() => {
+      if (sheet.dataset.state === "open") {
+        this.#release();
+      }
+    });
+    this.#watching.observe(sheet, {
+      attributes: true,
+      attributeFilter: ["data-state"],
+    });
     this.#parts = partsOf(sheet);
     for (const part of this.#parts) {
       part.style.setProperty(PART_ORIGIN, `${String(-part.offsetTop)}px`);
@@ -141,7 +154,11 @@ export class SheetBackPreview {
     if (this.#phase !== "held" || this.#size === undefined) {
       return;
     }
-    this.#shape = sheetBackShape(this.#size, easedBackProgress(progress));
+    const eased = easedBackProgress(progress);
+    this.#shape = sheetBackShape(
+      this.#size,
+      this.#reached + (1 - this.#reached) * eased,
+    );
   }
 
   #springBack(): void {
@@ -173,7 +190,10 @@ export class SheetBackPreview {
       part.style.removeProperty(PART_ORIGIN);
     }
     this.#parts = [];
+    this.#watching?.disconnect();
+    this.#watching = undefined;
     this.#size = undefined;
+    this.#reached = 0;
     this.#shape = AT_REST;
     this.#phase = undefined;
   }

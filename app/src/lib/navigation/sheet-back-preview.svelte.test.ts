@@ -5,6 +5,7 @@ import type { BackGestureAt, BackGestureStep } from "./back-preview";
 import { SheetBackPreview } from "./sheet-back-preview.svelte";
 
 const SPRING_SETTLES_MS = 180;
+const COMPUTED_ROUNDING = 0.0001;
 const ORIGIN = "--sheet-back-origin";
 const mounted: HTMLElement[] = [];
 
@@ -252,4 +253,42 @@ test("shrinks again from rest after the sheet has gone and come back", () => {
   sheet.follow(started);
 
   expect(sheet.style).toContain("scale: 1 1");
+});
+
+test("never widens the sheet during a gesture that takes over from a spring back", () => {
+  const { sheet, apply } = preview();
+  sheet.follow(started);
+  sheet.follow(moved(1));
+  apply();
+  sheet.follow(ended);
+  apply();
+  sheet.follow(started);
+  const widthOf = () => Number(sheet.style?.match(/scale: ([\d.]+) /)?.[1]);
+  const startedAt = widthOf();
+
+  sheet.follow(moved(0.05));
+
+  expect(widthOf()).toBeLessThan(startedAt + COMPUTED_ROUNDING);
+});
+
+test("is at rest again when the sheet opens again before it is gone", async () => {
+  const { sheet, element } = preview(true, "closed");
+  sheet.follow(started);
+  sheet.follow(moved(1));
+
+  element.dataset.state = "open";
+  await Promise.resolve();
+
+  expect([sheet.phase, sheet.style]).toEqual([undefined, undefined]);
+});
+
+test("stays shrunk while the sheet closes", async () => {
+  const { sheet, element } = preview();
+  sheet.follow(started);
+  sheet.follow(moved(1));
+
+  element.dataset.state = "closed";
+  await Promise.resolve();
+
+  expect(sheet.phase).toBe("held");
 });
