@@ -288,3 +288,21 @@ test("keeps a busy Android button's corners when it is pressed", async () => {
 
   expect(settled(busy).borderTopLeftRadius).toBe("20px");
 });
+
+test("morphs a pressed Android button's corners on the kit's spring while navigation moves", async () => {
+  const moving = await renderButton("android", "light", { variant: "primary" });
+
+  const durations = getComputedStyle(moving).transitionDuration.split(", ");
+
+  expect(durations.at(-1)).toBe("0.383s");
+});
+
+test("holds a pressed Android button's corners still when navigation animations are off", async () => {
+  document.documentElement.dataset.still = "navigation";
+  const still = await renderButton("android", "light", { variant: "primary" });
+
+  const durations = getComputedStyle(still).transitionDuration.split(", ");
+  delete document.documentElement.dataset.still;
+
+  expect(durations.at(-1)).toBe("0s");
+});

@@ -141,3 +141,19 @@ test("leaves a switch drawn as a whole row to ring the row, not the track", asyn
     "none",
   );
 });
+
+test("grows a pressed Android switch's thumb on the kit's spring while navigation moves, and at once when it is held still", async () => {
+  await renderSwitch("android", "light", false);
+  const moving = getComputedStyle(knobOf("Keep the screen on"));
+  const movingProperty = moving.transitionProperty;
+
+  document.documentElement.dataset.still = "navigation";
+  const stillProperty = getComputedStyle(
+    knobOf("Keep the screen on"),
+  ).transitionProperty;
+  delete document.documentElement.dataset.still;
+
+  expect(movingProperty).toContain("inline-size");
+  expect(moving.transitionDuration.split(", ")[0]).toBe("0.383s");
+  expect(stillProperty).not.toContain("inline-size");
+});
