@@ -5,6 +5,7 @@ use super::Writer;
 use crate::{
     Error,
     catalog::stored_id::stored_id,
+    library_tabs::forget_category_tab,
     store::key::{Key, LabelKey},
 };
 
@@ -78,6 +79,7 @@ impl Writer<'_> {
     pub fn delete_category(&mut self, category: CategoryId) -> Result<(), Error> {
         let members = self.members_of(SERIES_IN_CATEGORY, category.as_bytes())?;
         self.set_category_members(category, &members, false)?;
+        forget_category_tab(self.connection, &category.to_string())?;
         self.write_label(LabelKey::CategoryDeleted(category), &Value::Bool(true))
     }
 

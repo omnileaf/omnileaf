@@ -6,8 +6,8 @@
 mod support;
 
 use omnileaf_engine::{
-    CategoryId, CategoryRename, LabelChanges, Library, LibraryCategory, LibraryListing, LibraryTag,
-    SeriesId,
+    CategoryId, CategoryRename, LabelChanges, Library, LibraryCategory, LibraryListing, LibraryTab,
+    LibraryTabId, LibraryTag, SeriesId,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -416,6 +416,36 @@ async fn removes_a_category_and_keeps_its_series_in_the_library() {
             .len(),
         library_before
     );
+}
+
+#[tokio::test]
+async fn brings_a_deleted_category_s_name_back_as_a_new_shown_tab() {
+    let labelled = Labelled::open("labels-category-remove-tab").await;
+    labelled.label(1, creating("Sample Shelf")).await;
+    let shelf = labelled.category("Sample Shelf").await;
+    let shelf_tab = LibraryTabId::Category {
+        id: shelf.id.clone(),
+    };
+    labelled
+        .library
+        .set_tabs(vec![LibraryTab {
+            id: shelf_tab.clone(),
+            is_hidden: true,
+        }])
+        .await
+        .unwrap();
+
+    labelled
+        .library
+        .remove_library_category(shelf.id.clone())
+        .await
+        .unwrap();
+    labelled.label(0, creating("Sample Shelf")).await;
+
+    let again = labelled.category("Sample Shelf").await;
+    let tabs = labelled.library.tabs().await.unwrap();
+    assert_eq!(again.id, shelf.id);
+    assert!(tabs.iter().all(|tab| tab.id != shelf_tab));
 }
 
 #[tokio::test]

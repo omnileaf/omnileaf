@@ -386,6 +386,36 @@ async fn deletes_only_the_category_and_its_memberships() {
 }
 
 #[tokio::test]
+async fn forgets_a_deleted_category_s_place_and_hiding_so_it_comes_back_as_a_new_tab() {
+    let folder = ScratchFolder::new("labels-delete-category-tab");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    let shelf = create_category(&store, "Sample Shelf").await;
+    let other = create_category(&store, "Other Name").await;
+    let hidden_first = TabPlace {
+        is_hidden: true,
+        ..category_tab(shelf)
+    };
+    let kept = vec![hidden_first, category_tab(other)];
+    store
+        .database()
+        .write(move |transaction| set_library_tabs(transaction, &kept))
+        .await
+        .unwrap();
+
+    store
+        .write(move |writer| writer.delete_category(shelf))
+        .await
+        .unwrap();
+    let again = create_category(&store, "Sample Shelf").await;
+
+    assert_eq!(again, shelf);
+    assert_eq!(
+        store.database().read(library_tabs).await.unwrap(),
+        [category_tab(other)]
+    );
+}
+
+#[tokio::test]
 async fn keeps_a_tag_under_its_name_and_the_series_that_carry_it() {
     let folder = ScratchFolder::new("labels-tag");
     let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
