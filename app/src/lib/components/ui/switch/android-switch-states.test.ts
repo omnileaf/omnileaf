@@ -1,3 +1,4 @@
+import { createRawSnippet } from "svelte";
 import { afterEach, expect, test } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
@@ -41,8 +42,10 @@ function rootOf(name: string): HTMLElement {
 }
 
 function trackOf(name: string): HTMLElement {
-  const track = rootOf(name).querySelector<HTMLElement>(":scope > span");
-  if (track === null) {
+  const track = rootOf(name).querySelector(
+    "[data-switch-thumb]",
+  )?.parentElement;
+  if (track === null || track === undefined) {
     throw new Error(`the ${name} switch has no track`);
   }
   return track;
@@ -114,5 +117,27 @@ test("keeps a focused iOS switch's track unringed", async () => {
   );
   expect(getComputedStyle(knobOf("Keep the screen on")).backgroundColor).toBe(
     "oklch(1 0 0)",
+  );
+});
+
+test("leaves a switch drawn as a whole row to ring the row, not the track", async () => {
+  followCorePlatform("android");
+  document.documentElement.dataset.theme = "light";
+  await render(Switch, {
+    "aria-label": "Skip this screen",
+    class: "focus-visible:outline-2 focus-visible:outline-accent",
+    children: createRawSnippet(() => ({
+      render: () => "<span>Skip this screen</span>",
+    })),
+  });
+
+  await userEvent.tab();
+  await expect.element(rootOf("Skip this screen")).toHaveFocus();
+
+  expect(getComputedStyle(rootOf("Skip this screen")).outlineStyle).toBe(
+    "solid",
+  );
+  expect(getComputedStyle(trackOf("Skip this screen")).outlineStyle).toBe(
+    "none",
   );
 });
