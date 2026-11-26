@@ -89,14 +89,21 @@ jobs:
           HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
+          pull_requests_above() {
+            heads=$(gh api --paginate -X GET "repos/$GITHUB_REPOSITORY/pulls" -f state=open -f base="$HEAD_BRANCH" -f per_page=100 --jq '.[].head.repo.full_name') || return 1
+            grep -cxF "$GITHUB_REPOSITORY" <<< "$heads" || true
+          }
           suite=whole
           screens=
           if [ "$EVENT" = pull_request ] && ! jq -e 'index("full-browser-tests")' <<< "$LABELS" > /dev/null; then
             screens=phone,desktop
             if [ "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY" ] && [ "$BROWSER_SETUP" = false ]; then
-              above=$(gh api -X GET "repos/$GITHUB_REPOSITORY/pulls" -f state=open -f base="$HEAD_BRANCH" --jq length)
-              if [ "$above" -gt 0 ]; then
-                suite=touched
+              if above=$(pull_requests_above); then
+                if [ "$above" -gt 0 ]; then
+                  suite=touched
+                fi
+              else
+                echo "::warning::Could not list the pull requests above this one, so the whole browser suite runs"
               fi
             fi
           fi
