@@ -340,3 +340,75 @@ for (const { groupBy, first, next, backend } of SPACED_GROUPINGS) {
     );
   }
 }
+
+type WireEntry = Awaited<
+  ReturnType<FakeBackend["readingHistory"]>
+>["entries"][number];
+
+const ROW_TO_FIRST_GROUP = 16;
+const STARTED_SERIES = LIBRARY.slice(0, 2);
+
+function startedEntry(
+  series: (typeof STARTED_SERIES)[number],
+  number: number,
+): WireEntry {
+  return {
+    book: `0190a3e4-0000-8000-8002-${String(number).padStart(12, "0")}`,
+    bookTitle: `${series.title} v01`,
+    series: series.id,
+    seriesTitle: series.title,
+    position: 1,
+    cover: null,
+    startedAtMs: Date.UTC(2026, 9, 5, 20 - number),
+    utcOffsetMinutes: 0,
+    readSeconds: 600,
+    readTo: { state: "page", page: 10, pageCount: 40 },
+    reading: { state: "started", page: 10 },
+    day: { day: 20_731, readSeconds: 600 },
+  };
+}
+
+test.describe(
+  "grouped with the Continue row on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.use({
+      backend: {
+        ...GROUPED_BY_WRITER,
+        libraryView: () => ({
+          ...DEFAULT_LIBRARY_VIEW,
+          groupBy: "creator",
+          showsContinueRow: true,
+        }),
+        readingHistory: (_after, of) => ({
+          entries:
+            of.kind === "unfinished" ? STARTED_SERIES.map(startedEntry) : [],
+          next: null,
+        }),
+      },
+    });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's Material group heading");
+    });
+
+    test(`starts the first group's heading ${String(ROW_TO_FIRST_GROUP)}px under the Continue row`, async ({
+      page,
+    }) => {
+      await page.goto("/");
+      const row = await boxOf(
+        page.getByRole("region", { name: "Continue reading" }),
+      );
+      const heading = await boxOf(
+        page
+          .getByRole("region", { name: "Author A", exact: true })
+          .getByRole("heading", { level: 2 }),
+      );
+
+      expect(heading.y - (row.y + row.height)).toBeCloseTo(
+        ROW_TO_FIRST_GROUP,
+        0,
+      );
+    });
+  },
+);
