@@ -149,6 +149,14 @@ const ANDROID_LOOK: AlertLook = {
   defaultAction: CANCEL_BY_DEFAULT,
 };
 
+const ANDROID_ICON_DIALOG_LOOK: AlertLook = {
+  ...ANDROID_LOOK,
+  header: "max-medium:flex-col max-medium:gap-lg",
+  badge:
+    "max-medium:bg-transparent max-medium:text-muted max-medium:block-native-icon max-medium:inline-native-icon max-medium:[&>svg]:block-native-icon max-medium:[&>svg]:inline-native-icon",
+  title: `${ANDROID_LOOK.title} max-medium:text-center`,
+};
+
 const MAC_ACTION = "min-block-native-button-large rounded-full px-sm";
 
 const MAC_LOOK: AlertLook = {
@@ -199,9 +207,12 @@ export type IosPhoneConfirmLook = "actionSheet";
 
 export type MacConfirmLook = "alert" | "destructiveAlert";
 
+export type AndroidPhoneConfirmLook = "iconDialog";
+
 export interface ConfirmLooks {
   readonly iosPhone?: IosPhoneConfirmLook | undefined;
   readonly mac?: MacConfirmLook | undefined;
+  readonly androidPhone?: AndroidPhoneConfirmLook | undefined;
 }
 
 function isIosActionSheet(platform: Platform, looks: ConfirmLooks): boolean {
@@ -210,6 +221,13 @@ function isIosActionSheet(platform: Platform, looks: ConfirmLooks): boolean {
 
 function isMacAlert(platform: Platform, looks: ConfirmLooks): boolean {
   return platform === "macos" && looks.mac !== undefined;
+}
+
+function isAndroidIconDialog(
+  platform: Platform,
+  looks: ConfirmLooks,
+): boolean {
+  return platform === "android" && looks.androidPhone === "iconDialog";
 }
 
 /** WinUI has no bottom sheets, so a Windows confirmation is always a ContentDialog. */
@@ -230,7 +248,8 @@ export function opensAsAlert(
     phoneLook === "dialog" ||
     !HAS_BOTTOM_SHEETS[platform] ||
     isIosActionSheet(platform, looks) ||
-    isMacAlert(platform, looks)
+    isMacAlert(platform, looks) ||
+    isAndroidIconDialog(platform, looks)
   );
 }
 
@@ -240,6 +259,9 @@ export function alertLook(
 ): AlertLook {
   if (isMacAlert(platform, looks)) {
     return looks.mac === "destructiveAlert" ? MAC_DESTRUCTIVE_LOOK : MAC_LOOK;
+  }
+  if (isAndroidIconDialog(platform, looks)) {
+    return ANDROID_ICON_DIALOG_LOOK;
   }
   return isIosActionSheet(platform, looks)
     ? IOS_ACTION_SHEET_LOOK

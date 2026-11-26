@@ -9,6 +9,7 @@
     type AlertAction,
     alertLook,
     type AlertTone,
+    type AndroidPhoneConfirmLook,
     CONTENT_DIALOG_PANEL,
     type ConfirmPhoneLook,
     type IosPhoneConfirmLook,
@@ -46,6 +47,7 @@
     phoneLook = "sheet",
     iosPhoneLook,
     macLook,
+    androidPhoneLook,
     tone = "danger",
     isBusy = false,
     children,
@@ -60,6 +62,7 @@
     phoneLook?: ConfirmPhoneLook;
     iosPhoneLook?: IosPhoneConfirmLook | undefined;
     macLook?: MacConfirmLook | undefined;
+    androidPhoneLook?: AndroidPhoneConfirmLook | undefined;
     tone?: AlertTone;
     isBusy?: boolean;
     children: Snippet;
@@ -69,7 +72,11 @@
   const sheetLook = $derived(
     iosPhone.isOn && tone === "danger" ? iosPhoneLook : undefined,
   );
-  const looks = $derived({ iosPhone: sheetLook, mac: macLook });
+  const looks = $derived({
+    iosPhone: sheetLook,
+    mac: macLook,
+    androidPhone: androidPhoneLook,
+  });
   const isAlert = $derived(opensAsAlert(currentPlatform(), phoneLook, looks));
   const alert = $derived(
     isAlert ? alertLook(currentPlatform(), looks) : TODAYS_ALERT_LOOK,
