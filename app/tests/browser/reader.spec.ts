@@ -378,16 +378,6 @@ test("shows small thumbnails of the nearby pages, not the pages themselves", asy
   }
 });
 
-test("stays on the first page when asked to turn back from it", async ({
-  page,
-}) => {
-  await openBook(page);
-
-  await zone(page, "Previous page").click();
-
-  await expectOnPage(page, 1);
-});
-
 test("says which page is up to a screen reader as pages turn", async ({
   page,
 }) => {
@@ -1781,6 +1771,16 @@ test.describe("the first book of a series", () => {
       ...DEFAULT_BACKEND,
       openBook: () => ({ ...readerBook(NOT_STARTED), previous: null }),
     },
+  });
+
+  test("stays on the first page when asked to turn back from it", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await zone(page, "Previous page").click();
+
+    await expectOnPage(page, 1);
   });
 
   test("has no book before it to go back to", async ({ page }) => {
