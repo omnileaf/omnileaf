@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -26,7 +26,7 @@
   let { data }: PageProps = $props();
 
   const storage = getStorageCheck();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const card = $derived(android.isOn ? FLAT_CARD : CARD);
   const bleed = $derived(android.isOn && FLUSH_BLEED);
   const width = new WindowWidth();
@@ -44,7 +44,7 @@
 <SectionHeading title={m.storage_title()} />
 {#if storage.use !== undefined}
   <div
-    class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none android:max-medium:gap-none"
+    class="mbs-pane-gap flex flex-col gap-pane-gap android:mbs-none android:gap-none"
   >
     <section
       data-settings-end

@@ -3,7 +3,7 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -47,7 +47,7 @@
       : m.screenshot_mode_tray(),
   );
   const quicklyId = $props.id();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const androidHeading = radiosLook(true).heading;
 
   let isChangingShortcut = $state(false);
@@ -75,7 +75,7 @@
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
 />
 <div
-  class="mbs-pane-gap flex flex-col gap-xl android:max-medium:mbs-none android:max-medium:gap-none"
+  class="mbs-pane-gap flex flex-col gap-xl android:mbs-none android:gap-none"
 >
   <div data-settings-group class="flex flex-col gap-sm">
     <p class="text-detail text-muted">{m.screenshot_mode_intro()}</p>
@@ -191,16 +191,16 @@
       <div class="flex items-center gap-md px-lg pbs-xs pbe-md">
         <span
           aria-hidden="true"
-          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile android:max-medium:border-0 android:max-medium:bg-transparent android:max-medium:text-muted"
+          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile android:border-0 android:bg-transparent android:text-muted"
         >
           <Smartphone size={ROW_ICON_SIZE} />
         </span>
         <span class="flex flex-1 flex-col gap-2xs min-inline-none">
-          <span class="font-semibold android:max-medium:font-regular"
-            >{m.screenshot_mode_long_press()}</span
-          >
+          <span class="font-semibold android:font-regular">
+            {m.screenshot_mode_long_press()}
+          </span>
           <span
-            class="text-detail text-muted android:max-medium:text-native-row-subtitle/native-row-subtitle"
+            class="text-detail text-muted android:text-native-row-subtitle/native-row-subtitle"
           >
             {m.screenshot_mode_long_press_help()}
           </span>

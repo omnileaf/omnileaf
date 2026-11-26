@@ -37,9 +37,9 @@
         {m.reader_strip_found_title()}
       </CardTitle>
     </div>
-    <CardDescription class="text-body expanded:text-small"
-      >{m.reader_strip_found_body()}</CardDescription
-    >
+    <CardDescription class="text-body expanded:text-small">
+      {m.reader_strip_found_body()}
+    </CardDescription>
   </CardHeader>
   <CardFooter class="gap-sm px-lg expanded:justify-end">
     <Button

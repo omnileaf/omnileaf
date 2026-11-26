@@ -24,9 +24,9 @@
   class="flex items-center gap-md py-xs ps-lg pe-md text-native-row-title/native-row-title transition-control min-block-native-row active:bg-native-row-pressed"
 >
   <span class="flex-auto wrap-anywhere min-inline-none">{label}</span>
-  <span class="shrink text-end wrap-anywhere text-muted min-inline-none"
-    >{value}</span
-  >
+  <span class="shrink text-end wrap-anywhere text-muted min-inline-none">
+    {value}
+  </span>
   <ChevronRight
     size={CHEVRON_SIZE}
     class="shrink-0 text-muted rtl:-scale-x-100"

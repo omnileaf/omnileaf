@@ -22,11 +22,15 @@
     isOpen = $bindable(false),
     series,
     startsAtTags,
+    onApplied,
+    onApplyFailed,
     onError,
   }: {
     isOpen?: boolean;
     series: readonly SeriesId[];
     startsAtTags: boolean;
+    onApplied?: () => void;
+    onApplyFailed: (error: unknown) => void;
     onError: (error: unknown) => void;
   } = $props();
 
@@ -61,10 +65,11 @@
   async function apply(): Promise<void> {
     const applied = await commands.labelSeries([...series], draft.changes());
     if (applied.status !== "ok") {
-      onError(applied.error);
+      onApplyFailed(applied.error);
       return;
     }
     isOpen = false;
+    onApplied?.();
   }
 
   function close(): void {

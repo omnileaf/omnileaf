@@ -77,7 +77,7 @@
 
 <SectionHeading title={m.about_title()} />
 <div
-  class="mbs-pane-gap flex flex-col gap-xl android:max-medium:mbs-none two-pane:max-inline-section"
+  class="mbs-pane-gap flex flex-col gap-xl android:mbs-none two-pane:max-inline-section"
 >
   {#if offersUpdateCheck(data.appInfo) && updateCheck.shownRelease !== undefined}
     <UpdateBanner checking={updateCheck} release={updateCheck.shownRelease} />

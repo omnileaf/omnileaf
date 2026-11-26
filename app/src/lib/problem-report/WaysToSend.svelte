@@ -80,9 +80,9 @@
           >
             <Icon size={ICON_SIZE} />
           </span>
-          <span class="flex-1 font-medium expanded:font-semibold"
-            >{label()}</span
-          >
+          <span class="flex-1 font-medium expanded:font-semibold">
+            {label()}
+          </span>
           {#if opensBrowser}
             <ExternalLink
               role="img"

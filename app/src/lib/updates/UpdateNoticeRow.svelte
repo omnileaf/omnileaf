@@ -45,7 +45,9 @@
           toasts,
           m.permissions_open_failed(),
         );
-      }}>{m.permissions_open_android()}</Button
+      }}
     >
+      {m.permissions_open_android()}
+    </Button>
   {/if}
 </li>

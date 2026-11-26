@@ -4,7 +4,7 @@ import {
   DEFAULT_LIBRARY_VIEW,
   type LibraryDisplay,
 } from "../../src/lib/ipc/bindings.ts";
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -165,6 +165,56 @@ test("marks the series selected read, ends selecting, and offers Undo", async ({
       ...booksOf(LIBRARY[1]?.id ?? ""),
       ...booksOf(LIBRARY[2]?.id ?? ""),
     ]);
+});
+
+test.describe("when marking read fails", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      librarySeries: () => ({ series: catalog, next: null }),
+      librarySeriesCount: () => catalog.length,
+      markSeriesRead: () => {
+        throw new CommandFailure({
+          code: "internal",
+          message: "the catalog couldn't be written",
+        });
+      },
+    } satisfies FakeBackend,
+  });
+
+  test("says so and keeps the series selected", async ({ page }) => {
+    await openLibrary(page);
+    await startSelecting(page, 1);
+    await choice(page, titleOf(2)).click();
+
+    await page.getByRole("button", { name: "Mark as read" }).click();
+
+    await expect(
+      page.getByText("Couldn't mark the series as read"),
+    ).toBeVisible();
+    await expect(choice(page, titleOf(1))).toBeChecked();
+    await expect(choice(page, titleOf(2))).toBeChecked();
+  });
+
+  test("says so for one series marked from its menu, with nothing selected", async ({
+    page,
+  }) => {
+    test.skip(test.info().project.use.hasTouch === true, "a right-click");
+    await openLibrary(page);
+
+    await cover(page, 1).getByRole("link").first().click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Mark as read" }).click();
+
+    await expect(
+      page.getByText("Couldn't mark the series as read"),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Nothing in your library has changed. Try again in a moment.",
+      ),
+    ).toBeVisible();
+    await expect(seriesList(page).getByRole("checkbox")).toHaveCount(0);
+  });
 });
 
 test("ends selecting from its close button, and leaves every series as it was", async ({

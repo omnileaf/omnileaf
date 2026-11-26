@@ -172,6 +172,18 @@ test("keeps a series' own speed over every series' while the look applies to all
   ]).toEqual(["all", 5, 5, 3]);
 });
 
+test("starts series with no speed of their own at the speed Settings › Reader sets, leaving a series' own", () => {
+  const store = memoryStore();
+  new ReaderSettings(store, SERIES).changeSpeed(5);
+
+  new ReaderDefaults(store).change("screensPerMinute", 8);
+
+  expect([
+    new ReaderSettings(store, SERIES).speed,
+    new ReaderSettings(store, OTHER_SERIES).speed,
+  ]).toEqual([5, 8]);
+});
+
 test("keeps a speed change on a series with no speed of its own to that series", () => {
   const store = memoryStore();
   const settings = new ReaderSettings(store, SERIES);

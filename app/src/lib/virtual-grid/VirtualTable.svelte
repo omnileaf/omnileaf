@@ -3,6 +3,7 @@
   import type { ClassValue } from "svelte/elements";
 
   import { Table, TableBody } from "#lib/components/ui/table/index.ts";
+  import { laidOutSize, measurableScaleOf } from "#lib/page/shown-scale.ts";
 
   import { rowWindow, type Seen } from "./row-window";
 
@@ -58,14 +59,15 @@
   }
 
   function look(): void {
-    if (body === null) {
+    const scale = body === null ? undefined : measurableScaleOf(body);
+    if (body === null || scale === undefined) {
       return;
     }
-    const top = -body.getBoundingClientRect().top;
-    seen = { top, bottom: top + window.innerHeight };
+    const top = -body.getBoundingClientRect().top / scale;
+    seen = { top, bottom: top + window.innerHeight / scale };
     const height = firstRowHeight(body);
     if (height !== undefined && height > 0) {
-      rowStride = height;
+      rowStride = laidOutSize(height, scale);
     }
   }
 

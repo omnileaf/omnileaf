@@ -8,6 +8,7 @@
   import { DragSelect } from "#lib/library/drag-select.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { Selection } from "#lib/page/selection.svelte.ts";
+  import { endsOnBack } from "#lib/page/selection-back.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SelectionBar from "#lib/series/SelectionBar.svelte";
   import { shortcut } from "#lib/shortcut.ts";
@@ -116,6 +117,13 @@
     await tick();
     outcome = { kind: "pickedAll", count: pickedBooks.length };
   }
+
+  endsOnBack(
+    () => selection.isSelecting,
+    () => {
+      void end();
+    },
+  );
 
   beforeNavigate((navigation) => {
     if (

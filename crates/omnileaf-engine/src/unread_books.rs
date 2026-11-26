@@ -1,4 +1,4 @@
-use crate::{scan::UnreadableBook, skipped_types::SkippedTypes};
+use crate::{skipped_types::SkippedTypes, unreadable_book::UnreadableBook};
 
 #[derive(Debug, Default)]
 pub(crate) struct UnreadBooks {

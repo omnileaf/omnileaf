@@ -75,9 +75,9 @@
           ></span>
         {/if}
       </span>
-      <span class="flex-1 truncate text-start sidebar-hidden:sr-only"
-        >{m.attention_title()}</span
-      >
+      <span class="flex-1 truncate text-start sidebar-hidden:sr-only">
+        {m.attention_title()}
+      </span>
       <Badge look="count" class={look.sidebarBadge}>
         {numbers.format(count)}
       </Badge>

@@ -354,14 +354,15 @@
           <EmptyTitle
             id="{id}-problem"
             class="text-group-title font-semibold expanded:text-body"
-            >{m.reader_page_failed()}</EmptyTitle
           >
-          <EmptyDescription class="text-small"
-            >{m.reader_page_failed_body({
+            {m.reader_page_failed()}
+          </EmptyTitle>
+          <EmptyDescription class="text-small">
+            {m.reader_page_failed_body({
               page: shown + 1,
               title: bookTitle,
-            })}</EmptyDescription
-          >
+            })}
+          </EmptyDescription>
         {:else if isSlow}
           <Spinner size={SPINNER_SIZE} class="text-muted" />
           <p class="text-small text-muted">

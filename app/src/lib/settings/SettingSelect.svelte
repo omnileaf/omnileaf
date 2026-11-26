@@ -1,7 +1,7 @@
 <script lang="ts">
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import type { SelectChoice } from "#lib/components/ui/select-menu/index.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
   import { FLUSH_BLEED } from "./android-flush-look.ts";
@@ -16,7 +16,7 @@
 
   let { label, options, value, onChoose }: Props = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const opensChoiceDialog = currentPlatform() === "android";
   const id = $props.id();
   const labelId = `${id}-label`;

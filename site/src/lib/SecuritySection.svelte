@@ -37,12 +37,12 @@
       <div class="flex flex-col gap-3">
         <h3 class="m-0 text-lead font-semibold">Reporting a vulnerability</h3>
         <p class="m-0 text-muted max-inline-prose">
-          Email <a href={mailto} class="font-semibold text-accent-ink"
-            >{SECURITY_EMAIL}</a
-          > with details and steps to reproduce. We acknowledge reports within 3 business
-          days and follow coordinated disclosure. Please give us a reasonable chance
-          to fix an issue before publishing it, and avoid accessing data that is not
-          your own.
+          Email <a href={mailto} class="font-semibold text-accent-ink">
+            {SECURITY_EMAIL}
+          </a> with details and steps to reproduce. We acknowledge reports within
+          3 business days and follow coordinated disclosure. Please give us a reasonable
+          chance to fix an issue before publishing it, and avoid accessing data that
+          is not your own.
         </p>
       </div>
     </div>
@@ -53,8 +53,9 @@
       <div class="flex flex-col gap-1">
         <span
           class="text-label font-semibold tracking-wide text-muted uppercase"
-          >Security lead</span
         >
+          Security lead
+        </span>
         <span class="font-display text-title font-bold">Kaiser Bh</span>
         <span class="text-muted">Security Lead, Omnileaf Pty Ltd</span>
       </div>
@@ -62,19 +63,22 @@
       <div class="flex flex-col gap-1">
         <span
           class="text-label font-semibold tracking-wide text-muted uppercase"
-          >Contact</span
         >
+          Contact
+        </span>
         <a
           href={mailto}
           class="text-lead font-semibold wrap-anywhere text-accent-ink"
-          >{SECURITY_EMAIL}</a
         >
+          {SECURITY_EMAIL}
+        </a>
       </div>
       <a
         href={securityTxtUrl}
         class="inline-flex items-center justify-center rounded-control border border-border font-mono text-small font-medium text-foreground no-underline min-block-11"
-        >{securityTxtUrl}</a
       >
+        {securityTxtUrl}
+      </a>
     </aside>
   </div>
 </section>

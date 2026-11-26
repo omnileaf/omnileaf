@@ -10,7 +10,7 @@
   import { librarySummaryOf } from "#lib/settings/library-summary.ts";
   import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import {
     READING_MODE_NAMES,
     TAP_ZONE_NAMES,
@@ -21,7 +21,10 @@
   import { getBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
+  import { cn } from "#lib/components/cn.ts";
+  import { watchScrolled } from "#lib/page/scrolled.ts";
   import PageHeading from "#lib/page/PageHeading.svelte";
+  import { ANDROID_PINNED_BAR, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getNeedsAttention } from "#lib/problems/needs-attention.svelte.ts";
   import NeedsAttentionCard from "#lib/problems/NeedsAttentionCard.svelte";
@@ -58,10 +61,21 @@
   const screenshotMode = getScreenshotMode();
   const needsAttention = getNeedsAttention();
   const storage = getStorageCheck();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const readerLook = readerDefaults();
   const newSeriesMode = newSeriesReadingMode();
   let librarySummary = $state<string | undefined>();
+  let isScrolled = $state(false);
+
+  $effect(() => {
+    const main = document.querySelector("main");
+    if (!android.isOn || main === null) {
+      return;
+    }
+    return watchScrolled(main, (scrolled) => {
+      isScrolled = scrolled;
+    });
+  });
 
   onMount(() => {
     void Promise.all([
@@ -132,9 +146,23 @@
     aria-hidden="true"
     class="hidden block-native-target ios:max-medium:block"
   ></div>
-  <PageHeading title={m.settings_title()} />
+  {#if android.isOn}
+    <div
+      data-title-bar
+      class={cn(
+        ANDROID_PINNED_BAR,
+        "ps-page-start pe-page-end",
+        NATIVE_TOP_BAR.edge,
+        isScrolled ? NATIVE_TOP_BAR.scrolled : "border-transparent",
+      )}
+    >
+      <PageHeading title={m.settings_title()} />
+    </div>
+  {:else}
+    <PageHeading title={m.settings_title()} />
+  {/if}
   <PageNoticeSlot />
-  <div class="mbs-lg flex flex-col gap-xl android:max-medium:gap-sm">
+  <div class="mbs-lg flex flex-col gap-xl android:gap-sm">
     {#if needsAttention.problems.length > 0}
       <NeedsAttentionCard
         count={needsAttention.problems.length}
