@@ -245,3 +245,42 @@ test("settles a give-back once its last step back lands, never pushing the overl
   expect(settledBeforeLanding).toBe(false);
   expect(page.entries).toEqual({ pushed: 1, backed: 1 });
 });
+
+test("will take back only while an overlay's entry is open and not yet gone back to", () => {
+  const { overlays, page } = overlayBack();
+  const before = overlays.willTakeBack();
+
+  const release = overlays.hold(() => undefined);
+  const whileOpen = overlays.willTakeBack();
+  page.goBack();
+  const onceBackedTo = overlays.willTakeBack();
+  release();
+
+  expect([before, whileOpen, onceBackedTo]).toEqual([false, true, false]);
+});
+
+test("will not take back once its overlay closes some other way", () => {
+  const { overlays } = overlayBack();
+  const release = overlays.hold(() => undefined);
+
+  release();
+
+  expect(overlays.willTakeBack()).toBe(false);
+});
+
+test("will not take back once the page has navigated away from the overlay's entry", () => {
+  const { overlays, page } = overlayBack();
+  overlays.hold(() => undefined);
+
+  page.navigateAway();
+
+  expect(overlays.willTakeBack()).toBe(false);
+});
+
+test("never will take back when the page does not follow history for back", () => {
+  const { overlays } = overlayBack(false);
+
+  overlays.hold(() => undefined);
+
+  expect(overlays.willTakeBack()).toBe(false);
+});

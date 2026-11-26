@@ -71,6 +71,10 @@ export class OverlayBack {
     return this.#ownPops > 0 || this.#held.some((entry) => isGiveable(entry));
   }
 
+  willTakeBack(): boolean {
+    return this.#held.some((entry) => isGiveable(entry));
+  }
+
   giveBack(): Promise<void> {
     for (const entry of this.#held) {
       if (isGiveable(entry)) {
@@ -167,6 +171,8 @@ const windowHistory: PageHistory = {
 const overlays = new OverlayBack(windowHistory, tellAndroidHowFarBack, () =>
   followsHistoryForBack(currentPlatform()),
 );
+
+export const willOverlayTakeBack = (): boolean => overlays.willTakeBack();
 
 export const giveBackOverlayEntries = (): Promise<void> => overlays.giveBack();
 
