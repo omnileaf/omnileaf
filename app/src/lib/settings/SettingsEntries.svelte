@@ -25,8 +25,8 @@
     ItemDescription,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
-  import { GROUP_PLATE } from "#lib/page/plates.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
+  import { PLATED_LIST } from "#lib/page/plates.ts";
 
   import { FLUSH_LIST } from "./android-flush-look.ts";
 
@@ -34,10 +34,8 @@
 
   const ICON_SIZE = 18;
   const CHEVRON_SIZE = 18;
-  const TODAYS_LIST =
-    "divide-y divide-border overflow-hidden rounded-list border border-border bg-card";
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
 </script>
 
 {#if android.isOn}
@@ -61,7 +59,7 @@
     {/each}
   </ul>
 {:else}
-  <ul class={[TODAYS_LIST, GROUP_PLATE]}>
+  <ul class={["rounded-list", PLATED_LIST]}>
     {#each entries as entry (entry.route)}
       <li>
         <a
@@ -81,14 +79,15 @@
           <span
             class="flex flex-1 flex-col gap-2xs min-inline-none desktop:gap-xs"
           >
-            <span class="font-semibold desktop:text-label desktop:font-medium"
-              >{entry.label}</span
-            >
+            <span class="font-semibold desktop:text-label desktop:font-medium">
+              {entry.label}
+            </span>
             {#if entry.summary !== undefined}
               <span
                 class="text-detail text-muted group-hover:text-foreground desktop:text-label"
-                >{entry.summary}</span
               >
+                {entry.summary}
+              </span>
             {/if}
           </span>
           <ChevronRight

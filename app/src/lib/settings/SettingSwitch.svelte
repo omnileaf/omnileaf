@@ -3,7 +3,7 @@
 
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
 
@@ -46,7 +46,7 @@
   const id = $props.id();
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const look: WordsLook = $derived(
     android.isOn ? "android" : grouped ? "grouped" : "todays",
   );

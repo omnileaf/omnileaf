@@ -4,7 +4,7 @@
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { GROUP_PLATE } from "#lib/page/plates.ts";
+  import { PLATED_LIST } from "#lib/page/plates.ts";
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -71,30 +71,29 @@
   title={m.your_reports_title()}
   parent={{ route: "/(app)/settings/about", title: m.about_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none">
+<div class="mbs-pane-gap flex flex-col gap-sm android:mbs-none">
   <p class="text-detail text-muted">{intro}</p>
   {#if yourReports.reports.length === 0}
     <p class="text-detail">{m.your_reports_none()}</p>
   {:else}
     <ul
       aria-label={m.your_reports_title()}
-      class={[
-        "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card",
-        GROUP_PLATE,
-      ]}
+      class={["flex flex-col rounded-card", PLATED_LIST]}
     >
       {#each yourReports.reports as report (report.code)}
         <li
-          class="flex flex-col gap-2xs px-lg py-md min-block-touch-target android:max-medium:justify-center android:max-medium:gap-none android:max-medium:min-block-native-row-two"
+          class="flex flex-col gap-2xs px-lg py-md min-block-touch-target android:justify-center android:gap-none android:min-block-native-row-two"
         >
           <span
-            class="font-medium expanded:font-semibold android:max-medium:text-body android:max-medium:font-regular"
-            >{madeAt.format(report.madeAtMs)}</span
+            class="font-medium expanded:font-semibold android:text-body android:font-regular"
           >
+            {madeAt.format(report.madeAtMs)}
+          </span>
           <span
-            class="text-detail text-muted android:max-medium:text-native-row-subtitle/native-row-subtitle"
-            >{reportLine(report)}</span
+            class="text-detail text-muted android:text-native-row-subtitle/native-row-subtitle"
           >
+            {reportLine(report)}
+          </span>
         </li>
       {/each}
     </ul>

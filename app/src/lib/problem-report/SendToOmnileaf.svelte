@@ -4,11 +4,11 @@
   import { Alert, AlertTitle } from "#lib/components/ui/alert/index.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
-  import { CARD_PLATE } from "#lib/page/plates.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { reportLook } from "./report-look.ts";
+  import { CurrentReportRowsLook } from "./report-rows-look.ts";
   import type { ReportSharing } from "./report-sharing.svelte";
   import { failureMessage } from "./share-failure";
 
@@ -16,7 +16,9 @@
 
   let { sharing }: { sharing: ReportSharing } = $props();
 
-  const look = reportLook(currentPlatform());
+  const platform = currentPlatform();
+  const rowsLook = new CurrentReportRowsLook();
+  const look = $derived(reportLook(platform, rowsLook.current));
   const fieldId = $props.id();
   const hintId = `${fieldId}-hint`;
   const refusalId = `${fieldId}-refusal`;
@@ -28,8 +30,8 @@
   const isAddressRefused = $derived(failure?.code === "replyAddressInvalid");
 </script>
 
-<div class="mbs-lg mbe-xs flex flex-col android:max-medium:mbe-none">
-  <div class={["flex flex-col gap-sm", look.card, look.isPlated && CARD_PLATE]}>
+<div class="mbs-lg mbe-xs flex flex-col android:mbe-none">
+  <div class={["flex flex-col gap-sm", look.card]}>
     <label for={fieldId} class="text-label font-medium">
       {m.report_reply_email()}
     </label>

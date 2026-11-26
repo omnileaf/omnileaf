@@ -2,7 +2,6 @@
   import { ArrowDownUp, Bookmark, Check, FileX, Search } from "@lucide/svelte";
   import { tick } from "svelte";
 
-  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
   import { Badge } from "#lib/components/ui/badge/index.ts";
@@ -46,10 +45,12 @@
   import { booksMatching } from "#lib/series/book-search.ts";
   import BookProgress from "#lib/series/BookProgress.svelte";
   import { bookSummary } from "#lib/series/book-reading.ts";
+  import { leaveOverlaysThen } from "#lib/navigation/overlay-back.ts";
   import { isShownBy } from "#lib/series/books-shown.ts";
 
   import { JUMP_LIST_LOOK, jumpListPhoneLook } from "./jump-list-look.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import { moveWithinReader } from "./reader-origin.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
 
   const SEARCHABLE_FROM = 20;
@@ -269,9 +270,9 @@
             look={look.row}
             class={cn(look.rowLayout, "pointer-events-none text-muted")}
           >
-            <ItemTitle class={cn(look.title, look.missingTitle)}
-              >{book.title}</ItemTitle
-            >
+            <ItemTitle class={cn(look.title, look.missingTitle)}>
+              {book.title}
+            </ItemTitle>
             <ItemDescription class={look.detail}>
               <ReaderIcon
                 name="file-x"
@@ -295,10 +296,14 @@
                 aria-current={isCurrent ? "true" : undefined}
                 onclick={(event) => {
                   event.preventDefault();
-                  void goto(resolve("/read/[book]", { book: book.id }), {
-                    replaceState: true,
-                    state: { readerJumped: true },
-                  });
+                  leaveOverlaysThen(() =>
+                    moveWithinReader(
+                      resolve("/read/[book]", { book: book.id }),
+                      {
+                        readerJumped: true,
+                      },
+                    ),
+                  );
                 }}
               >
                 <span class="flex items-center gap-sm min-inline-none">
@@ -307,8 +312,10 @@
                       look.title,
                       book.reading.state === "read" && look.readTitle,
                       isCurrent && look.currentTitle,
-                    )}>{book.title}</ItemTitle
+                    )}
                   >
+                    {book.title}
+                  </ItemTitle>
                   {#if book.isBookmarked}
                     <span
                       role="img"
@@ -326,9 +333,9 @@
                     </span>
                   {/if}
                   {#if isCurrent}
-                    <Badge look="secondary" class={look.readingBadge}
-                      >{m.reader_jump_reading()}</Badge
-                    >
+                    <Badge look="secondary" class={look.readingBadge}>
+                      {m.reader_jump_reading()}
+                    </Badge>
                   {/if}
                 </span>
                 <ItemDescription

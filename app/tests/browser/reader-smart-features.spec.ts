@@ -142,7 +142,7 @@ test.describe("in Settings > Reader", () => {
 
     await expect(
       page.getByText(
-        "Defaults for every series without its own. A series’ own settings, chosen in the reader, win.",
+        "Used for every series, unless you change it for a series in the reader.",
       ),
     ).toBeVisible();
   });
@@ -178,9 +178,11 @@ test.describe("in Settings > Reader", () => {
     page,
   }) => {
     await page.goto("/settings/reading");
-    const keepsOn = page.getByRole("switch", { name: "Keep the screen on" });
+    const keepsOn = page.getByRole("switch", {
+      name: "Keep the screen on while reading",
+    });
     await expect(keepsOn).toBeChecked();
-    await expect(keepsOn).toHaveAccessibleDescription("While a book is open.");
+    await expect(keepsOn).toHaveAccessibleDescription("");
 
     await keepsOn.click();
 

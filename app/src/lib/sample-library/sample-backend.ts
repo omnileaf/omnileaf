@@ -38,6 +38,7 @@ import {
   lastVolume,
   missingVolumes,
   numberingOf,
+  type SampleNumbering,
   sectionsOf,
 } from "./sample-numbers.ts";
 
@@ -887,11 +888,21 @@ export function sampleBackend(
       : bookIdIn(series, index);
   }
 
+  function booksNumberedAs(
+    series: SampleSeries,
+    kind: SampleNumbering["kind"],
+  ): number {
+    return series.books.filter((book) => numberingOf(book.title).kind === kind)
+      .length;
+  }
+
   function wireSeries(series: SampleSeries) {
     return {
       id: sampleSeriesId(series.number),
       title: titleOf(series),
       bookCount: series.books.length,
+      volumeCount: booksNumberedAs(series, "volume"),
+      chapterCount: booksNumberedAs(series, "chapter"),
       unreadCount: unreadCountOf(series),
       cover: coverOf(series),
       language: languageOf(series),

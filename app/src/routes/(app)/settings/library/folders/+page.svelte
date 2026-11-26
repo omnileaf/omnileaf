@@ -8,4 +8,4 @@
   title={m.folder_guide_title()}
   parent={{ route: "/(app)/settings/library", title: m.library_title() }}
 />
-<FolderGuide class="mbs-pane-gap android:max-medium:mbs-none" />
+<FolderGuide class="mbs-pane-gap android:mbs-none" />

@@ -88,9 +88,9 @@
                   <RotateCcwClock size={look.iconSize} aria-hidden="true" />
                 {/if}
               </span>
-              <span data-slot="item-title" class="flex-1 truncate"
-                >{entry.text}</span
-              >
+              <span data-slot="item-title" class="flex-1 truncate">
+                {entry.text}
+              </span>
               <span class="text-detail text-muted max-medium:hidden">
                 {searchedWhen(entry.atMs, nowMs, locale)}
               </span>
@@ -128,9 +128,9 @@
           <span data-slot="item-media" class={look.lead}>
             <BookOpen size={look.iconSize} aria-hidden="true" />
           </span>
-          <span data-slot="item-title" class="flex-1"
-            >{m.search_by_title()}</span
-          >
+          <span data-slot="item-title" class="flex-1">
+            {m.search_by_title()}
+          </span>
           <span class="text-detail text-muted max-medium:hidden">
             {m.search_by_title_example()}
           </span>

@@ -15,6 +15,7 @@
   <a
     href={resolve("/")}
     class="inline-flex items-center rounded-control bg-accent px-5.5 font-semibold text-on-accent no-underline min-block-12"
-    >Go to the home page</a
   >
+    Go to the home page
+  </a>
 </main>

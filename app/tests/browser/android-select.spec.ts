@@ -5,13 +5,16 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  selectByLongPress,
   test,
   viewportOf,
 } from "./fixtures.ts";
+import type { BackSwipe } from "../../src/lib/ipc/bindings.ts";
+import type { FakeChannel } from "./fake-backend.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
-const HELD_MS = 800;
 const LIBRARY = sampleSeries(9);
+let gestures: FakeChannel<BackSwipe> | undefined;
 
 test.use({
   backend: {
@@ -24,7 +27,15 @@ test.use({
     }),
     librarySeries: () => ({ series: LIBRARY, next: null }),
     librarySeriesCount: () => LIBRARY.length,
+    watchBackSwipes: (channel) => {
+      gestures = channel;
+      return null;
+    },
   },
+});
+
+test.beforeEach(() => {
+  gestures = undefined;
 });
 
 function seriesList(page: Page): Locator {
@@ -36,15 +47,9 @@ async function startSelecting(page: Page): Promise<void> {
   await expect(seriesList(page).getByRole("listitem")).toHaveCount(
     LIBRARY.length,
   );
-  const link = seriesList(page).getByRole("listitem").nth(1).getByRole("link");
-  const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
-  await link.first().dispatchEvent("pointerdown", touch);
-  await page.waitForTimeout(HELD_MS);
-  const picked = seriesList(page).getByRole("checkbox", {
-    name: LIBRARY[1]?.title ?? "",
-  });
-  await picked.dispatchEvent("pointerup", touch);
-  await picked.dispatchEvent("click");
+
+  await selectByLongPress(page, seriesList(page).getByRole("listitem").nth(1));
+
   await expect(page.getByText("1 selected").first()).toBeVisible();
 }
 
@@ -114,12 +119,10 @@ test.describe(
       await startSelecting(page);
       const bar = page.getByRole("group", { name: "Selected series" });
 
-      await expect(bar.getByRole("button")).toHaveText([
-        "Categories",
-        "Tags",
-        "Mark as read",
-        "More",
-      ]);
+      for (const name of ["Categories", "Tags", "Mark as read", "More"]) {
+        await expect(bar.getByRole("button", { name })).toHaveCount(1);
+      }
+      await expect(bar.getByRole("button")).toHaveCount(4);
       await expect(bar.getByRole("button", { name: "Delete" })).toHaveCount(0);
       const icon = bar
         .getByRole("button", { name: "More" })
@@ -160,17 +163,49 @@ test.describe(
       expect(await accessibilityViolations(page)).toEqual([]);
     });
 
-    test("fills an unchecked cover check box with the window colour inside a 2px outline", async ({
+    test("shows the bar's actions as 48px icons without words under them", async ({
       page,
     }) => {
       await startSelecting(page);
-      const box = seriesList(page)
-        .getByRole("listitem")
-        .first()
-        .locator('[data-slot="selection-mark"]');
+      const buttons = page
+        .getByRole("group", { name: "Selected series" })
+        .getByRole("button");
 
-      await expect(box).toHaveCSS("background-color", "rgb(247, 250, 245)");
-      await expect(box).toHaveCSS("border-top-width", "2px");
+      await expect(buttons).toHaveText(["", "", "", ""]);
+      for (const button of await buttons.all()) {
+        const box = await boxOf(button);
+        expect([box.width, box.height]).toEqual([48, 48]);
+      }
+    });
+
+    for (const name of ["Tags", "More"]) {
+      test(`names ${name} in a tooltip when it is held, without acting on the lift`, async ({
+        page,
+      }) => {
+        await startSelecting(page);
+        const action = page
+          .getByRole("group", { name: "Selected series" })
+          .getByRole("button", { name });
+        const touch = { pointerType: "touch", pointerId: 5, isPrimary: true };
+
+        await action.dispatchEvent("pointerdown", touch);
+        await expect(page.locator("[data-tooltip-content]")).toHaveText(name);
+        await action.dispatchEvent("pointerup", touch);
+        await action.dispatchEvent("click");
+
+        await expect(page.getByRole("dialog")).toHaveCount(0);
+        await expect(page.getByRole("menu")).toHaveCount(0);
+      });
+    }
+
+    test("draws no check boxes on the covers while choosing", async ({
+      page,
+    }) => {
+      await startSelecting(page);
+
+      await expect(
+        seriesList(page).locator('[data-slot="selection-mark"]'),
+      ).toHaveCount(0);
     });
 
     test("sets the count at title large, 22px on a 28px line in regular weight", async ({
@@ -182,6 +217,53 @@ test.describe(
       await expect(count).toHaveCSS("font-size", "22px");
       await expect(count).toHaveCSS("line-height", "28px");
       await expect(count).toHaveCSS("font-weight", "400");
+    });
+  },
+);
+
+test.describe(
+  "the selection bars after a back gesture on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's back gesture");
+    });
+
+    test("run edge to edge again once a back gesture has closed the Categories sheet", async ({
+      page,
+    }) => {
+      await startSelecting(page);
+      const actions = page.getByRole("group", { name: "Selected series" });
+      await actions.getByRole("button", { name: "Categories" }).click();
+      const sheet = page.getByRole("dialog", { name: "Categories and tags" });
+      await expect(sheet).toBeVisible();
+      await expect.poll(() => gestures).toBeDefined();
+      await gestures?.send({
+        kind: "started",
+        progress: 0,
+        edge: "left",
+        touchY: 0.5,
+        corner: 0,
+      });
+      await gestures?.send({ kind: "moved", progress: 0.4 });
+
+      await page.goBack();
+
+      await expect(sheet).toBeHidden();
+      await expect(page.getByRole("main")).toHaveCSS("transform", "none");
+      const screen = viewportOf(page);
+      const top = await boxOf(
+        page.locator("[data-page-toolbar]").filter({
+          has: page.getByRole("button", { name: "Cancel selecting" }),
+        }),
+      );
+      const bottom = await boxOf(actions);
+      expect([top.x, top.width, top.y]).toEqual([0, screen.width, 0]);
+      expect([bottom.x, bottom.width, bottom.y + bottom.height]).toEqual([
+        0,
+        screen.width,
+        screen.height,
+      ]);
     });
   },
 );

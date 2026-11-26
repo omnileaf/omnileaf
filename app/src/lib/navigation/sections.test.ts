@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { isSectionRoot, sectionOf } from "./sections";
+import { isInAppShell, isSectionRoot, sectionOf } from "./sections";
 
 test.each([
   ["/", "library"],
@@ -34,3 +34,17 @@ test.each([
 ] as const)("takes %s for a page inside a section", (routeId) => {
   expect(isSectionRoot(routeId)).toBe(false);
 });
+
+test.each(["/(app)", "/(app)/series/[id]", "/(app)/settings/about"] as const)(
+  "takes %s for a page inside the app shell",
+  (routeId) => {
+    expect(isInAppShell(routeId)).toBe(true);
+  },
+);
+
+test.each(["/read/[book]", "/first-launch", "/"] as const)(
+  "takes %s for a page outside the app shell",
+  (routeId) => {
+    expect(isInAppShell(routeId)).toBe(false);
+  },
+);

@@ -22,6 +22,54 @@
       }
     }
   ],
+  "library_series_volumes": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ṽöļûɱé··········⟧",
+        "countPlural=other": "⟦{formattedCount} ṽöļûɱéš··········⟧"
+      }
+    }
+  ],
+  "library_series_chapters": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} çĥáþţéŕ··········⟧",
+        "countPlural=other": "⟦{formattedCount} çĥáþţéŕš··········⟧"
+      }
+    }
+  ],
+  "library_series_volumes_and_chapters": [
+    {
+      "declarations": [
+        "input volumes",
+        "input chapters",
+        "local volumesPlural = volumes: plural",
+        "local chaptersPlural = chapters: plural",
+        "local formattedVolumes = volumes: number",
+        "local formattedChapters = chapters: number"
+      ],
+      "selectors": ["volumesPlural", "chaptersPlural"],
+      "match": {
+        "volumesPlural=one, chaptersPlural=one": "⟦{formattedVolumes} ṽöļûɱé · {formattedChapters} çĥáþţéŕ······················⟧",
+        "volumesPlural=one, chaptersPlural=other": "⟦{formattedVolumes} ṽöļûɱé · {formattedChapters} çĥáþţéŕš·······················⟧",
+        "volumesPlural=other, chaptersPlural=one": "⟦{formattedVolumes} ṽöļûɱéš · {formattedChapters} çĥáþţéŕ·······················⟧",
+        "volumesPlural=other, chaptersPlural=other": "⟦{formattedVolumes} ṽöļûɱéš · {formattedChapters} çĥáþţéŕš·······················⟧"
+      }
+    }
+  ],
+  "library_series_one_shot": "⟦Öñé-šĥöţ····⟧",
   "library_series_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ļíƀŕáŕý. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
   "library_unchanged": "⟦Ñöţĥíñĝ íñ ýöûŕ ļíƀŕáŕý ĥáš çĥáñĝéð.···············⟧",
   "library_try_again": "⟦Ţŕý áĝáíñ····⟧",
@@ -197,7 +245,6 @@
   "library_tabs_summary": "⟦Öŕðéŕ, ĥíððéñ ţáƀš, ŵĥéŕé ţĥé ļíƀŕáŕý öþéñš··················⟧",
   "library_opens_on": "⟦Ţĥé ļíƀŕáŕý öþéñš öñ········⟧",
   "library_opens_on_last": "⟦Ţĥé ţáƀ ûšéð ļášţ·······⟧",
-  "library_opens_on_help": "⟦Öŕ Áļļ, öŕ á ţáƀ ýöû çĥööšé. Íƒ íţ ŵöûļð öþéñ öñ Ñéŵ çĥáþţéŕš áñð ñöţĥíñĝ íš ñéŵ, íţ öþéñš öñ Áļļ.········································⟧",
   "library_tabs_title_mac": "⟦Çáţéĝöŕíéš····⟧",
   "library_tabs_intro_mac": "⟦Ðŕáĝ ţö ŕéöŕðéŕ, öŕ ûšé ⌥↑ áñð ⌥↓. Ĥíðíñĝ á çáţéĝöŕý ñéṽéŕ ŕéɱöṽéš á šéŕíéš.·······························⟧",
   "library_tabs_all_mac": "⟦Ļíƀŕáŕý···⟧",
@@ -455,6 +502,10 @@
   "library_cancel": "⟦Çáñçéļ···⟧",
   "library_mark_read": "⟦Ṁáŕķ áš ŕéáð·····⟧",
   "library_marked_read": "⟦{count} šéŕíéš ɱáŕķéð áš ŕéáð············⟧",
+  "library_mark_read_failed": "⟦Çöûļðñ'ţ ɱáŕķ ţĥé šéŕíéš áš ŕéáð·············⟧",
+  "library_labels_failed": "⟦Çöûļðñ'ţ çĥáñĝé ţĥé çáţéĝöŕíéš áñð ţáĝš················⟧",
+  "library_remove_failed": "⟦Çöûļðñ'ţ ŕéɱöṽé ţĥé šéŕíéš···········⟧",
+  "library_action_failed_body": "⟦Ñöţĥíñĝ íñ ýöûŕ ļíƀŕáŕý ĥáš çĥáñĝéð. Ţŕý áĝáíñ íñ á ɱöɱéñţ.························⟧",
   "library_selection_toolbar": "⟦Šéļéçţéð šéŕíéš······⟧",
   "library_selection_more": "⟦Ṁöŕé··⟧",
   "library_tags": "⟦Ţáĝš··⟧",
@@ -1177,20 +1228,19 @@
   "library_folder_unavailable": "⟦Ñöţ áṽáíļáƀļé······⟧",
   "library_folder_found_empty": "⟦Ñö ƀööķš ƒöûñð······⟧",
   "appearance_title": "⟦Áþþéáŕáñçé····⟧",
-  "reading_defaults_intro": "⟦Ðéƒáûļţš ƒöŕ éṽéŕý šéŕíéš ŵíţĥöûţ íţš öŵñ. Á šéŕíéš’ öŵñ šéţţíñĝš, çĥöšéñ íñ ţĥé ŕéáðéŕ, ŵíñ.······································⟧",
-  "reading_keep_screen_on_help": "⟦Ŵĥíļé á ƀööķ íš öþéñ.·········⟧",
+  "reading_defaults_intro": "⟦Ûšéð ƒöŕ éṽéŕý šéŕíéš, ûñļéšš ýöû çĥáñĝé íţ ƒöŕ á šéŕíéš íñ ţĥé ŕéáðéŕ.·····························⟧",
+  "reading_keep_screen_on": "⟦Ķééþ ţĥé šçŕééñ öñ ŵĥíļé ŕéáðíñĝ·············⟧",
   "reading_title": "⟦Ŕéáðéŕ···⟧",
   "reading_skip_up_next": "⟦Šķíþ Ûþ ñéẋţ·····⟧",
-  "reading_skip_up_next_help": "⟦Ĝö šţŕáíĝĥţ ţö ţĥé ñéẋţ ƀööķ; Ûþ ñéẋţ ðöéšñ’ţ šĥöŵ. Áļšö öñ Ûþ ñéẋţ.····························⟧",
-  "reading_tap_guide": "⟦Šĥöŵ ţĥé ţáþ ĝûíðé········⟧",
-  "reading_tap_guide_help": "⟦Šĥöŵñ ţĥé ƒíŕšţ ţíɱé ƒöŕ éáçĥ ŵáý öƒ ţûŕñíñĝ þáĝéš. Öƒƒ, íţ ñéṽéŕ šĥöŵš.·····························⟧",
-  "reading_guide_again": "⟦Šĥöŵ ţĥé ĝûíðé áĝáíñ········⟧",
-  "reading_guide_again_help": "⟦Þļáýš íţ öñçé ɱöŕé, éṽéñ ŵíţĥ ţĥé ĝûíðé öƒƒ.··················⟧",
+  "reading_skip_up_next_help": "⟦Ĝö šţŕáíĝĥţ ţö ţĥé ñéẋţ ƀööķ.············⟧",
+  "reading_tap_guide": "⟦Ţáþ ĝûíðé····⟧",
+  "reading_guide_again": "⟦Ŕéþļáý ţĥé ţáþ ĝûíðé········⟧",
   "reading_guide_again_done": "⟦Ţĥé ĝûíðé ŵíļļ šĥöŵ ţĥé ñéẋţ ţíɱé ýöû öþéñ á ƀööķ.····················⟧",
   "reading_resume_notice": "⟦Šĥöŵ ţĥé ŕéšûɱé ñöţíçé·········⟧",
   "reading_resume_notice_help": "⟦Šĥöŵñ ŵĥéñ á ƀööķ öþéñš öñ ýöûŕ šáṽéð þáĝé. Öƒƒ, íţ öþéñš ǫûíéţļý.···························⟧",
-  "reading_mode_new_series": "⟦Ŕéáðíñĝ ɱöðé ƒöŕ ñéŵ šéŕíéš···········⟧",
+  "reading_mode_new_series": "⟦Ŕéáðíñĝ ɱöðé·····⟧",
   "reading_mode_new_series_help": "⟦Áûţöɱáţíç þíçķš þáĝéð öŕ ļöñĝ šţŕíþ ƒŕöɱ ţĥé ðéţáíļš áñð ţĥé þáĝéš.···························⟧",
+  "reading_mode_automatic_hint": "⟦Þíçķš þáĝéð öŕ ļöñĝ šţŕíþ ƒŕöɱ ţĥé ðéţáíļš áñð ţĥé þáĝéš.·······················⟧",
   "reading_swipes": "⟦Šŵíþíñĝ á ƀööķ······⟧",
   "reading_swipes_help": "⟦Íñ á šéŕíéš' ļíšţ öñ á þĥöñé. Ṁáŕķ ŕéáð ɱáŕķš á ƀööķ ţĥáţ'š ŕéáð ûñŕéáð.·····························⟧",
   "reading_swipe_right": "⟦Šŵíþé ŕíĝĥţ·····⟧",
@@ -2391,7 +2441,9 @@
   ],
   "series_bookmark_failed": "⟦Çöûļðñ'ţ ķééþ ţĥé ƀööķɱáŕķ···········⟧",
   "series_bookmark_failed_body": "⟦Ţŕý áĝáíñ íñ á ɱöɱéñţ.·········⟧",
+  "reader_back": "⟦Ɓáçķ··⟧",
   "reader_back_label": "⟦Ɓáçķ ţö ţĥé ļíƀŕáŕý········⟧",
+  "reader_back_to_history": "⟦Ɓáçķ ţö Ĥíšţöŕý······⟧",
   "reader_back_to_series": "⟦Ɓáçķ ţö {series}·······⟧",
   "reader_breadcrumb": "⟦Ɓŕéáðçŕûɱƀ····⟧",
   "settings_breadcrumb": "⟦Ɓŕéáðçŕûɱƀ····⟧",
@@ -2550,6 +2602,21 @@
       }
     }
   ],
+  "reading_long_strip_speed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ļöñĝ šţŕíþ: {formattedCount} šçŕééñ á ɱíñûţé··················⟧",
+        "countPlural=other": "⟦Ļöñĝ šţŕíþ: {formattedCount} šçŕééñš á ɱíñûţé··················⟧"
+      }
+    }
+  ],
+  "reading_long_strip_speed_help": "⟦Ţĥé šþééð éṽéŕý ļöñĝ šţŕíþ šţáŕţš áţ, ƒŕöɱ {slowest} ţö {fastest} šçŕééñš á ɱíñûţé. Çĥáñĝé íţ ŵĥíļé ŕéáðíñĝ áñð ţĥáţ šéŕíéš ķééþš íţš öŵñ.························································⟧",
   "reader_auto_scroll_rate": "⟦Šçŕééñš á ɱíñûţé·······⟧",
   "reader_auto_scroll_rate_value": "⟦Šçŕééñš á ɱíñûţé: {count}··········⟧",
   "reader_save_speed_for": "⟦Šáṽé ţĥé šþééð ƒöŕ········⟧",
@@ -2711,7 +2778,7 @@
   "reader_warmth": "⟦Ŵáŕɱţĥ···⟧",
   "reader_keep_screen_on": "⟦Ķééþ ţĥé šçŕééñ öñ········⟧",
   "reader_crop_borders": "⟦Çŕöþ ŵĥíţé ƀöŕðéŕš········⟧",
-  "reader_volume_keys": "⟦Ţûŕñ þáĝéš ŵíţĥ ţĥé ṽöļûɱé ķéýš·············⟧",
+  "reader_volume_keys": "⟦Ṽöļûɱé ķéýš ţûŕñ þáĝéš·········⟧",
   "reader_volume_keys_help": "⟦Öñļý íñ ţĥé ŕéáðéŕ; éṽéŕýŵĥéŕé éļšé ţĥéý çĥáñĝé ţĥé ṽöļûɱé.························⟧",
   "reader_actions": "⟦Ŕéáðéŕ áçţíöñš······⟧",
   "reader_more": "⟦Ṁöŕé··⟧",

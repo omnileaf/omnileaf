@@ -52,4 +52,4 @@ deny = [
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
-allow-git = ["https://github.com/omnileaf/tauri"]
+allow-git = ["https://github.com/tauri-apps/tauri"]

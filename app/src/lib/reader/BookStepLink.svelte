@@ -9,6 +9,7 @@
 
   import { readerButton, readerIconSize } from "./reader-bar.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import { movesWithinReader } from "./reader-origin.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
 
   type Step = "previous" | "next";
@@ -65,7 +66,9 @@
       <a
         {...props}
         href={resolve("/read/[book]", { book: neighbour.id })}
-        data-sveltekit-replacestate
+        onclick={movesWithinReader(
+          resolve("/read/[book]", { book: neighbour.id }),
+        )}
         aria-label={label}
         class={look}
       >

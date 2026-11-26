@@ -8,9 +8,12 @@ use omnileaf_sync_proto::BookId;
 
 use crate::{
     FileChanges, SkippedType,
+    file_stamp::FileStamp,
     library_layout::{FoundBook, Layout},
-    scan::{FileStamp, Target, UnreadableBook, saturating_u32, warn_unreadable},
+    saturating_u32::saturating_u32,
+    scan_target::Target,
     unread_books::UnreadBooks,
+    unreadable_book::{UnreadableBook, warn_unreadable},
 };
 
 pub(crate) struct ToRead {

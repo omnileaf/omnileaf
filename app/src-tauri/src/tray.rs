@@ -175,8 +175,7 @@ mod desktop {
             return tray.set_menu(Some(built));
         }
         TrayIconBuilder::with_id(TRAY_ID)
-            .icon(Image::from_bytes(TRAY_ICON)?)
-            .icon_as_template(cfg!(target_os = "macos"))
+            .icon_templated(Image::from_bytes(TRAY_ICON)?)
             .tooltip(app.package_info().name.clone())
             .menu(&built)
             .show_menu_on_left_click(true)

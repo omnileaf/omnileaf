@@ -1,21 +1,14 @@
 <script lang="ts">
-  import { Code, ExternalLink } from "@lucide/svelte";
+  import { Code } from "@lucide/svelte";
 
-  import { Button } from "#lib/components/ui/button/index.ts";
-  import { Item } from "#lib/components/ui/item/index.ts";
   import type { IconName } from "#lib/icons/names.ts";
   import type { ProjectLink } from "#lib/ipc/bindings.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import AboutButtonRow from "./AboutButtonRow.svelte";
   import type { LinkOpening } from "./link-opening.svelte";
-  import {
-    type AboutLook,
-    type HintKind,
-    ROW_ICON_SIZES,
-    ROW_LOOKS,
-  } from "./look";
-  import RowText from "./RowText.svelte";
+  import type { AboutLook, HintKind } from "./look";
 
   interface ExternalRow {
     readonly link: ProjectLink;
@@ -46,32 +39,17 @@
 
 {#each externalRows as external (external.link)}
   <li>
-    <Item look={ROW_LOOKS[look]}>
-      {#snippet child({ props })}
-        <Button
-          {...props}
-          type="button"
-          look="row"
-          onclick={() => {
-            void opening.open(external.link);
-          }}
-        >
-          <RowText
-            icon={external.icon}
-            iconName={external.iconName}
-            label={external.label}
-            hint={external.hint}
-            hintKind={external.hintKind}
-            {look}
-          />
-          <ExternalLink
-            role="img"
-            aria-label={m.about_opens_in_browser()}
-            size={ROW_ICON_SIZES[look]}
-            class="shrink-0 text-muted"
-          />
-        </Button>
-      {/snippet}
-    </Item>
+    <AboutButtonRow
+      icon={external.icon}
+      iconName={external.iconName}
+      label={external.label}
+      hint={external.hint}
+      hintKind={external.hintKind}
+      {look}
+      opensBrowser
+      onPress={() => {
+        void opening.open(external.link);
+      }}
+    />
   </li>
 {/each}

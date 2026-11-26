@@ -4,11 +4,12 @@ import type {
   LibraryCategory,
   SeriesLabels,
 } from "../../src/lib/ipc/bindings.ts";
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  framesPassed,
   test,
 } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
@@ -157,11 +158,8 @@ test("adds a tag typed and one suggested, and takes one off every series", async
   await pickTwo(page);
   const dialog = await openLabels(page, "Tags");
 
-  await expect(
-    dialog.getByRole("textbox", { name: "Add a tag" }),
-  ).toBeFocused();
   await expect(dialog.getByText("Seinen · 1 of 2")).toBeVisible();
-  await page.keyboard.type("Winter");
+  await dialog.getByRole("textbox", { name: "Add a tag" }).fill("Winter");
   await page.keyboard.press("Enter");
   await dialog.getByRole("button", { name: "Add Letters" }).click();
   await dialog.getByRole("button", { name: "Remove Sea" }).click();
@@ -173,6 +171,128 @@ test("adds a tag typed and one suggested, and takes one off every series", async
     categoriesCreated: [],
     tagsAdded: ["Winter", "Letters"],
     tagsRemoved: ["Sea"],
+  });
+});
+
+for (const from of ["Categories", "Tags"] as const) {
+  test(`opens from ${from} with no field focused while there is something to pick`, async ({
+    page,
+  }) => {
+    await pickTwo(page);
+
+    const dialog = await openLabels(page, from);
+
+    await expect(
+      dialog.getByRole("checkbox", { name: "Reading" }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Add Letters" }),
+    ).toBeVisible();
+    await framesPassed(page);
+    await expect(dialog).toBeFocused();
+  });
+}
+
+test.describe("while the library has no category or tag yet", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      librarySeries: () => ({ series: [...LIBRARY], next: null }),
+      librarySeriesCount: () => LIBRARY.length,
+      seriesLabels: () => ({
+        keepsLabels: true,
+        categories: [],
+        tags: [],
+        suggestedTags: [],
+      }),
+    } satisfies FakeBackend,
+  });
+
+  test("focuses New category when opened from Categories", async ({ page }) => {
+    await pickTwo(page);
+
+    const dialog = await openLabels(page, "Categories");
+
+    await expect(
+      dialog.getByRole("textbox", { name: "New category" }),
+    ).toBeFocused();
+  });
+
+  test("focuses Add a tag when opened from Tags", async ({ page }) => {
+    await pickTwo(page);
+
+    const dialog = await openLabels(page, "Tags");
+
+    await expect(
+      dialog.getByRole("textbox", { name: "Add a tag" }),
+    ).toBeFocused();
+  });
+});
+
+function selectionBar(page: Page): Locator {
+  return page.getByRole("group", { name: "Selected series" });
+}
+
+test("stops choosing once Done has applied the labels", async ({ page }) => {
+  await pickTwo(page);
+  const dialog = await openLabels(page, "Categories");
+
+  await dialog.getByRole("checkbox", { name: "Comics" }).click();
+  await done(page);
+
+  await expect(selectionBar(page)).toBeHidden();
+  await expect(seriesList(page).getByRole("checkbox")).toHaveCount(0);
+});
+
+test("keeps the series chosen when the dialog is closed without Done", async ({
+  page,
+}) => {
+  await pickTwo(page);
+  await openLabels(page, "Categories");
+
+  await page.keyboard.press("Escape");
+
+  await expect(dialogOf(page)).toBeHidden();
+  await expect(selectionBar(page)).toBeVisible();
+  await expect(
+    seriesList(page).getByRole("checkbox", { checked: true }),
+  ).toHaveCount(2);
+});
+
+test.describe("when the labels can't be saved", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      librarySeries: () => ({ series: [...LIBRARY], next: null }),
+      librarySeriesCount: () => LIBRARY.length,
+      libraryCategories: () => [...CATEGORIES],
+      seriesLabels: (series) => labelsFor(series),
+      labelSeries: () => {
+        throw new CommandFailure({
+          code: "internal",
+          message: "the catalog couldn't be written",
+        });
+      },
+    } satisfies FakeBackend,
+  });
+
+  test("says so, keeping the dialog open and the series chosen", async ({
+    page,
+  }) => {
+    await pickTwo(page);
+    const dialog = await openLabels(page, "Categories");
+    await dialog.getByRole("checkbox", { name: "Comics" }).click();
+
+    await dialog.getByRole("button", { name: "Done" }).click();
+
+    await expect(
+      page.getByText("Couldn't change the categories and tags"),
+    ).toBeVisible();
+    await expect(dialog).toBeVisible();
+    await expect(selectionBar(page)).toBeVisible();
+    await expect(
+      seriesList(page).getByRole("checkbox", { checked: true }),
+    ).toHaveCount(2);
   });
 });
 

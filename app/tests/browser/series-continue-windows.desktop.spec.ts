@@ -4,8 +4,9 @@ import {
   accessibilityViolations,
   boxOf,
   expect,
-  testOnlyInItsWebview,
+  tabTo,
   test,
+  testOnlyInItsWebview,
 } from "./fixtures.ts";
 import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
 import {
@@ -13,7 +14,6 @@ import {
   colourOf,
   escapedForPattern,
   NO_SHADOW,
-  tabTo,
   THEMES,
 } from "./windows-look.ts";
 

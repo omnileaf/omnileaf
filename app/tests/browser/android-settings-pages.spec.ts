@@ -34,7 +34,7 @@ const PAGE_STARTS: readonly PageStart[] = [
   },
   {
     route: "/settings/reading",
-    first: (page) => page.getByText(/Defaults for every series/),
+    first: (page) => page.getByText(/Used for every series/),
   },
   {
     route: "/settings/general/language",

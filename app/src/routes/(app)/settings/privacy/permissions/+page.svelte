@@ -13,10 +13,10 @@
   import { Badge } from "#lib/components/ui/badge/index.ts";
   import type { IconName } from "#lib/icons/names.ts";
   import { commands } from "#lib/ipc/bindings.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
-  import { GROUP_PLATE } from "#lib/page/plates.ts";
+  import { PLATED_LIST } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
     foldersDescription,
@@ -55,11 +55,11 @@
   const ANDROID_LINE =
     "text-native-row-subtitle/native-row-subtitle text-muted";
   const TILE =
-    "flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile android:max-medium:border-0 android:max-medium:bg-transparent android:max-medium:text-muted";
+    "flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile android:border-0 android:bg-transparent android:text-muted";
 
   let { data }: PageProps = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const notices = getNotices();
   const updateNotices = updateNoticesForApp();
 
@@ -128,13 +128,11 @@
         <Settings size={ICON_SIZE} />
       </span>
       <span class="flex grow basis-permission-reason flex-col gap-2xs">
-        <span
-          class="font-semibold android:max-medium:font-regular desktop:text-callout"
-        >
+        <span class="font-semibold android:font-regular desktop:text-callout">
           {label}
         </span>
         <span
-          class="text-detail text-muted android:max-medium:text-native-row-subtitle/native-row-subtitle"
+          class="text-detail text-muted android:text-native-row-subtitle/native-row-subtitle"
         >
           {m.permissions_open_help()}
         </span>
@@ -153,7 +151,7 @@
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
 />
 <div
-  class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none android:max-medium:gap-none"
+  class="mbs-pane-gap flex flex-col gap-sm android:mbs-none android:gap-none"
 >
   <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
     {m.permissions_intro()}
@@ -161,12 +159,7 @@
   <ul
     data-settings-group
     aria-label={m.permissions_title()}
-    class={android.isOn
-      ? FLUSH_LIST
-      : [
-          "divide-y divide-border overflow-hidden rounded-list border border-border bg-card",
-          GROUP_PLATE,
-        ]}
+    class={android.isOn ? FLUSH_LIST : ["rounded-list", PLATED_LIST]}
   >
     {#each rows as row (row.label)}
       <li class={android.isOn ? ANDROID_ROW : ROW}>
@@ -189,12 +182,15 @@
             class={[
               "desktop:text-callout",
               android.isOn ? ANDROID_LABEL : "font-semibold",
-            ]}>{row.label}</span
+            ]}
           >
+            {row.label}
+          </span>
           <span
             class={["text-muted", android.isOn ? ANDROID_LINE : "text-detail"]}
-            >{row.description}</span
           >
+            {row.description}
+          </span>
         </span>
         {#if row.state !== undefined}
           {#if android.isOn}
@@ -203,8 +199,10 @@
               class={[
                 "shrink-0 text-caption font-medium tracking-native-row-title",
                 row.state === "allowed" ? "text-accent" : "text-muted",
-              ]}>{STATE_LABELS[row.state]()}</span
+              ]}
             >
+              {STATE_LABELS[row.state]()}
+            </span>
           {:else}
             <Badge look="outline" class="shrink-0 bg-card">
               {STATE_LABELS[row.state]()}

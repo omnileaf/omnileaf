@@ -68,7 +68,7 @@ const PAGE_LINES: readonly PageLines[] = [
     settled: (page) =>
       page.getByRole("list", { name: "Tags" }).getByRole("listitem"),
   },
-  { route: "/settings/reading", lines: 3 },
+  { route: "/settings/reading", lines: 4 },
   { route: "/settings/privacy", lines: 1 },
   {
     route: "/settings/privacy/app-lock",
@@ -213,6 +213,7 @@ const HEADINGS_ON_LINES = [
   { route: "/settings/accessibility", heading: "Motion and contrast" },
   { route: "/settings/advanced", heading: "Navigation" },
   { route: "/settings/advanced", heading: "Undo" },
+  { route: "/settings/about/report", heading: "Other ways to send it" },
 ] as const;
 
 interface EdgeProbe {

@@ -4,6 +4,7 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import { drawnAt, scaledDown } from "./scaled-down";
 import VirtualTable from "./VirtualTable.svelte";
 
 interface Sample {
@@ -13,6 +14,7 @@ interface Sample {
 
 const TEN_THOUSAND = 10_000;
 const LABEL = "Samples";
+const ROW_HEIGHT = 40;
 
 const head = createRawSnippet(() => ({
   render: () => `<thead><tr aria-rowindex="1"><th>Name</th></tr></thead>`,
@@ -36,22 +38,38 @@ afterEach(() => {
   window.scrollTo(0, 0);
 });
 
+const fixedRow = createRawSnippet(
+  (sample: () => Sample, rowIndex: () => number) => ({
+    render: () =>
+      `<tr aria-rowindex="${String(rowIndex())}" style="block-size: ${String(ROW_HEIGHT)}px"><td>${sample().name}</td></tr>`,
+  }),
+);
+
 async function renderTable(
   count: number,
-  options: { isComplete?: boolean; onNearEnd?: () => void } = {},
+  options: {
+    isComplete?: boolean;
+    onNearEnd?: () => void;
+    row?: typeof row;
+    baseElement?: HTMLElement;
+  } = {},
 ) {
-  await render(VirtualTable<Sample>, {
-    items: samples(count),
-    key: (sample: Sample) => sample.id,
-    label: LABEL,
-    columns: 1,
-    isComplete: options.isComplete ?? true,
-    ...(options.onNearEnd === undefined
-      ? {}
-      : { onNearEnd: options.onNearEnd }),
-    head,
-    row,
-  });
+  await render(
+    VirtualTable<Sample>,
+    {
+      items: samples(count),
+      key: (sample: Sample) => sample.id,
+      label: LABEL,
+      columns: 1,
+      isComplete: options.isComplete ?? true,
+      ...(options.onNearEnd === undefined
+        ? {}
+        : { onNearEnd: options.onNearEnd }),
+      head,
+      row: options.row ?? row,
+    },
+    { baseElement: options.baseElement ?? document.body },
+  );
   const table = document.querySelector<HTMLTableElement>(
     `table[aria-label="${LABEL}"]`,
   );
@@ -138,4 +156,51 @@ test("asks for nothing more far from the last row", async () => {
   await nextFrame();
 
   expect(onNearEnd).not.toHaveBeenCalled();
+});
+
+test("makes room for every row at its laid out height while drawn scaled down", async () => {
+  const table = await renderTable(TEN_THOUSAND, {
+    row: fixedRow,
+    baseElement: scaledDown(),
+  });
+  await nextFrame();
+
+  const body = table.tBodies.item(0);
+
+  expect(body?.offsetHeight).toBe(TEN_THOUSAND * ROW_HEIGHT);
+});
+
+test("lays out every row on screen while drawn scaled down and scrolled partway", async () => {
+  const table = await renderTable(TEN_THOUSAND, {
+    row: fixedRow,
+    baseElement: scaledDown(),
+  });
+  await nextFrame();
+
+  window.scrollTo(0, table.getBoundingClientRect().height / 2);
+  await nextFrame();
+  await nextFrame();
+
+  const drawn = bodyRows(table);
+  expect(drawn.at(0)?.getBoundingClientRect().top).toBeLessThanOrEqual(0);
+  expect(drawn.at(-1)?.getBoundingClientRect().bottom).toBeGreaterThanOrEqual(
+    window.innerHeight,
+  );
+});
+
+test("lays out its rows once drawn at a size again after being drawn at none", async () => {
+  const holder = scaledDown();
+  drawnAt(holder, "scale(0)");
+  const table = await renderTable(TEN_THOUSAND, {
+    row: fixedRow,
+    baseElement: holder,
+  });
+  await nextFrame();
+
+  drawnAt(holder, "none");
+  window.dispatchEvent(new Event("resize"));
+
+  await expect
+    .poll(() => table.tBodies.item(0)?.offsetHeight)
+    .toBe(TEN_THOUSAND * ROW_HEIGHT);
 });

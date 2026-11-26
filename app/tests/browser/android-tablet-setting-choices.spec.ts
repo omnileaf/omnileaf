@@ -21,7 +21,7 @@ interface SettingChoice {
 const CHOICES: readonly SettingChoice[] = [
   {
     path: "/settings/reading",
-    title: "Reading mode for new series",
+    title: "Reading mode",
     shown: "Automatic",
     picked: "Long strip",
   },

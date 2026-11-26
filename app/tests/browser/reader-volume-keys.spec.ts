@@ -42,9 +42,9 @@ const STARTED_ON_14: WireOpening = {
 const STRIP_PAGE = { width: 800, height: 2400 };
 const SERIES_PAGE = new RegExp(`/series/${BOOK_SERIES_ID}$`);
 const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
-const VOLUME_KEYS_ROW = "Turn pages with the volume keys";
+const VOLUME_KEYS_ROW = "Volume keys turn pages";
 const VOLUME_KEYS_AND_SCREEN_ROWS =
-  /Turn pages with the volume keys|Keep the screen on/;
+  /Volume keys turn pages|Keep the screen on while reading/;
 const VOLUME_KEYS_HELP =
   "Only in the reader; everywhere else they change the volume.";
 const COLOR_SCHEMES = ["light", "dark"] as const;
@@ -342,7 +342,9 @@ test.describe("on a computer", () => {
     const readerSettings = await openReaderSettingsPage(page);
 
     await expect(
-      readerSettings.getByRole("switch", { name: "Keep the screen on" }),
+      readerSettings.getByRole("switch", {
+        name: "Keep the screen on while reading",
+      }),
     ).toBeVisible();
     await expect(volumeKeysRow(page)).toHaveCount(0);
   });
@@ -366,7 +368,9 @@ test.describe("on an iPhone", () => {
     const readerSettings = await openReaderSettingsPage(page);
 
     await expect(
-      readerSettings.getByRole("switch", { name: "Keep the screen on" }),
+      readerSettings.getByRole("switch", {
+        name: "Keep the screen on while reading",
+      }),
     ).toBeVisible();
     await expect(volumeKeysRow(page)).toHaveCount(0);
   });
@@ -384,8 +388,10 @@ test.describe("Settings > Reader on Android", () => {
     });
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(0)).toHaveAccessibleName(VOLUME_KEYS_ROW);
-    await expect(rows.nth(0)).toHaveAccessibleDescription(VOLUME_KEYS_HELP);
-    await expect(rows.nth(1)).toHaveAccessibleName("Keep the screen on");
+    await expect(rows.nth(0)).toHaveAccessibleDescription("");
+    await expect(rows.nth(1)).toHaveAccessibleName(
+      "Keep the screen on while reading",
+    );
 
     await rows.nth(0).click();
 

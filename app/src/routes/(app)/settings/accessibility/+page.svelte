@@ -82,7 +82,7 @@
 </script>
 
 <SectionHeading title={m.accessibility_title()} />
-<div class="mbs-pane-gap flex flex-col android:max-medium:mbs-none">
+<div class="mbs-pane-gap flex flex-col android:mbs-none">
   <section
     data-settings-group
     aria-labelledby={textHeadingId}

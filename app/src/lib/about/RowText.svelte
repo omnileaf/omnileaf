@@ -24,7 +24,7 @@
     icon: Glyph;
     iconName: IconName;
     label: string;
-    hint: string | undefined;
+    hint?: string | undefined;
     hintKind?: HintKind | undefined;
     look: AboutLook;
   } = $props();
@@ -40,14 +40,18 @@
   </ItemMedia>
 {/if}
 <ItemContent>
-  <ItemTitle class={look === "pane" ? PANE_LABEL : undefined}>{label}</ItemTitle
-  >
+  <ItemTitle class={look === "pane" ? PANE_LABEL : undefined}>
+    {label}
+  </ItemTitle>
   {#if hint !== undefined}
     <ItemDescription
       dir={isAddress ? "ltr" : undefined}
       translate={isAddress ? "no" : undefined}
-      class="text-footnote android:max-medium:text-native-row-subtitle/native-row-subtitle"
-      >{hint}</ItemDescription
+      class={look === "android"
+        ? "text-native-row-subtitle/native-row-subtitle"
+        : "text-footnote"}
     >
+      {hint}
+    </ItemDescription>
   {/if}
 </ItemContent>

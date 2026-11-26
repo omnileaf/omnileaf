@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import type { SystemContrast } from "../../src/lib/ipc/bindings.ts";
 import type { FakeChannel } from "./fake-backend.ts";
 import { expect, onPlatform, test } from "./fixtures.ts";
+import { ANDROID_SCREENS } from "./android-screens.ts";
 
 let contrasts: FakeChannel<SystemContrast> | undefined;
 
@@ -39,96 +40,101 @@ function contrastOf(page: Page): Promise<string | null> {
   );
 }
 
-test.describe(
-  "Settings › Accessibility on an Android phone",
-  { tag: "@native" },
-  () => {
-    test.beforeEach(({ platform }) => {
-      test.skip(platform !== "android", "Android's settings");
-    });
-
-    test("lists Reduce motion and Higher contrast under Motion and contrast", async ({
-      page,
-    }) => {
-      await openAccessibility(page);
-      const section = page.getByRole("region", {
-        name: "Motion and contrast",
+for (const { name, viewport } of ANDROID_SCREENS) {
+  test.describe(
+    `Settings › Accessibility on an Android ${name}`,
+    { tag: "@native" },
+    () => {
+      if (viewport !== undefined) {
+        test.use({ viewport });
+      }
+      test.beforeEach(({ platform }) => {
+        test.skip(platform !== "android", "Android's settings");
       });
 
-      await expect(
-        section.getByRole("switch", { name: "Reduce motion" }),
-      ).toBeVisible();
-      await expect(
-        section.getByRole("switch", { name: "Higher contrast" }),
-      ).toBeVisible();
-    });
+      test("lists Reduce motion and Higher contrast under Motion and contrast", async ({
+        page,
+      }) => {
+        await openAccessibility(page);
+        const section = page.getByRole("region", {
+          name: "Motion and contrast",
+        });
 
-    test("holds every animation still with Reduce motion on", async ({
-      page,
-    }) => {
-      await openAccessibility(page);
+        await expect(
+          section.getByRole("switch", { name: "Reduce motion" }),
+        ).toBeVisible();
+        await expect(
+          section.getByRole("switch", { name: "Higher contrast" }),
+        ).toBeVisible();
+      });
 
-      await page.getByRole("switch", { name: "Reduce motion" }).click();
-      await page.goto("/settings/advanced");
+      test("holds every animation still with Reduce motion on", async ({
+        page,
+      }) => {
+        await openAccessibility(page);
 
-      await expect(
-        page.getByRole("link", { name: /^Animations/ }),
-      ).toContainText("All off");
-    });
+        await page.getByRole("switch", { name: "Reduce motion" }).click();
+        await page.goto("/settings/advanced");
 
-    test("starts Higher contrast from the phone's Contrast setting", async ({
-      page,
-    }) => {
-      await openAccessibility(page);
-      const higher = page.getByRole("switch", { name: "Higher contrast" });
-      await expect(higher).not.toBeChecked();
+        await expect(
+          page.getByRole("link", { name: /^Animations/ }),
+        ).toContainText("All off");
+      });
 
-      await reportContrast("medium");
+      test("starts Higher contrast from the phone's Contrast setting", async ({
+        page,
+      }) => {
+        await openAccessibility(page);
+        const higher = page.getByRole("switch", { name: "Higher contrast" });
+        await expect(higher).not.toBeChecked();
 
-      await expect(higher).toBeChecked();
-    });
+        await reportContrast("medium");
 
-    test("draws the high contrast colours once Higher contrast is turned on, and the standard ones once it is off", async ({
-      page,
-    }) => {
-      await openAccessibility(page);
-      await reportContrast("standard");
-      const higher = page.getByRole("switch", { name: "Higher contrast" });
+        await expect(higher).toBeChecked();
+      });
 
-      await higher.click();
-      await expect(higher).toBeChecked();
-      expect(await contrastOf(page)).toBe("high");
-      await higher.click();
+      test("draws the high contrast colours once Higher contrast is turned on, and the standard ones once it is off", async ({
+        page,
+      }) => {
+        await openAccessibility(page);
+        await reportContrast("standard");
+        const higher = page.getByRole("switch", { name: "Higher contrast" });
 
-      await expect(higher).not.toBeChecked();
-      expect(await contrastOf(page)).toBeNull();
-    });
+        await higher.click();
+        await expect(higher).toBeChecked();
+        expect(await contrastOf(page)).toBe("high");
+        await higher.click();
 
-    test("follows the phone's contrast again once Higher contrast is set back to match it", async ({
-      page,
-    }) => {
-      await openAccessibility(page);
-      await reportContrast("medium");
-      const higher = page.getByRole("switch", { name: "Higher contrast" });
-      await higher.click();
-      await expect(higher).not.toBeChecked();
-      expect(await contrastOf(page)).toBeNull();
+        await expect(higher).not.toBeChecked();
+        expect(await contrastOf(page)).toBeNull();
+      });
 
-      await higher.click();
+      test("follows the phone's contrast again once Higher contrast is set back to match it", async ({
+        page,
+      }) => {
+        await openAccessibility(page);
+        await reportContrast("medium");
+        const higher = page.getByRole("switch", { name: "Higher contrast" });
+        await higher.click();
+        await expect(higher).not.toBeChecked();
+        expect(await contrastOf(page)).toBeNull();
 
-      await expect(higher).toBeChecked();
-      expect(await contrastOf(page)).toBe("medium");
-    });
+        await higher.click();
 
-    test("keeps the choice made here over the phone's setting", async ({
-      page,
-    }) => {
-      await openAccessibility(page);
-      await page.getByRole("switch", { name: "Higher contrast" }).click();
+        await expect(higher).toBeChecked();
+        expect(await contrastOf(page)).toBe("medium");
+      });
 
-      await reportContrast("standard");
+      test("keeps the choice made here over the phone's setting", async ({
+        page,
+      }) => {
+        await openAccessibility(page);
+        await page.getByRole("switch", { name: "Higher contrast" }).click();
 
-      expect(await contrastOf(page)).toBe("high");
-    });
-  },
-);
+        await reportContrast("standard");
+
+        expect(await contrastOf(page)).toBe("high");
+      });
+    },
+  );
+}

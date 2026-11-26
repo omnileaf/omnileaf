@@ -22,6 +22,54 @@
       }
     }
   ],
+  "library_series_volumes": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} volume",
+        "countPlural=other": "{formattedCount} volumes"
+      }
+    }
+  ],
+  "library_series_chapters": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} chapter",
+        "countPlural=other": "{formattedCount} chapters"
+      }
+    }
+  ],
+  "library_series_volumes_and_chapters": [
+    {
+      "declarations": [
+        "input volumes",
+        "input chapters",
+        "local volumesPlural = volumes: plural",
+        "local chaptersPlural = chapters: plural",
+        "local formattedVolumes = volumes: number",
+        "local formattedChapters = chapters: number"
+      ],
+      "selectors": ["volumesPlural", "chaptersPlural"],
+      "match": {
+        "volumesPlural=one, chaptersPlural=one": "{formattedVolumes} volume · {formattedChapters} chapter",
+        "volumesPlural=one, chaptersPlural=other": "{formattedVolumes} volume · {formattedChapters} chapters",
+        "volumesPlural=other, chaptersPlural=one": "{formattedVolumes} volumes · {formattedChapters} chapter",
+        "volumesPlural=other, chaptersPlural=other": "{formattedVolumes} volumes · {formattedChapters} chapters"
+      }
+    }
+  ],
+  "library_series_one_shot": "One-shot",
   "library_series_failed": "Couldn't load your library. Try again later.",
   "library_unchanged": "Nothing in your library has changed.",
   "library_try_again": "Try again",
@@ -197,7 +245,6 @@
   "library_tabs_summary": "Order, hidden tabs, where the library opens",
   "library_opens_on": "The library opens on",
   "library_opens_on_last": "The tab used last",
-  "library_opens_on_help": "Or All, or a tab you choose. If it would open on New chapters and nothing is new, it opens on All.",
   "library_tabs_title_mac": "Categories",
   "library_tabs_intro_mac": "Drag to reorder, or use ⌥↑ and ⌥↓. Hiding a category never removes a series.",
   "library_tabs_all_mac": "Library",
@@ -455,6 +502,10 @@
   "library_cancel": "Cancel",
   "library_mark_read": "Mark as read",
   "library_marked_read": "{count} series marked as read",
+  "library_mark_read_failed": "Couldn't mark the series as read",
+  "library_labels_failed": "Couldn't change the categories and tags",
+  "library_remove_failed": "Couldn't remove the series",
+  "library_action_failed_body": "Nothing in your library has changed. Try again in a moment.",
   "library_selection_toolbar": "Selected series",
   "library_selection_more": "More",
   "library_tags": "Tags",
@@ -1177,20 +1228,19 @@
   "library_folder_unavailable": "Not available",
   "library_folder_found_empty": "No books found",
   "appearance_title": "Appearance",
-  "reading_defaults_intro": "Defaults for every series without its own. A series’ own settings, chosen in the reader, win.",
-  "reading_keep_screen_on_help": "While a book is open.",
+  "reading_defaults_intro": "Used for every series, unless you change it for a series in the reader.",
+  "reading_keep_screen_on": "Keep the screen on while reading",
   "reading_title": "Reader",
   "reading_skip_up_next": "Skip Up next",
-  "reading_skip_up_next_help": "Go straight to the next book; Up next doesn’t show. Also on Up next.",
-  "reading_tap_guide": "Show the tap guide",
-  "reading_tap_guide_help": "Shown the first time for each way of turning pages. Off, it never shows.",
-  "reading_guide_again": "Show the guide again",
-  "reading_guide_again_help": "Plays it once more, even with the guide off.",
+  "reading_skip_up_next_help": "Go straight to the next book.",
+  "reading_tap_guide": "Tap guide",
+  "reading_guide_again": "Replay the tap guide",
   "reading_guide_again_done": "The guide will show the next time you open a book.",
   "reading_resume_notice": "Show the resume notice",
   "reading_resume_notice_help": "Shown when a book opens on your saved page. Off, it opens quietly.",
-  "reading_mode_new_series": "Reading mode for new series",
+  "reading_mode_new_series": "Reading mode",
   "reading_mode_new_series_help": "Automatic picks paged or long strip from the details and the pages.",
+  "reading_mode_automatic_hint": "Picks paged or long strip from the details and the pages.",
   "reading_swipes": "Swiping a book",
   "reading_swipes_help": "In a series' list on a phone. Mark read marks a book that's read unread.",
   "reading_swipe_right": "Swipe right",
@@ -2392,7 +2442,9 @@
   ],
   "series_bookmark_failed": "Couldn't keep the bookmark",
   "series_bookmark_failed_body": "Try again in a moment.",
+  "reader_back": "Back",
   "reader_back_label": "Back to the library",
+  "reader_back_to_history": "Back to History",
   "reader_back_to_series": "Back to {series}",
   "reader_breadcrumb": "Breadcrumb",
   "settings_breadcrumb": "Breadcrumb",
@@ -2551,6 +2603,21 @@
       }
     }
   ],
+  "reading_long_strip_speed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Long strip: {formattedCount} screen a minute",
+        "countPlural=other": "Long strip: {formattedCount} screens a minute"
+      }
+    }
+  ],
+  "reading_long_strip_speed_help": "The speed every long strip starts at, from {slowest} to {fastest} screens a minute. Change it while reading and that series keeps its own.",
   "reader_auto_scroll_rate": "Screens a minute",
   "reader_auto_scroll_rate_value": "Screens a minute: {count}",
   "reader_save_speed_for": "Save the speed for",
@@ -2712,7 +2779,7 @@
   "reader_warmth": "Warmth",
   "reader_keep_screen_on": "Keep the screen on",
   "reader_crop_borders": "Crop white borders",
-  "reader_volume_keys": "Turn pages with the volume keys",
+  "reader_volume_keys": "Volume keys turn pages",
   "reader_volume_keys_help": "Only in the reader; everywhere else they change the volume.",
   "reader_actions": "Reader actions",
   "reader_more": "More",

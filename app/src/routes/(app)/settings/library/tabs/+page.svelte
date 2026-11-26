@@ -1,9 +1,6 @@
 <script lang="ts">
-  import { Plus } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  import { Button } from "#lib/components/ui/button/index.ts";
-  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import { reportFailure } from "#lib/errors/report-failure.ts";
   import {
@@ -11,7 +8,7 @@
     type LibraryCategory,
     type LibraryTab,
   } from "#lib/ipc/bindings.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import {
@@ -35,16 +32,11 @@
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import {
     ANDROID_CHOICE_CARD,
-    FLUSH_FOOTER,
     FLUSH_NOTE,
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
-  const ICON_SIZE = 16;
-  const NEW_CATEGORY_ICON_SIZE = 20;
-  const ANDROID_NEW_CATEGORY =
-    "native-target my-sm gap-sm self-start rounded-full px-lg text-native-row-subtitle/native-row-subtitle font-medium text-muted block-native-button";
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const ios = new IosPhone();
 
   let keptTabs = $state<readonly LibraryTab[]>(NEW_LIBRARY_TABS);
@@ -182,7 +174,7 @@
     parent={{ route: "/(app)/settings/library", title: m.library_title() }}
   />
   <div
-    class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none android:max-medium:gap-none"
+    class="mbs-pane-gap flex flex-col gap-sm android:mbs-none android:gap-none"
   >
     <p class={android.isOn ? FLUSH_NOTE : "text-footnote text-muted"}>
       {#if isMac}
@@ -198,36 +190,12 @@
       onArrange={(next: readonly ArrangedTab[]) => {
         void arrange(next);
       }}
-    />
-    {#if keepsLabels}
-      <div
-        data-settings-end
-        class={["flex flex-wrap gap-sm", !android.isOn && "mbs-sm"]}
-      >
-        <Button
-          type="button"
-          look="outline"
-          class={[
-            "flex items-center font-medium",
-            android.isOn
-              ? ANDROID_NEW_CATEGORY
-              : "gap-xs rounded-full px-md min-block-pointer-button touch:min-block-touch-target",
-          ]}
-          onclick={() => {
+      onNewCategory={keepsLabels
+        ? () => {
             isNaming = true;
-          }}
-        >
-          {#if android.isOn}
-            <Icon name="plus" size={NEW_CATEGORY_ICON_SIZE} />
-          {:else}
-            <Plus size={ICON_SIZE} aria-hidden="true" />
-          {/if}
-          {isMac
-            ? m.library_tabs_new_category_mac()
-            : m.library_tabs_new_category()}
-        </Button>
-      </div>
-    {/if}
+          }
+        : undefined}
+    />
   </div>
   {#if android.isOn}
     <div data-settings-group class="flex flex-col">
@@ -238,9 +206,6 @@
         chosen={shownOpensOn}
         onChoose={chooseOpensOn}
       />
-      <p class={FLUSH_FOOTER}>
-        {m.library_opens_on_help()}
-      </p>
     </div>
   {:else if isAndroid}
     <section class={["mbs-lg", ANDROID_CHOICE_CARD]}>
@@ -248,14 +213,13 @@
         bleed=""
         title={m.library_opens_on()}
         value={opensOnLabel}
-        help={m.library_opens_on_help()}
         choices={opensOnChoices}
         chosen={shownOpensOn}
         onChoose={chooseOpensOn}
       />
     </section>
   {:else if ios.isOn}
-    <div class="mbs-lg flex flex-col gap-sm">
+    <div class="mbs-lg">
       <GroupedChoiceRow
         title={m.library_opens_on()}
         value={opensOnLabel}
@@ -263,14 +227,9 @@
         chosen={shownOpensOn}
         onChoose={chooseOpensOn}
       />
-      <p class="px-sm text-native-list-sub/native-list-sub text-muted">
-        {m.library_opens_on_help()}
-      </p>
     </div>
   {:else}
-    <section
-      class="mbs-lg flex flex-col gap-sm rounded-card border border-border bg-card p-md"
-    >
+    <section class="mbs-lg rounded-card border border-border bg-card p-md">
       <div
         class="flex flex-col gap-sm desktop:medium:grid desktop:medium:grid-cols-setting-grid desktop:medium:items-center desktop:medium:gap-x-md"
       >
@@ -286,7 +245,6 @@
           onChoose={chooseOpensOn}
         />
       </div>
-      <p class="text-detail text-muted">{m.library_opens_on_help()}</p>
     </section>
   {/if}
   <NewCategoryDialog
