@@ -1368,7 +1368,11 @@ test.describe("on Android", () => {
     });
   }
 
-  test("leaves no grey on the open tab when it is tapped", async ({ page }) => {
+  test("leaves no grey on the open tab when it is tapped", async ({
+    page,
+    hasTouch,
+  }) => {
+    test.skip(!hasTouch, "touch screens only");
     await page.goto("/history");
     await settle(navigation(page));
 
