@@ -132,6 +132,19 @@ test.describe("in the reader", () => {
       await expect(featureSwitch(page, name)).not.toBeChecked();
     }
   });
+
+  test("says All off once every smart feature is off", async ({ page }) => {
+    await openReader(page);
+    await openSettings(page);
+
+    await smartFeatures(page)
+      .getByRole("button", { name: "Turn all off" })
+      .click();
+
+    await expect(
+      smartFeatures(page).getByRole("button", { name: "All off" }),
+    ).toBeDisabled();
+  });
 });
 
 test.describe("in Settings > Reader", () => {
@@ -156,6 +169,29 @@ test.describe("in Settings > Reader", () => {
     ).click();
 
     expect(await storedFeatures(page)).toMatchObject({
+      showsPagePreviews: false,
+    });
+  });
+
+  test("keeps every smart feature off once they are turned off at once", async ({
+    page,
+  }) => {
+    await page.goto("/settings/reading");
+    await smartFeatures(page)
+      .getByRole("button", { name: "Turn all off" })
+      .click();
+
+    await page.reload();
+
+    await expect(
+      smartFeatures(page).getByRole("button", { name: "All off" }),
+    ).toBeDisabled();
+    expect(await storedFeatures(page)).toEqual({
+      choosesReadingMode: false,
+      learnsReadingSpeed: false,
+      showsTimeLeft: false,
+      showsBookSummary: false,
+      autoScrollsAtMyPace: false,
       showsPagePreviews: false,
     });
   });
