@@ -35,7 +35,8 @@
 <ProgressPrimitive.Root
   bind:ref
   class={cn(
-    "flex overflow-hidden rounded-full block-progress rtl:-scale-x-100",
+    "flex overflow-hidden rounded-full rtl:-scale-x-100",
+    isNative ? "block-native-progress-thickness" : "block-progress",
     isNative
       ? value === null
         ? ["gap-native-progress-gap", "bg-native-progress-idle-track"]

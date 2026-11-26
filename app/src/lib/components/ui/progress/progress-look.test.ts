@@ -187,3 +187,18 @@ test("keeps the other desktop platforms' bar as it was", async () => {
   expect(bar.getBoundingClientRect().height).toBeCloseTo(8, 0);
   expect(getComputedStyle(bar, "::before").content).toBe("none");
 });
+
+test("draws Android's bar 4px thick, as the kit draws a linear progress bar", async () => {
+  followCorePlatform("android");
+  const bar = await renderBar(32);
+
+  expect(bar.getBoundingClientRect().height).toBe(4);
+  expect(partsOf(bar).map((part) => part.height)).toEqual([4, 4]);
+});
+
+test("keeps iOS's bar 8px thick", async () => {
+  followCorePlatform("ios");
+  const bar = await renderBar(32);
+
+  expect(bar.getBoundingClientRect().height).toBe(8);
+});
