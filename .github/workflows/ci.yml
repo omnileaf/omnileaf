@@ -718,9 +718,27 @@ jobs:
           pnpm exec playwright test --list --reporter=json --test-list "$RUNNER_TEMP/shard-tests.txt" > "$RUNNER_TEMP/shard-tests.json"
           node tests/check-shard-test-list.ts "browser-test-lists/$PLAYWRIGHT_GROUP.json" "$SHARD" "$RUNNER_TEMP/shard-tests.json"
 
-      - name: Run the app's browser tests
+      - name: Run the app's browser tests, retrying a failed test once
         if: matrix.group == 'rest' || matrix.group == 'screens'
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ github.workspace }}/app/browser-test-report.json
         run: pnpm --dir app test:e2e --test-list "$RUNNER_TEMP/shard-tests.txt"
+
+      - name: Report the tests that passed only on their retry
+        id: flaky
+        if: ${{ !cancelled() && hashFiles('app/browser-test-report.json') != '' }}
+        working-directory: app
+        env:
+          SHARD_NAME: ${{ matrix.group }} ${{ matrix.shard }}/${{ matrix.of }}
+        run: node tests/report-flaky-tests.ts browser-test-report.json app/tests/browser "$SHARD_NAME" flaky-tests.json
+
+      - name: Keep the list of flaky tests for the run's summary
+        if: ${{ !cancelled() && steps.flaky.outputs.flaky == 'true' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: flaky-tests-${{ matrix.group }}-${{ matrix.shard }}
+          path: app/flaky-tests.json
+          retention-days: 7
 
       - name: Name the processor the interface is timed on
         if: matrix.group == 'speed'
@@ -734,8 +752,8 @@ jobs:
         if: matrix.group == 'site'
         run: pnpm --dir site test:e2e
 
-      - name: Keep the traces of failed tests
-        if: failure()
+      - name: Keep the traces of failed and flaky tests
+        if: ${{ failure() || (!cancelled() && steps.flaky.outputs.flaky == 'true') }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: browser-test-traces-${{ matrix.group }}-${{ matrix.shard }}
@@ -749,8 +767,38 @@ jobs:
     needs: [browser-build, browser]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
+      - name: Fetch only the files the summary needs
+        if: needs.browser.result != 'skipped'
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .node-version
+            app/tests
+          persist-credentials: false
+
+      - name: Install Node
+        if: needs.browser.result != 'skipped'
+        continue-on-error: true
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+
+      - name: Fetch the flaky tests the shards found
+        if: needs.browser.result != 'skipped'
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-tests-*
+          path: flaky-tests
+
+      - name: List every flaky test of the run
+        if: needs.browser.result != 'skipped'
+        continue-on-error: true
+        run: node app/tests/summarise-flaky-tests.ts flaky-tests
+
       - name: Pass only when the build and every shard passed, or none were needed
         env:
           RESULTS: ${{ needs.browser-build.result }}/${{ needs.browser.result }}
