@@ -9,7 +9,7 @@
     Menu,
     Plus,
   } from "@lucide/svelte";
-  import { flushSync, tick } from "svelte";
+  import { tick } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
@@ -149,9 +149,7 @@
   function finishSettling(): void {
     settle?.finish();
     settle = undefined;
-    flushSync(() => {
-      settling = undefined;
-    });
+    settling = undefined;
   }
 
   function isDragPointer(event: PointerEvent): boolean {
