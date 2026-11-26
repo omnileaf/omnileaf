@@ -464,9 +464,13 @@ test("moves Display and Covers per row under their names once the text grows lar
   );
 
   await expect
-    .poll(() => gapUnderName(display, displayLabel))
+    .poll(() =>
+      Math.min(
+        gapUnderName(display, displayLabel),
+        gapUnderName(coversPerRow, coversLabel),
+      ),
+    )
     .toBeGreaterThanOrEqual(0);
-  expect(gapUnderName(coversPerRow, coversLabel)).toBeGreaterThanOrEqual(0);
   expect(boxOf(display).width).toBeCloseTo(boxOf(coversPerRow).width, 0);
 });
 
