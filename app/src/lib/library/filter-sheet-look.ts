@@ -29,8 +29,7 @@ export const ANDROID_SUGGESTION_CHIP = {
 } as const;
 
 export const ANDROID_VIEW_SETTING = {
-  stacked: "flex flex-col ps-lg pe-lg pbs-sm pbe-md",
-  words: "",
+  stacked: "flex flex-col ps-lg pe-xl pbs-sm pbe-md",
 } as const;
 
 export const ANDROID_VIEW_SETTING_LOOKS = {
