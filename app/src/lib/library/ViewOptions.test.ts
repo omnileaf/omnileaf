@@ -519,3 +519,33 @@ for (const [platform, size] of [
     await expectOneChecked("Group by", "Creator");
   });
 }
+
+test("offers the volume and chapter counts under Show on covers on android, off, right after the unread count", async () => {
+  await openOn("android");
+
+  const unread = page.getByText("Unread count", { exact: true }).element();
+  const language = page.getByText("Language", { exact: true }).element();
+  const counts = page
+    .getByRole("switch", { name: "Volumes and chapters" })
+    .element();
+  expect(counts.getAttribute("aria-checked")).toBe("false");
+  expect(
+    unread.compareDocumentPosition(counts) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    counts.compareDocumentPosition(language) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});
+
+for (const platform of ["ios", "macos", "windows", "linux"] as const) {
+  test(`leaves the volume and chapter counts out of Show on covers on ${platform}`, async () => {
+    await openOn(platform);
+
+    await expect
+      .element(page.getByText("Unread count", { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(page.getByText("Volumes and chapters", { exact: true }))
+      .not.toBeInTheDocument();
+  });
+}
