@@ -70,13 +70,47 @@ function isAtEdge(x: number): boolean {
   return x < EDGE_PX || x > document.documentElement.clientWidth - EDGE_PX;
 }
 
-export function swipesBetweenTabs(
-  onSwipe: (step: 1 | -1) => void,
-  canStep: (step: 1 | -1) => boolean,
-  settlesSmoothly: () => boolean = () => false,
-): (area: HTMLElement) => () => void {
+const SCROLLING_OVERFLOWS: ReadonlySet<string> = new Set(["auto", "scroll"]);
+
+function scrollsSideways(element: Element): boolean {
+  return (
+    element.scrollWidth > element.clientWidth &&
+    SCROLLING_OVERFLOWS.has(getComputedStyle(element).overflowX)
+  );
+}
+
+function startsOnSidewaysScroller(
+  target: EventTarget | null,
+  area: HTMLElement,
+): boolean {
+  for (
+    let element = target instanceof Element ? target : null;
+    element !== null && element !== area;
+    element = element.parentElement
+  ) {
+    if (scrollsSideways(element)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export interface TabSwipe {
+  readonly onSwipe: (step: 1 | -1) => void;
+  readonly canStep: (step: 1 | -1) => boolean;
+  readonly settlesSmoothly: () => boolean;
+  readonly track: () => HTMLElement | null;
+}
+
+export function swipesBetweenTabs({
+  onSwipe,
+  canStep,
+  settlesSmoothly,
+  track,
+}: TabSwipe): (area: HTMLElement) => () => void {
   return (area) => {
     let start: SwipeStart | undefined;
+    let dragged: HTMLElement | null = null;
     let isSwiping = false;
     let isSettling = false;
     let settling: Animation | undefined;
@@ -84,21 +118,28 @@ export function swipesBetweenTabs(
     const reset = () => {
       settling?.cancel();
       settling = undefined;
-      area.style.translate = "";
-      delete area.dataset.swiping;
+      if (dragged !== null) {
+        dragged.style.translate = "";
+        delete dragged.dataset.swiping;
+      }
+      dragged = null;
       start = undefined;
       isSwiping = false;
       isSettling = false;
     };
-    const settle = (from: number, to: number): Promise<boolean> => {
+    const settle = (
+      moving: HTMLElement,
+      from: number,
+      to: number,
+    ): Promise<boolean> => {
       isSettling = true;
       start = undefined;
       const toOffset = `${String(to)}px 0`;
-      settling = area.animate(
+      settling = moving.animate(
         [{ translate: `${String(from)}px 0` }, { translate: toOffset }],
         { duration: SETTLE_MS, easing: "ease-out" },
       );
-      area.style.translate = toOffset;
+      moving.style.translate = toOffset;
       return new Promise((resolve) => {
         const timer = setTimeout(() => {
           resolve(true);
@@ -119,7 +160,8 @@ export function swipesBetweenTabs(
       if (
         isSettling ||
         event.pointerType !== "touch" ||
-        isAtEdge(event.clientX)
+        isAtEdge(event.clientX) ||
+        startsOnSidewaysScroller(event.target, area)
       ) {
         return;
       }
@@ -130,6 +172,7 @@ export function swipesBetweenTabs(
         pointer: event.pointerId,
         direction: textDirectionOf(area),
       };
+      dragged = track();
     };
     const move = (event: PointerEvent) => {
       if (start?.pointer !== event.pointerId) {
@@ -143,9 +186,12 @@ export function swipesBetweenTabs(
         return;
       }
       isSwiping = true;
-      area.dataset.swiping = "";
+      if (dragged === null) {
+        return;
+      }
+      dragged.dataset.swiping = "";
       const isHeld = !canStep(stepOf(moved.x, start.direction));
-      area.style.translate = isHeld ? "" : `${String(moved.x)}px 0`;
+      dragged.style.translate = isHeld ? "" : `${String(moved.x)}px 0`;
     };
     const up = (event: PointerEvent) => {
       if (start?.pointer !== event.pointerId) {
@@ -167,19 +213,22 @@ export function swipesBetweenTabs(
           onSwipe(committed);
         }
       };
-      const isDragged = area.style.translate !== "";
+      const moving = dragged;
+      const isDragged = moving !== null && moving.style.translate !== "";
       if (!isSwiping || !isDragged || !settlesSmoothly()) {
         finish();
         return;
       }
-      const width = area.clientWidth;
-      void settle(moved, settlesAt({ moved, width, step: committed })).then(
-        (isFinished) => {
-          if (isFinished) {
-            finish();
-          }
-        },
-      );
+      const width = moving.clientWidth;
+      void settle(
+        moving,
+        moved,
+        settlesAt({ moved, width, step: committed }),
+      ).then((isFinished) => {
+        if (isFinished) {
+          finish();
+        }
+      });
     };
 
     area.addEventListener("pointerdown", down);

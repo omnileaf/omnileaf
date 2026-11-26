@@ -1,6 +1,13 @@
-import type { Locator, Page } from "@playwright/test";
+import type { ElementHandle, Locator, Page } from "@playwright/test";
 
-import type { LibraryCategory, Platform } from "../../src/lib/ipc/bindings.ts";
+import {
+  DEFAULT_LIBRARY_VIEW,
+  type LibraryCategory,
+  type LibraryListing,
+  type LibraryTab,
+  type Platform,
+} from "../../src/lib/ipc/bindings.ts";
+import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -12,6 +19,7 @@ import {
   test,
   viewportOf,
 } from "./fixtures.ts";
+import { entry } from "./history-entries.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const EVERY_SERIES = sampleSeries(12);
@@ -32,6 +40,7 @@ const SCROLLED_ALL_PX = 1500;
 const SCROLLED_MANGA_PX = 600;
 const SCROLLED_FAR_PX = 3000;
 const SCROLL_TOLERANCE_PX = 2;
+const BLANK_INSET_PX = 8;
 
 interface Library {
   readonly all: ReturnType<typeof sampleSeries>;
@@ -62,6 +71,22 @@ function backendWith(
 
 const SMALL: Library = { all: EVERY_SERIES, manga: MANGA, comics: COMICS };
 const LONG: Library = { all: LONG_ALL, manga: LONG_MANGA, comics: COMICS };
+const EMPTY_COMICS: Library = { all: EVERY_SERIES, manga: MANGA, comics: [] };
+const NEW_CHAPTERS_SHOWN: readonly LibraryTab[] = [
+  { id: { kind: "all" }, isHidden: false },
+  { id: { kind: "newChapters" }, isHidden: false },
+];
+const UNFINISHED = Array.from({ length: 5 }, (_, index) =>
+  entry(index + 1, "2026-10-08T20:00:00Z", {
+    state: "page",
+    page: 10,
+    pageCount: 40,
+  }),
+);
+const UNREAD_ONLY: LibraryListing = {
+  ...NEW_LIBRARY_LISTING,
+  filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
+};
 
 function tabs(page: Page) {
   return page.getByRole("tablist", { name: "Categories" });
@@ -71,8 +96,26 @@ function chosenTab(page: Page, name: string) {
   return tabs(page).getByRole("tab", { name });
 }
 
+async function expectChosen(page: Page, name: string): Promise<void> {
+  await expect(chosenTab(page, name)).toHaveAttribute("aria-selected", "true");
+}
+
+async function openEmptyTab(page: Page, name: string): Promise<void> {
+  await openLibrary(page);
+  await chosenTab(page, name).click();
+  await expect(noMatches(page)).toBeVisible();
+}
+
 function seriesList(page: Page) {
   return page.getByRole("list", { name: "Series" });
+}
+
+function continueRow(page: Page) {
+  return page.getByRole("region", { name: "Continue reading" });
+}
+
+function noMatches(page: Page) {
+  return page.getByRole("region", { name: "No series match these filters" });
 }
 
 function pageBeside(page: Page) {
@@ -96,12 +139,64 @@ interface Drag {
   readonly release: () => Promise<void>;
 }
 
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+type DragTarget = Pick<ElementHandle, "dispatchEvent">;
+
+interface Spot {
+  readonly target: ElementHandle<Element>;
+  readonly at: Point;
+}
+
 async function beginDrag(page: Page, from: Locator): Promise<Drag> {
   const box = await from.boundingBox();
   if (box === null) {
-    throw new Error("the series list is not on screen");
+    throw new Error("the dragged element is not on screen");
   }
-  const start = { x: box.x + box.width / 2, y: box.y + box.height / 3 };
+  return beginDragAt(from, {
+    x: box.x + box.width / 2,
+    y: box.y + box.height / 3,
+  });
+}
+
+async function spotAt(page: Page, at: Point): Promise<Spot> {
+  const target = (
+    await page.evaluateHandle(({ x, y }) => document.elementFromPoint(x, y), at)
+  ).asElement();
+  if (target === null) {
+    throw new Error("nothing is drawn at the spot");
+  }
+  return { target, at };
+}
+
+async function spotInside(page: Page, from: Locator): Promise<Spot> {
+  const box = await boxOf(from);
+  return spotAt(page, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+}
+
+async function blankBelow(page: Page, emptyState: Locator): Promise<Spot> {
+  const drawnEnd = await emptyState.evaluate((state) =>
+    Math.max(
+      ...[...state.children].map((part) => part.getBoundingClientRect().bottom),
+    ),
+  );
+  const at = await page.getByRole("main").evaluate((main, inset) => {
+    const box = main.getBoundingClientRect();
+    const contentEnd =
+      Math.min(box.bottom, window.innerHeight) -
+      parseFloat(getComputedStyle(main).paddingBlockEnd);
+    return { x: box.x + box.width / 2, y: contentEnd - inset };
+  }, BLANK_INSET_PX);
+  if (at.y <= drawnEnd) {
+    throw new Error("the empty state leaves no blank space below it");
+  }
+  return spotAt(page, at);
+}
+
+async function beginDragAt(from: DragTarget, start: Point): Promise<Drag> {
   const touch = { pointerType: "touch", pointerId: 7, isPrimary: true };
   let reached = 0;
   await from.dispatchEvent("pointerdown", {
@@ -458,6 +553,176 @@ test.describe("each category's scroll position", () => {
     expect(Number(rowsDrawn)).toBeGreaterThan(1);
   });
 });
+
+for (const platform of PLATFORMS) {
+  test.describe(`scrolling the Continue reading row on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...backendWith(SMALL, platform),
+        libraryView: () => ({
+          ...DEFAULT_LIBRARY_VIEW,
+          showsContinueRow: true,
+        }),
+        readingHistory: (_after, of) => ({
+          entries: of.kind === "unfinished" ? [...UNFINISHED] : [],
+          next: null,
+        }),
+      },
+    });
+
+    test("keeps a sideways drag on the row for the row, not the tabs", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessPhone(page, testInfo.project.use.hasTouch);
+      await openLibrary(page);
+      const cards = continueRow(page).getByRole("list");
+      await expect(cards.getByRole("listitem")).toHaveCount(UNFINISHED.length);
+      expect(
+        await cards.evaluate((row) => row.scrollWidth > row.clientWidth),
+      ).toBe(true);
+      const onCard = await spotInside(
+        page,
+        cards.getByRole("listitem").first(),
+      );
+
+      const drag = await beginDragAt(onCard.target, onCard.at);
+      await drag.to(-SWIPE_PX);
+      const swiping = await page.locator("[data-swiping]").count();
+      const moved = await pagerTrack(page).evaluate(
+        (track) => getComputedStyle(track).translate,
+      );
+      await drag.release();
+
+      expect(swiping).toBe(0);
+      expect(moved).toBe("none");
+      await expect
+        .poll(() =>
+          pagerTrack(page).evaluate((track) => track.getAnimations().length),
+        )
+        .toBe(0);
+      await expectChosen(page, "All");
+    });
+  });
+
+  test.describe(`swiping from a tab that lists nothing on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...backendWith(EMPTY_COMICS, platform),
+        libraryTabs: () => [...NEW_CHAPTERS_SHOWN],
+      },
+    });
+    test.skip(({ hasTouch }) => !hasTouch, "a finger swipes");
+
+    for (const { way, by, lands } of [
+      { way: "after", by: -SWIPE_PX, lands: "Manga" },
+      { way: "before", by: SWIPE_PX, lands: "All" },
+    ]) {
+      test(`moves from New chapters with nothing new to the tab ${way} it`, async ({
+        page,
+      }) => {
+        await openEmptyTab(page, "New chapters");
+        const blank = await blankBelow(page, noMatches(page));
+
+        const drag = await beginDragAt(blank.target, blank.at);
+        await drag.to(by);
+        await drag.release();
+
+        await expectChosen(page, lands);
+      });
+    }
+
+    test("leaves the empty tab in place under the finger", async ({ page }) => {
+      await openEmptyTab(page, "New chapters");
+      const before = await boxOf(noMatches(page));
+
+      const drag = await beginDrag(page, noMatches(page));
+      await drag.to(-SWIPE_PX);
+      const during = await boxOf(noMatches(page));
+      const swiping = await page.locator("[data-swiping]").count();
+      await drag.release();
+
+      expect(during.x).toBe(before.x);
+      expect(swiping).toBe(0);
+    });
+
+    test("keeps sideways drags on an empty tab for the swipe", async ({
+      page,
+    }) => {
+      await openEmptyTab(page, "New chapters");
+      const blank = await blankBelow(page, noMatches(page));
+
+      const touchActions = await blank.target.evaluate((spot) => {
+        const actions: string[] = [];
+        for (
+          let element: Element | null = spot;
+          element !== null && element.tagName !== "MAIN";
+          element = element.parentElement
+        ) {
+          actions.push(getComputedStyle(element).touchAction);
+        }
+        return actions.filter((action) => action !== "auto");
+      });
+
+      expect(touchActions).toEqual(["pan-y"]);
+    });
+
+    test("moves from an empty category to the tab before it", async ({
+      page,
+    }) => {
+      await openEmptyTab(page, "Comics");
+      const blank = await blankBelow(page, noMatches(page));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(SWIPE_PX);
+      await drag.release();
+
+      await expectChosen(page, "Manga");
+    });
+
+    test("moves from the covers onto New chapters with nothing new", async ({
+      page,
+    }) => {
+      await openLibrary(page);
+      await chosenTab(page, "Manga").click();
+      await expect(seriesList(page).getByRole("listitem")).toHaveCount(
+        MANGA.length,
+      );
+
+      const drag = await beginDrag(page, seriesList(page));
+      await drag.to(SWIPE_PX);
+      await drag.release();
+
+      await expectChosen(page, "New chapters");
+      await expect(noMatches(page)).toBeVisible();
+    });
+  });
+
+  test.describe(`swiping from All filtered to no matches on ${platform}`, () => {
+    test.use({
+      backend: {
+        ...backendWith(SMALL, platform),
+        libraryListing: () => UNREAD_ONLY,
+        librarySeries: (after, listing) =>
+          listing.filter.unread === "only"
+            ? { series: [], next: null }
+            : pagedSeries(() => EVERY_SERIES)(after, listing),
+      },
+    });
+    test.skip(({ hasTouch }) => !hasTouch, "a finger swipes");
+
+    test("moves to the tab after it", async ({ page }) => {
+      await page.goto("/");
+      await expect(noMatches(page)).toBeVisible();
+      const blank = await blankBelow(page, noMatches(page));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(-SWIPE_PX);
+      await drag.release();
+
+      await expectChosen(page, "Manga");
+    });
+  });
+}
 
 test.describe("on tablets and desktops", () => {
   test.use({ backend: backendWith(SMALL, "android") });

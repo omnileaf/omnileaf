@@ -549,6 +549,7 @@
     loaded !== undefined &&
       (loaded.series.items.length > 0 || (isListFiltered && !holdsNoSeries)),
   );
+  const offersTabs = $derived(hasBooks && tabsShown && !selection.isSelecting);
   const showsLibraryTools = $derived(
     library.list.kind !== "failed" && !isEmpty,
   );
@@ -1206,7 +1207,7 @@
   bind:offsetHeight={headHeight}
   class="desktop-shell:sticky desktop-shell:inset-bs-under-toolbar desktop-shell:z-series-bar desktop-shell:-ms-gutter desktop-shell:-me-page-end desktop-shell:bg-background desktop-shell:ps-gutter desktop-shell:pe-page-end"
 >
-  {#if hasBooks && tabsShown && !selection.isSelecting && !isMac}
+  {#if offersTabs && !isMac}
     <CategoryTabs
       arranged={shownTabs}
       chosen={chosenTabKey}
@@ -1230,8 +1231,17 @@
     : "flex flex-1 flex-col"}
 >
   <div
+    {@attach offersTabs &&
+      swipesBetweenTabs({
+        onSwipe: swipeTab,
+        canStep: (step) => tabBeside(step) !== undefined,
+        settlesSmoothly: () =>
+          pagesBesideChosen > 0 && animations.moves("navigation"),
+        track: () => pager,
+      })}
     class={[
       "flex flex-1 flex-col",
+      offersTabs && "touch-pan-y",
       isGridBesidePanel && "pe-page-end pbe-page-bottom min-inline-none",
     ]}
   >
@@ -1336,17 +1346,7 @@
         <div
           class="-me-page-end mbs-lg flex flex-1 flex-col overflow-x-clip pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:mbs-xl medium:ps-gutter"
         >
-          <div
-            bind:this={pager}
-            {@attach tabsShown &&
-              !selection.isSelecting &&
-              swipesBetweenTabs(
-                swipeTab,
-                (step) => tabBeside(step) !== undefined,
-                () => pagesBesideChosen > 0 && animations.moves("navigation"),
-              )}
-            class="relative flex-1 touch-pan-y"
-          >
+          <div bind:this={pager} class="relative flex-1">
             {#if groups.length > 0}
               <div class="flex flex-col gap-xl android:max-medium:gap-sm">
                 {#each groups as group (group.key)}
