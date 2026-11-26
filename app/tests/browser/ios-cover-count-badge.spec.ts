@@ -24,6 +24,9 @@ const IOS_BADGE = {
 
 const BOARD_BADGE_WEIGHT = "590";
 
+const RIM = "0px 0px 0px 1px";
+const CLEAR = "rgba(0, 0, 0, 0)";
+
 function showing(platform: Platform): { backend: typeof DEFAULT_BACKEND } {
   return {
     backend: {
@@ -33,6 +36,25 @@ function showing(platform: Platform): { backend: typeof DEFAULT_BACKEND } {
       librarySeriesCount: () => LIBRARY.length,
     },
   };
+}
+
+function rimColour(badge: Locator): Promise<string | undefined> {
+  return badge.evaluate(
+    (element, { rim, clear }) =>
+      getComputedStyle(element)
+        .boxShadow.split(/,(?![^(]*\))/)
+        .map((layer) => layer.trim())
+        .find((layer) => layer.endsWith(rim) && !layer.startsWith(clear))
+        ?.slice(0, -rim.length)
+        .trim(),
+    { rim: RIM, clear: CLEAR },
+  );
+}
+
+async function expectBackgroundRim(page: Page, badge: Locator): Promise<void> {
+  expect(await rimColour(badge)).toBe(
+    await tokenColour(page, "--color-background"),
+  );
 }
 
 async function openLibrary(page: Page): Promise<Locator> {
@@ -66,7 +88,7 @@ for (const scheme of ["light", "dark"] as const) {
     }) => {
       const badge = await openLibrary(page);
 
-      await expect(badge).not.toHaveCSS("box-shadow", "none");
+      await expectBackgroundRim(page, badge);
     });
 
     test("sets its count in semibold tabular numerals", async ({ page }) => {
@@ -134,7 +156,7 @@ for (const scheme of ["light", "dark"] as const) {
         "color",
         await tokenColour(page, "--native-color-on-button-primary"),
       );
-      await expect(badge).not.toHaveCSS("box-shadow", "none");
+      await expectBackgroundRim(page, badge);
     });
   });
 }
