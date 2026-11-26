@@ -67,7 +67,7 @@ const VARIANTS: Record<
     },
     outline: {
       fill: TRANSPARENT,
-      text: "rgb(50, 106, 77)",
+      text: "rgb(88, 97, 90)",
       edge: "rgb(115, 125, 117)",
     },
     plain: { fill: TRANSPARENT, text: "rgb(50, 106, 77)", edge: TRANSPARENT },
