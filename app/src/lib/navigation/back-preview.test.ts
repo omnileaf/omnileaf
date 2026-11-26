@@ -223,3 +223,33 @@ test("stops ending the preview once it stops watching", () => {
   expect(shown).toEqual([]);
   clearMocks();
 });
+
+test("hands the preview nothing more once it stops watching", async () => {
+  let channel: Channel<BackSwipe> | undefined;
+  mockIPC((command, args) => {
+    if (command === "watch_back_swipes") {
+      channel = (args as { onSwipe: Channel<BackSwipe> }).onSwipe;
+    }
+    return null;
+  });
+  const shown: BackGestureStep[] = [];
+  const stop = previewBackGestures(
+    (step) => {
+      shown.push(step);
+    },
+    () => true,
+  );
+  await expect.poll(() => channel).toBeDefined();
+
+  stop();
+  channel?.onmessage({
+    kind: "started",
+    progress: 0,
+    edge: "left",
+    touchY: 0.5,
+    corner: 32,
+  });
+
+  expect(shown).toEqual([]);
+  clearMocks();
+});

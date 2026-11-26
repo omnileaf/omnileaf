@@ -1,5 +1,3 @@
-import { Channel } from "@tauri-apps/api/core";
-
 import { assertNever } from "#lib/assert-never.ts";
 import type { BackSwipe, SwipeEdge } from "#lib/ipc/bindings.ts";
 
@@ -199,11 +197,9 @@ export function previewBackGestures(
   follow: (step: BackGestureStep) => void,
   isScreenKept: () => boolean,
 ): () => void {
-  watchBackSwipes(
-    new Channel<BackSwipe>((swipe) => {
-      follow(stepOf(swipe));
-    }),
-  );
+  const stopWatching = watchBackSwipes((swipe) => {
+    follow(stepOf(swipe));
+  });
   const endPreview = () => {
     if (isScreenKept()) {
       follow(ENDED);
@@ -211,6 +207,7 @@ export function previewBackGestures(
   };
   addEventListener("popstate", endPreview);
   return () => {
+    stopWatching();
     removeEventListener("popstate", endPreview);
   };
 }
