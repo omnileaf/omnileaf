@@ -840,6 +840,44 @@ test.describe(
 );
 
 test.describe(
+  "Find a book under an Android phone's tabs, then a volume of chapters",
+  { tag: "@native" },
+  () => {
+    test.use({
+      platform: "android",
+      backend: new SectionShelf([
+        ...volumes(1),
+        { kind: "chapter", numbers: { first: 5, last: 5 }, volume: 2 },
+        { kind: "chapter", numbers: { first: 6, last: 6 }, volume: 2 },
+        ...chapters(13),
+      ]).backend(),
+      viewport: PHONE_IN_PORTRAIT,
+    });
+
+    test("leaves no extra Back step behind a volume opened while the search is open", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await openSeries(page);
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toBeFocused();
+
+      await covers(page, "Volumes").last().click();
+      await expect(page).toHaveURL(
+        new RegExp(`/series/${SERIES_ID}/volume/2$`),
+      );
+      await page.goBack();
+      await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+      await page.goBack();
+
+      await expect(page).toHaveURL(/\/$/);
+    });
+  },
+);
+
+test.describe(
   "a series' tabs with read books on an Android phone",
   { tag: "@native" },
   () => {
