@@ -222,7 +222,7 @@ mod tests {
 
     const SERIES: u8 = 3;
     const CATEGORIES: u8 = 2;
-    const MIGRATION_BEFORE_KEPT_CATEGORIES: usize = 72;
+    const MIGRATION_BEFORE_KEPT_CATEGORIES: usize = 73;
     const SORTED_LISTINGS: [&str; 8] = [
         BY_TITLE_SORTED.ascending.first_page_query,
         BY_TITLE_SORTED.ascending.next_page_query,
