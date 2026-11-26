@@ -36,6 +36,9 @@ const ANDROID_ICON_MOVES: readonly IconMove[] = ICON_MOVES.map((icon) =>
   icon.label === "History" ? { ...icon, move: "clock-rewind" } : icon,
 );
 
+const HALFWAY = "0.5";
+const SAME_PIXEL_TOLERANCE = 2;
+
 interface Motion {
   readonly transitions: readonly string[];
   readonly animations: readonly string[];
@@ -193,6 +196,24 @@ function turnsIn(page: Page, animation: string): Promise<KeyframeTurn[]> {
         : [],
     );
   }, animation);
+}
+
+async function iconPixels(page: Page, icon: Locator): Promise<number[]> {
+  const png = await page.screenshot({ clip: await boxOf(icon) });
+  return page.evaluate(async (base64) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (context === null) {
+      throw new Error("no 2d canvas");
+    }
+    context.drawImage(image, 0, 0);
+    return [...context.getImageData(0, 0, image.width, image.height).data];
+  }, png.toString("base64"));
 }
 
 interface IconLayers {
@@ -517,6 +538,36 @@ test.describe("on Android", () => {
     const turns = await turnsIn(page, "clock-rewind");
 
     expect(turns).toEqual([{ at: "0%", rotate: "60deg" }]);
+  });
+
+  test("keeps the History icon at full strength halfway through its crossfade", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
+    await page.goto("/history");
+    const icon = tab(page, "History").locator('[data-slot="navigation-icon"]');
+    await settle(navigation(page));
+    const atRest = await iconPixels(page, icon);
+
+    await icon.evaluate((wrapper, halfway) => {
+      for (const glyph of wrapper.querySelectorAll<HTMLElement>(
+        "[data-icon]",
+      )) {
+        glyph.style.transition = "none";
+        glyph.style.opacity = halfway;
+      }
+    }, HALFWAY);
+    const halfwayThrough = await iconPixels(page, icon);
+
+    const furthest = Math.max(
+      ...halfwayThrough.map((channel, index) =>
+        Math.abs(channel - (atRest[index] ?? 0)),
+      ),
+    );
+    expect(furthest).toBeLessThanOrEqual(SAME_PIXEL_TOLERANCE);
   });
 
   test("shows only the selected tab's icon filled", async ({ page }) => {

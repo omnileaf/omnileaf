@@ -79,8 +79,8 @@
   const HOLE = "stroke-icon-hole";
   const FILL_FADE =
     "transition-paint motion-navigation:duration-fade motion-navigation:ease-out";
-  const LAYER_FADE =
-    "transition-opacity motion-navigation:duration-fade motion-navigation:ease-out icon-moves:motion-navigation:duration-grow icon-moves:motion-navigation:ease-emphasized";
+  const GLYPH_FADE =
+    "mix-blend-plus-lighter transition-opacity motion-navigation:duration-fade motion-navigation:ease-out icon-moves:motion-navigation:duration-grow icon-moves:motion-navigation:ease-emphasized";
   const MOVES_ABOUT_CENTRE = "origin-center";
   const MOVES: Record<Section, string> = {
     library: "icon-moves:motion-navigation:animate-book-open",
@@ -180,18 +180,22 @@
   <span
     data-slot="navigation-icon"
     aria-hidden="true"
-    class={["relative flex", className, isArriving && ANDROID_MOVES[section]]}
+    class={[
+      "relative isolate flex",
+      className,
+      isArriving && ANDROID_MOVES[section],
+    ]}
   >
     <Icon
       name={SECTION_ICONS[section]}
       size={iconSize}
-      class={[LAYER_FADE, isSelected && "opacity-0"]}
+      class={[GLYPH_FADE, isSelected && "opacity-0"]}
     />
     <Icon
       name={SECTION_ICONS[section]}
       filled
       size={iconSize}
-      class={["absolute inset-none", LAYER_FADE, !isSelected && "opacity-0"]}
+      class={["absolute inset-none", GLYPH_FADE, !isSelected && "opacity-0"]}
     />
   </span>
 {:else}
