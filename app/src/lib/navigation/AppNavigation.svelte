@@ -3,6 +3,7 @@
   import { MediaQuery } from "svelte/reactivity";
 
   import { resolve } from "$app/paths";
+  import { LongPress } from "#lib/components/long-press.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { paneFoldQuery } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -48,6 +49,7 @@
   let arriving: Section | undefined = $state();
   let heldPress: Section | undefined = $state();
   let previous: Section | undefined;
+  const tabPress = new LongPress();
 
   $effect(() => {
     if (previous !== undefined && previous !== current) {
@@ -69,6 +71,10 @@
     };
   });
 
+  $effect(() => () => {
+    tabPress.released();
+  });
+
   function endArrivalOnceStill(): void {
     const isMoving = navigation
       ?.getAnimations({ subtree: true })
@@ -80,9 +86,16 @@
     arriving = undefined;
   }
 
+  function startPress(event: PointerEvent): void {
+    heldPress = undefined;
+    tabPress.pointerWentDown();
+    tabPress.pressed(event, () => undefined);
+  }
+
   /** SvelteKit lets the browser paint once between a link's click and its navigation, so the press is held across that frame. */
   function holdPressUntilChosen(section: Section): void {
-    if (section !== current) {
+    tabPress.released();
+    if (section !== current && !tabPress.wasHeld) {
       heldPress = section;
     }
   }
@@ -94,6 +107,7 @@
   }
 
   function dropPress(): void {
+    tabPress.released();
     heldPress = undefined;
   }
 
@@ -104,7 +118,7 @@
   }
 </script>
 
-<svelte:window onclick={keepPressIfRouted} onpointerdown={dropPress} />
+<svelte:window onclick={keepPressIfRouted} onpointerdown={startPress} />
 
 <nav
   data-app-navigation
@@ -176,6 +190,7 @@
           onpointerup={() => {
             holdPressUntilChosen(destination.section);
           }}
+          onpointercancel={dropPress}
         >
           {#snippet child({ props })}
             <a

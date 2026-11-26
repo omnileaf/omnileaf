@@ -47,6 +47,7 @@ const VISIBLY_MOVED = 0.05;
 const PRESS_FRAMES = 4;
 const LONG_PRESS_MS = 800;
 const TAP_MS = 50;
+const FINGER_LONG_PRESS_MS = 1000;
 const FINGER = { pointerType: "touch", isPrimary: true } as const;
 const HAND_OVER_FRAMES = 40;
 
@@ -257,6 +258,21 @@ async function pressWithTheMouse(page: Page, link: Locator): Promise<void> {
   await page.mouse.move(x + width / 2, y + height / 2);
   await page.mouse.down();
   await page.mouse.up();
+}
+
+async function holdAFinger(
+  page: Page,
+  target: Locator,
+  durationMs: number,
+): Promise<void> {
+  const { x, y, width, height } = await boxOf(target);
+  const browser = await page.context().newCDPSession(page);
+  await browser.send("Input.synthesizeTapGesture", {
+    x: x + width / 2,
+    y: y + height / 2,
+    duration: durationMs,
+    gestureSourceType: "touch",
+  });
 }
 
 async function tapWithAFinger(page: Page, link: Locator): Promise<void> {
@@ -773,6 +789,27 @@ test.describe("on Android", () => {
       expect(frames.some(({ isHeld }) => isHeld)).toBe(true);
     });
   }
+
+  test("leaves no grey after a finger's long press on a tab", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
+    await page.goto("/");
+    await settle(navigation(page));
+    const holder = tab(page, "Browse")
+      .locator('[data-slot="navigation-pill"]')
+      .locator("..");
+
+    await holdAFinger(page, tab(page, "Browse"), FINGER_LONG_PRESS_MS);
+    await settle(navigation(page));
+
+    await expect(heldPresses(page)).toHaveCount(0);
+    await expect(holder).toHaveCSS("background-image", "none");
+    await expect(tab(page, "Library")).toHaveAttribute("aria-current", "page");
+  });
 
   test("leaves no grey on the open tab when it is tapped", async ({ page }) => {
     await page.goto("/history");
