@@ -89,6 +89,20 @@ async function openLabels(page: Page): Promise<Locator> {
   return sheet;
 }
 
+function segmentLabelType(
+  page: Page,
+): Promise<{ readonly size: string; readonly weight: string }> {
+  return page.evaluate(() => {
+    const probe = document.createElement("span");
+    probe.style.fontSize = "var(--native-text-segment)";
+    probe.style.fontWeight = "var(--native-weight-segment)";
+    document.body.append(probe);
+    const { fontSize, fontWeight } = getComputedStyle(probe);
+    probe.remove();
+    return { size: fontSize, weight: fontWeight };
+  });
+}
+
 test.describe(
   "the categories and tags sheet on an Android phone",
   { tag: "@native" },
@@ -223,9 +237,10 @@ test.describe(
       }) => {
         const sheet = await openLabels(page);
         const label = sheet.getByText("Suggested", { exact: true });
+        const type = await segmentLabelType(page);
 
-        await expect(label).toHaveCSS("font-size", "14px");
-        await expect(label).toHaveCSS("font-weight", "500");
+        await expect(label).toHaveCSS("font-size", type.size);
+        await expect(label).toHaveCSS("font-weight", type.weight);
         await expect(label).toHaveCSS(
           "color",
           await tokenColour(page, "--color-foreground"),
@@ -273,10 +288,13 @@ test.describe(
         expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
       });
 
-      test("spaces the suggestions 8px apart in a row and between rows", async ({
+      test("puts the suggestions 8px under the Suggested label, 8px apart in a row and between rows", async ({
         page,
       }) => {
         const sheet = await openLabels(page);
+        const label = await boxOf(
+          sheet.getByText("Suggested", { exact: true }),
+        );
         const chips = await Promise.all(
           MANY_SUGGESTIONS.map((tag) =>
             boxOf(sheet.getByRole("button", { name: `Add ${tag}` })),
@@ -285,6 +303,10 @@ test.describe(
         const [first, second] = chips;
         const nextLine = chips.find(({ y }) => y > (first?.y ?? 0));
 
+        expect((first?.y ?? 0) - (label.y + label.height)).toBeCloseTo(
+          CHIP_GAP_PX,
+          0,
+        );
         expect(
           (second?.x ?? 0) - ((first?.x ?? 0) + (first?.width ?? 0)),
         ).toBeCloseTo(CHIP_GAP_PX, 0);
