@@ -11,6 +11,8 @@ const CATEGORIES = [
   { id: "reading", name: "Reading" },
   { id: "manga", name: "Manga" },
 ] as LibraryCategory[];
+const DRAG_STEPS = 8;
+const INSIDE_THE_ROW = 2;
 
 test.use({
   backend: {
@@ -80,6 +82,34 @@ test.describe("Library tabs on an iPhone", { tag: "@native" }, () => {
       handleBox.x + handleBox.width / 2,
       0,
     );
+  });
+
+  test("moves a tab dragged by the handle at the end of its row", async ({
+    page,
+  }) => {
+    const list = page.getByRole("list", { name: "Library tabs" });
+    const reading = list
+      .getByRole("listitem")
+      .filter({ has: page.getByText("Reading", { exact: true }) });
+    const manga = await boxOf(
+      list
+        .getByRole("listitem")
+        .filter({ has: page.getByText("Manga", { exact: true }) }),
+    );
+    const handle = await boxOf(
+      reading.getByRole("button", { name: "Move Reading" }),
+    );
+    const x = handle.x + handle.width / 2;
+
+    await page.mouse.move(x, handle.y + handle.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x, manga.y + manga.height - INSIDE_THE_ROW, {
+      steps: DRAG_STEPS,
+    });
+    await page.mouse.up();
+
+    await expect(list.getByRole("listitem").last()).toContainText("Reading");
+    await expect(reading).toHaveCSS("box-shadow", "none");
   });
 
   test("puts the reorder handle at the end of the row, after the more button", async ({
