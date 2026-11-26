@@ -44,7 +44,11 @@ test.use({
     librarySeries: pagedSeries(() => LIBRARY),
     librarySeriesCount: () => LIBRARY.length,
     libraryCategories: () => [...CATEGORIES],
-    categorySeries: pagedSeries(() => LIBRARY),
+    categorySeries: (
+      _category: string,
+      after: Parameters<ReturnType<typeof pagedSeries>>[0],
+      listing: Parameters<ReturnType<typeof pagedSeries>>[1],
+    ) => pagedSeries(() => LIBRARY)(after, listing),
     categorySeriesCount: () => LIBRARY.length,
     seriesOverview: (id) => SHELF.backend().seriesOverview(id),
     seriesBooks: (id, listing, after) =>
