@@ -19,16 +19,27 @@ const moved = (progress: number): BackGestureStep => ({
 });
 const ended: BackGestureStep = { kind: "ended" };
 
-function sheetShowing(state: "open" | "closed"): HTMLElement {
+const BODY_AT_REST_PX = 480;
+
+function sheetShowing(
+  state: "open" | "closed",
+  bodyContentPx: number,
+): HTMLElement {
   const sheet = document.createElement("div");
   sheet.dataset.state = state;
   sheet.style.cssText =
-    "position: fixed; inset-inline-start: 0; inset-block-end: 0; width: 392px; height: 600px";
-  for (const height of [20, 100, 300]) {
+    "position: fixed; inset-inline-start: 0; inset-block-end: 0; width: 392px; height: 600px; display: flex; flex-direction: column";
+  for (const height of [20, 100]) {
     const part = document.createElement("div");
-    part.style.height = `${String(height)}px`;
+    part.style.cssText = `flex: none; height: ${String(height)}px`;
     sheet.append(part);
   }
+  const body = document.createElement("div");
+  body.style.cssText = "flex: 1 1 auto; min-height: 0; overflow: auto";
+  const content = document.createElement("div");
+  content.style.height = `${String(bodyContentPx)}px`;
+  body.append(content);
+  sheet.append(body);
   document.body.append(sheet);
   mounted.push(sheet);
   return sheet;
@@ -40,8 +51,12 @@ afterEach(() => {
   }
 });
 
-function preview(isMotionOn = true, state: "open" | "closed" = "open") {
-  const element = sheetShowing(state);
+function preview(
+  isMotionOn = true,
+  state: "open" | "closed" = "open",
+  bodyContentPx = 2 * BODY_AT_REST_PX,
+) {
+  const element = sheetShowing(state, bodyContentPx);
   const frames: (() => void)[] = [];
   const timers: { ms: number; run: () => void; isCancelled: boolean }[] = [];
   const scheduler: PreviewScheduler = {
@@ -250,14 +265,17 @@ test("never widens the sheet during a gesture that takes over from a spring back
   expect(widthOf()).toBeLessThan(startedAt + COMPUTED_ROUNDING);
 });
 
-test("is at rest again when the sheet opens again before it is gone", async () => {
-  const { sheet, element } = preview(true, "closed");
+test("resets the scale and the layout together when the sheet opens again before it is gone", async () => {
+  const { sheet, element, nextFrame } = preview(true, "closed");
   sheet.follow(started);
   sheet.follow(moved(1));
 
   element.dataset.state = "open";
   await Promise.resolve();
 
+  expect(sheet.style).toContain("scale: 1;");
+  expect(sheet.style).not.toContain("block-size");
+  nextFrame();
   expect([sheet.phase, sheet.style]).toEqual([undefined, undefined]);
 });
 
@@ -270,4 +288,76 @@ test("stays shrunk while the sheet closes", async () => {
   await Promise.resolve();
 
   expect(sheet.phase).toBe("held");
+});
+
+test("lays the sheet out taller by only as much as its scrolling body can fill", () => {
+  const { sheet } = preview(true, "open", BODY_AT_REST_PX + 10);
+  sheet.follow(started);
+
+  sheet.follow(moved(1));
+
+  expect(sheet.style).toContain("block-size: 610px");
+});
+
+test("lays the sheet out no taller when nothing in it scrolls", () => {
+  const { sheet } = preview(true, "open", 100);
+  sheet.follow(started);
+
+  sheet.follow(moved(1));
+
+  expect(sheet.style).toContain("block-size: 600px");
+  expect(sheet.style).toMatch(/scale: 0\.87\d+;/);
+});
+
+test("puts a body back where it was scrolled once the sheet is back at rest", () => {
+  const { sheet, element, apply, settle } = preview();
+  const body = element.lastElementChild as HTMLElement;
+  body.scrollTop = body.scrollHeight;
+  const distanceFromEnd = () =>
+    body.scrollHeight - body.clientHeight - body.scrollTop;
+  sheet.follow(started);
+  sheet.follow(moved(1));
+  apply();
+  const whileHeld = distanceFromEnd();
+
+  sheet.follow(ended);
+  apply();
+  settle();
+
+  expect(whileHeld).toBe(0);
+  expect(distanceFromEnd()).toBe(0);
+  expect(body.clientHeight).toBe(BODY_AT_REST_PX);
+});
+
+test("puts a body scrolled within the extra height back where it was", () => {
+  const { sheet, element, apply, settle } = preview();
+  const body = element.lastElementChild as HTMLElement;
+  body.scrollTop = body.scrollHeight - body.clientHeight - 10;
+  const before = body.scrollTop;
+  sheet.follow(started);
+  sheet.follow(moved(1));
+  apply();
+  const whileHeld = body.scrollTop;
+
+  sheet.follow(ended);
+  apply();
+  settle();
+
+  expect(whileHeld).toBeLessThan(before);
+  expect(body.scrollTop).toBe(before);
+});
+
+test("follows the end of a body that is back at its end as the spring brings the sheet back", () => {
+  const { sheet, element, apply, nextFrame } = preview();
+  const body = element.lastElementChild as HTMLElement;
+  body.scrollTop = body.scrollHeight;
+  sheet.follow(started);
+  sheet.follow(moved(1));
+  apply();
+  sheet.follow(ended);
+  apply();
+
+  nextFrame();
+
+  expect(body.scrollHeight - body.clientHeight - body.scrollTop).toBe(0);
 });

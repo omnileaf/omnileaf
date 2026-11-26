@@ -15,7 +15,12 @@ import {
   sheetBackShape,
 } from "./sheet-back";
 
-type Phase = "held" | "cancelling";
+type Phase = "held" | "cancelling" | "resetting";
+
+interface ScrolledPart {
+  readonly part: HTMLElement;
+  readonly scrollTop: number;
+}
 
 const NO_SHAPE: SheetBackShape = { scale: 1, layoutHeight: 0 };
 const REST_SCALE = "1";
@@ -26,6 +31,31 @@ export function isSheetMotionOn(): boolean {
   const still = document.documentElement.dataset.still ?? "";
   return (
     !prefersReducedMotion.current && !still.split(" ").includes(SHEETS_STILL)
+  );
+}
+
+function resettingStyle(): string {
+  return [
+    `scale: ${REST_SCALE}`,
+    `transition-property: ${FOLLOWING_FINGER}`,
+  ].join("; ");
+}
+
+function scrolledPartsOf(sheet: HTMLElement): readonly ScrolledPart[] {
+  return [...sheet.children]
+    .filter((part): part is HTMLElement => part instanceof HTMLElement)
+    .filter(
+      (part) =>
+        ["auto", "scroll"].includes(getComputedStyle(part).overflowY) &&
+        part.scrollHeight > part.clientHeight,
+    )
+    .map((part) => ({ part, scrollTop: part.scrollTop }));
+}
+
+function fillableHeightOf(parts: readonly ScrolledPart[]): number {
+  return parts.reduce(
+    (total, { part }) => total + part.scrollHeight - part.clientHeight,
+    0,
   );
 }
 
@@ -67,6 +97,9 @@ export class SheetBackPreview {
   #shape: SheetBackShape = $state.raw(NO_SHAPE);
   #size: SheetBackSize | undefined;
   #reached = 0;
+  #scrolled: readonly ScrolledPart[] = [];
+  #stopFollowingScroll: (() => void) | undefined;
+  #stopResetting: (() => void) | undefined;
   #watching: MutationObserver | undefined;
   #spring: Animation | undefined;
   #stopSettling: (() => void) | undefined;
@@ -90,7 +123,17 @@ export class SheetBackPreview {
   }
 
   get style(): string | undefined {
-    return this.#phase === undefined ? undefined : styleOf(this.#shape);
+    switch (this.#phase) {
+      case undefined:
+        return undefined;
+      case "resetting":
+        return resettingStyle();
+      case "held":
+      case "cancelling":
+        return styleOf(this.#shape);
+      default:
+        return assertNever(this.#phase);
+    }
   }
 
   follow(step: BackGestureStep): void {
@@ -127,9 +170,12 @@ export class SheetBackPreview {
     if (sheet === null || !this.#isMotionOn()) {
       return;
     }
+    const scrolled =
+      this.#size === undefined ? scrolledPartsOf(sheet) : this.#scrolled;
     const size = this.#size ?? {
       width: sheet.offsetWidth,
       height: sheet.offsetHeight,
+      fillableHeight: fillableHeightOf(scrolled),
     };
     const reached =
       this.#phase === undefined
@@ -146,10 +192,11 @@ export class SheetBackPreview {
           );
     this.#release();
     this.#size = size;
+    this.#scrolled = scrolled;
     this.#reached = reached;
     this.#watching = new MutationObserver(() => {
       if (sheet.dataset.state === "open") {
-        this.#release();
+        this.#reopen();
       }
     });
     this.#watching.observe(sheet, {
@@ -179,6 +226,7 @@ export class SheetBackPreview {
     this.#spring = springBackOf(sheet, this.#size.height);
     this.#shape = sheetBackShape(this.#size, 0);
     this.#phase = "cancelling";
+    this.#followScroll();
     this.#stopSettling = this.#scheduler.after(
       ANDROID_BACK_SPRING.durationMs,
       () => {
@@ -187,7 +235,37 @@ export class SheetBackPreview {
     );
   }
 
+  #followScroll(): void {
+    this.#restoreScroll();
+    this.#stopFollowingScroll = this.#scheduler.nextFrame(() => {
+      this.#followScroll();
+    });
+  }
+
+  #restoreScroll(): void {
+    for (const { part, scrollTop } of this.#scrolled) {
+      part.scrollTop = Math.min(
+        scrollTop,
+        part.scrollHeight - part.clientHeight,
+      );
+    }
+  }
+
+  #reopen(): void {
+    this.#release();
+    this.#phase = "resetting";
+    this.#stopResetting = this.#scheduler.nextFrame(() => {
+      this.#phase = undefined;
+    });
+  }
+
   #release(): void {
+    this.#restoreScroll();
+    this.#stopFollowingScroll?.();
+    this.#stopFollowingScroll = undefined;
+    this.#stopResetting?.();
+    this.#stopResetting = undefined;
+    this.#scrolled = [];
     this.#stopSettling?.();
     this.#stopSettling = undefined;
     this.#stopChecking?.();
