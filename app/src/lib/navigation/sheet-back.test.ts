@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { sheetBackShape } from "./sheet-back";
+import { sheetBackProgressOf, sheetBackShape } from "./sheet-back";
 
 const LIBRARY_SHEET = { width: 392, height: 600 };
 
@@ -38,4 +38,16 @@ test("shrinks a sheet in proportion to its own size", () => {
 
   expect(scaleX).toBeCloseTo(1 - 48 / 800);
   expect(scaleY).toBeCloseTo(1 - 24 / 300);
+});
+
+test("tells the progress a shape stands for", () => {
+  const shape = sheetBackShape(LIBRARY_SHEET, 0.37);
+
+  expect(sheetBackProgressOf(LIBRARY_SHEET, shape)).toBeCloseTo(0.37);
+});
+
+test("tells a sheet at rest has made no progress", () => {
+  const shape = sheetBackShape(LIBRARY_SHEET, 0);
+
+  expect(sheetBackProgressOf(LIBRARY_SHEET, shape)).toBe(0);
 });

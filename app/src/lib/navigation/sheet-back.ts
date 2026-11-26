@@ -20,3 +20,10 @@ export function sheetBackShape(
   const scaleY = 1 - (SHEET_BACK.maxShrinkHeightPx / size.height) * progress;
   return { scaleX, scaleY, contentScaleY: scaleX / scaleY };
 }
+
+export function sheetBackProgressOf(
+  size: SheetBackSize,
+  shape: SheetBackShape,
+): number {
+  return ((1 - shape.scaleX) * size.width) / SHEET_BACK.maxShrinkWidthPx;
+}
