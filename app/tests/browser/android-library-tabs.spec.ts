@@ -1,3 +1,5 @@
+import type { Locator, Page } from "@playwright/test";
+
 import type {
   LibraryCategory,
   LibraryTab,
@@ -36,6 +38,16 @@ test.use({
     }),
   },
 });
+
+function tabList(page: Page): Locator {
+  return page.getByRole("list", { name: "Library tabs" });
+}
+
+function rowOf(page: Page, name: string): Locator {
+  return tabList(page)
+    .getByRole("listitem")
+    .filter({ has: page.getByText(name, { exact: true }) });
+}
 
 test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
   test.beforeEach(({ platform }) => {
@@ -178,7 +190,7 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
   }) => {
     await page.goto("/settings/library/tabs");
     await slowMoves(page);
-    const row = page.getByRole("listitem").filter({ hasText: "Reading" });
+    const row = rowOf(page, "Reading");
     const box = await boxOf(row.getByRole("button", { name: /^Move Reading/ }));
     const x = box.x + box.width / 2;
 
@@ -214,11 +226,9 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     await holdScriptedAnimations(page);
     await page.goto("/settings/library/tabs");
     await slowMoves(page);
-    const row = page.getByRole("listitem").filter({ hasText: "Reading" });
+    const row = rowOf(page, "Reading");
     const handle = row.getByRole("button", { name: /^Move Reading/ });
-    const manga = await boxOf(
-      page.getByRole("listitem").filter({ hasText: "Manga" }),
-    );
+    const manga = await boxOf(rowOf(page, "Manga"));
     const start = await boxOf(handle);
     const x = start.x + start.width / 2;
 
@@ -238,8 +248,11 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     });
     await page.mouse.up();
 
-    await expect(
-      page.getByRole("list", { name: "Library tabs" }).getByRole("listitem"),
-    ).toHaveText([/All/, /New chapters/, /Manga/, /Reading/]);
+    await expect(tabList(page).getByRole("listitem")).toHaveText([
+      /All/,
+      /New chapters/,
+      /Manga/,
+      /Reading/,
+    ]);
   });
 });
