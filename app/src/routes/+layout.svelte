@@ -33,6 +33,7 @@
   import { giveBackOverlayEntriesBeforeLinkTo } from "#lib/navigation/overlay-back.ts";
   import { followReaderOrigin } from "#lib/reader/reader-origin.ts";
   import { READER_ROUTE_ID } from "#lib/reader/reader-route.ts";
+  import { VOLUME_ROUTE_ID } from "#lib/series-sections/volume-route.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
     languageSettingForDocument,
@@ -166,6 +167,7 @@
   followHistoryForBack(() => data.appInfo.platform);
   followReaderOrigin();
   giveBackOverlayEntriesBeforeLinkTo(READER_ROUTE_ID);
+  giveBackOverlayEntriesBeforeLinkTo(VOLUME_ROUTE_ID);
   afterNavigate(({ type }) => {
     if (type === "enter") {
       void showOpeningPage(data.pageToRestore, data.appInfo.platform);

@@ -98,3 +98,27 @@ test("keeps the search reachable on a narrow macOS window", async () => {
     .element(page.getByRole("button", { name: "Find a book" }))
     .toBeVisible();
 });
+
+test("points Find a book at the search field only while it is open", async () => {
+  await page.viewport(360, 800);
+  followCorePlatform("android");
+  document.body.append(document.createElement("main"));
+  await render(BookListingChoices, {
+    phone: "android",
+    listing: LISTING,
+    onChoose: () => undefined,
+    search: "",
+    onSearch: () => undefined,
+    onShownCrowded: () => undefined,
+    searchPlace: "inPlaceOfShown",
+  });
+  const find = page.getByRole("button", { name: "Find a book" });
+  const controlledWhenClosed = find.element().getAttribute("aria-controls");
+
+  await find.click();
+
+  const field = page.getByRole("searchbox", { name: "Find a book" }).element();
+  expect(controlledWhenClosed).toBeNull();
+  expect(field.id).not.toBe("");
+  expect(find.element().getAttribute("aria-controls")).toBe(field.id);
+});
