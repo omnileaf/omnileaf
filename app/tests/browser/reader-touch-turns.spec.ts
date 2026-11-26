@@ -46,7 +46,7 @@ const TAP_BURST_GAP_MS = 40;
 const MOST_CELLS_DRAWN = 3;
 const MOST_PAGES_HELD = 7;
 const WAIT_PAST_DOUBLE_TAP_MS = 600;
-const TURN_DRAG_PX = -150;
+const SHORT_DRAG_PX = -30;
 const AWAY_FROM_THE_TAP = { x: 60, y: 160 };
 const ARROW_RIGHT = {
   key: "ArrowRight",
@@ -480,7 +480,7 @@ test(
 
     expect(gapped.length).toBeGreaterThan(0);
     expect(gapped.filter((gaps) => gaps > 0)).toEqual([]);
-    expect(await pageDrawnAtRest(page)).toBe(14 + QUICK_TAPS);
+    await expect.poll(() => pageDrawnAtRest(page)).toBe(14 + QUICK_TAPS);
   },
 );
 
@@ -603,13 +603,13 @@ test(
     await moveFinger(
       session,
       dragStart,
-      movedBy(dragStart, { x: TURN_DRAG_PX, y: 0 }),
+      movedBy(dragStart, { x: SHORT_DRAG_PX, y: 0 }),
     );
     await liftFinger(session);
     await waitPastDoubleTap(page);
 
     expect(await controlsWereShown(page)).toBe(false);
-    await expectOnPage(page, 15);
+    await expectOnPage(page, 14);
   },
 );
 
@@ -638,7 +638,8 @@ test.describe("a long book", { tag: "@native" }, () => {
     expect(held.mostDrawn).toBeLessThanOrEqual(MOST_CELLS_DRAWN);
     expect(held.mostMounted).toBeLessThanOrEqual(MOST_PAGES_HELD);
     expect(await pageNumber(page)).toBeGreaterThan(14);
-    expect(await pageDrawnAtRest(page)).toBe(await pageNumber(page));
+    const number = await pageNumber(page);
+    await expect.poll(() => pageDrawnAtRest(page)).toBe(number);
   }
 
   test("keeps at most three pages drawn, and the page drawn on its number, while a key is held", async ({

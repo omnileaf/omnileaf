@@ -34,7 +34,10 @@ const SMALL_MOVE_PX = 6;
 const NEVER_ARRIVING_PAGE = 16;
 const CAUGHT_AT = 0.4;
 const TAPPED_ACROSS = 0.75;
+const PHONE_SCREEN = { width: 390, height: 844 };
 const SCROLLBAR_ROOM_PX = 20;
+const SCROLLBAR_ROOM_TAKEN =
+  "[data-shown-page] { border-inline-end: 16px solid transparent; }";
 const TAPPED_DOWN = 0.4;
 const OPENING = {
   reading: { state: "started", page: 14 },
@@ -449,10 +452,14 @@ test.describe("a book read right to left", () => {
     });
   }
 
-  test("keeps the double-tapped point under the pointer as the page zooms in", async ({
-    page,
-  }) => {
-    await expectZoomKeepsTheTappedPoint(page);
+  test.describe("on a phone's screen", () => {
+    test.use({ viewport: PHONE_SCREEN });
+
+    test("keeps the double-tapped point under the pointer as the page zooms in", async ({
+      page,
+    }) => {
+      await expectZoomKeepsTheTappedPoint(page);
+    });
   });
 
   test("slides the last page back in from the right on turning back from Up next", async ({
@@ -894,6 +901,7 @@ test.describe("pages whose size is not known yet", () => {
       Math.abs((box?.width ?? Number.NaN) - (area?.width ?? Number.NaN)),
     ).toBeLessThan(SCROLLBAR_ROOM_PX);
   });
+
   for (const { layout, shown } of [
     { layout: "one", shown: [14] },
     { layout: "two", shown: [14, 15] },
@@ -944,6 +952,7 @@ async function expectZoomKeepsTheTappedPoint(page: Page): Promise<void> {
 
   expect(after).not.toBeNull();
   const zoomed = after ?? before;
+  expect(zoomed.width).toBeGreaterThan(area.width);
   expectNear(
     zoomed.x,
     heldPlace(point.x - share.x * zoomed.width, {
@@ -972,10 +981,14 @@ function heldPlace(
   return Math.min(start, Math.max(start + room - size, wanted));
 }
 
-test("keeps the double-tapped point under the pointer as the page zooms in", async ({
-  page,
-}) => {
-  await expectZoomKeepsTheTappedPoint(page);
+test.describe("on a phone's screen", () => {
+  test.use({ viewport: PHONE_SCREEN });
+
+  test("keeps the double-tapped point under the pointer as the page zooms in", async ({
+    page,
+  }) => {
+    await expectZoomKeepsTheTappedPoint(page);
+  });
 });
 
 test("keeps sliding when a setting that leaves the pages in place changes", async ({
@@ -993,6 +1006,36 @@ test("keeps sliding when a setting that leaves the pages in place changes", asyn
   await expect(
     page.getByRole("button", { name: "Light", exact: true }).first(),
   ).toHaveAttribute("aria-pressed", "true");
+  const { moving } = await framesOfTheTurn(page, [15]);
+
+  expect(moving).toBeGreaterThan(0);
+});
+
+test("keeps sliding when a scrollbar takes room from the page area", async ({
+  page,
+}) => {
+  await openBookWith(page, { pageTurn: "slide" });
+  await slowSlides(page);
+  await expectDecoded(page, 15);
+  const scroller = page.locator("[data-shown-page]");
+  await page.keyboard.press("ArrowRight");
+
+  await page.addStyleTag({ content: SCROLLBAR_ROOM_TAKEN });
+  await expect
+    .poll(() =>
+      scroller.evaluate((element) =>
+        element instanceof HTMLElement
+          ? element.offsetWidth - element.clientWidth
+          : 0,
+      ),
+    )
+    .toBeGreaterThan(0);
+  await page.evaluate(
+    () =>
+      new Promise((painted) => {
+        requestAnimationFrame(() => requestAnimationFrame(painted));
+      }),
+  );
   const { moving } = await framesOfTheTurn(page, [15]);
 
   expect(moving).toBeGreaterThan(0);
