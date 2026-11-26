@@ -196,9 +196,20 @@ function stepOf(swipe: BackSwipe): BackGestureStep {
 export function previewBackGestures(
   follow: (step: BackGestureStep) => void,
   isScreenKept: () => boolean,
+  isBackTaken: () => boolean,
 ): () => void {
+  let isHidden = false;
   const stopWatching = watchBackSwipes((swipe) => {
-    follow(stepOf(swipe));
+    if (swipe.kind === "started") {
+      isHidden = isBackTaken();
+    }
+    const step = stepOf(swipe);
+    if (!isHidden) {
+      follow(step);
+    }
+    if (step.kind === "ended") {
+      isHidden = false;
+    }
   });
   const endPreview = () => {
     if (isScreenKept()) {

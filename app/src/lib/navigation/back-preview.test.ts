@@ -130,6 +130,7 @@ test("reports where a gesture starts and moves, and its end once it is cancelled
       shown.push(step);
     },
     () => true,
+    () => false,
   );
 
   await expect
@@ -169,6 +170,7 @@ test("takes a gesture that says nothing of its edge, finger or corner as one fro
       shown.push(step);
     },
     () => true,
+    () => false,
   );
 
   await expect
@@ -190,6 +192,7 @@ function previewOnce(isScreenKept: boolean) {
       shown.push(step);
     },
     () => isScreenKept,
+    () => false,
   );
   return { shown, stop };
 }
@@ -238,6 +241,7 @@ test("hands the preview nothing more once it stops watching", async () => {
       shown.push(step);
     },
     () => true,
+    () => false,
   );
   await expect.poll(() => channel).toBeDefined();
 
@@ -251,5 +255,96 @@ test("hands the preview nothing more once it stops watching", async () => {
   });
 
   expect(shown).toEqual([]);
+  clearMocks();
+});
+
+const START_SWIPE: BackSwipe = {
+  kind: "started",
+  progress: 0,
+  edge: "left",
+  touchY: 0.5,
+  corner: 32,
+};
+const MOVE_SWIPE: BackSwipe = { kind: "moved", progress: 0.4 };
+const RELEASE_SWIPE: BackSwipe = {
+  kind: "released",
+  progress: 0.4,
+  velocity: 0,
+};
+
+async function watchedGestures(isBackTaken: () => boolean) {
+  let channel: Channel<BackSwipe> | undefined;
+  mockIPC((command, args) => {
+    if (command === "watch_back_swipes") {
+      channel = (args as { onSwipe: Channel<BackSwipe> }).onSwipe;
+    }
+    return null;
+  });
+  const shown: BackGestureStep[] = [];
+  const stop = previewBackGestures(
+    (step) => {
+      shown.push(step);
+    },
+    () => true,
+    isBackTaken,
+  );
+  await expect.poll(() => channel).toBeDefined();
+  return {
+    shown,
+    stop,
+    swipe: (...swipes: BackSwipe[]) => {
+      for (const swipe of swipes) {
+        channel?.onmessage(swipe);
+      }
+    },
+  };
+}
+
+test("shows nothing of a gesture that starts while back belongs to an overlay", async () => {
+  const { shown, stop, swipe } = await watchedGestures(() => true);
+
+  swipe(START_SWIPE, MOVE_SWIPE, RELEASE_SWIPE);
+
+  expect(shown).toEqual([]);
+  stop();
+  clearMocks();
+});
+
+test("shows the next gesture once the overlay is gone", async () => {
+  const taken = { isBySheet: true };
+  const { shown, stop, swipe } = await watchedGestures(() => taken.isBySheet);
+  swipe(START_SWIPE, MOVE_SWIPE, RELEASE_SWIPE);
+  taken.isBySheet = false;
+
+  swipe(START_SWIPE, MOVE_SWIPE, RELEASE_SWIPE);
+
+  expect(shown.map((step) => step.kind)).toEqual(["started", "moved", "ended"]);
+  stop();
+  clearMocks();
+});
+
+test("decides when a gesture starts, so an overlay opening mid-gesture does not cut its preview short", async () => {
+  const taken = { isBySheet: false };
+  const { shown, stop, swipe } = await watchedGestures(() => taken.isBySheet);
+  swipe(START_SWIPE);
+
+  taken.isBySheet = true;
+  swipe(MOVE_SWIPE, RELEASE_SWIPE);
+
+  expect(shown.map((step) => step.kind)).toEqual(["started", "moved", "ended"]);
+  stop();
+  clearMocks();
+});
+
+test("keeps a gesture hidden when its overlay closes mid-gesture", async () => {
+  const taken = { isBySheet: true };
+  const { shown, stop, swipe } = await watchedGestures(() => taken.isBySheet);
+  swipe(START_SWIPE);
+
+  taken.isBySheet = false;
+  swipe(MOVE_SWIPE, RELEASE_SWIPE);
+
+  expect(shown).toEqual([]);
+  stop();
   clearMocks();
 });

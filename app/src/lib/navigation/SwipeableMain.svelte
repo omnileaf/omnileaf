@@ -25,12 +25,14 @@
   import { previewBackGestures } from "./back-preview";
   import { wayBackFrom } from "./back-link";
   import { backSwipeEdge, directionOf } from "./back-swipe";
+  import { willScreenTakeBack } from "./back-within-screen";
   import {
     holdScrollPlace,
     holdScrollTop,
     placeOf,
     type ScrollPlace,
   } from "./hold-scroll";
+  import { willOverlayTakeBack } from "./overlay-back";
   import { ScrollMemory } from "./scroll-memory";
   import { focusArrival } from "./page-heading";
   import { getPreviousScreens } from "./previous-screens";
@@ -229,6 +231,7 @@
           () =>
             location.pathname === page.url.pathname &&
             location.search === page.url.search,
+          () => willScreenTakeBack() || willOverlayTakeBack(),
         )
       : undefined;
     const stopListening = listenForLibraryChanges(() => {
