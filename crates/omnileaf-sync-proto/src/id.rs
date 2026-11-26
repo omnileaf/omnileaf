@@ -13,6 +13,7 @@ const NAMED_SERIES_KEY: KeyName = KeyName::new("series.named.v1");
 const CATEGORY_KEY: KeyName = KeyName::new("category.v1");
 const TAG_KEY: KeyName = KeyName::new("tag.v1");
 const MINTED_TAG_KEY: KeyName = KeyName::new("tag.minted.v1");
+const MINTED_CATEGORY_KEY: KeyName = KeyName::new("category.minted.v1");
 const CATEGORY_MEMBERSHIP_PREFIX: &str = "cat.";
 const TAG_MEMBERSHIP_PREFIX: &str = "tag.";
 const ID_HEX_LENGTH: usize = 32;
@@ -140,6 +141,15 @@ impl BookmarkId {
 impl CategoryId {
     pub fn from_name(name: &str) -> Result<Self, KeyError> {
         let key = NaturalKey::new(CATEGORY_KEY).part(norm(name).as_bytes())?;
+        Ok(Self(key.id()))
+    }
+
+    /// For a category whose name's own id is held by a category renamed since, so no two categories share an id while each id stays one every device derives the same way.
+    pub fn minted(name: &str, node: NodeId, hlc: Hlc) -> Result<Self, KeyError> {
+        let key = NaturalKey::new(MINTED_CATEGORY_KEY)
+            .part(norm(name).as_bytes())?
+            .fixed_part(node.as_bytes())
+            .fixed_part(&hlc.as_u64().to_le_bytes());
         Ok(Self(key.id()))
     }
 
