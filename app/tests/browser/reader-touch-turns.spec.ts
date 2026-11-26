@@ -65,6 +65,11 @@ interface Point {
   readonly y: number;
 }
 
+interface Box extends Point {
+  readonly width: number;
+  readonly height: number;
+}
+
 interface PagesHeld {
   readonly mostDrawn: number;
   readonly mostMounted: number;
@@ -422,7 +427,7 @@ async function doubleTapToZoom(page: Page, session: CDPSession): Promise<void> {
   await expect(page.getByText("200%", { exact: false })).toBeVisible();
 }
 
-async function pageOffset(page: Page, number: number): Promise<Point> {
+async function pageOffset(page: Page, number: number): Promise<Box> {
   await waitFrames(page, FRAMES_FOR_A_SCROLL);
   const box = await shownPage(page, number).boundingBox();
   if (box === null) {
@@ -431,7 +436,7 @@ async function pageOffset(page: Page, number: number): Promise<Point> {
   return box;
 }
 
-async function pageAreaBox(page: Page): Promise<Point> {
+async function pageAreaBox(page: Page): Promise<Box> {
   const box = await page.locator("[data-shown-page]").boundingBox();
   if (box === null) {
     throw new Error("the page area is not on screen");
@@ -466,6 +471,7 @@ test(
 
     expect(gapped.length).toBeGreaterThan(0);
     expect(gapped.filter((gaps) => gaps > 0)).toEqual([]);
+    expect(await pageDrawnAtRest(page)).toBe(14 + QUICK_TAPS);
   },
 );
 
@@ -615,12 +621,26 @@ async function expectZoomedPagePans(page: Page): Promise<void> {
   );
   const clamped = await pageOffset(page, 14);
   await liftFinger(session);
+  await fingerDown(session, middle);
+  await moveFinger(
+    session,
+    middle,
+    movedBy(middle, { x: -PAN_PAST_EDGE_PX, y: -PAN_PAST_EDGE_PX }),
+  );
+  const farEdge = await pageOffset(page, 14);
+  await liftFinger(session);
 
   expect(Math.abs(panned.x - (before.x + pan.x / 2))).toBeLessThan(CLOSE_PX);
   expect(Math.abs(panned.y - (before.y + pan.y / 2))).toBeLessThan(CLOSE_PX);
   const area = await pageAreaBox(page);
   expect(Math.abs(clamped.x - area.x)).toBeLessThan(CLOSE_PX);
   expect(Math.abs(clamped.y - area.y)).toBeLessThan(CLOSE_PX);
+  expect(
+    Math.abs(farEdge.x + farEdge.width - (area.x + area.width)),
+  ).toBeLessThan(CLOSE_PX);
+  expect(
+    Math.abs(farEdge.y + farEdge.height - (area.y + area.height)),
+  ).toBeLessThan(CLOSE_PX);
   await expectOnPage(page, 14);
 }
 
