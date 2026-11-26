@@ -40,7 +40,7 @@ interface StartedAnimation {
 
 interface AnimationWatch {
   readonly started: string[];
-  readonly ends: Promise<string>[];
+  readonly ended: string[];
 }
 
 function motionIn(locator: Locator): Promise<Motion> {
@@ -115,29 +115,21 @@ async function animationsStartedWhile(
 
 function watchAnimationsIn(link: Locator): Promise<JSHandle<AnimationWatch>> {
   return link.evaluateHandle((root) => {
-    const watch: AnimationWatch = { started: [], ends: [] };
+    const watch: AnimationWatch = { started: [], ended: [] };
     root.addEventListener("animationstart", (event) => {
-      if (!(event instanceof AnimationEvent)) {
-        return;
+      if (event instanceof AnimationEvent) {
+        watch.started.push(event.animationName);
       }
-      const name = event.animationName;
-      const running = root
-        .getAnimations({ subtree: true })
-        .find(
-          (animation) =>
-            animation instanceof CSSAnimation &&
-            animation.animationName === name,
-        );
-      if (running === undefined) {
-        return;
+    });
+    root.addEventListener("animationend", (event) => {
+      if (event instanceof AnimationEvent) {
+        watch.ended.push(`${event.animationName} finished`);
       }
-      watch.started.push(name);
-      watch.ends.push(
-        running.finished.then(
-          () => `${name} finished`,
-          () => `${name} cancelled`,
-        ),
-      );
+    });
+    root.addEventListener("animationcancel", (event) => {
+      if (event instanceof AnimationEvent) {
+        watch.ended.push(`${event.animationName} cancelled`);
+      }
     });
     return watch;
   });
@@ -150,8 +142,11 @@ async function expectToRunToItsEnd(
   await expect
     .poll(() => watch.evaluate(({ started }) => started))
     .toContain(animation);
-  expect(await watch.evaluate(({ ends }) => Promise.all(ends))).toContain(
-    `${animation} finished`,
+  await expect
+    .poll(() => watch.evaluate(({ ended }) => ended))
+    .toContain(`${animation} finished`);
+  expect(await watch.evaluate(({ ended }) => ended)).not.toContain(
+    `${animation} cancelled`,
   );
 }
 
