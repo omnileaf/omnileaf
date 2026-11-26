@@ -1,7 +1,10 @@
 import { expect, test } from "vitest";
 
 import {
+  type AfterDelay,
+  GIVE_BACK_SETTLES_MS,
   mustLeaveOverlaysBefore,
+  optionsToCarry,
   OverlayBack,
   type PageHistory,
   type PageNavigation,
@@ -9,15 +12,16 @@ import {
 
 function pageHistory() {
   const listeners = new Set<() => void>();
-  const entries = { pushed: 0, backed: 0 };
+  const entries = { pushed: 0, backed: 0, steps: [] as number[] };
   const page = { isOnOverlayEntry: true };
   const history: PageHistory = {
     push: () => {
       entries.pushed += 1;
       return () => page.isOnOverlayEntry;
     },
-    back: () => {
-      entries.backed += 1;
+    back: (steps) => {
+      entries.backed += steps;
+      entries.steps.push(steps);
     },
     onBack: (listener) => {
       listeners.add(listener);
@@ -41,7 +45,30 @@ function pageHistory() {
   };
 }
 
-function overlayBack(isOn = true) {
+function fakeDelays() {
+  const timers: { due: number; run: () => void; isCancelled: boolean }[] = [];
+  const clock = { now: 0 };
+  return {
+    after: (ms: number, run: () => void) => {
+      const timer = { due: clock.now + ms, run, isCancelled: false };
+      timers.push(timer);
+      return () => {
+        timer.isCancelled = true;
+      };
+    },
+    pass: (ms: number) => {
+      clock.now += ms;
+      for (const timer of timers) {
+        if (!timer.isCancelled && timer.due <= clock.now) {
+          timer.isCancelled = true;
+          timer.run();
+        }
+      }
+    },
+  };
+}
+
+function overlayBack(isOn = true, after?: AfterDelay) {
   const page = pageHistory();
   const told = { count: 0 };
   const overlays = new OverlayBack(
@@ -50,6 +77,7 @@ function overlayBack(isOn = true) {
       told.count += 1;
     },
     () => isOn,
+    after,
   );
   return { overlays, page, told };
 }
@@ -59,7 +87,7 @@ test("holds one history entry while an overlay is open", () => {
 
   overlays.hold(() => undefined);
 
-  expect(page.entries).toEqual({ pushed: 1, backed: 0 });
+  expect(page.entries).toMatchObject({ pushed: 1, backed: 0 });
   expect(told.count).toBe(1);
 });
 
@@ -78,13 +106,14 @@ test("closes the overlay when the page goes back, and gives no entry back", () =
   expect(page.listening()).toBe(0);
 });
 
-test("gives its entry back when the overlay closes some other way", () => {
+test("gives its entry back when the overlay closes some other way", async () => {
   const { overlays, page, told } = overlayBack();
   const release = overlays.hold(() => undefined);
 
   release();
+  await Promise.resolve();
 
-  expect(page.entries).toEqual({ pushed: 1, backed: 1 });
+  expect(page.entries).toMatchObject({ pushed: 1, backed: 1 });
   expect(told.count).toBe(2);
 });
 
@@ -95,7 +124,7 @@ test("keeps the page it navigated to when the overlay closes after the navigatio
   page.navigateAway();
   release();
 
-  expect(page.entries).toEqual({ pushed: 1, backed: 0 });
+  expect(page.entries).toMatchObject({ pushed: 1, backed: 0 });
   expect(page.listening()).toBe(0);
 });
 
@@ -132,7 +161,7 @@ test("holds nothing where the platform does not follow the page's history", () =
   const release = overlays.hold(() => undefined);
   release();
 
-  expect(page.entries).toEqual({ pushed: 0, backed: 0 });
+  expect(page.entries).toMatchObject({ pushed: 0, backed: 0 });
   expect(told.count).toBe(0);
 });
 
@@ -214,7 +243,7 @@ test("must give back before leaving while its own step back is on its way and an
   expect(overlays.mustGiveBackBeforeLeaving()).toBe(true);
 });
 
-test("holds a new entry only once its own step back for the last overlay has landed", () => {
+test("holds a new entry only once its own step back for the last overlay has landed", async () => {
   const { overlays, page } = overlayBack();
   let closed = 0;
   const releaseSheet = overlays.hold(() => undefined);
@@ -223,6 +252,7 @@ test("holds a new entry only once its own step back for the last overlay has lan
   overlays.hold(() => {
     closed += 1;
   });
+  await Promise.resolve();
   const pushedWhileStepping = page.entries.pushed;
   page.goBack();
   const pushedOnceLanded = page.entries.pushed;
@@ -248,7 +278,7 @@ test("settles a give-back once its last step back lands, never pushing the overl
   await giving;
 
   expect(settledBeforeLanding).toBe(false);
-  expect(page.entries).toEqual({ pushed: 1, backed: 1 });
+  expect(page.entries).toMatchObject({ pushed: 1, backed: 1 });
 });
 
 test("will take back only while an overlay's entry is open and not yet gone back to", () => {
@@ -362,4 +392,95 @@ test("leaves a navigation alone when no overlay holds an entry", () => {
   expect(
     mustLeaveOverlaysBefore(navigation("goto", "/series/1"), holding(false)),
   ).toBe(false);
+});
+
+test("gives the entries of overlays that close together back with one step", async () => {
+  const { overlays, page } = overlayBack();
+  const releaseSheet = overlays.hold(() => undefined);
+  const releaseMenu = overlays.hold(() => undefined);
+
+  releaseMenu();
+  releaseSheet();
+  await Promise.resolve();
+
+  expect(page.entries.steps).toEqual([2]);
+});
+
+test("gives every held entry back with one step when the page leaves", async () => {
+  const { overlays, page } = overlayBack();
+  overlays.hold(() => undefined);
+  overlays.hold(() => undefined);
+  const settled = { isDone: false };
+
+  const giving = overlays.giveBack().then(() => {
+    settled.isDone = true;
+  });
+  page.goBack();
+  await giving;
+
+  expect(page.entries.steps).toEqual([2]);
+  expect(settled.isDone).toBe(true);
+});
+
+test("settles a give-back whose step never lands, and lets the page navigate", async () => {
+  const delays = fakeDelays();
+  const { overlays } = overlayBack(true, delays.after);
+  overlays.hold(() => undefined);
+  const settled = { isDone: false };
+  const giving = overlays.giveBack().then(() => {
+    settled.isDone = true;
+  });
+
+  const before = overlays.mustGiveBackBeforeLeaving();
+  delays.pass(GIVE_BACK_SETTLES_MS);
+  await giving;
+
+  expect(before).toBe(true);
+  expect(settled.isDone).toBe(true);
+  expect(overlays.mustGiveBackBeforeLeaving()).toBe(false);
+});
+
+const STARTED_ACROSS = {
+  href: "https://app.test/series/1",
+  options: undefined,
+  isAcrossOverlays: true,
+};
+
+test("leaves a navigation that was started to go across overlays alone", () => {
+  expect(
+    mustLeaveOverlaysBefore(
+      navigation("goto", "/series/1"),
+      holding(true),
+      STARTED_ACROSS,
+    ),
+  ).toBe(false);
+});
+
+test("carries a goto's own options to the navigation that follows its give-back", () => {
+  const started = {
+    href: "https://app.test/",
+    options: { state: { libraryTag: "Sea" } },
+    isAcrossOverlays: false,
+  };
+
+  expect(optionsToCarry(navigation("goto", "/"), started)).toEqual({
+    state: { libraryTag: "Sea" },
+  });
+});
+
+test("carries a link's own attributes to the navigation that follows its give-back", () => {
+  const link = document.createElement("a");
+  link.setAttribute("data-sveltekit-replacestate", "");
+  const event = new MouseEvent("click");
+  link.dispatchEvent(event);
+
+  expect(
+    optionsToCarry({ ...navigation("link", "/series/1"), event }, undefined),
+  ).toEqual({ replace: true });
+});
+
+test("carries no options for a form", () => {
+  expect(
+    optionsToCarry(navigation("form", "/search"), undefined),
+  ).toBeUndefined();
 });

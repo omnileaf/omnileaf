@@ -1,18 +1,38 @@
 import type { Attachment } from "svelte/attachments";
 
-import { beforeNavigate, goto } from "$app/navigation";
+import { beforeNavigate } from "$app/navigation";
+import { assertNever } from "#lib/assert-never.ts";
 import { reportFailure } from "#lib/errors/report-failure.ts";
 import { currentPlatform } from "#lib/page/platform.ts";
 
 import { resolvedPathOf } from "./app-path";
+import {
+  type NavigationOptions,
+  navigateTo,
+  navigationStartedTo,
+  optionsOfLinkClick,
+  type StartedNavigation,
+} from "./navigate-to";
 import { isInAppShell } from "./sections";
 import { followsHistoryForBack, tellAndroidHowFarBack } from "./android-back";
 
 export interface PageHistory {
   push(): () => boolean;
-  back(): void;
+  back(steps: number): void;
   onBack(listener: () => void): () => void;
 }
+
+export type AfterDelay = (ms: number, run: () => void) => () => void;
+
+/** How long the entries an overlay gives back may take to be stepped back over before the count of steps still owed is dropped, since a WebView may merge steps it is asked for in one task. */
+export const GIVE_BACK_SETTLES_MS = 500;
+
+const BROWSER_DELAY: AfterDelay = (ms, run) => {
+  const timer = setTimeout(run, ms);
+  return () => {
+    clearTimeout(timer);
+  };
+};
 
 interface HeldEntry {
   readonly close: () => void;
@@ -32,15 +52,24 @@ export class OverlayBack {
   readonly #history: PageHistory;
   readonly #tell: () => void;
   readonly #isOn: () => boolean;
+  readonly #after: AfterDelay;
   #held: readonly HeldEntry[] = [];
-  #ownPops = 0;
+  #stepsOwed: readonly number[] = [];
+  #releasedTogether = 0;
   #waiting: readonly (() => void)[] = [];
   #stopListening: (() => void) | undefined;
+  #stopHealing: (() => void) | undefined;
 
-  constructor(history: PageHistory, tell: () => void, isOn: () => boolean) {
+  constructor(
+    history: PageHistory,
+    tell: () => void,
+    isOn: () => boolean,
+    after: AfterDelay = BROWSER_DELAY,
+  ) {
     this.#history = history;
     this.#tell = tell;
     this.#isOn = isOn;
+    this.#after = after;
   }
 
   /** Android only hands back to the page while its history has an entry to go back to. */
@@ -59,7 +88,7 @@ export class OverlayBack {
     this.#stopListening ??= this.#history.onBack(() => {
       this.#backed();
     });
-    if (this.#ownPops === 0) {
+    if (!this.#isGivingBack()) {
       this.#push(entry);
     }
     return () => {
@@ -68,7 +97,7 @@ export class OverlayBack {
   }
 
   mustGiveBackBeforeLeaving(): boolean {
-    return this.#ownPops > 0 || this.willTakeBack();
+    return this.#isGivingBack() || this.willTakeBack();
   }
 
   willTakeBack(): boolean {
@@ -76,18 +105,44 @@ export class OverlayBack {
   }
 
   giveBack(): Promise<void> {
+    const giveable = this.#held.filter((entry) => isGiveable(entry));
     for (const entry of this.#held) {
-      if (isGiveable(entry)) {
-        this.#ownPops += 1;
-        this.#history.back();
-      }
       entry.isGivenBack = true;
     }
-    return this.#ownPops === 0
-      ? Promise.resolve()
-      : new Promise((settle) => {
+    this.#stepBack(giveable.length);
+    return this.#isGivingBack()
+      ? new Promise((settle) => {
           this.#waiting = [...this.#waiting, settle];
-        });
+        })
+      : Promise.resolve();
+  }
+
+  #isGivingBack(): boolean {
+    return this.#stepsOwed.length > 0 || this.#releasedTogether > 0;
+  }
+
+  #stepBack(steps: number): void {
+    if (steps === 0) {
+      return;
+    }
+    this.#stepsOwed = [...this.#stepsOwed, steps];
+    this.#history.back(steps);
+    this.#healWhenNoStepArrives();
+  }
+
+  #healWhenNoStepArrives(): void {
+    this.#stopHealing?.();
+    this.#stopHealing = this.#after(GIVE_BACK_SETTLES_MS, () => {
+      this.#stopHealing = undefined;
+      this.#stepsOwed = [];
+      this.#givingBackIsDone();
+    });
+  }
+
+  #givingBackIsDone(): void {
+    this.#pushWaiting();
+    this.#settleWaiting();
+    this.#stopWhenIdle();
   }
 
   #push(entry: HeldEntry): void {
@@ -97,13 +152,16 @@ export class OverlayBack {
   }
 
   #backed(): void {
-    if (this.#ownPops > 0) {
-      this.#ownPops -= 1;
-      if (this.#ownPops === 0) {
-        this.#pushWaiting();
-        this.#settleWaiting();
+    if (this.#stepsOwed.length > 0) {
+      this.#stepsOwed = this.#stepsOwed.slice(1);
+      if (this.#stepsOwed.length === 0) {
+        this.#stopHealing?.();
+        this.#stopHealing = undefined;
+        this.#givingBackIsDone();
+      } else {
+        this.#healWhenNoStepArrives();
+        this.#stopWhenIdle();
       }
-      this.#stopWhenIdle();
       return;
     }
     const top = this.#held.findLast(
@@ -126,8 +184,18 @@ export class OverlayBack {
   #release(entry: HeldEntry): void {
     this.#held = this.#held.filter((held) => held !== entry);
     if (isGiveable(entry)) {
-      this.#ownPops += 1;
-      this.#history.back();
+      entry.isGivenBack = true;
+      this.#releasedTogether += 1;
+      if (this.#releasedTogether === 1) {
+        queueMicrotask(() => {
+          const together = this.#releasedTogether;
+          this.#releasedTogether = 0;
+          this.#stepBack(together);
+          if (!this.#isGivingBack()) {
+            this.#givingBackIsDone();
+          }
+        });
+      }
     }
     this.#stopWhenIdle();
     this.#tell();
@@ -142,7 +210,7 @@ export class OverlayBack {
   }
 
   #stopWhenIdle(): void {
-    if (this.#held.length === 0 && this.#ownPops === 0) {
+    if (this.#held.length === 0 && !this.#isGivingBack()) {
       this.#stopListening?.();
       this.#stopListening = undefined;
     }
@@ -157,8 +225,8 @@ const windowHistory: PageHistory = {
     return () =>
       location.href === url && JSON.stringify(history.state) === entry;
   },
-  back: () => {
-    history.back();
+  back: (steps) => {
+    history.go(-steps);
   },
   onBack: (listener) => {
     addEventListener("popstate", listener);
@@ -182,6 +250,7 @@ export function leaveOverlaysThen(go: () => Promise<unknown>): void {
 
 export interface PageNavigation {
   readonly type: "enter" | "form" | "leave" | "link" | "goto" | "popstate";
+  readonly event?: Event | undefined;
   readonly from: { readonly url: URL } | null;
   readonly to: {
     readonly url: URL;
@@ -198,9 +267,11 @@ const LEAVING_TYPES: ReadonlySet<PageNavigation["type"]> = new Set([
 export function mustLeaveOverlaysBefore(
   navigation: PageNavigation,
   overlays: Pick<OverlayBack, "mustGiveBackBeforeLeaving">,
+  started?: StartedNavigation,
 ): boolean {
   const { from, to } = navigation;
   if (
+    started?.isAcrossOverlays === true ||
     !LEAVING_TYPES.has(navigation.type) ||
     from === null ||
     to === null ||
@@ -215,20 +286,41 @@ export function mustLeaveOverlaysBefore(
   return !isGuardedLink && overlays.mustGiveBackBeforeLeaving();
 }
 
+export function optionsToCarry(
+  navigation: PageNavigation,
+  started: StartedNavigation | undefined,
+): NavigationOptions | undefined {
+  switch (navigation.type) {
+    case "goto":
+      return started?.options;
+    case "link":
+      return optionsOfLinkClick(navigation.event);
+    case "enter":
+    case "form":
+    case "leave":
+    case "popstate":
+      return undefined;
+    default:
+      return assertNever(navigation.type);
+  }
+}
+
 export const mustLeaveOverlays = (): boolean =>
   overlays.mustGiveBackBeforeLeaving();
 
 export function giveBackOverlayEntriesBeforeLeavingPage(): void {
   beforeNavigate((navigation) => {
+    const { to } = navigation;
+    const started = to === null ? undefined : navigationStartedTo(to.url);
     if (
-      !mustLeaveOverlaysBefore(navigation, overlays) ||
-      navigation.to === null
+      to === null ||
+      !mustLeaveOverlaysBefore(navigation, overlays, started)
     ) {
       return;
     }
-    const { url } = navigation.to;
+    const carried = optionsToCarry(navigation, started);
     navigation.cancel();
-    leaveOverlaysThen(() => goto(resolvedPathOf(url)));
+    leaveOverlaysThen(() => navigateTo(resolvedPathOf(to.url), carried));
   });
 }
 
