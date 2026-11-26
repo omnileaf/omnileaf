@@ -8,7 +8,9 @@ import {
   shardTests,
   testDurations,
   testListMismatch,
+  testListSize,
   testPath,
+  testsOnScreens,
   type Timings,
 } from "../shard-test-list.ts";
 
@@ -460,4 +462,72 @@ test("tells apart tests whose titles join into the same path", () => {
     missing: [listed("p", "a › b")],
     extra: [listed("p", "a", "b")],
   });
+});
+
+test("leaves out the tests of the screens that are not picked, and keeps the native and speed projects", () => {
+  const tests = [
+    listed("chromium-phone", "a"),
+    listed("webkit-tablet", "a"),
+    listed("chromium-desktop", "a"),
+    listed("ios-phone", "a"),
+    listed("speed", "a"),
+  ];
+
+  const kept = testsOnScreens(tests, ["phone", "desktop"]);
+
+  expect(kept.map((test) => test.project)).toEqual([
+    "chromium-phone",
+    "chromium-desktop",
+    "ios-phone",
+    "speed",
+  ]);
+});
+
+test("keeps every test when every screen is picked", () => {
+  const tests = [listed("webkit-tablet", "a"), listed("chromium-phone", "a")];
+
+  expect(testsOnScreens(tests, null)).toEqual(tests);
+});
+
+test("sizes a test list by its lines and the time its tests take, counting a test missing from the timings at the median", () => {
+  const tests = [
+    listed("p", "Settings", "opens"),
+    listed("p", "Settings", "closes"),
+    listed("p", "other"),
+    listed("p", "new"),
+  ];
+  const timings = {
+    "a.spec.ts › Settings › opens": { p: 10 },
+    "a.spec.ts › Settings › closes": { p: 20 },
+    "a.spec.ts › other": { p: 30 },
+  };
+
+  const size = testListSize(tests, timings);
+
+  expect(size).toEqual({ lines: 4, timedLines: 4, durationMs: 80 });
+});
+
+test("sizes an empty test list as nothing", () => {
+  expect(testListSize([], {})).toEqual({
+    lines: 0,
+    timedLines: 0,
+    durationMs: 0,
+  });
+});
+
+test("leaves the test list lines that take no time out of the lines that count", () => {
+  const tests = [
+    listed("p", "slow"),
+    listed("p", "instant"),
+    listed("p", "idle"),
+  ];
+  const timings = {
+    "a.spec.ts › slow": { p: 1200000 },
+    "a.spec.ts › instant": { p: 0 },
+    "a.spec.ts › idle": { p: 0 },
+  };
+
+  const size = testListSize(tests, timings);
+
+  expect(size).toEqual({ lines: 3, timedLines: 1, durationMs: 1200000 });
 });

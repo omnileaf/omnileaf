@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 import timings from "./browser-timings.json" with { type: "json" };
+import { screensFromEnvironment } from "./screens.ts";
 import { shardFromEnvironment } from "./shard.ts";
 import {
   type ListedTest,
@@ -9,6 +10,7 @@ import {
   shardTests,
   testListMismatch,
   testPath,
+  testsOnScreens,
 } from "./shard-test-list.ts";
 
 const {
@@ -25,8 +27,13 @@ if (shard === null) {
   throw new Error("Name the shard as current/total");
 }
 
+const screens = screensFromEnvironment(process.env.PLAYWRIGHT_SCREENS);
+
 function testsListedIn(file: string): ListedTest[] {
-  return listedTests(JSON.parse(readFileSync(file, "utf8")));
+  return testsOnScreens(
+    listedTests(JSON.parse(readFileSync(file, "utf8"))),
+    screens,
+  );
 }
 
 function nameOf(test: ListedTest): string {

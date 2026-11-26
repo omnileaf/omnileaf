@@ -1,5 +1,7 @@
 import { isRecord, listOf } from "./app/json.ts";
+import { isOnScreens, type ScreenName } from "./screens.ts";
 import type { Shard } from "./shard.ts";
+import type { TestListSize } from "./shard-matrix.ts";
 
 export interface ListedTest {
   readonly project: string;
@@ -51,6 +53,25 @@ export function testPath(test: ListedTest): string {
 
 export function listedTests(report: unknown): ListedTest[] {
   return testRuns(report).map(({ test }) => test);
+}
+
+export function testsOnScreens(
+  tests: readonly ListedTest[],
+  screens: readonly ScreenName[] | null,
+): ListedTest[] {
+  return tests.filter((test) => isOnScreens(test.project, screens));
+}
+
+export function testListSize(
+  tests: readonly ListedTest[],
+  timings: Timings,
+): TestListSize {
+  const units = unitsOf(tests, timings);
+  return {
+    lines: units.length,
+    timedLines: units.filter((unit) => unit.durationMs > 0).length,
+    durationMs: units.reduce((total, unit) => total + unit.durationMs, 0),
+  };
 }
 
 export function testDurations(report: unknown): Timings {
