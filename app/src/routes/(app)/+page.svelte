@@ -194,14 +194,16 @@
   const COVERS_GAP = "mbs-lg medium:mbs-xl";
 
   const libraryReturn = getLibraryReturn();
-  const returnedTo = untrack(() =>
-    page.state.libraryTag === undefined ? libraryReturn.screen : undefined,
-  );
   const groupKeepers = new GroupKeepers();
   let keepContinueRow: (() => KeptHistory | undefined) | undefined;
   const skeleton = new SkeletonDelay();
   const animations = getAnimationsSetting();
   const screenshotMode = getScreenshotMode();
+  const returnedTo = untrack(() =>
+    page.state.libraryTag === undefined
+      ? libraryReturn.screenFor(screenshotMode.isOn)
+      : undefined,
+  );
   const needsAttention = getNeedsAttention();
   const showsAttentionDot = $derived(
     !isPointer(data.appInfo.platform) && needsAttention.problems.length > 0,

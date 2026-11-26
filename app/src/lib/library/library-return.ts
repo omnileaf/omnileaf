@@ -13,8 +13,10 @@ import type {
 } from "#lib/ipc/bindings.ts";
 
 import type { KeptHistory } from "#lib/history/history-list.svelte.ts";
+import { shownListing } from "#lib/screenshot-mode/shown-listing.ts";
 
 import type { KeptSeries } from "./library-series.svelte.ts";
+import { isSameValue } from "./same-value.ts";
 import type { KeptTabPages } from "./tab-pages.svelte.ts";
 import type { KeptCounts } from "./unfiltered-counts.svelte.ts";
 
@@ -53,8 +55,15 @@ export type KeepGroup = () => KeptGroup | undefined;
 export class LibraryReturn {
   #screen: LibraryScreen | undefined;
 
-  get screen(): LibraryScreen | undefined {
-    return this.#screen;
+  screenFor(usesStandIns: boolean): LibraryScreen | undefined {
+    const screen = this.#screen;
+    return screen !== undefined &&
+      isSameValue(
+        shownListing(screen.listing, usesStandIns),
+        screen.pages.basis,
+      )
+      ? screen
+      : undefined;
   }
 
   keep(screen: LibraryScreen | undefined): void {
