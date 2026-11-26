@@ -291,9 +291,11 @@
             settings.change("pageTurn", turn);
           }}
         >
-          <p class="col-span-full text-caption text-muted">
-            {m.reader_page_turn_help()}
-          </p>
+          {#if look.pageTurn === "slide"}
+            <p class="col-span-full text-caption text-muted">
+              {m.reader_page_turn_help()}
+            </p>
+          {/if}
         </SettingChoice>
       </div>
     </section>

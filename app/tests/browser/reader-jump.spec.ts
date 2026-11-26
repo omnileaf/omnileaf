@@ -249,7 +249,7 @@ test("lists Jump to a book among the keyboard shortcuts", async ({ page }) => {
 
   const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
   await expect(sheet).toContainText("Jump to a book, or close it");
-  await expect(sheet).toContainText("letter keys such as G type");
+  await expect(sheet).toContainText("In a text field, letters type");
 });
 
 for (const colorScheme of ["light", "dark"] as const) {
