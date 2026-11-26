@@ -344,29 +344,34 @@
             >
               {#each tagsShown as { tag, holding } (tag)}
                 <li
-                  class={android.isOn && view !== "wide"
-                    ? [
-                        ANDROID_FILTER_CHIP_LOOK.chip,
-                        "flex items-center",
-                        holding >= count
-                          ? "border-transparent bg-native-accent-soft text-foreground"
-                          : "",
-                      ]
-                    : [
-                        "flex items-center gap-2xs rounded-control border ps-sm pe-2xs text-small font-medium block-search-chip",
-                        holding >= count
-                          ? "border-transparent bg-chip"
-                          : "border-border bg-card",
-                      ]}
+                  class={[
+                    "max-inline-full min-inline-none",
+                    android.isOn && view !== "wide"
+                      ? [
+                          ANDROID_FILTER_CHIP_LOOK.chip,
+                          "flex items-center",
+                          holding >= count
+                            ? "border-transparent bg-native-accent-soft text-foreground"
+                            : "",
+                        ]
+                      : [
+                          "flex items-center gap-2xs rounded-control border ps-sm pe-2xs text-small font-medium block-search-chip",
+                          holding >= count
+                            ? "border-transparent bg-chip"
+                            : "border-border bg-card",
+                        ],
+                  ]}
                 >
-                  {holding >= count
-                    ? tag
-                    : m.library_tag_on_some({ tag, holding, count })}
+                  <span class="truncate">
+                    {holding >= count
+                      ? tag
+                      : m.library_tag_on_some({ tag, holding, count })}
+                  </span>
                   <Button
                     type="button"
                     look="icon"
                     aria-label={m.library_remove_tag({ tag })}
-                    class="block-chip-remove inline-chip-remove touch:touch-target-around"
+                    class="shrink-0 block-chip-remove inline-chip-remove touch:touch-target-around"
                     onclick={() => {
                       removeTag(tag);
                     }}
@@ -410,7 +415,7 @@
                     aria-label={m.library_add_named_tag({ tag })}
                     class={isAndroidSheet
                       ? ANDROID_ADD_CHIP.chip
-                      : "flex items-center gap-xs rounded-control px-sm text-small font-medium block-search-chip touch:touch-target-around"}
+                      : "flex items-center gap-xs rounded-control px-sm text-small font-medium block-search-chip max-inline-full touch:touch-target-around"}
                     onclick={() => {
                       addTag(tag);
                     }}
@@ -420,11 +425,11 @@
                         ? ANDROID_PLUS_SIZE
                         : REMOVE_ICON_SIZE}
                       aria-hidden="true"
-                      class={isAndroidSheet ? ANDROID_ADD_CHIP.plus : undefined}
+                      class={isAndroidSheet
+                        ? ANDROID_ADD_CHIP.plus
+                        : "shrink-0"}
                     />
-                    <span class={isAndroidSheet ? "truncate" : undefined}>
-                      {tag}
-                    </span>
+                    <span class="truncate">{tag}</span>
                   </Button>
                 {/each}
               </div>

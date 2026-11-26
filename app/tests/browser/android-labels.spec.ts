@@ -2,13 +2,16 @@ import type { Locator, Page } from "@playwright/test";
 
 import type {
   LibraryCategory,
+  Platform,
   SeriesLabels,
 } from "../../src/lib/ipc/bindings.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  fakeAppInfo,
   LARGEST_TEXT_SCALE,
+  screenSizeOf,
   setTextScale,
   settle,
   sidewaysOverflow,
@@ -17,10 +20,13 @@ import {
 } from "./fixtures.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import { sampleSeries } from "./series-catalog.ts";
+import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 import { overlaps, textClippedUnmarked } from "./text-fit.ts";
 
 const HELD_MS = 800;
 const CHIP_GAP_PX = 8;
+const NARROW_PHONE_WIDTHS = [360, 320];
+const PHONE_HEIGHT = 800;
 const UNBROKEN_TAG_LENGTH = 60;
 const UNBROKEN_TAG = "Unbroken".padEnd(UNBROKEN_TAG_LENGTH, "o");
 const MANY_SUGGESTIONS = [
@@ -52,7 +58,7 @@ function labelsFor(series: readonly string[]): SeriesLabels {
 
 function suggesting(suggestedTags: string[]): FakeBackend {
   return {
-    ...DEFAULT_BACKEND,
+    ...new FakeShelf([{ state: "notStarted" }]).backend(),
     librarySeries: () => ({ series: LIBRARY, next: null }),
     librarySeriesCount: () => LIBRARY.length,
     seriesLabels: (series) => ({ ...labelsFor(series), suggestedTags }),
@@ -83,6 +89,19 @@ async function openLabels(page: Page): Promise<Locator> {
     .getByRole("group", { name: "Selected series" })
     .getByRole("button", { name: "Categories" })
     .click();
+  return shownLabels(page);
+}
+
+async function openLabelsFromSeries(page: Page): Promise<Locator> {
+  await page.goto(`/series/${SERIES_ID}`);
+  await page
+    .getByRole("button", { name: `More for ${SERIES_TITLE}`, exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Categories and tags…" }).click();
+  return shownLabels(page);
+}
+
+async function shownLabels(page: Page): Promise<Locator> {
   const sheet = page.getByRole("dialog", { name: "Categories and tags" });
   await expect(sheet).toBeVisible();
   await settle(sheet);
@@ -363,24 +382,112 @@ test.describe(
         expect(await overlaps(page)).toEqual([]);
         expect(await textClippedUnmarked(page)).toEqual([]);
       });
+
+      for (const width of NARROW_PHONE_WIDTHS) {
+        test.describe(`on a phone ${String(width)}px wide`, () => {
+          test.use({ viewport: { width, height: PHONE_HEIGHT } });
+
+          test("keeps the tag and its whole Remove button inside the sheet once it is added", async ({
+            page,
+          }) => {
+            const sheet = await openLabels(page);
+
+            await addUnbrokenTag(sheet);
+
+            await expectUnbrokenTagInside(page, sheet);
+          });
+        });
+      }
     });
   },
 );
 
-test.describe("the suggested tags", { tag: "@native" }, () => {
-  test.use({ backend: suggesting(MANY_SUGGESTIONS) });
+async function addUnbrokenTag(sheet: Locator): Promise<void> {
+  await sheet.getByRole("button", { name: `Add ${UNBROKEN_TAG}` }).click();
+}
 
-  test.beforeEach(({ platform }) => {
-    test.skip(platform === "ios", "iOS draws a sheet of its own");
+async function expectUnbrokenTagInside(
+  page: Page,
+  sheet: Locator,
+): Promise<void> {
+  const remove = sheet.getByRole("button", {
+    name: `Remove ${UNBROKEN_TAG}`,
+    exact: true,
   });
+  await expect(remove).toBeVisible();
+  const sheetBox = await boxOf(sheet);
+  const removeBox = await boxOf(remove);
+
+  expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+  expect(removeBox.x).toBeGreaterThanOrEqual(sheetBox.x);
+  expect(removeBox.x + removeBox.width).toBeLessThanOrEqual(
+    sheetBox.x + sheetBox.width,
+  );
+  await expect(remove).toHaveAccessibleName(`Remove ${UNBROKEN_TAG}`);
+}
+
+function testSuggestedTags(
+  backend: FakeBackend,
+  open: (page: Page, platform: Platform | undefined) => Promise<Locator>,
+): void {
+  test.use({ backend });
 
   test("holds every suggestion in a group named Suggested", async ({
     page,
+    platform,
   }) => {
-    const sheet = await openLabels(page);
+    const sheet = await open(page, platform);
 
     await expect(
       sheet.getByRole("group", { name: "Suggested" }).getByRole("button"),
-    ).toHaveText(MANY_SUGGESTIONS);
+    ).toHaveText([...MANY_SUGGESTIONS, UNBROKEN_TAG]);
   });
+
+  test("keeps a 60-letter suggestion inside the dialog", async ({
+    page,
+    platform,
+  }) => {
+    const sheet = await open(page, platform);
+
+    await expect(
+      sheet.getByRole("button", { name: `Add ${UNBROKEN_TAG}` }),
+    ).toBeVisible();
+    expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+  });
+
+  test("keeps a 60-letter tag inside the dialog once it is added", async ({
+    page,
+    platform,
+  }) => {
+    const sheet = await open(page, platform);
+
+    await addUnbrokenTag(sheet);
+
+    await expectUnbrokenTagInside(page, sheet);
+  });
+}
+
+test.describe("the suggested tags", { tag: "@native" }, () => {
+  testSuggestedTags(
+    suggesting([...MANY_SUGGESTIONS, UNBROKEN_TAG]),
+    (page, platform) =>
+      platform === "ios" ? openLabelsFromSeries(page) : openLabels(page),
+  );
+});
+
+test.describe("the suggested tags on an iPad", () => {
+  test.beforeEach(({ browserName, page }) => {
+    test.skip(
+      browserName !== "webkit" || screenSizeOf(page) !== "tablet",
+      "an iPad is WebKit at a tablet's size",
+    );
+  });
+
+  testSuggestedTags(
+    {
+      ...suggesting([...MANY_SUGGESTIONS, UNBROKEN_TAG]),
+      appInfo: () => fakeAppInfo("ios"),
+    },
+    openLabels,
+  );
 });
