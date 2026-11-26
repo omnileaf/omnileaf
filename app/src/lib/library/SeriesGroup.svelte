@@ -25,6 +25,7 @@
     listSeries,
     countSeries,
     listed,
+    libraryChanges,
     covers,
   }: {
     name: string;
@@ -33,6 +34,7 @@
     listSeries: ListSeries;
     countSeries: () => Promise<CountResult>;
     listed: unknown;
+    libraryChanges: number;
     covers: Omit<
       ComponentProps<typeof SeriesCovers>,
       "series" | "isComplete" | "onNearEnd"
@@ -52,15 +54,32 @@
   let count: number | undefined = $state();
   const headingId = $props.id();
 
+  let changesRead = untrack(() => libraryChanges);
+
+  function recount(): void {
+    void countSeries().then((result) => {
+      count = result.status === "ok" ? result.data : undefined;
+    });
+  }
+
   $effect(() => {
     if (listed === undefined) {
       return;
     }
     untrack(() => {
       void list.start();
-      void countSeries().then((result) => {
-        count = result.status === "ok" ? result.data : undefined;
-      });
+      recount();
+    });
+  });
+
+  $effect(() => {
+    if (libraryChanges === changesRead) {
+      return;
+    }
+    changesRead = libraryChanges;
+    untrack(() => {
+      void list.load();
+      recount();
     });
   });
 </script>

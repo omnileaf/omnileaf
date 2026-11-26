@@ -234,6 +234,7 @@
       : "none",
   );
   let writers = $state<readonly LibraryWriter[]>([]);
+  let libraryChanges = $state(0);
   const groups = $derived(groupsBy(groupBy));
   const tabsShown = $derived(
     groupBy === "none" &&
@@ -825,6 +826,15 @@
     writers = found;
   }
 
+  async function reloadGroupNames(): Promise<void> {
+    if (groupBy === "folder") {
+      await loadFolders();
+    }
+    if (groupBy === "creator") {
+      await loadWriters();
+    }
+  }
+
   async function loadFolders(): Promise<void> {
     folders = (await readAllFolders(commands.libraryFolders)) ?? folders;
   }
@@ -1062,8 +1072,10 @@
     void loadDetailEditSupport();
     void loadMissingFolders();
     const stopListening = listenForLibraryChanges(() => {
+      libraryChanges += 1;
       void loadMissingFolders();
       void loadCategories();
+      void reloadGroupNames();
       void loadFilterChoices();
       if (chosenListing === undefined) {
         return;
@@ -1577,6 +1589,7 @@
                     listSeries={group.listSeries}
                     countSeries={group.countSeries}
                     {listed}
+                    {libraryChanges}
                     {covers}
                   />
                 {/each}
