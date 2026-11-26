@@ -722,3 +722,38 @@ for (const { platform, isPhone } of [
     },
   );
 }
+
+test.describe("coming back to the Library once screenshot mode is on", () => {
+  const sample = sampleLibraryOn("linux");
+
+  test.use({
+    backend: {
+      ...sample,
+      libraryListing: async () => {
+        const listing = await sample.libraryListing();
+        return { ...listing, filter: { ...listing.filter, adult: "hide" } };
+      },
+    },
+  });
+
+  test.beforeEach(async ({ isMobile, page }) => {
+    test.skip(isMobile, "the shortcut is on a keyboard");
+    await watchLibraryFrames(page);
+  });
+
+  test("draws nothing kept from before it was on, though 18+ series were already hidden", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await libraryAtRest(page);
+    await leaveFor(page, "History");
+    await page.keyboard.press("Control+Shift+H");
+    await expect(page.getByText("Screenshot mode is on")).toBeAttached();
+
+    await startRecordingFrames(page);
+    await navigationLink(page, "Library").click();
+    const frames = framesOnceShown(await framesUntilAtRest(page));
+
+    expect(frames[0]?.covers, describeFrames(frames)).toBe(0);
+  });
+});

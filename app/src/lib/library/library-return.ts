@@ -13,7 +13,6 @@ import type {
 } from "#lib/ipc/bindings.ts";
 
 import type { KeptHistory } from "#lib/history/history-list.svelte.ts";
-import { shownListing } from "#lib/screenshot-mode/shown-listing.ts";
 
 import type { KeptSeries } from "./library-series.svelte.ts";
 import { type ArrangedTab, arrangedTabs } from "./library-tabs.ts";
@@ -48,6 +47,7 @@ export interface LibraryScreen {
   readonly unfilteredCounts: KeptCounts;
   readonly groups: readonly KeptGroupOf[];
   readonly continueRow: KeptHistory | undefined;
+  readonly usesStandIns: boolean;
 }
 
 export type KeepGroup = () => KeptGroup | undefined;
@@ -71,13 +71,8 @@ export class LibraryReturn {
   }
 
   screenFor(usesStandIns: boolean): LibraryScreen | undefined {
-    const screen = this.#screen;
-    return screen !== undefined &&
-      isSameValue(
-        shownListing(screen.listing, usesStandIns),
-        screen.pages.basis,
-      )
-      ? screen
+    return this.#screen?.usesStandIns === usesStandIns
+      ? this.#screen
       : undefined;
   }
 

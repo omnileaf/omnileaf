@@ -1137,6 +1137,7 @@
       unfilteredCounts: unfilteredCounts.kept(),
       groups: groupKeepers.kept(),
       continueRow: keepContinueRow?.(),
+      usesStandIns: screenshotMode.isOn,
     };
   }
 

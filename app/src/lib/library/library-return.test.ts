@@ -1,7 +1,6 @@
 import { expect, test, vi } from "vitest";
 
 import { DEFAULT_LIBRARY_VIEW } from "#lib/ipc/bindings.ts";
-import { shownListing } from "#lib/screenshot-mode/shown-listing.ts";
 
 import { NEW_ADULT_CONTENT } from "./adult-content";
 import {
@@ -27,7 +26,7 @@ function screenDrawn(usesStandIns: boolean): LibraryScreen {
     keepsLabels: false,
     keepsDetailEdits: false,
     pages: {
-      basis: shownListing(NEW_LIBRARY_LISTING, usesStandIns),
+      basis: NEW_LIBRARY_LISTING,
       chosen: "all",
       pages: [],
       scroll: new Map(),
@@ -35,8 +34,14 @@ function screenDrawn(usesStandIns: boolean): LibraryScreen {
     unfilteredCounts: {},
     groups: [],
     continueRow: undefined,
+    usesStandIns,
   };
 }
+
+const HIDING_ADULT = {
+  ...NEW_LIBRARY_LISTING,
+  filter: { ...NEW_LIBRARY_LISTING.filter, adult: "hide" },
+} as const;
 
 const KEPT_GROUP = {
   series: { items: [], next: null },
@@ -73,6 +78,17 @@ test("forgets the Library before a change that replaces what it holds", () => {
   const answer = library.forgetting(change)();
 
   expect([answer, library.screenFor(false)]).toEqual(["changed", undefined]);
+});
+
+test("gives back nothing kept without stand-ins once they are on, though the listing already hid 18+ series", () => {
+  const library = new LibraryReturn();
+  library.keep({
+    ...screenDrawn(false),
+    listing: HIDING_ADULT,
+    pages: { ...screenDrawn(false).pages, basis: HIDING_ADULT },
+  });
+
+  expect(library.screenFor(true)).toBeUndefined();
 });
 
 test("knows the Library was left once it has been, even with nothing kept", () => {
