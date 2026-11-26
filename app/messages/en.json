@@ -1222,7 +1222,7 @@
   "library_remove_books_failed_body": "Nothing in your library has changed. Try again, or rescan {name} first.",
   "library_remove_books_try_again": "Try again",
   "library_folder_unavailable": "Not available",
-  "library_folder_found_empty": "No books found",
+  "library_folder_found_empty": "Empty",
   "appearance_title": "Appearance",
   "reading_defaults_intro": "Used for every series, unless you change it for a series in the reader.",
   "reading_keep_screen_on": "Keep the screen on while reading",

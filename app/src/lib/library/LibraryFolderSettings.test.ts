@@ -871,9 +871,7 @@ test("marks a folder the rescan found empty as having no books, not as unavailab
 
   await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
 
-  await expect
-    .element(comicsRow(folders).getByText("No books found"))
-    .toBeVisible();
+  await expect.element(comicsRow(folders).getByText(/^Empty\b/)).toBeVisible();
   await expect
     .element(comicsRow(folders).getByText("Not available"))
     .not.toBeInTheDocument();
