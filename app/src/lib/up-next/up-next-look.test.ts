@@ -28,7 +28,8 @@ const BOARD = {
 const CLOSE_PX = 1;
 const CHANNEL_TOLERANCE = 1;
 const LONG_NEXT_TITLE = "Volume 4 · A Quiet Season by the Northern Sea";
-const BUTTON_HEIGHT = 40;
+const LARGEST_TEXT_SCALE = "2";
+const SPACELESS_TITLE = "Volume_4_The_Lighthouse_Keeper_and_the_Long_Winter";
 
 const NEVER_ANSWERS = new Promise<never>(() => undefined);
 
@@ -44,6 +45,7 @@ afterEach(() => {
   delete document.documentElement.dataset.theme;
   document.documentElement.style.removeProperty("--system-inset-top");
   document.documentElement.style.removeProperty("--system-inset-bottom");
+  document.documentElement.style.removeProperty("--text-scale");
   document.body.replaceChildren();
 });
 
@@ -220,17 +222,38 @@ test("draws Skip this screen as a flush row, its switch at the end and level wit
   );
 });
 
-test("names only the volume on the buttons and the hint when the next book's name is long", async () => {
+test("keeps a long name whole on the Read button, wrapping it rather than cutting it", async () => {
   const screen = await onAndroidPhone({ nextTitle: LONG_NEXT_TITLE });
 
-  const read = screen.getByRole("link", { name: "Read Volume 4" });
+  const read = screen.getByRole("link", { name: `Read ${LONG_NEXT_TITLE}` });
 
   await expect.element(read).toBeVisible();
-  expect(boxOf(read.element()).height).toBe(BUTTON_HEIGHT);
+  const label = read.element().querySelector("span:not([data-icon])");
+  expect(label === null ? "" : getComputedStyle(label).textOverflow).not.toBe(
+    "ellipsis",
+  );
+  expect(label === null ? 0 : label.scrollWidth - label.clientWidth).toBe(0);
   await expect
-    .element(screen.getByText("Turn the page again to start Volume 4"))
+    .element(
+      screen.getByText(`Turn the page again to start ${LONG_NEXT_TITLE}`),
+    )
     .toBeVisible();
-  await expect.element(screen.getByText(LONG_NEXT_TITLE)).toBeVisible();
+});
+
+test("keeps the Read button's words whole at the largest text", async () => {
+  document.documentElement.style.setProperty(
+    "--text-scale",
+    LARGEST_TEXT_SCALE,
+  );
+  const screen = await onAndroidPhone({ nextTitle: SPACELESS_TITLE });
+
+  const read = screen
+    .getByRole("link", { name: `Read ${SPACELESS_TITLE}` })
+    .element();
+
+  const label = read.querySelector("span:not([data-icon])");
+  expect(label === null ? 0 : label.scrollWidth - label.clientWidth).toBe(0);
+  expect(boxOf(read).right).toBeLessThanOrEqual(PHONE.width);
 });
 
 test("centres the end of the series where the board does, its title 16px over its words", async () => {

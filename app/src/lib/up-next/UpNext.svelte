@@ -60,7 +60,6 @@
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import ReadingStats from "./ReadingStats.svelte";
-  import { shortTitle } from "./short-title.ts";
   import UpNextLink from "./UpNextLink.svelte";
   import { getSkipUpNextSetting } from "./skip-up-next.svelte.ts";
   import { ANDROID_FILLED_CARD } from "./up-next-look.ts";
@@ -165,14 +164,9 @@
     ),
   );
   const actionLabel = $derived(
-    isOnPhone && !isOnAndroidPhone
-      ? "min-inline-none wrap-anywhere"
-      : "truncate",
+    isOnPhone ? "min-inline-none wrap-anywhere" : "truncate",
   );
   const cardLook = $derived(isOnAndroidPhone ? ANDROID_CARD : TODAYS_CARD);
-  const nextName = $derived(
-    next === null || !isOnAndroidPhone ? next?.title : shortTitle(next.title),
-  );
   const smartFeatures = getSmartFeatures();
   const id = $props.id();
   let heading: HTMLHeadingElement | undefined = $state();
@@ -442,7 +436,7 @@
               >
                 {@render buttonIcon("play", Play)}
                 <span class={actionLabel}>
-                  {m.reader_read_next({ title: nextName ?? next.title })}
+                  {m.reader_read_next({ title: next.title })}
                 </span>
                 {#if !isWindows}
                   <Kbd
@@ -562,7 +556,7 @@
           <span class="desktop:hidden">
             {next === null
               ? m.reader_turn_again_to_series()
-              : m.reader_turn_again({ title: nextName ?? next.title })}
+              : m.reader_turn_again({ title: next.title })}
           </span>
           <span class="hidden desktop:inline">
             {next === null
