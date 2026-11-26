@@ -25,9 +25,18 @@ import { NEW_LIBRARY_LISTING } from "./library-listing";
 
 type Theme = (typeof THEMES)[number];
 
+type Size = keyof typeof SCREENS;
+
 interface Screen {
   readonly width: number;
   readonly height: number;
+}
+
+interface UnreadBox {
+  readonly top: number;
+  readonly start: number;
+  readonly height: number;
+  readonly outline: string;
 }
 
 interface BadgeCase {
@@ -45,6 +54,7 @@ const SCREENS = {
   phone: { width: 390, height: 844 },
   tablet: { width: 820, height: 1180 },
 } satisfies Record<string, Screen>;
+const SIZES = ["phone", "tablet"] as const satisfies readonly Size[];
 const CONTRASTS = {
   android: [undefined, "medium", "high"],
   ios: [undefined, "more"],
@@ -78,6 +88,29 @@ const LANGUAGE_BADGE_ON_A_PHONE = {
   macos: { fill: "oklch(1 0 0)", label: "oklch(0.145 0 0)" },
   windows: { fill: "oklch(1 0 0)", label: "oklch(0.145 0 0)" },
 } satisfies Record<Platform, { fill: string; label: string }>;
+
+const UNREAD_BOX = {
+  android: {
+    phone: { top: 4, start: 4, height: 16, outline: "none" },
+    tablet: { top: 7, start: 7, height: 24, outline: "none" },
+  },
+  ios: {
+    phone: { top: 5, start: 5, height: 20, outline: "none" },
+    tablet: { top: 7, start: 7, height: 24, outline: "none" },
+  },
+  linux: {
+    phone: { top: 5, start: 5, height: 22, outline: "none" },
+    tablet: { top: 7, start: 7, height: 22, outline: "none" },
+  },
+  macos: {
+    phone: { top: 5, start: 5, height: 24, outline: "none" },
+    tablet: { top: 7, start: 7, height: 24, outline: "none" },
+  },
+  windows: {
+    phone: { top: 5, start: 5, height: 16, outline: "none" },
+    tablet: { top: 7, start: 7, height: 16, outline: "none" },
+  },
+} satisfies Record<Platform, Record<Size, UnreadBox>>;
 
 const CASES: readonly BadgeCase[] = PLATFORMS.flatMap((platform) =>
   THEMES.flatMap((theme) =>
@@ -144,6 +177,16 @@ function visibleShadow(element: Element): string {
     .map((layer) => layer.trim())
     .filter((layer) => layer !== NO_SHADOW && !layer.startsWith(CLEAR_SHADOW));
   return shown.length > 0 ? shown.join(", ") : NO_SHADOW;
+}
+
+function boxOf(element: Element): UnreadBox {
+  const style = getComputedStyle(element);
+  return {
+    top: Number.parseFloat(style.insetBlockStart),
+    start: Number.parseFloat(style.insetInlineStart),
+    height: element.getBoundingClientRect().height,
+    outline: style.outlineStyle,
+  };
 }
 
 beforeEach(async () => {
@@ -260,5 +303,21 @@ test.each(PLATFORMS)(
     expect({ fill: style.backgroundColor, label: style.color }).toEqual(
       LANGUAGE_BADGE_ON_A_PHONE[platform],
     );
+  },
+);
+
+test.each(
+  PLATFORMS.flatMap((platform) => SIZES.map((size) => ({ platform, size }))),
+)(
+  "keeps the unread count's place and size on a $platform $size",
+  async ({ platform, size }) => {
+    const { unread } = await badgesOn({
+      platform,
+      theme: "light",
+      contrast: undefined,
+      screen: SCREENS[size],
+    });
+
+    expect(boxOf(unread)).toEqual(UNREAD_BOX[platform][size]);
   },
 );

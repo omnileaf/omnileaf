@@ -55,7 +55,7 @@ const NO_PICKED_RING_ON_PHONES = `${PICKED_COVER_RING} max-medium:outline-0`;
 const BADGE_PLACEMENT =
   "absolute inset-s-badge-inset inset-bs-badge-inset flex items-center justify-center text-caption medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-s-sm large:inset-bs-sm";
 
-const COUNT_BADGE_ON_COVER = `${BADGE_PLACEMENT} ring-1 ring-background`;
+const COUNT_BADGE_ON_COVER = `${BADGE_PLACEMENT} ring-1 ring-background forced-colors:outline`;
 
 const BADGE_GEOMETRY = `${COUNT_BADGE_ON_COVER} px-badge-inline min-block-xl min-inline-xl`;
 
