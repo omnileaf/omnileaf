@@ -44,7 +44,7 @@ function sizeOfGroup(
   group: "rest" | "screens",
 ): TestListSize {
   if (suite === "whole" || !isAppChanged) {
-    return { lines: 0, durationMs: 0 };
+    return { lines: 0, timedLines: 0, durationMs: 0 };
   }
   const report: unknown = JSON.parse(
     readFileSync(join(listingsFolder, `${group}.json`), "utf8"),
