@@ -1,29 +1,40 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { BackSwipe } from "../../src/lib/ipc/bindings.ts";
+import type { BackSwipe, SeriesDetails } from "../../src/lib/ipc/bindings.ts";
 import type { FakeChannel } from "./fake-backend.ts";
 import {
   DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
   expect,
   fakeAppInfo,
+  MEDIUM_MIN_WIDTH,
   selectByLongPress,
   settle,
   test,
+  viewportOf,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
-import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
+import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
-const PHONE = { width: 412, height: 700 };
 const LIBRARY = sampleSeries(6);
 const SCREEN_CORNER_PX = 32;
 const HALFWAY = 0.5;
 const PREVIEW_PROGRESS = 0.6;
+const DETAILS = {
+  title: { fromFile: SERIES_TITLE, source: "folderName", edited: null },
+  people: { fromFile: [], edited: null },
+  tags: { fromFile: [], edited: null },
+  summary: { fromFile: null, edited: null },
+  year: null,
+  language: null,
+  isMarkedAdult: false,
+  isRatedAdult: false,
+} satisfies SeriesDetails;
 const SHELF = new FakeShelf([{ state: "notStarted" }, { state: "notStarted" }]);
 let gestures: FakeChannel<BackSwipe> | undefined;
 
 test.use({
   platform: "android",
-  viewport: PHONE,
   backend: {
     ...DEFAULT_BACKEND,
     appInfo: () => fakeAppInfo("android"),
@@ -35,6 +46,8 @@ test.use({
       tags: [],
       suggestedTags: [],
     }),
+    keepsDetailEdits: () => true,
+    seriesDetails: () => DETAILS,
     seriesOverview: (id) => SHELF.backend().seriesOverview(id),
     seriesBooks: (id, listing, after) =>
       SHELF.backend().seriesBooks(id, listing, after),
@@ -96,11 +109,6 @@ async function expectPagePreviewed(page: Page): Promise<void> {
   );
 }
 
-async function releaseIntoBack(page: Page): Promise<void> {
-  await gesture({ kind: "released", progress: PREVIEW_PROGRESS, velocity: 0 });
-  await page.goBack();
-}
-
 async function openLibrary(page: Page): Promise<Locator> {
   await page.goto("/");
   const list = page.getByRole("list", { name: "Series" });
@@ -129,6 +137,23 @@ async function openSortMenu(page: Page): Promise<Locator> {
   return menu;
 }
 
+async function openSeriesMenu(page: Page): Promise<Locator> {
+  await page.goto(`/series/${SERIES_ID}`);
+  await page
+    .getByRole("button", { name: `More for ${SERIES_TITLE}`, exact: true })
+    .click();
+  const menu = page.getByRole("menu");
+  await expect(menu).toBeVisible();
+  return menu;
+}
+
+async function openEditDetails(page: Page): Promise<void> {
+  skipOnWideScreens(page);
+  const menu = await openSeriesMenu(page);
+  await menu.getByRole("menuitem", { name: "Edit details…" }).click();
+  await expect(page.getByRole("textbox", { name: "Title" })).toBeVisible();
+}
+
 async function openChoiceDialog(page: Page): Promise<Locator> {
   await page.goto("/settings/advanced");
   await page.getByRole("button", { name: /^Keep Undo for/ }).click();
@@ -138,7 +163,18 @@ async function openChoiceDialog(page: Page): Promise<Locator> {
   return dialog;
 }
 
+function skipOnWideScreens(page: Page): void {
+  test.skip(
+    viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+    "A wide screen lays the series and its edit page out beside the list",
+  );
+}
+
 async function openBookSearch(page: Page): Promise<Locator> {
+  test.skip(
+    viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+    "Past a phone's width the series keeps its search field in the page",
+  );
   await page.goto(`/series/${SERIES_ID}`);
   await page.getByRole("button", { name: "Find a book" }).click();
   const field = page.getByRole("searchbox", { name: "Find a book" });
@@ -163,7 +199,7 @@ test.describe("a back gesture held while back belongs to something open", () => 
     await holdBackGesture();
 
     await expectPageAtRest(page);
-    await releaseIntoBack(page);
+    await page.goBack();
     await expect(sheet).toBeHidden();
     await expect(page.getByRole("list", { name: "Series" })).toBeVisible();
     expect(new URL(page.url()).pathname).toBe("/");
@@ -176,20 +212,39 @@ test.describe("a back gesture held while back belongs to something open", () => 
     const sheet = await openViewOptions(page);
 
     await holdBackGesture();
+    await expectPageAtRest(page);
     await gesture({ kind: "cancelled" });
 
     await expectPageAtRest(page);
     await expect(sheet).toBeVisible();
   });
 
-  test("leaves the page at rest behind a menu", async ({ page }) => {
+  test("leaves the page at rest behind a menu over a sheet, and back closes only the menu", async ({
+    page,
+  }) => {
     const menu = await openSortMenu(page);
 
     await holdBackGesture();
 
     await expectPageAtRest(page);
-    await releaseIntoBack(page);
+    await page.goBack();
     await expect(menu).toBeHidden();
+    await expect(
+      page.getByRole("dialog", { name: "Sort and filter" }),
+    ).toBeVisible();
+  });
+
+  test("leaves the page at rest behind a dropdown menu, and back closes it", async ({
+    page,
+  }) => {
+    const menu = await openSeriesMenu(page);
+
+    await holdBackGesture();
+
+    await expectPageAtRest(page);
+    await page.goBack();
+    await expect(menu).toBeHidden();
+    expect(new URL(page.url()).pathname).toBe(`/series/${SERIES_ID}`);
   });
 
   test("leaves the page at rest behind a dialog", async ({ page }) => {
@@ -198,7 +253,7 @@ test.describe("a back gesture held while back belongs to something open", () => 
     await holdBackGesture();
 
     await expectPageAtRest(page);
-    await releaseIntoBack(page);
+    await page.goBack();
     await expect(dialog).toBeHidden();
     expect(new URL(page.url()).pathname).toBe("/settings/advanced");
   });
@@ -209,7 +264,7 @@ test.describe("a back gesture held while back belongs to something open", () => 
     await holdBackGesture();
 
     await expectPageAtRest(page);
-    await releaseIntoBack(page);
+    await page.goBack();
     await expect(actions).toBeHidden();
     expect(new URL(page.url()).pathname).toBe("/");
   });
@@ -220,9 +275,39 @@ test.describe("a back gesture held while back belongs to something open", () => 
     await holdBackGesture();
 
     await expectPageAtRest(page);
-    await releaseIntoBack(page);
+    await page.goBack();
     await expect(field).toBeHidden();
     expect(new URL(page.url()).pathname).toBe(`/series/${SERIES_ID}`);
+  });
+
+  test("leaves the page at rest while edits would be lost, and back asks before leaving", async ({
+    page,
+  }) => {
+    await openEditDetails(page);
+    await page
+      .getByRole("textbox", { name: "Title" })
+      .fill("A different title");
+
+    await holdBackGesture();
+
+    await expectPageAtRest(page);
+    await page.goBack();
+    await expect(
+      page.getByRole("alertdialog", { name: "Discard your changes?" }),
+    ).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Title" })).toHaveValue(
+      "A different title",
+    );
+  });
+
+  test("previews the edit page while it holds no unsaved changes", async ({
+    page,
+  }) => {
+    await openEditDetails(page);
+
+    await holdBackGesture();
+
+    await expectPagePreviewed(page);
   });
 
   test("previews the page again on the next gesture once back closed the sheet", async ({
@@ -230,7 +315,7 @@ test.describe("a back gesture held while back belongs to something open", () => 
   }) => {
     const sheet = await openViewOptions(page);
     await holdBackGesture();
-    await releaseIntoBack(page);
+    await page.goBack();
     await expect(sheet).toBeHidden();
     await expectPageAtRest(page);
 
@@ -263,7 +348,7 @@ test.describe("a back gesture held while back belongs to something open", () => 
       .dispatchEvent("click");
     const sheet = page.getByRole("dialog", { name: "View options" });
     await expect(sheet).toBeVisible();
-    await releaseIntoBack(page);
+    await page.goBack();
 
     await expect(sheet).toBeHidden();
     await expectPageAtRest(page);
