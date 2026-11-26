@@ -377,7 +377,13 @@ pub(crate) const STEPS: &[Step] = &[
         name: "dependencies",
         group: Group::Portable,
         program: Program::OnPath("cargo"),
-        args: &["deny", "--locked", "check"],
+        args: &["deny", "--locked", "check", "bans", "licenses", "sources"],
+    },
+    Step {
+        name: "advisories",
+        group: Group::Portable,
+        program: Program::OnPath("cargo"),
+        args: &["deny", "--locked", "check", "advisories"],
     },
     Step {
         name: "policy",
@@ -841,6 +847,7 @@ mod tests {
                 "engine tests without rar",
                 "webassembly",
                 "dependencies",
+                "advisories",
                 "policy",
                 "licences",
                 "vendored sources",
@@ -970,6 +977,18 @@ mod tests {
             names_in(Group::Ios),
             ["ios lint", "folder bookmark tests", "ios tests"]
         );
+    }
+
+    #[test]
+    fn the_advisory_database_is_checked_apart_from_the_other_dependency_checks() {
+        let dependencies = step(Group::Portable, "dependencies").args;
+        let advisories = step(Group::Portable, "advisories").args;
+
+        assert_eq!(
+            dependencies.last_chunk(),
+            Some(&["bans", "licenses", "sources"])
+        );
+        assert_eq!(advisories.last_chunk(), Some(&["advisories"]));
     }
 
     fn portable_group_runs_on_the_fuzz_crate(subcommand: &str) -> bool {
