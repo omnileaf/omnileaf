@@ -30,6 +30,8 @@ const SLIDE_MS = 350;
 const QUICK_TURN_MS = 50;
 const SMALL_MOVE_PX = 6;
 const NEVER_ARRIVING_PAGE = 16;
+const TAPPED_ACROSS = 0.75;
+const TAPPED_DOWN = 0.4;
 const OPENING = {
   reading: { state: "started", page: 14 },
   startPage: 13,
@@ -442,6 +444,12 @@ test.describe("a book read right to left", () => {
       expectNear(await leftOf(anyPage(page, to)), start + drag + side * width);
     });
   }
+
+  test("keeps the double-tapped point under the pointer as the page zooms in", async ({
+    page,
+  }) => {
+    await expectZoomKeepsTheTappedPoint(page);
+  });
 
   test("slides the last page back in from the right on turning back from Up next", async ({
     page,
@@ -860,6 +868,65 @@ test.describe("pages whose size is not known yet", () => {
       }
     });
   }
+});
+
+async function expectZoomKeepsTheTappedPoint(page: Page): Promise<void> {
+  await openBookWith(page, { pageTurn: "slide" });
+  const middle = await page
+    .getByRole("button", { name: /^(Show|Hide) the controls$/ })
+    .boundingBox();
+  const before = await shownPage(page, 14).boundingBox();
+  const area = await page.locator("[data-shown-page]").boundingBox();
+  if (middle === null || before === null || area === null) {
+    throw new Error("the page is not on screen");
+  }
+  const point = {
+    x: middle.x + middle.width * TAPPED_ACROSS,
+    y: middle.y + middle.height * TAPPED_DOWN,
+  };
+  const share = {
+    x: (point.x - before.x) / before.width,
+    y: (point.y - before.y) / before.height,
+  };
+
+  await page.mouse.dblclick(point.x, point.y);
+  await expect(page.getByText("200%", { exact: false })).toBeVisible();
+  const after = await shownPage(page, 14).boundingBox();
+
+  expect(after).not.toBeNull();
+  const zoomed = after ?? before;
+  expectNear(
+    zoomed.x,
+    heldPlace(point.x - share.x * zoomed.width, {
+      start: area.x,
+      room: area.width,
+      size: zoomed.width,
+    }),
+  );
+  expectNear(
+    zoomed.y,
+    heldPlace(point.y - share.y * zoomed.height, {
+      start: area.y,
+      room: area.height,
+      size: zoomed.height,
+    }),
+  );
+}
+
+function heldPlace(
+  wanted: number,
+  { start, room, size }: { start: number; room: number; size: number },
+): number {
+  if (size <= room) {
+    return start + (room - size) / 2;
+  }
+  return Math.min(start, Math.max(start + room - size, wanted));
+}
+
+test("keeps the double-tapped point under the pointer as the page zooms in", async ({
+  page,
+}) => {
+  await expectZoomKeepsTheTappedPoint(page);
 });
 
 test("chooses Slide under Pages in Reading settings", async ({ page }) => {

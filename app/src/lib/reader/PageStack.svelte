@@ -84,6 +84,13 @@
     readonly isFlying: boolean;
   }
 
+  interface HeldPoint {
+    readonly x: number;
+    readonly y: number;
+    readonly shareAcross: number;
+    readonly shareDown: number;
+  }
+
   let scroller: HTMLDivElement | undefined = $state();
 
   const decoded = new SvelteSet<number>();
@@ -105,6 +112,7 @@
   let lastSlide = untrack(() => slide);
   let lastSpreads = untrack(() => spreads);
   let lastWidth = untrack(() => spaceWidth);
+  let heldPoint: HeldPoint | undefined;
   const onScreen = $derived(
     turnsOnScreen(
       flight === undefined
@@ -158,6 +166,13 @@
     return () => {
       clearTimeout(waiting);
     };
+  });
+
+  $effect(() => {
+    const scale = zoom;
+    untrack(() => {
+      keepHeldPoint(scale);
+    });
   });
 
   onDestroy(stopFlying);
@@ -326,6 +341,47 @@
 
   function scaled(size: { width: number; height: number }, scale: number) {
     return { width: size.width * scale, height: size.height * scale };
+  }
+
+  function shownPagesBox(): DOMRect | undefined {
+    const shownCell = scroller?.querySelector('[data-turns="0"]');
+    const boxes = [...(shownCell?.children ?? [])].map((page) =>
+      page.getBoundingClientRect(),
+    );
+    if (boxes.length === 0) {
+      return undefined;
+    }
+    const left = Math.min(...boxes.map((box) => box.left));
+    const top = Math.min(...boxes.map((box) => box.top));
+    const right = Math.max(...boxes.map((box) => box.right));
+    const bottom = Math.max(...boxes.map((box) => box.bottom));
+    return new DOMRect(left, top, right - left, bottom - top);
+  }
+
+  export function holdPoint(point: { x: number; y: number }): void {
+    const box = shownPagesBox();
+    heldPoint =
+      box === undefined || box.width <= 0 || box.height <= 0
+        ? undefined
+        : {
+            ...point,
+            shareAcross: (point.x - box.left) / box.width,
+            shareDown: (point.y - box.top) / box.height,
+          };
+  }
+
+  function keepHeldPoint(scale: number): void {
+    const held = heldPoint;
+    heldPoint = undefined;
+    const box = shownPagesBox();
+    if (held === undefined || box === undefined || scale <= RESTING_ZOOM) {
+      return;
+    }
+    scroller?.scrollBy({
+      left: box.left + held.shareAcross * box.width - held.x,
+      top: box.top + held.shareDown * box.height - held.y,
+      behavior: "instant",
+    });
   }
 
   export function shiftInFlight(): number {

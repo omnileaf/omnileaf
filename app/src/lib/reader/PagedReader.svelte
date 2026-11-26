@@ -275,7 +275,11 @@
       }
     | undefined = $state();
   let paged:
-    | { place: () => SpreadPlace | undefined; shiftInFlight: () => number }
+    | {
+        place: () => SpreadPlace | undefined;
+        shiftInFlight: () => number;
+        holdPoint: (point: { x: number; y: number }) => void;
+      }
     | undefined = $state();
   let autoScroll: "off" | "running" | "paused" = $state("off");
   let autoScrollBar: { focusReadout: () => void } | undefined = $state();
@@ -905,6 +909,19 @@
     waitingTap = undefined;
   }
 
+  function zoomOnDoubleTap(event: MouseEvent): void {
+    if (isZoomedIn(viewportScale)) {
+      fitPinch();
+      return;
+    }
+    if (zoom > 1) {
+      zoomTo(1);
+      return;
+    }
+    paged?.holdPoint({ x: event.clientX, y: event.clientY });
+    zoomTo(ZOOM_DOUBLE);
+  }
+
   function isPointerClick(event: MouseEvent): boolean {
     return event.detail > 0;
   }
@@ -1184,13 +1201,7 @@
             : m.reader_show_controls()}
           class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
           onclick={onMiddleTap}
-          ondblclick={() => {
-            if (isZoomedIn(viewportScale)) {
-              fitPinch();
-            } else {
-              zoomTo(zoom > 1 ? 1 : ZOOM_DOUBLE);
-            }
-          }}
+          ondblclick={zoomOnDoubleTap}
         ></button>
       {/if}
     {/each}
