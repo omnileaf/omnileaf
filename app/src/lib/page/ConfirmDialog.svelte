@@ -69,13 +69,10 @@
   const sheetLook = $derived(
     iosPhone.isOn && tone === "danger" ? iosPhoneLook : undefined,
   );
-  const isAlert = $derived(
-    opensAsAlert(currentPlatform(), phoneLook, sheetLook, macLook),
-  );
+  const looks = $derived({ iosPhone: sheetLook, mac: macLook });
+  const isAlert = $derived(opensAsAlert(currentPlatform(), phoneLook, looks));
   const alert = $derived(
-    isAlert
-      ? alertLook(currentPlatform(), sheetLook, macLook)
-      : TODAYS_ALERT_LOOK,
+    isAlert ? alertLook(currentPlatform(), looks) : TODAYS_ALERT_LOOK,
   );
 
   const buttons: Record<AlertAction, HTMLButtonElement | null> = $state({

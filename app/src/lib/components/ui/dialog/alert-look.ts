@@ -199,18 +199,17 @@ export type IosPhoneConfirmLook = "actionSheet";
 
 export type MacConfirmLook = "alert" | "destructiveAlert";
 
-function isIosActionSheet(
-  platform: Platform,
-  iosPhoneLook: IosPhoneConfirmLook | undefined,
-): boolean {
-  return platform === "ios" && iosPhoneLook === "actionSheet";
+export interface ConfirmLooks {
+  readonly iosPhone?: IosPhoneConfirmLook | undefined;
+  readonly mac?: MacConfirmLook | undefined;
 }
 
-function isMacAlert(
-  platform: Platform,
-  macLook: MacConfirmLook | undefined,
-): boolean {
-  return platform === "macos" && macLook !== undefined;
+function isIosActionSheet(platform: Platform, looks: ConfirmLooks): boolean {
+  return platform === "ios" && looks.iosPhone === "actionSheet";
+}
+
+function isMacAlert(platform: Platform, looks: ConfirmLooks): boolean {
+  return platform === "macos" && looks.mac !== undefined;
 }
 
 /** WinUI has no bottom sheets, so a Windows confirmation is always a ContentDialog. */
@@ -225,26 +224,24 @@ const HAS_BOTTOM_SHEETS = {
 export function opensAsAlert(
   platform: Platform,
   phoneLook: ConfirmPhoneLook,
-  iosPhoneLook?: IosPhoneConfirmLook,
-  macLook?: MacConfirmLook,
+  looks: ConfirmLooks = {},
 ): boolean {
   return (
     phoneLook === "dialog" ||
     !HAS_BOTTOM_SHEETS[platform] ||
-    isIosActionSheet(platform, iosPhoneLook) ||
-    isMacAlert(platform, macLook)
+    isIosActionSheet(platform, looks) ||
+    isMacAlert(platform, looks)
   );
 }
 
 export function alertLook(
   platform: Platform,
-  iosPhoneLook?: IosPhoneConfirmLook,
-  macLook?: MacConfirmLook,
+  looks: ConfirmLooks = {},
 ): AlertLook {
-  if (isMacAlert(platform, macLook)) {
-    return macLook === "destructiveAlert" ? MAC_DESTRUCTIVE_LOOK : MAC_LOOK;
+  if (isMacAlert(platform, looks)) {
+    return looks.mac === "destructiveAlert" ? MAC_DESTRUCTIVE_LOOK : MAC_LOOK;
   }
-  return isIosActionSheet(platform, iosPhoneLook)
+  return isIosActionSheet(platform, looks)
     ? IOS_ACTION_SHEET_LOOK
     : ALERT_LOOKS[platform];
 }
