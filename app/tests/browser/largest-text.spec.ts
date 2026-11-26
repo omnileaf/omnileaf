@@ -512,7 +512,7 @@ for (const platform of PLATFORMS) {
             await page
               .getByRole("main")
               .getByRole("button", {
-                name: /^(Get started|Continue|Skip, I'll add them later|Skip for now)$/,
+                name: /^(Get started|Continue|Skip, I’ll add them later|Skip for now)$/,
               })
               .click();
             await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
