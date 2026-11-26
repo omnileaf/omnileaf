@@ -188,7 +188,33 @@ test.describe("a bottom sheet while a back gesture is held", () => {
       shrunk.width / rest.width,
       2,
     );
-    expect(shrunk.y).toBeLessThan(rest.y + rest.height);
+  });
+
+  test("keeps every part of the sheet at its resting offset from the sheet's top, scaled by the horizontal factor", async ({
+    page,
+  }) => {
+    const sheet = await openViewOptions(page);
+    const parts = sheet.locator(":scope > *");
+    const restTop = (await boxOf(sheet)).y;
+    const restOffsets: number[] = [];
+    for (let at = 0; at < (await parts.count()); at += 1) {
+      restOffsets.push((await boxOf(parts.nth(at))).y - restTop);
+    }
+    const restWidth = (await boxOf(sheet)).width;
+
+    await gesture(started());
+    await gesture(moved(FULL_PROGRESS));
+
+    const factor = (restWidth - SHRINK_WIDTH_PX) / restWidth;
+    await expect
+      .poll(async () => (await boxOf(sheet)).width)
+      .toBeCloseTo(restWidth - SHRINK_WIDTH_PX, 0);
+    const heldTop = (await boxOf(sheet)).y;
+    expect(Math.max(...restOffsets)).toBeGreaterThan(SHRINK_HEIGHT_PX);
+    for (const [at, offset] of restOffsets.entries()) {
+      const top = (await boxOf(parts.nth(at))).y - heldTop;
+      expect(Math.abs(top - offset * factor)).toBeLessThanOrEqual(TOLERANCE_PX);
+    }
   });
 
   test("returns to rest when the gesture is cancelled", async ({ page }) => {
@@ -203,6 +229,57 @@ test.describe("a bottom sheet while a back gesture is held", () => {
     await expectSheetAtRest(sheet, rest);
     await expect(sheet).toBeVisible();
     await expectPageStill(page);
+  });
+
+  test("opens at rest again once back has closed it", async ({ page }) => {
+    const sheet = await openViewOptions(page);
+    const rest = await boxOf(sheet);
+    await gesture(started());
+    await gesture(moved(FULL_PROGRESS));
+    await expectSheetShrunkBy(sheet, rest, easedBackProgress(FULL_PROGRESS));
+    await page.goBack();
+    await expect(sheet).toBeHidden();
+
+    await page.getByRole("button", { name: "View options" }).click();
+    const reopened = page.getByRole("dialog", { name: "View options" });
+    await expect(reopened).toBeVisible();
+    await settle(reopened);
+
+    await expectSheetAtRest(reopened, rest);
+    await expect(reopened).not.toHaveAttribute("data-back", /.*/);
+    const part = reopened.locator(":scope > *").nth(1);
+    await expect(part).toHaveCSS("scale", "none");
+  });
+
+  test("slides out when it is closed within the spring back", async ({
+    page,
+  }) => {
+    const sheet = await openViewOptions(page);
+    await page.evaluate(() => {
+      const ran: string[] = [];
+      Object.assign(window, { ranTransitions: ran });
+      document.addEventListener("transitionrun", (event) => {
+        if (
+          event.target instanceof Element &&
+          event.target.getAttribute("role") === "dialog"
+        ) {
+          ran.push(event.propertyName);
+        }
+      });
+    });
+    await gesture(started());
+    await gesture(moved(FULL_PROGRESS));
+
+    await gesture({ kind: "cancelled" });
+    await page.keyboard.press("Escape");
+
+    await expect(sheet).toBeHidden();
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { ranTransitions: string[] }).ranTransitions,
+      ),
+    ).toContain("translate");
   });
 
   test("closes from its shrunken size when back goes through, with no snap back to full size first", async ({
