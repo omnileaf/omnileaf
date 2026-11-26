@@ -64,12 +64,14 @@
     usesStandIns,
     finder,
     missingFolders,
+    onListingChosen,
   }: {
     platform: Platform;
     quickOpen: QuickOpenState;
     usesStandIns: boolean;
     finder: Pick<FolderFinder, "find" | "findFrom">;
     missingFolders: readonly MissingFolder[];
+    onListingChosen: () => void;
   } = $props();
 
   const marksAway = $derived(marksBooksNotConnected(platform));
@@ -256,6 +258,7 @@
       ...listing,
       filter: { ...NEW_LIBRARY_LISTING.filter, [state]: "only" },
     });
+    onListingChosen();
     await goto(resolve("/(app)"));
   }
 

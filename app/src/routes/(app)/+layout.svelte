@@ -16,6 +16,10 @@
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import {
+    LibraryReturn,
+    setLibraryReturn,
+  } from "#lib/library/library-return.ts";
+  import {
     setTapOpenTabSetting,
     tapOpenTabSettingForDocument,
   } from "#lib/navigation/tap-open-tab.svelte.ts";
@@ -95,6 +99,7 @@
   const theme = getThemeSetting();
   const screenshotMode = getScreenshotMode();
   const backGoesUp = setBackGoesUp(makeBackGoUp());
+  const libraryReturn = setLibraryReturn(new LibraryReturn());
   const quickOpen = new QuickOpenState();
   const sidebar = setSidebarSetting(sidebarSettingForDocument());
   const tapOpenTab = setTapOpenTabSetting(tapOpenTabSettingForDocument());
@@ -203,7 +208,7 @@
   async function showHomeArrival(arrival: HomeArrival): Promise<void> {
     const folders = new LibraryFolders(
       commands.libraryFolders,
-      commands.removeLibraryFolder,
+      libraryReturn.forgetting(commands.removeLibraryFolder),
       commands.libraryFolderBookCount,
     );
     await folders.load();
@@ -367,5 +372,8 @@
     missingFolders={needsAttention.problems.flatMap((problem) =>
       problem.kind === "missingFolder" ? [problem.missing] : [],
     )}
+    onListingChosen={() => {
+      libraryReturn.forget();
+    }}
   />
 {/key}

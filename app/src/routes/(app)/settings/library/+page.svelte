@@ -13,6 +13,7 @@
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import LibraryFolderSettings from "#lib/library/LibraryFolderSettings.svelte";
+  import { getLibraryReturn } from "#lib/library/library-return.ts";
   import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -33,6 +34,7 @@
   let { data }: PageProps = $props();
 
   const screenshotMode = getScreenshotMode();
+  const libraryReturn = getLibraryReturn();
   const notices = getNotices();
   const scheduledRescans = getScheduledRescansSetting();
   const android = androidListLook();
@@ -68,15 +70,15 @@
   <SectionHeading title={m.library_title()} />
   <LibraryFolderSettings
     listFolders={commands.libraryFolders}
-    removeFolder={commands.removeLibraryFolder}
+    removeFolder={libraryReturn.forgetting(commands.removeLibraryFolder)}
     countFolderBooks={commands.libraryFolderBookCount}
     addFolder={addFolderWithProgress}
     rescanFolder={rescanFolderWithProgress}
     removeFolderBooks={commands.removeBooksOfEmptiedFolder}
     homeCommands={{
       choose: commands.chooseHomeFolder,
-      use: commands.useFoundLibrary,
-      move: commands.moveHomeFolder,
+      use: libraryReturn.forgetting(commands.useFoundLibrary),
+      move: libraryReturn.forgetting(commands.moveHomeFolder),
     }}
     {notices}
     usesStandIns={screenshotMode.isOn}
