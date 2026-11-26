@@ -410,10 +410,11 @@ async function expectUnbrokenTagInside(
   page: Page,
   sheet: Locator,
 ): Promise<void> {
-  const remove = sheet.getByRole("button", {
-    name: `Remove ${UNBROKEN_TAG}`,
-    exact: true,
-  });
+  const removeName = { name: `Remove ${UNBROKEN_TAG}`, exact: true };
+  const remove = sheet.getByRole("button", removeName);
+  const chip = sheet
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("button", removeName) });
   await expect(remove).toBeVisible();
   const sheetBox = await boxOf(sheet);
   const removeBox = await boxOf(remove);
@@ -423,7 +424,7 @@ async function expectUnbrokenTagInside(
   expect(removeBox.x + removeBox.width).toBeLessThanOrEqual(
     sheetBox.x + sheetBox.width,
   );
-  await expect(remove).toHaveAccessibleName(`Remove ${UNBROKEN_TAG}`);
+  await expect(chip).toContainText(UNBROKEN_TAG);
 }
 
 function testSuggestedTags(
