@@ -218,7 +218,7 @@
 {/snippet}
 
 {#snippet findingField()}
-  <div class="flex mbs-xs">
+  <div class="mbs-xs flex">
     <BookSearchBar
       bind:field={findField}
       search={choices.search}
