@@ -76,12 +76,10 @@ async function swipeAsAndroidDoes(...steps: BackSwipe[]): Promise<void> {
   }
 }
 
-async function swipeAtEveryListener(...steps: BackSwipe[]): Promise<void> {
+async function swipeAtFirstListener(...steps: BackSwipe[]): Promise<void> {
   await watching();
   for (const step of steps) {
-    for (const channel of watched) {
-      await channel.send(step);
-    }
+    await watched[0]?.send(step);
   }
 }
 
@@ -103,7 +101,7 @@ async function openBook(page: Page): Promise<void> {
   await expect(page.getByRole("main")).toBeVisible();
 }
 
-test("shows no error and keeps the book when a back gesture starts in the reader", async ({
+test("shows no error, keeps the book and goes back to the series when a back gesture is made in the reader", async ({
   page,
 }) => {
   await openSeries(page);
@@ -115,24 +113,26 @@ test("shows no error and keeps the book when a back gesture starts in the reader
   expect(interfaceErrors).toEqual([]);
   await expect(page).toHaveURL(READER_URL);
   await expect(page.getByRole("main")).toBeVisible();
-  await expect(page.locator("[data-previous-screen]")).toHaveCount(0);
+  await page.goBack();
+  await expect(page).toHaveURL(SERIES_URL);
 });
 
-test("goes back to the series the book was opened from when the gesture finishes", async ({
+test("previews a back gesture again on the series after coming back from the reader", async ({
   page,
 }) => {
   await openSeries(page);
   await openBook(page);
+  await page.goBack();
+  await expect(page).toHaveURL(SERIES_URL);
+
   await swipeAsAndroidDoes(started(), moved(HALFWAY));
 
-  await page.goBack();
-
-  await expect(page).toHaveURL(SERIES_URL);
+  await expect(page.locator("[data-previous-screen]")).toHaveCount(1);
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
   expect(interfaceErrors).toEqual([]);
 });
 
-test("previews a back gesture once on the series after coming back from the reader", async ({
+test("leaves a gesture sent to the series' first listener without effect after coming back from the reader", async ({
   page,
 }) => {
   await openSeries(page);
@@ -140,9 +140,9 @@ test("previews a back gesture once on the series after coming back from the read
   await page.goBack();
   await expect(page).toHaveURL(SERIES_URL);
 
-  await swipeAtEveryListener(started(), moved(HALFWAY));
+  await swipeAtFirstListener(started(), moved(HALFWAY));
 
-  await expect(page.locator("[data-previous-screen]")).toHaveCount(1);
+  await expect(page.locator("[data-previous-screen]")).toHaveCount(0);
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
   expect(interfaceErrors).toEqual([]);
 });
