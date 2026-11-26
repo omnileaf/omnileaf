@@ -757,3 +757,75 @@ test.describe("coming back to the Library once screenshot mode is on", () => {
     expect(frames[0]?.covers, describeFrames(frames)).toBe(0);
   });
 });
+
+const WRITER_COUNT = 40;
+const MOST_SECTIONS_NEAR_THE_SCREEN = 8;
+let writersRead: string[] = [];
+
+function writerNamed(number: number): string {
+  return `Author ${String(number).padStart(3, "0")}`;
+}
+
+test.describe(
+  "coming back to a Library grouped by creator",
+  { tag: "@native" },
+  () => {
+    test.use({
+      backend: {
+        ...SAMPLE,
+        librarySeries: () => ({
+          series: sampleSeries(WRITER_COUNT),
+          next: null,
+        }),
+        librarySeriesCount: () => WRITER_COUNT,
+        libraryWriters: () => ({
+          writers: Array.from({ length: WRITER_COUNT }, (_, index) => ({
+            name: writerNamed(index + 1),
+            seriesCount: 1,
+          })),
+          next: null,
+        }),
+        writerSeries: (writer) => {
+          writersRead.push(writer);
+          return {
+            series: sampleSeries(1, Number(writer.slice(-3))),
+            next: null,
+          };
+        },
+        writerSeriesCount: () => 1,
+        libraryView: () => ({ ...DEFAULT_LIBRARY_VIEW, groupBy: "creator" }),
+      },
+    });
+
+    test.beforeEach(async ({ page }) => {
+      writersRead = [];
+      await page.setViewportSize(PHONE);
+    });
+
+    test("reads again only the kept sections near the screen, and a far one once it comes near", async ({
+      page,
+    }) => {
+      const last = page.getByRole("region", {
+        name: writerNamed(WRITER_COUNT),
+        exact: true,
+      });
+      await page.goto("/");
+      await libraryAtRest(page);
+      await expect.poll(() => writersRead.length).toBe(WRITER_COUNT);
+      await leaveFor(page, "History");
+      writersRead = [];
+
+      await navigationLink(page, "Library").click();
+      await libraryAtRest(page);
+      const readOnReturn = [...writersRead];
+      await last.scrollIntoViewIfNeeded();
+
+      expect(readOnReturn.length).toBeGreaterThan(0);
+      expect(readOnReturn.length).toBeLessThanOrEqual(
+        MOST_SECTIONS_NEAR_THE_SCREEN,
+      );
+      expect(readOnReturn).not.toContain(writerNamed(WRITER_COUNT));
+      await expect.poll(() => writersRead).toContain(writerNamed(WRITER_COUNT));
+    });
+  },
+);
