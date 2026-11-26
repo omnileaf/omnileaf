@@ -678,7 +678,7 @@ test.describe("on Android", () => {
     );
 
     expect(quarter?.rotate).toBeLessThan(0);
-    expect(middle?.rotate).toBeLessThan(quarter?.rotate ?? 0);
+    expect(middle?.rotate).toBeLessThan(0);
   });
 
   test("pops the Library icon on both axes together", async ({ page }) => {

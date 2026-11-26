@@ -947,11 +947,12 @@
   }
 
   @keyframes clock-rewind {
-    0% {
+    0%,
+    100% {
       rotate: 0deg;
     }
-    100% {
-      rotate: -360deg;
+    40% {
+      rotate: -50deg;
     }
   }
 
