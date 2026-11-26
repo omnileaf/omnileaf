@@ -343,12 +343,9 @@
     return reading.direction === "rightToLeft" ? "left" : "right";
   });
 
-  const spreads = $derived(
-    spreadsOf(
-      book.pages.map((page) => page.size),
-      !isStrip && look.layout === "two",
-    ),
-  );
+  const pageSizes = $derived(book.pages.map((page) => page.size));
+  const isTwoUp = $derived(!isStrip && look.layout === "two");
+  const spreads = $derived(spreadsOf(pageSizes, isTwoUp));
   const spreadIndex = $derived(spreadAt(spreads, turner.shown));
   const spread = $derived(spreads[spreadIndex] ?? [turner.shown]);
   const bookmarks = untrack(() =>

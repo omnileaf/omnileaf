@@ -978,6 +978,26 @@ test("keeps the double-tapped point under the pointer as the page zooms in", asy
   await expectZoomKeepsTheTappedPoint(page);
 });
 
+test("keeps sliding when a setting that leaves the pages in place changes", async ({
+  page,
+}) => {
+  await openBookWith(page, { pageTurn: "slide" });
+  await slowSlides(page);
+  await expectDecoded(page, 15);
+  await page.keyboard.press("ArrowRight");
+
+  await page
+    .getByRole("button", { name: "Light", exact: true })
+    .first()
+    .dispatchEvent("click");
+  await expect(
+    page.getByRole("button", { name: "Light", exact: true }).first(),
+  ).toHaveAttribute("aria-pressed", "true");
+  const { moving } = await framesOfTheTurn(page, [15]);
+
+  expect(moving).toBeGreaterThan(0);
+});
+
 test("chooses Slide under Pages in Reading settings", async ({ page }) => {
   await openBookWith(page, {});
   await page
