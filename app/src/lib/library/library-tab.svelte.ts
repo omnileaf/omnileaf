@@ -32,6 +32,16 @@ export function openingTab(
   return tab === NEW_CHAPTERS ? ALL_SERIES : tab;
 }
 
+export function forgetTabUsedLast(tab: string): void {
+  const usedLast = new StoredPreference(
+    browserPreferenceStore(),
+    LIBRARY_TAB_KEY,
+  );
+  if (usedLast.read() === tab) {
+    usedLast.writeIfPossible(ALL_SERIES);
+  }
+}
+
 /** The tab the library opens on: the one used last, or one chosen in Library tabs. */
 export class LibraryOpensOn {
   readonly #stored = new StoredPreference(
@@ -47,6 +57,12 @@ export class LibraryOpensOn {
   choose(choice: string): void {
     this.choice = choice;
     this.#stored.writeIfPossible(choice);
+  }
+
+  forget(tab: string): void {
+    if (this.choice === tab) {
+      this.choose(OPENS_ON_LAST_TAB);
+    }
   }
 }
 
