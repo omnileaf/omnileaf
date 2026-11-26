@@ -1,9 +1,9 @@
 import type { ButtonSize, ButtonVariant } from "./looks.ts";
 
 const PRESSED_SHAPE = {
-  small: "active:rounded-android-sm",
-  regular: "active:rounded-android-sm",
-  large: "active:rounded-android-md",
+  small: "pressed:rounded-android-sm",
+  regular: "pressed:rounded-android-sm",
+  large: "pressed:rounded-android-md",
 } satisfies Record<ButtonSize, string>;
 
 const LABEL_ICON = {
