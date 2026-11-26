@@ -11,6 +11,7 @@ import {
   testOnlyInItsWebview,
   viewportOf,
 } from "./fixtures.ts";
+import { slowMoves } from "./held-animations.ts";
 
 const FADE = "0.15s ease-out";
 const GROW = "0.2s cubic-bezier(0.2, 0, 0, 1)";
@@ -32,9 +33,17 @@ const ICON_MOVES: readonly IconMove[] = [
   { label: "Settings", startFrom: "/", move: "gear-turn" },
 ];
 
-const ANDROID_ICON_MOVES: readonly IconMove[] = ICON_MOVES.map((icon) =>
-  icon.label === "History" ? { ...icon, move: "clock-rewind" } : icon,
-);
+const ANDROID_ICON_MOVES: readonly IconMove[] = [
+  { label: "Library", startFrom: "/settings", move: "book-pop" },
+  { label: "Browse", startFrom: "/", move: "needle-sway" },
+  { label: "History", startFrom: "/", move: "clock-rewind" },
+  { label: "Settings", startFrom: "/", move: "gear-turn" },
+];
+
+const MOVE_SAMPLES = [0, 0.25, 0.5, 0.75, 0.999] as const;
+const ONE_TOOTH_DEG = 60;
+const REST_TOLERANCE = 0.01;
+const VISIBLY_MOVED = 0.05;
 
 const HALFWAY = "0.5";
 const DOUBLED_ROOT_FONT = ":root { font-size: 200% !important; }";
@@ -164,39 +173,71 @@ async function expectToRunToItsEnd(
   );
 }
 
-interface KeyframeTurn {
-  readonly at: string;
-  readonly rotate: string;
+interface MoveSample {
+  readonly rotate: number;
+  readonly scaleX: number;
+  readonly scaleY: number;
+  readonly matrix: { a: number; b: number; c: number; d: number };
 }
 
-function turnsIn(page: Page, animation: string): Promise<KeyframeTurn[]> {
-  return page.evaluate((name) => {
-    const keyframes = (rules: CSSRuleList): CSSKeyframesRule | undefined => {
-      for (const rule of rules) {
-        if (rule instanceof CSSKeyframesRule && rule.name === name) {
-          return rule;
-        }
-        if (rule instanceof CSSGroupingRule) {
-          const found = keyframes(rule.cssRules);
-          if (found !== undefined) {
-            return found;
-          }
-        }
+async function sampleMove(
+  page: Page,
+  label: string,
+  move: string,
+): Promise<MoveSample[]> {
+  const icon = tab(page, label).locator('[data-slot="navigation-icon"]');
+  await tab(page, label).tap();
+  await expect
+    .poll(() =>
+      icon.evaluate(
+        (element, name) =>
+          element
+            .getAnimations()
+            .some(
+              (animation) =>
+                animation instanceof CSSAnimation &&
+                animation.animationName === name,
+            ),
+        move,
+      ),
+    )
+    .toBe(true);
+  return icon.evaluate(
+    (element, { name, fractions }) => {
+      const motion = element
+        .getAnimations()
+        .find(
+          (animation) =>
+            animation instanceof CSSAnimation &&
+            animation.animationName === name,
+        );
+      const duration = Number(motion?.effect?.getComputedTiming().duration);
+      if (motion === undefined || !Number.isFinite(duration)) {
+        throw new Error(`no ${name} move on the icon`);
       }
-      return undefined;
-    };
-    const rule = Array.from(document.styleSheets)
-      .map((sheet) => keyframes(sheet.cssRules))
-      .find((found) => found !== undefined);
-    if (rule === undefined) {
-      throw new Error(`no keyframes named ${name}`);
-    }
-    return Array.from(rule.cssRules).flatMap((frame) =>
-      frame instanceof CSSKeyframeRule
-        ? [{ at: frame.keyText, rotate: frame.style.rotate }]
-        : [],
-    );
-  }, animation);
+      motion.pause();
+      return fractions.map((fraction) => {
+        motion.currentTime = duration * fraction;
+        const style = getComputedStyle(element);
+        const rotate = style.rotate === "none" ? 0 : parseFloat(style.rotate);
+        const [scaleX = 1, scaleY = scaleX] =
+          style.scale === "none" ? [] : style.scale.split(" ").map(Number);
+        const { a, b, c, d } = new DOMMatrix()
+          .rotate(rotate)
+          .scale(scaleX, scaleY);
+        return { rotate, scaleX, scaleY, matrix: { a, b, c, d } };
+      });
+    },
+    { name: move, fractions: [...MOVE_SAMPLES] },
+  );
+}
+
+function distanceFromRest(sample: MoveSample | undefined): number {
+  if (sample === undefined) {
+    return Infinity;
+  }
+  const { a, b, c, d } = sample.matrix;
+  return Math.max(Math.abs(a - 1), Math.abs(b), Math.abs(c), Math.abs(d - 1));
 }
 
 async function iconPixels(page: Page, icon: Locator): Promise<number[]> {
@@ -549,14 +590,67 @@ test.describe("on Android", () => {
     moves: ANDROID_ICON_MOVES,
   });
 
-  test("turns the History icon back a little, the way its arrow points", async ({
+  for (const { label, startFrom, move } of ANDROID_ICON_MOVES) {
+    test(`starts and ends the ${label} icon's move at rest`, async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "bar and rail only",
+      );
+      await page.goto(startFrom);
+      await settle(navigation(page));
+      await slowMoves(page);
+
+      const samples = await sampleMove(page, label, move);
+
+      const [start, , middle] = samples;
+      expect(distanceFromRest(start)).toBeLessThan(REST_TOLERANCE);
+      expect(distanceFromRest(middle)).toBeGreaterThan(VISIBLY_MOVED);
+      if (move === "gear-turn") {
+        expect(samples.at(-1)?.rotate).toBeCloseTo(ONE_TOOTH_DEG, 0);
+      } else {
+        expect(distanceFromRest(samples.at(-1))).toBeLessThan(REST_TOLERANCE);
+      }
+    });
+  }
+
+  test("turns the History icon back, the way its arrow points", async ({
     page,
   }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
     await page.goto("/");
+    await settle(navigation(page));
+    await slowMoves(page);
 
-    const turns = await turnsIn(page, "clock-rewind");
+    const [, quarter, middle] = await sampleMove(
+      page,
+      "History",
+      "clock-rewind",
+    );
 
-    expect(turns).toEqual([{ at: "0%", rotate: "60deg" }]);
+    expect(quarter?.rotate).toBeLessThan(0);
+    expect(middle?.rotate).toBeLessThan(quarter?.rotate ?? 0);
+  });
+
+  test("pops the Library icon on both axes together", async ({ page }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
+    );
+    await page.goto("/settings");
+    await settle(navigation(page));
+    await slowMoves(page);
+
+    const samples = await sampleMove(page, "Library", "book-pop");
+
+    for (const { scaleX, scaleY } of samples) {
+      expect(scaleX).toBeCloseTo(scaleY, 5);
+    }
+    expect(samples[2]?.scaleX).toBeGreaterThan(1);
   });
 
   test("keeps the History icon at full strength halfway through its crossfade", async ({

@@ -96,8 +96,8 @@ function glyphsOf(container: Element): Glyph[] {
 }
 
 const ANDROID_MOVES: Record<Section, string> = {
-  library: "book-open",
-  browse: "needle-swing",
+  library: "book-pop",
+  browse: "needle-sway",
   history: "clock-rewind",
   settings: "gear-turn",
 };

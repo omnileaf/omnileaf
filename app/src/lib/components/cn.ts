@@ -1066,10 +1066,12 @@ export const TOKEN_THEME = {
   ],
   animate: [
     "book-open",
+    "book-pop",
     "clock-rewind",
     "gear-turn",
     "hands-sweep",
     "nav-pop",
+    "needle-sway",
     "needle-swing",
     "pill-grow",
     "pulse",

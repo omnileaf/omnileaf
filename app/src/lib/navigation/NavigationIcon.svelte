@@ -89,8 +89,10 @@
     settings: "icon-moves:motion-navigation:animate-gear-turn",
   };
   const ANDROID_MOVES: Record<Section, string> = {
-    ...MOVES,
+    library: "icon-moves:motion-navigation:animate-book-pop",
+    browse: "icon-moves:motion-navigation:animate-needle-sway",
     history: "icon-moves:motion-navigation:animate-clock-rewind",
+    settings: MOVES.settings,
   };
 
   const SHAPES: Record<Section, Snippet<[boolean]>> = {
