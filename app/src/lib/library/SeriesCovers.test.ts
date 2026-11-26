@@ -8,6 +8,7 @@ import {
   DEFAULT_LIBRARY_VIEW,
   type LibraryDisplay,
   type LibrarySeries,
+  type LibraryView,
   type Platform,
 } from "#lib/ipc/bindings.ts";
 
@@ -185,4 +186,101 @@ test("lays the covers display out apart from the grid on a Windows window", asyn
   const grid = await listMarkupOn("windows", "grid");
 
   expect(covers).not.toBe(grid);
+});
+
+async function countedOn(platform: Platform, view: LibraryView) {
+  followCorePlatform(platform);
+  await page.viewport(ANDROID_PHONE_WIDTH, PHONE_HEIGHT);
+  mockIPC(() => ({
+    series: [
+      {
+        id: "0190a3e4-0000-8000-8000-0000000000a1",
+        title: "Sample Series 01",
+        bookCount: 18,
+        volumeCount: 12,
+        chapterCount: 6,
+        unreadCount: 0,
+        isConnected: true,
+        cover: COVER,
+      },
+    ],
+    next: null,
+  }));
+  const listing = await commands.librarySeries(null, NEW_LIBRARY_LISTING);
+  if (listing.status === "error") {
+    throw new Error("the backend listed no series");
+  }
+  return render(SeriesCovers, {
+    series: listing.data.series,
+    isComplete: true,
+    coverUrl: fakeCoverUrl,
+    view,
+    usesStandIns: false,
+  });
+}
+
+function withVolumeAndChapterCounts(
+  display: LibraryDisplay,
+  isOn: boolean,
+): LibraryView {
+  return {
+    ...DEFAULT_LIBRARY_VIEW,
+    display,
+    onCovers: {
+      ...DEFAULT_LIBRARY_VIEW.onCovers,
+      showsVolumeAndChapterCounts: isOn,
+    },
+  };
+}
+
+test("draws only the title under a cover on android while the volume and chapter counts are off", async () => {
+  const screen = await countedOn(
+    "android",
+    withVolumeAndChapterCounts("grid", false),
+  );
+
+  const tile = screen.getByRole("listitem");
+  await expect.element(tile.getByText("Sample Series 01")).toBeVisible();
+  expect(tile.getByText("12 volumes · 6 chapters").elements()).toHaveLength(0);
+});
+
+test("draws the volume and chapter count under a cover on android once they are on", async () => {
+  const screen = await countedOn(
+    "android",
+    withVolumeAndChapterCounts("grid", true),
+  );
+
+  await expect
+    .element(screen.getByRole("listitem").getByText("12 volumes · 6 chapters"))
+    .toBeVisible();
+});
+
+test("keeps the volume and chapter count in a list row on android whether the option is on or off", async () => {
+  for (const isOn of [false, true]) {
+    const screen = await countedOn(
+      "android",
+      withVolumeAndChapterCounts("list", isOn),
+    );
+
+    await expect
+      .element(
+        screen.getByRole("listitem").getByText("12 volumes · 6 chapters"),
+      )
+      .toBeVisible();
+    await screen.unmount();
+  }
+});
+
+test("keeps counting books under a cover on windows whatever the option says", async () => {
+  for (const isOn of [false, true]) {
+    const screen = await countedOn(
+      "windows",
+      withVolumeAndChapterCounts("grid", isOn),
+    );
+
+    await expect
+      .element(screen.getByRole("listitem").getByText("18 books"))
+      .toBeVisible();
+    await screen.unmount();
+  }
 });
