@@ -139,16 +139,16 @@ test("counts every asked tab again on refresh", async () => {
   expect(counts.of("manga")).toEqual({ kind: "counted", count: 5 });
 });
 
-test("reports a count that fails and holds it as failed", async () => {
+test("reports a count that fails with the tab it counted, and holds it as failed", async () => {
   const answers = answering();
-  const failures: IpcError[] = [];
-  const counts = new UnfilteredCounts(answers.countTab, (error) => {
-    failures.push(error);
+  const failures: { error: IpcError; key: string }[] = [];
+  const counts = new UnfilteredCounts(answers.countTab, (error, key) => {
+    failures.push({ error, key });
   });
 
   counts.ask([MANGA]);
   await answerAll(answers, { status: "error", error: FAILURE });
 
-  expect(failures).toEqual([FAILURE]);
+  expect(failures).toEqual([{ error: FAILURE, key: "manga" }]);
   expect(counts.of("manga")).toEqual({ kind: "failed" });
 });

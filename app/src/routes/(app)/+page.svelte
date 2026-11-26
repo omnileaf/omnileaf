@@ -543,8 +543,10 @@
   );
   const unfilteredCounts = new UnfilteredCounts(
     (tab) => countOf(tab, NEW_LIBRARY_LISTING),
-    (error) => {
-      reportError(error);
+    (error, key) => {
+      if (tabsCountedForChosen.some((tab) => tabKey(tab) === key)) {
+        reportError(error);
+      }
     },
   );
   const emptyCause = $derived(

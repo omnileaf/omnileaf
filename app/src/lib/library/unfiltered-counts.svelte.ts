@@ -18,7 +18,7 @@ export class UnfilteredCounts {
 
   constructor(
     private readonly countTab: CountTab,
-    private readonly onFailure: (error: IpcError) => void,
+    private readonly onFailure: (error: IpcError, key: string) => void,
   ) {}
 
   ask(tabs: readonly LibraryTabId[]): void {
@@ -48,7 +48,9 @@ export class UnfilteredCounts {
   }
 
   #started(tab: LibraryTabId): LibrarySeriesCount {
-    const count = new LibrarySeriesCount(this.countTab(tab), this.onFailure);
+    const count = new LibrarySeriesCount(this.countTab(tab), (error) => {
+      this.onFailure(error, tabKey(tab));
+    });
     void count.load();
     return count;
   }
