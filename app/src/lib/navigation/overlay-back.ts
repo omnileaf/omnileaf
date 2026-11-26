@@ -7,6 +7,7 @@ import { currentPlatform } from "#lib/page/platform.ts";
 
 import { resolvedPathOf } from "./app-path";
 import { followsHistoryForBack, tellAndroidHowFarBack } from "./android-back";
+import type { BackGestureStep } from "./back-preview";
 
 export interface PageHistory {
   push(): () => boolean;
@@ -14,8 +15,14 @@ export interface PageHistory {
   onBack(listener: () => void): () => void;
 }
 
+export interface BackFollower {
+  follow(step: BackGestureStep): void;
+  closed?(): void;
+}
+
 interface HeldEntry {
   readonly close: () => void;
+  readonly follower: BackFollower | undefined;
   isOnEntry: () => boolean;
   isPushed: boolean;
   isPopped: boolean;
@@ -33,6 +40,7 @@ export class OverlayBack {
   readonly #tell: () => void;
   readonly #isOn: () => boolean;
   #held: readonly HeldEntry[] = [];
+  #following: BackFollower | undefined;
   #ownPops = 0;
   #waiting: readonly (() => void)[] = [];
   #stopListening: (() => void) | undefined;
@@ -44,12 +52,13 @@ export class OverlayBack {
   }
 
   /** Android only hands back to the page while its history has an entry to go back to. */
-  hold(close: () => void): () => void {
+  hold(close: () => void, follower?: BackFollower): () => void {
     if (!this.#isOn()) {
       return () => undefined;
     }
     const entry: HeldEntry = {
       close,
+      follower,
       isOnEntry: () => true,
       isPushed: false,
       isPopped: false,
@@ -69,6 +78,18 @@ export class OverlayBack {
 
   mustGiveBackBeforeLeaving(): boolean {
     return this.#ownPops > 0 || this.willTakeBack();
+  }
+
+  followBack(step: BackGestureStep): void {
+    if (step.kind === "started") {
+      this.#following = this.#held.findLast((entry) =>
+        isGiveable(entry),
+      )?.follower;
+    }
+    this.#following?.follow(step);
+    if (step.kind === "ended") {
+      this.#following = undefined;
+    }
   }
 
   willTakeBack(): boolean {
@@ -174,6 +195,10 @@ const overlays = new OverlayBack(windowHistory, tellAndroidHowFarBack, () =>
 
 export const willOverlayTakeBack = (): boolean => overlays.willTakeBack();
 
+export const followOverlayBack = (step: BackGestureStep): void => {
+  overlays.followBack(step);
+};
+
 export const giveBackOverlayEntries = (): Promise<void> => overlays.giveBack();
 
 export function leaveOverlaysThen(go: () => Promise<unknown>): void {
@@ -204,9 +229,20 @@ function closeLikeEscape(element: HTMLElement): void {
   );
 }
 
-export function holdBack(close: () => void): () => void {
-  return overlays.hold(close);
+export function holdBack(
+  close: () => void,
+  follower?: BackFollower,
+): () => void {
+  return overlays.hold(close, follower);
 }
+
+export const closesOnBackFollowedBy =
+  (follower: BackFollower): Attachment<HTMLElement> =>
+  (element) =>
+    holdBack(() => {
+      closeLikeEscape(element);
+      follower.closed?.();
+    }, follower);
 
 export const closesOnBack: Attachment<HTMLElement> = (element) =>
   holdBack(() => {

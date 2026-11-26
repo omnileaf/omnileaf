@@ -189,20 +189,23 @@ function stepOf(swipe: BackSwipe): BackGestureStep {
   }
 }
 
+export interface BackTaker {
+  readonly isTaking: () => boolean;
+  readonly follow: (step: BackGestureStep) => void;
+}
+
 export function previewBackGestures(
   follow: (step: BackGestureStep) => void,
   isScreenKept: () => boolean,
-  isBackTaken: () => boolean,
+  taker: BackTaker,
 ): () => void {
   let isHidden = false;
   const stopWatching = watchBackSwipes((swipe) => {
     if (swipe.kind === "started") {
-      isHidden = isBackTaken();
+      isHidden = taker.isTaking();
     }
     const step = stepOf(swipe);
-    if (!isHidden) {
-      follow(step);
-    }
+    (isHidden ? taker.follow : follow)(step);
     if (step.kind === "ended") {
       isHidden = false;
     }
