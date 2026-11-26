@@ -64,6 +64,7 @@
   import StripScrubber from "#lib/reader/StripScrubber.svelte";
   import StripStack from "#lib/reader/StripStack.svelte";
   import {
+    type KeyPress,
     type ReaderAction,
     readerShortcuts,
   } from "#lib/reader/reader-keys.ts";
@@ -193,6 +194,7 @@
   let leaving: "previous" | "next" | undefined = $state();
   let hasLeft = false;
   let hasShownUpNext = $state(false);
+  let isHoldFromAnotherBook = untrack(() => isPagedInto);
   const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
   let hasOpened = false;
   const skipUpNext = getSkipUpNextSetting();
@@ -613,16 +615,19 @@
     };
   });
 
-  function act(action: ReaderAction): void {
+  function act(action: ReaderAction, press: KeyPress = "pressed"): void {
+    if (press === "pressed") {
+      isHoldFromAnotherBook = false;
+    }
     switch (action) {
       case "toggleAutoScroll":
         toggleAutoScroll();
         return;
       case "next":
-        turnBy(1);
+        turnUnlessHeldPast(1, press);
         return;
       case "previous":
-        turnBy(-1);
+        turnUnlessHeldPast(-1, press);
         return;
       case "first":
         turnTo(0);
@@ -681,6 +686,17 @@
     }
     return takeBackWithinScreen(closeOpenPanel);
   });
+
+  function turnUnlessHeldPast(step: number, press: KeyPress): void {
+    const isHeldPastTheBook =
+      isHoldFromAnotherBook ||
+      leaving !== undefined ||
+      (step > 0 && turner.isPastEnd);
+    if (press === "held" && isHeldPastTheBook) {
+      return;
+    }
+    turnBy(step);
+  }
 
   function turnBy(step: number): void {
     dropWaitingTap();

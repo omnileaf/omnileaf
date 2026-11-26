@@ -2,7 +2,11 @@ import { afterEach, expect, test } from "vitest";
 
 import { shortcut } from "#lib/shortcut.ts";
 
-import { type ReaderAction, readerShortcuts } from "./reader-keys";
+import {
+  type KeyPress,
+  type ReaderAction,
+  readerShortcuts,
+} from "./reader-keys";
 import type { ReadingDirection, ReadingMode } from "./reading-direction.svelte";
 import type { Platform } from "#lib/ipc/bindings.ts";
 
@@ -278,4 +282,34 @@ test("pauses or goes on with auto scroll on Space while it's on", () => {
   );
 
   expect(actions).toEqual(["toggleAutoScroll"]);
+});
+
+test("tells a page turn repeated by a held key from one pressed afresh", () => {
+  const presses: KeyPress[] = [];
+  detachments.push(
+    shortcut(
+      ...readerShortcuts(
+        (_, press) => {
+          presses.push(press);
+        },
+        () => "leftToRight",
+        "linux",
+        "paged",
+        false,
+      ),
+    )(window),
+  );
+
+  for (const repeat of [false, true, true]) {
+    document.body.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        bubbles: true,
+        cancelable: true,
+        key: "ArrowRight",
+        repeat,
+      }),
+    );
+  }
+
+  expect(presses).toEqual(["pressed", "held", "held"]);
 });

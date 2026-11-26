@@ -23,6 +23,8 @@ export type ReaderAction =
   | "back"
   | "toggleAutoScroll";
 
+export type KeyPress = "pressed" | "held";
+
 const ARROWS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight"]);
 
 type ReaderKey = Pick<Shortcut, "key" | "shift" | "alt"> & {
@@ -68,7 +70,7 @@ function backKey(platform: Platform): ReaderKey {
 }
 
 export function readerShortcuts(
-  act: (action: ReaderAction) => void,
+  act: (action: ReaderAction, press: KeyPress) => void,
   direction: () => ReadingDirection,
   platform: Platform,
   mode: ReadingMode,
@@ -82,15 +84,17 @@ export function readerShortcuts(
   ].map(({ action, isCommand = false, ...keys }) => ({
     ...keys,
     ...(isCommand ? { command: platform } : {}),
-    run: () => {
+    run: (event: KeyboardEvent) => {
+      const press = event.repeat ? "held" : "pressed";
       if (isAutoScrolling && keys.key === " " && keys.shift === false) {
-        act("toggleAutoScroll");
+        act("toggleAutoScroll", press);
         return;
       }
       act(
         !isStrip && ARROWS.has(keys.key) && isPageTurn(action)
           ? inReadingOrder(action, direction())
           : action,
+        press,
       );
     },
   }));
