@@ -9,7 +9,6 @@
   import { onMount, type Snippet, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
-  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
@@ -158,6 +157,7 @@
 
   import type { PageProps } from "./$types";
   import LibraryWhatsNew from "#lib/whats-new/LibraryWhatsNew.svelte";
+  import { navigateTo } from "#lib/navigation/navigate-to.ts";
 
   let { data }: PageProps = $props();
 
@@ -1033,7 +1033,7 @@
       ...chosenListing,
       filter: { ...withoutFilters(chosenListing).filter, tags: [tag] },
     });
-    await goto(resolve("/(app)"), { replaceState: true, state: {} });
+    await navigateTo(resolve("/(app)"), { replaceState: true, state: {} });
   }
 
   onMount(() => {
