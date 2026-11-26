@@ -1,3 +1,5 @@
+import type { Page } from "@playwright/test";
+
 import {
   boxOf,
   DEFAULT_BACKEND,
@@ -23,6 +25,27 @@ const REPLY_EMAIL = "Email for a reply (optional)";
 const WAYS = ["Open on GitHub", "Copy report", "Save as a file"] as const;
 
 const TABLET = { width: MEDIUM_MIN_WIDTH + 100, height: 1000 };
+const PHONE = { width: 390, height: 844 };
+const SCREENS = { phone: PHONE, tablet: TABLET } as const;
+
+const HINTED_ROWS = ["Version and device", "Log"] as const;
+
+async function rowSubtitleType(
+  page: Page,
+): Promise<{ fontSize: string; lineHeight: string }> {
+  await page.waitForFunction(
+    () => document.documentElement.dataset.platform !== undefined,
+  );
+  return page.evaluate(() => {
+    const probe = document.createElement("span");
+    probe.style.fontSize = "var(--native-text-row-subtitle)";
+    probe.style.lineHeight = "var(--native-leading-row-subtitle)";
+    document.body.append(probe);
+    const { fontSize, lineHeight } = getComputedStyle(probe);
+    probe.remove();
+    return { fontSize, lineHeight };
+  });
+}
 
 test.describe(
   "Report a problem on an Android phone",
@@ -186,6 +209,26 @@ test.describe(
         expect(label.x - rowStart).toBe(56);
         await expect(row).toHaveCSS("border-bottom-width", "0px");
       });
+    }
+
+    for (const [screen, viewport] of Object.entries(SCREENS)) {
+      for (const name of HINTED_ROWS) {
+        test(`sets ${name}'s second line in the row subtitle type on a ${screen}`, async ({
+          page,
+        }) => {
+          await page.setViewportSize(viewport);
+          await page.goto("/settings/about/report");
+          const hint = page
+            .getByRole("listitem")
+            .filter({ has: page.getByText(name, { exact: true }) })
+            .locator("[data-slot=item-description]");
+
+          const { fontSize, lineHeight } = await rowSubtitleType(page);
+
+          await expect(hint).toHaveCSS("font-size", fontSize);
+          await expect(hint).toHaveCSS("line-height", lineHeight);
+        });
+      }
     }
   },
 );
