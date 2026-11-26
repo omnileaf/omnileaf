@@ -74,6 +74,10 @@ const SIDE_BY_SIDE = [
   { width: 320, names: ["Covers per row"] },
 ] as const;
 const SQUEEZED_WIDTH = 200;
+const UNDER_ITS_NAME = [
+  { textSize: "system", width: 320 },
+  { textSize: "larger", width: 320 },
+] as const;
 const LARGE_TEXT = [
   { scale: 1.3, width: 390 },
   { scale: 1.3, width: 360 },
@@ -600,7 +604,7 @@ test.describe(
         }
       });
 
-      test("sets Group by on its own line, its hint under it and its four choices across the sheet, Creator last", async ({
+      test("sets Group by on its own line, its hint under it and its four choices across the row, Creator last", async ({
         page,
       }) => {
         const sheet = await openView(page);
@@ -622,7 +626,7 @@ test.describe(
         expect(groupBox.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
         expect(
           sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
-        ).toBeCloseTo(SETTING_START, 0);
+        ).toBeCloseTo(SETTING_END, 0);
         await expect(label).toHaveCSS("font-weight", HEADING_WEIGHT);
         await expect(group.getByRole("radio")).toHaveCount(4);
         await expect(group.getByRole("radio").last()).toHaveAccessibleName(
@@ -736,6 +740,27 @@ test.describe(
           for (const name of names) {
             await expectAtRowEnd(sheet, name);
           }
+        });
+      }
+
+      for (const { textSize, width } of UNDER_ITS_NAME) {
+        test(`sets Display's choices under its name across the row when they cannot share its line, ${String(width)}px wide at the ${textSize} text size`, async ({
+          page,
+        }) => {
+          await page.addInitScript((size) => {
+            window.localStorage.setItem("omnileaf.textSize", size);
+          }, textSize);
+          await page.setViewportSize({ width, height: 844 });
+
+          const sheet = await openView(page);
+          const { row, words, groupBox } = await rowSetting(sheet, "Display");
+          const rowBox = await boxOf(row);
+
+          expect(groupBox.y).toBeGreaterThanOrEqual(words.y + words.height);
+          expect(groupBox.x - rowBox.x).toBeCloseTo(SETTING_START, 0);
+          expect(
+            rowBox.x + rowBox.width - (groupBox.x + groupBox.width),
+          ).toBeCloseTo(SETTING_END, 0);
         });
       }
 
