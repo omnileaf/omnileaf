@@ -24,7 +24,7 @@ test("tells the person the file type is not supported, with one way to dismiss i
     .toBeVisible();
   await expect
     .element(
-      dialog.getByText("This file type isn't supported", { exact: false }),
+      dialog.getByText("Omnileaf opens CBZ and CB7 files.", { exact: false }),
     )
     .toBeVisible();
   await expect.element(dialog.getByRole("button")).toHaveLength(1);

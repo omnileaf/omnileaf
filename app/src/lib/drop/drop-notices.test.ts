@@ -91,7 +91,7 @@ test("explains a file of a type this version cannot read", () => {
   expect(notice).toMatchObject({
     tone: "warning",
     title: "Omnileaf can't open this file",
-    body: "This file type isn't supported. Omnileaf opens CBZ and CB7 files. The file stays where it is.",
+    body: "Omnileaf opens CBZ and CB7 files. The file stays where it is.",
   });
 });
 

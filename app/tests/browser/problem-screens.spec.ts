@@ -39,7 +39,9 @@ function badgeOf(title: Locator): Locator {
 }
 
 function goToLibrary(page: Page): Locator {
-  return page.getByRole("main").getByRole("link", { name: "Go to Library" });
+  return page
+    .getByRole("main")
+    .getByRole("link", { name: "Go to the library" });
 }
 
 function pixels(locator: Locator, property: "fontSize" | "lineHeight") {
@@ -80,7 +82,7 @@ test("leads back to the library from a missing page", async ({ page }) => {
 
   await page
     .getByRole("main")
-    .getByRole("link", { name: "Go to Library" })
+    .getByRole("link", { name: "Go to the library" })
     .click();
 
   await expect(

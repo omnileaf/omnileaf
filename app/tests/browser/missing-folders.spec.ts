@@ -437,7 +437,7 @@ test.describe("with a network share the system mounts", () => {
     await page.goto("/");
     const share = notice(page, "Mount Manga’s share again");
     await expect(share).toContainText(
-      "nas/manga is mounted by your system, so there’s no sign-in for Omnileaf to open. Mount it again, then choose Try again. Your reading progress is safe.",
+      "nas/manga is mounted by your system. Mount it again, then choose Try again. Your reading progress is safe.",
     );
 
     await share.getByRole("button", { name: "Try again" }).click();
