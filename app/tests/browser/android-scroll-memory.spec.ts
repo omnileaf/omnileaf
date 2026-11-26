@@ -14,9 +14,10 @@ import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 import { withCountsUnderCovers } from "./view-options.ts";
 
 const PHONE = { width: 412, height: 700 };
-const LIBRARY_DOWN = 1200;
+const LIBRARY_DOWN = 600;
 const SETTINGS_DOWN = 300;
-const TABLET_LIBRARY_DOWN = 300;
+const COUNTED_LIBRARY_DOWN = 1200;
+const TABLET_LIBRARY_DOWN = 200;
 const TABLET = { width: 820, height: 1180 };
 const SERIES_DOWN = 250;
 const SLACK_PX = 2;
@@ -122,8 +123,6 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
     test.use({
       backend: {
         ...sample,
-        libraryView: async () =>
-          withCountsUnderCovers(await sample.libraryView()),
         librarySeries: async (...asked) => {
           const listed = await sample.librarySeries(...asked);
           return {
@@ -279,6 +278,39 @@ test.describe("going back on an Android phone", { tag: "@native" }, () => {
 
       await expect(page).toHaveURL(SERIES_PAGE);
       await expectScrolledTo(page, 0);
+    });
+
+    test.describe("with the counts under the covers on", () => {
+      const sampleWithCounts = sampleLibraryOn("android");
+
+      test.use({
+        backend: {
+          ...sampleWithCounts,
+          libraryView: async () =>
+            withCountsUnderCovers(await sampleWithCounts.libraryView()),
+        },
+      });
+
+      test("lands where the Library was, the series in view, with Android's back gesture", async ({
+        page,
+      }) => {
+        await page.setViewportSize(PHONE);
+        await page.goto("/");
+        await scrollMainTo(page, COUNTED_LIBRARY_DOWN);
+        const opened = await seriesLinkInView(page);
+        const card = main(page).locator(`a[href='${opened}']`).first();
+        const shownAt = (await boxOf(card)).y;
+
+        await tapWhereItIs(card);
+        await expect(page).toHaveURL(opened);
+        await page.goBack();
+
+        await expect(page).toHaveURL("/");
+        await expect(card).toBeInViewport();
+        await expect
+          .poll(async () => Math.abs((await boxOf(card)).y - shownAt))
+          .toBeLessThanOrEqual(SLACK_PX);
+      });
     });
 
     test.describe("with the Continue reading row on", () => {
