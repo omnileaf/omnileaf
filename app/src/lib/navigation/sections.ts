@@ -54,3 +54,9 @@ export function showsTopTabBar(routeId: string | null): boolean {
     TAB_BAR_PAGE_PREFIXES.some((prefix) => routeId.startsWith(prefix))
   );
 }
+
+const APP_SHELL_GROUP = "(app)";
+
+export function isInAppShell(routeId: string): boolean {
+  return routeId.split("/")[1] === APP_SHELL_GROUP;
+}

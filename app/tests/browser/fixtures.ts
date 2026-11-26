@@ -42,6 +42,12 @@ export const IPAD_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)";
 
 export const MEDIUM_MIN_WIDTH = 600;
+const LONGEST_PRESS_MS = 800;
+const LONG_PRESS_TOUCH = {
+  pointerType: "touch",
+  pointerId: 3,
+  isPrimary: true,
+};
 export const EXPANDED_MIN_WIDTH = 840;
 export const LARGE_MIN_WIDTH = 1200;
 
@@ -504,6 +510,21 @@ export async function boxOf(locator: Locator): Promise<Box> {
     throw new Error("the element has no layout box");
   }
   return box;
+}
+
+export async function selectByLongPress(
+  page: Page,
+  card: Locator,
+): Promise<void> {
+  await page.clock.install();
+  await card
+    .getByRole("link")
+    .first()
+    .dispatchEvent("pointerdown", LONG_PRESS_TOUCH);
+  await page.clock.runFor(LONGEST_PRESS_MS);
+  const picked = card.getByRole("checkbox");
+  await picked.dispatchEvent("pointerup", LONG_PRESS_TOUCH);
+  await picked.dispatchEvent("click");
 }
 
 export function targetOf(

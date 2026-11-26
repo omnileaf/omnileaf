@@ -71,6 +71,7 @@
     phoneOf,
     usesCommandKey,
   } from "#lib/page/platform.ts";
+  import { READER_ROUTE_ID } from "#lib/reader/reader-route.ts";
   import { deviceWordOf } from "#lib/storage/device.ts";
   import LowSpaceNotice from "#lib/storage/LowSpaceNotice.svelte";
   import { type Shortcut, shortcut } from "#lib/shortcut.ts";
@@ -86,7 +87,6 @@
   import type { LayoutProps } from "./$types";
 
   const EDIT_DETAILS_ROUTE = "/(app)/series/[id]/edit";
-  const READER_ROUTE = "/read/[book]";
 
   let { children, data }: LayoutProps = $props();
 
@@ -230,7 +230,7 @@
   }
 
   onMount(() => {
-    preloadCode(READER_ROUTE).catch(reportFailure);
+    preloadCode(READER_ROUTE_ID).catch(reportFailure);
     const arrival = takeHomeArrival(data.homeArrival);
     if (arrival !== null) {
       void showHomeArrival(arrival);

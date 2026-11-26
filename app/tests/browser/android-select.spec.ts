@@ -5,6 +5,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  selectByLongPress,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -12,7 +13,6 @@ import type { BackSwipe } from "../../src/lib/ipc/bindings.ts";
 import type { FakeChannel } from "./fake-backend.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
-const HELD_MS = 800;
 const LIBRARY = sampleSeries(9);
 let gestures: FakeChannel<BackSwipe> | undefined;
 
@@ -47,15 +47,9 @@ async function startSelecting(page: Page): Promise<void> {
   await expect(seriesList(page).getByRole("listitem")).toHaveCount(
     LIBRARY.length,
   );
-  const link = seriesList(page).getByRole("listitem").nth(1).getByRole("link");
-  const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
-  await link.first().dispatchEvent("pointerdown", touch);
-  await page.waitForTimeout(HELD_MS);
-  const picked = seriesList(page).getByRole("checkbox", {
-    name: LIBRARY[1]?.title ?? "",
-  });
-  await picked.dispatchEvent("pointerup", touch);
-  await picked.dispatchEvent("click");
+
+  await selectByLongPress(page, seriesList(page).getByRole("listitem").nth(1));
+
   await expect(page.getByText("1 selected").first()).toBeVisible();
 }
 

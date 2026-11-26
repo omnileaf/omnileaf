@@ -66,7 +66,7 @@ test("shows on the series page the page reached once back from the book through 
     `page ${String(reached)} shown`,
   );
 
-  await appSession().back();
+  await goBackToTheLibrary(appSession());
   await (await appSession().waitFor(FIRST_SERIES_COVER)).click();
 
   await appSession().waitFor(SERIES_HEADING);

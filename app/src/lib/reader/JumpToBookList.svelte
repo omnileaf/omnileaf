@@ -2,7 +2,6 @@
   import { ArrowDownUp, Bookmark, Check, FileX, Search } from "@lucide/svelte";
   import { tick } from "svelte";
 
-  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
   import { Badge } from "#lib/components/ui/badge/index.ts";
@@ -46,10 +45,12 @@
   import { booksMatching } from "#lib/series/book-search.ts";
   import BookProgress from "#lib/series/BookProgress.svelte";
   import { bookSummary } from "#lib/series/book-reading.ts";
+  import { leaveOverlaysThen } from "#lib/navigation/overlay-back.ts";
   import { isShownBy } from "#lib/series/books-shown.ts";
 
   import { JUMP_LIST_LOOK, jumpListPhoneLook } from "./jump-list-look.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import { moveWithinReader } from "./reader-origin.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
 
   const SEARCHABLE_FROM = 20;
@@ -295,10 +296,14 @@
                 aria-current={isCurrent ? "true" : undefined}
                 onclick={(event) => {
                   event.preventDefault();
-                  void goto(resolve("/read/[book]", { book: book.id }), {
-                    replaceState: true,
-                    state: { readerJumped: true },
-                  });
+                  leaveOverlaysThen(() =>
+                    moveWithinReader(
+                      resolve("/read/[book]", { book: book.id }),
+                      {
+                        readerJumped: true,
+                      },
+                    ),
+                  );
                 }}
               >
                 <span class="flex items-center gap-sm min-inline-none">

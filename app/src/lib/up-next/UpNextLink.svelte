@@ -2,8 +2,10 @@
   import { mergeProps } from "bits-ui";
   import type { Snippet } from "svelte";
 
+  import type { ResolvedPathname } from "$app/types";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
+  import { movesWithinReader } from "#lib/reader/reader-origin.ts";
 
   interface KeyHint {
     readonly label: string;
@@ -18,7 +20,7 @@
     hint,
     children,
   }: {
-    href: string;
+    href: ResolvedPathname;
     class: string;
     replaceState?: boolean;
     hint?: KeyHint;
@@ -29,7 +31,7 @@
   const anchor = $derived({
     href,
     class: className,
-    "data-sveltekit-replacestate": replaceState ? "" : undefined,
+    onclick: replaceState ? movesWithinReader(href) : undefined,
     "aria-keyshortcuts": isWindows ? hint?.shortcut : undefined,
   });
 </script>

@@ -4,13 +4,18 @@ import type {
   LibraryCategory,
   SeriesLabels,
 } from "../../src/lib/ipc/bindings.ts";
-import { DEFAULT_BACKEND, expect, settle, test } from "./fixtures.ts";
+import {
+  DEFAULT_BACKEND,
+  expect,
+  selectByLongPress,
+  settle,
+  test,
+} from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(6);
 const CATEGORY = { id: "reading", name: "Reading" } as LibraryCategory;
 const PHONE_WIDTH = 500;
-const HELD_MS = 800;
 let historyFollowed = 0;
 let canGoBack: boolean | undefined;
 
@@ -60,17 +65,7 @@ async function openSortAndFilter(page: Page): Promise<Locator> {
 
 async function selectASeries(page: Page): Promise<Locator> {
   const list = await openLibrary(page);
-  const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
-  await list
-    .getByRole("listitem")
-    .nth(1)
-    .getByRole("link")
-    .first()
-    .dispatchEvent("pointerdown", touch);
-  await page.waitForTimeout(HELD_MS);
-  const picked = list.getByRole("checkbox", { name: LIBRARY[1]?.title ?? "" });
-  await picked.dispatchEvent("pointerup", touch);
-  await picked.dispatchEvent("click");
+  await selectByLongPress(page, list.getByRole("listitem").nth(1));
   const actions = page.getByRole("group", { name: "Selected series" });
   await expect(actions).toBeVisible();
   return actions;

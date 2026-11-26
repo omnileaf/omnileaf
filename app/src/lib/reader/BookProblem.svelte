@@ -27,6 +27,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import BookBackNav from "./BookBackNav.svelte";
+  import type { ReaderWayBack } from "./reader-way-back.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
   import { TODAYS_PROBLEM_ACTIONS } from "./problem-actions.ts";
   import type { BookProblem } from "./opened-book.ts";
@@ -62,27 +63,23 @@
     platform,
     onShowFile,
     onFind,
+    wayBack,
+    onBack,
   }: {
     kind: BookProblem;
     place: BookPlace | null;
     platform: Platform;
     onShowFile: (() => void) | undefined;
     onFind?: (() => void) | undefined;
+    wayBack: ReaderWayBack;
+    onBack: () => Promise<void>;
   } = $props();
 
-  const inLibraryPlace = $derived(
-    place !== null && place.isInLibrary ? place : null,
-  );
   const settings = untrack(() =>
     readerSettings(place !== null && place.isInLibrary ? place.series : ""),
   );
   const saying = $derived(SAYINGS[kind]);
   const libraryHref = resolve("/(app)");
-  const seriesHref = $derived(
-    inLibraryPlace === null
-      ? undefined
-      : resolve("/(app)/series/[id]", { id: inLibraryPlace.series }),
-  );
   const showFile = $derived(showFileLabel(platform));
   const width = new WindowWidth();
   const look = $derived(bookProblemLook(platform, width.current));
@@ -101,7 +98,7 @@
   data-ground="grouped"
   class="flex flex-col bg-background text-foreground min-block-dvh touch:bg-native-grouped-ground"
 >
-  <BookBackNav {place} {platform} />
+  <BookBackNav {place} {platform} {wayBack} {onBack} />
   <div class="flex flex-1 items-center justify-center px-xl pbe-xl">
     <Empty
       class="gap-lg max-inline-book-problem expanded:max-inline-book-problem-wide"
@@ -128,17 +125,21 @@
             {m.missing_find_folder()}
           </button>
         {/if}
-        {#if seriesHref === undefined}
-          <a href={libraryHref} class={backLook}>
+        <a
+          href={wayBack.href}
+          onclick={(event) => {
+            event.preventDefault();
+            void onBack();
+          }}
+          class={backLook}
+        >
+          {#if wayBack.href === libraryHref}
             <Library size={BUTTON_ICON_SIZE} aria-hidden="true" />
-            {m.reader_back_label()}
-          </a>
-        {:else}
-          <a href={seriesHref} class={backLook}>
+          {:else}
             <ArrowLeft size={BUTTON_ICON_SIZE} aria-hidden="true" />
-            {m.reader_back_to_the_series()}
-          </a>
-        {/if}
+          {/if}
+          {wayBack.genericLabel}
+        </a>
         {#if kind === "unreadable" && onShowFile !== undefined}
           <button type="button" class={actions.other} onclick={onShowFile}>
             <ReaderIcon

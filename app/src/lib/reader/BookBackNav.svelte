@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { resolve } from "$app/paths";
   import {
     Breadcrumb,
     BreadcrumbItem,
@@ -12,14 +11,24 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { foregroundBackLook } from "./reader-bar.ts";
+  import type { ReaderWayBack } from "./reader-way-back.ts";
   import ReaderBackArrow from "./ReaderBackArrow.svelte";
 
   const SERIES_NAME = "truncate text-small text-muted expanded:hidden";
   const ANDROID_BAR_TITLE =
     "truncate text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title text-foreground";
 
-  let { place, platform }: { place: BookPlace | null; platform: Platform } =
-    $props();
+  let {
+    place,
+    platform,
+    wayBack,
+    onBack,
+  }: {
+    place: BookPlace | null;
+    platform: Platform;
+    wayBack: ReaderWayBack;
+    onBack: () => Promise<void>;
+  } = $props();
 
   const width = new WindowWidth();
   const isOnPhone = $derived(isPhone(platform, width.current));
@@ -27,14 +36,8 @@
   const seriesName = $derived(
     isOnPhone && platform === "android" ? ANDROID_BAR_TITLE : SERIES_NAME,
   );
-  const libraryHref = resolve("/(app)");
   const inLibraryPlace = $derived(
     place !== null && place.isInLibrary ? place : null,
-  );
-  const seriesHref = $derived(
-    inLibraryPlace === null
-      ? undefined
-      : resolve("/(app)/series/[id]", { id: inLibraryPlace.series }),
   );
 </script>
 
@@ -43,22 +46,29 @@
   class="flex items-center gap-xs self-start px-reader-bar-inline pbs-reader-bar-top min-inline-none expanded:px-lg expanded:pbs-md"
 >
   <a
-    href={seriesHref ?? libraryHref}
-    aria-label={inLibraryPlace === null
-      ? m.reader_back_label()
-      : m.reader_back_to_series({ series: inLibraryPlace.seriesTitle })}
+    href={wayBack.href}
+    aria-label={wayBack.label}
+    onclick={(event) => {
+      event.preventDefault();
+      void onBack();
+    }}
     class={foregroundBackLook(platform, width.current)}
   >
     <ReaderBackArrow {platform} {isOnPhone} />
   </a>
-  {#if inLibraryPlace !== null && seriesHref !== undefined && namesSeries}
-    <a href={seriesHref} aria-hidden="true" tabindex="-1" class={seriesName}>
+  {#if inLibraryPlace !== null && namesSeries}
+    <a
+      href={wayBack.fallbackHref}
+      aria-hidden="true"
+      tabindex="-1"
+      class={seriesName}
+    >
       {inLibraryPlace.seriesTitle}
     </a>
     <Breadcrumb class="hidden text-small expanded:block">
       <BreadcrumbItem class="min-inline-none">
         <a
-          href={seriesHref}
+          href={wayBack.fallbackHref}
           class="block truncate text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
         >
           {inLibraryPlace.seriesTitle}
