@@ -54,6 +54,10 @@ function covers(page: Page, section: string) {
   return page.getByRole("list", { name: section }).getByRole("link");
 }
 
+function scrollTopOf(page: Page): Promise<number> {
+  return page.getByRole("main").evaluate((main) => main.scrollTop);
+}
+
 function bookRows(page: Page) {
   return page.getByRole("table", { name: "Books" }).getByRole("link");
 }
@@ -725,30 +729,47 @@ test.describe(
       await expect(findField(page)).toHaveValue("Summer");
     });
 
-    test("opens without moving the heading, the tabs or the page", async ({
-      page,
-    }) => {
-      await openSeries(page);
-      await countHeading(page).scrollIntoViewIfNeeded();
-      const [headingBefore, tabsBefore, scrolledBefore] = await Promise.all([
-        boxOf(countHeading(page)),
-        boxOf(kinds(page)),
-        page.evaluate(() => window.scrollY),
-      ]);
+    test.describe("on a page long enough to scroll", () => {
+      test.use({
+        backend: new SectionShelf([
+          ...volumes(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+          ...chapters(13, 14),
+          SUMMER_SHORT,
+        ]).backend(),
+      });
 
-      await findButton(page).click();
+      test("opens without moving the heading, the tabs or the page", async ({
+        page,
+      }) => {
+        await openSeries(page);
+        const heading = page.getByRole("heading", {
+          level: 2,
+          name: "12 volumes",
+        });
+        await heading.evaluate((shown) => {
+          shown.scrollIntoView({ block: "center" });
+        });
+        const [headingBefore, tabsBefore, scrolledBefore] = await Promise.all([
+          boxOf(heading),
+          boxOf(kinds(page)),
+          scrollTopOf(page),
+        ]);
+        expect(scrolledBefore).toBeGreaterThan(0);
 
-      await expect(findField(page)).toBeFocused();
-      const [headingAfter, tabsAfter, scrolledAfter] = await Promise.all([
-        boxOf(countHeading(page)),
-        boxOf(kinds(page)),
-        page.evaluate(() => window.scrollY),
-      ]);
-      expect([headingAfter.y, tabsAfter.y, scrolledAfter]).toEqual([
-        headingBefore.y,
-        tabsBefore.y,
-        scrolledBefore,
-      ]);
+        await findButton(page).click();
+
+        await expect(findField(page)).toBeFocused();
+        const [headingAfter, tabsAfter, scrolledAfter] = await Promise.all([
+          boxOf(heading),
+          boxOf(kinds(page)),
+          scrollTopOf(page),
+        ]);
+        expect([headingAfter.y, tabsAfter.y, scrolledAfter]).toEqual([
+          headingBefore.y,
+          tabsBefore.y,
+          scrolledBefore,
+        ]);
+      });
     });
 
     test("closes from Close the search, clearing it and going back to Find a book", async ({
