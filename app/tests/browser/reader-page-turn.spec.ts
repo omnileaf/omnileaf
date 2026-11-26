@@ -5,6 +5,8 @@ import {
   BOOK_ID,
   BOOK_TITLE,
   PAGE_COUNT,
+  PAGE_HEIGHT,
+  PAGE_WIDTH,
   pageDrawnAtRest,
   pinchTo,
   readerBackend,
@@ -32,6 +34,7 @@ const SMALL_MOVE_PX = 6;
 const NEVER_ARRIVING_PAGE = 16;
 const CAUGHT_AT = 0.4;
 const TAPPED_ACROSS = 0.75;
+const SCROLLBAR_ROOM_PX = 20;
 const TAPPED_DOWN = 0.4;
 const OPENING = {
   reading: { state: "started", page: 14 },
@@ -874,6 +877,23 @@ test.describe("pages whose size is not known yet", () => {
     },
   });
 
+  test("sizes a page by its image once it has loaded, so fitting it to the width applies", async ({
+    page,
+  }) => {
+    await openBookWith(page, { pageTurn: "slide", fit: "width" });
+    const area = await page.locator("[data-shown-page]").boundingBox();
+
+    await expect
+      .poll(async () => {
+        const box = await shownPage(page, 14).boundingBox();
+        return box === null ? 0 : box.height / box.width;
+      })
+      .toBeCloseTo(PAGE_HEIGHT / PAGE_WIDTH);
+    const box = await shownPage(page, 14).boundingBox();
+    expect(
+      Math.abs((box?.width ?? Number.NaN) - (area?.width ?? Number.NaN)),
+    ).toBeLessThan(SCROLLBAR_ROOM_PX);
+  });
   for (const { layout, shown } of [
     { layout: "one", shown: [14] },
     { layout: "two", shown: [14, 15] },

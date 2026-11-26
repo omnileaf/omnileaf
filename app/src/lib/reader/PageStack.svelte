@@ -470,8 +470,8 @@
     }
   }
 
-  function sizeToCroppedImage(image: HTMLImageElement, page: BookPage): void {
-    if (crop !== "whole") {
+  function learnImageSize(image: HTMLImageElement, page: BookPage): void {
+    if (crop !== "whole" || page.size === null) {
       croppedSizes.set(page.path, {
         width: image.naturalWidth,
         height: image.naturalHeight,
@@ -590,7 +590,7 @@
                   ]}
                   onload={(event) => {
                     if (event.currentTarget instanceof HTMLImageElement) {
-                      sizeToCroppedImage(event.currentTarget, page);
+                      learnImageSize(event.currentTarget, page);
                       void decode(event.currentTarget, index);
                     }
                   }}
