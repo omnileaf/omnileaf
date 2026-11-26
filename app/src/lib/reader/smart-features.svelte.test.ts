@@ -49,6 +49,39 @@ test("turns every smart feature off at once", () => {
   ]).toEqual([false, false, false, false]);
 });
 
+test("knows every smart feature is off once they are turned off at once", () => {
+  const features = new SmartFeatures(memoryStore());
+  const before = features.areAllOff;
+
+  features.turnAllOff();
+
+  expect([before, features.areAllOff]).toEqual([false, true]);
+});
+
+test("counts a feature that waits on the reading speed as off while the speed isn't learned", () => {
+  const features = new SmartFeatures(memoryStore());
+
+  for (const feature of [
+    "choosesReadingMode",
+    "learnsReadingSpeed",
+    "showsBookSummary",
+    "showsPagePreviews",
+  ] as const) {
+    features.turn(feature, false);
+  }
+
+  expect(features.areAllOff).toBe(true);
+});
+
+test("knows not every smart feature is off once one is turned back on", () => {
+  const features = new SmartFeatures(memoryStore());
+  features.turnAllOff();
+
+  features.turn("showsPagePreviews", true);
+
+  expect(features.areAllOff).toBe(false);
+});
+
 test("keeps what was turned off for the next time", () => {
   const store = memoryStore();
   new SmartFeatures(store).turn("showsPagePreviews", false);

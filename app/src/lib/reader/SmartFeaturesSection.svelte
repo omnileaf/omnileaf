@@ -1,14 +1,18 @@
 <script lang="ts">
   import type { ClassValue } from "svelte/elements";
 
-  import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
+  import { currentPlatform, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
     ANDROID_LIST_HEADING,
+    FLUSH_BLEED,
     FLUSH_LIST_HEADING,
   } from "#lib/settings/android-flush-look.ts";
+  import { DISABLED_ROW, TINTED } from "#lib/settings/setting-row-look.ts";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import {
@@ -26,12 +30,16 @@
   }: { heading: HeadingLevel; size?: Size; class?: ClassValue } = $props();
 
   type Look = Record<
-    "section" | "heading" | "rows" | "label" | "description" | "action",
+    "section" | "heading" | "rows" | "label" | "description",
     string
   >;
 
-  const POINTER_ACTION =
-    "self-start px-lg min-block-touch-target expanded:min-block-pointer-button";
+  const ROW =
+    "flex items-center py-setting-grid-pad text-start min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
+  const SWITCH_ROW = `${ROW} gap-md`;
+
+  const FLUSH_ACTION_ROW = `${FLUSH_BLEED} flex items-center gap-lg ps-lg pe-xl py-sm text-start text-body min-block-native-row`;
 
   const LOOKS = {
     small: {
@@ -40,7 +48,6 @@
       rows: "divide-y divide-border",
       label: "text-small font-medium",
       description: "text-caption text-muted",
-      action: POINTER_ACTION,
     },
     regular: {
       section: "gap-sm",
@@ -48,7 +55,6 @@
       rows: "divide-y divide-border",
       label: "font-medium expanded:font-semibold",
       description: "text-detail text-muted",
-      action: POINTER_ACTION,
     },
     flat: {
       section: "",
@@ -56,7 +62,6 @@
       rows: "",
       label: "text-small font-medium",
       description: "text-caption text-muted",
-      action: POINTER_ACTION,
     },
   } satisfies Record<Size, Look>;
 
@@ -64,9 +69,8 @@
     section: "",
     heading: FLUSH_LIST_HEADING,
     rows: "",
-    label: "",
+    label: "tracking-native-row-title",
     description: "",
-    action: "mx-lg my-sm self-start px-lg min-block-touch-target",
   } satisfies Look;
 
   const android = androidListLook();
@@ -75,6 +79,34 @@
 
   const features = getSmartFeatures();
   const id = $props.id();
+  const platform = currentPlatform();
+  const isIos = platform === "ios";
+  const offersTurnAllOff = !isPointer(platform);
+  const allOff = $derived(features.areAllOff);
+  const fadesWhenOff = $derived(isFlush || size === "flat");
+  const iosColour = $derived(allOff ? "text-faint" : "text-accent");
+  const allOffColour = $derived(
+    isIos ? iosColour : allOff && !fadesWhenOff && "text-muted",
+  );
+  const allOffRow = $derived(
+    isFlush
+      ? [FLUSH_ACTION_ROW, !allOff && TINTED, ROW_FOCUS_RING]
+      : [
+          ROW,
+          "inline-full",
+          size === "flat" ? "gap-lg" : "gap-md",
+          allOffColour,
+        ],
+  );
+  const fade = $derived(allOff && fadesWhenOff && DISABLED_ROW);
+  const allOffIcon = $derived([!isIos && "text-muted", fade]);
+  const allOffLabel = $derived(["flex-1 min-inline-none", look.label, fade]);
+
+  function turnAllOff(): void {
+    if (!allOff) {
+      features.turnAllOff();
+    }
+  }
 
   const rows = $derived([
     {
@@ -166,10 +198,7 @@
           aria-describedby={description === undefined
             ? undefined
             : `${id}-${feature}-description`}
-          class={[
-            "flex items-center gap-md py-setting-grid-pad text-start min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-            isDisabled && "text-muted",
-          ]}
+          class={[SWITCH_ROW, isDisabled && "text-muted"]}
         >
           <span class="flex flex-1 flex-col gap-2xs min-inline-none">
             <span id="{id}-{feature}" class={look.label}>{label}</span>
@@ -182,15 +211,25 @@
         </Switch>
       {/if}
     {/each}
+    {#if offersTurnAllOff}
+      <button
+        type="button"
+        class={allOffRow}
+        aria-disabled={allOff || undefined}
+        onclick={turnAllOff}
+      >
+        <span
+          class={[
+            "flex shrink-0 justify-center",
+            isIos && "inline-native-row-lead",
+          ]}
+        >
+          <Icon name="power" class={allOffIcon} />
+        </span>
+        <span class={allOffLabel}>
+          {allOff ? m.reader_smart_features_all_off() : m.reader_turn_all_off()}
+        </span>
+      </button>
+    {/if}
   </div>
-  <Button
-    type="button"
-    look="chip"
-    class={look.action}
-    onclick={() => {
-      features.turnAllOff();
-    }}
-  >
-    {m.reader_turn_all_off()}
-  </Button>
 </section>
