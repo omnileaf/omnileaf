@@ -152,8 +152,6 @@ CI builds the app once and splits the suite into two groups, the whole-screen sw
 
 A pull request that sits under another, because another open pull request in this repository has its branch as its base, runs only the spec files it changed and the spec files that import a file it changed, chosen with Playwright's `--only-changed`, so a stack runs the whole suite once, on its top pull request. It runs as many shards as that takes, or none when it touches no spec. The `browser tests` check passes either way. The label `full-browser-tests` also makes such a pull request run the whole suite. The `speed` timing runs only in the whole suite.
 
-In CI a failed test runs again once on a push or a pull request, never on the nightly run, in the merge queue or on your machine, and never in the `speed` project, which times against a budget. A test that passes on its retry doesn't fail the run: each shard lists it in its job summary and as a warning on its spec file, keeps the trace of its first failure in the shard's traces artifact, and the `browser tests` job lists every flaky test of the run in its own summary. Treat a flaky test as a bug and fix it, since the retry only keeps the run green.
-
 Once the rest pass, the `speed` project opens the library of 10,000 series nine times in desktop Chromium, with nothing else running, and checks that the median time from the click to the first painted rows is 200 ms or less. `pnpm --dir app test:e2e --project speed --no-deps` runs it on its own. A shard or a group leaves it out, so CI runs it in a job of its own.
 
 ### App tests
