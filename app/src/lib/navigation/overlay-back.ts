@@ -18,6 +18,7 @@ export interface PageHistory {
 export interface BackFollower {
   follow(step: BackGestureStep): void;
   closed?(): void;
+  gone?(): void;
 }
 
 interface HeldEntry {
@@ -238,11 +239,16 @@ export function holdBack(
 
 export const closesOnBackFollowedBy =
   (follower: BackFollower): Attachment<HTMLElement> =>
-  (element) =>
-    holdBack(() => {
+  (element) => {
+    const release = holdBack(() => {
       closeLikeEscape(element);
       follower.closed?.();
     }, follower);
+    return () => {
+      release();
+      follower.gone?.();
+    };
+  };
 
 export const closesOnBack: Attachment<HTMLElement> = (element) =>
   holdBack(() => {

@@ -1,7 +1,11 @@
 import { expect, test } from "vitest";
 
 import type { BackGestureStep } from "./back-preview";
-import { OverlayBack, type PageHistory } from "./overlay-back";
+import {
+  closesOnBackFollowedBy,
+  OverlayBack,
+  type PageHistory,
+} from "./overlay-back";
 
 function pageHistory() {
   const listeners = new Set<() => void>();
@@ -375,4 +379,20 @@ test("hands nothing to an overlay once it has closed", () => {
   overlays.followBack(STARTED);
 
   expect(sheet.steps).toEqual([]);
+});
+
+test("tells a follower its overlay is gone once the overlay's element goes", () => {
+  const gone = { count: 0 };
+  const attach = closesOnBackFollowedBy({
+    follow: () => undefined,
+    gone: () => {
+      gone.count += 1;
+    },
+  });
+
+  const detach = attach(document.createElement("div"));
+  const before = gone.count;
+  detach?.();
+
+  expect([before, gone.count]).toEqual([0, 1]);
 });
