@@ -179,6 +179,14 @@ function skipUnlessPhone(page: Page, hasTouch: boolean | undefined): void {
   );
 }
 
+function skipUnlessTablet(page: Page, hasTouch: boolean | undefined): void {
+  test.skip(hasTouch !== true, "a finger swipes");
+  test.skip(
+    viewportOf(page).width < MEDIUM_MIN_WIDTH,
+    "phones page between categories",
+  );
+}
+
 interface RowSpan {
   readonly left: number;
   readonly right: number;
@@ -885,6 +893,62 @@ for (const platform of PLATFORMS) {
 
       expect(incoming).toHaveLength(1);
       expect(incoming[0]?.x).toBeLessThan(column.x + column.width);
+    });
+
+    test("moves an empty tab with the finger on tablets, then lands on the tab after it", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessTablet(page, testInfo.project.use.hasTouch);
+      await openEmptyTab(page, "New chapters", nothingNew(page));
+      const atRest = await boxOf(nothingNew(page));
+      const blank = await blankBelow(page, nothingNew(page));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(-SWIPE_PX);
+      const moved = await boxOf(nothingNew(page));
+      await drag.release();
+
+      expect(moved.x).toBeCloseTo(atRest.x - SWIPE_PX, 0);
+      await expectChosen(page, "Manga");
+      await expect(chosenCovers(page)).toHaveCount(MANGA.length);
+    });
+
+    test("springs back to an empty category after a short drag on tablets", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessTablet(page, testInfo.project.use.hasTouch);
+      await openEmptyTab(page, "Comics", emptyCategory(page, "Comics"));
+      const atRest = await boxOf(emptyCategory(page, "Comics"));
+      const blank = await blankBelow(page, emptyCategory(page, "Comics"));
+
+      const drag = await beginDragAt(blank.target, blank.at);
+      await drag.to(SHORT_DRAG_PX);
+      const moved = await boxOf(emptyCategory(page, "Comics"));
+      await page.waitForTimeout(HELD_MS);
+      await drag.release();
+
+      expect(moved.x).toBeCloseTo(atRest.x + SHORT_DRAG_PX, 0);
+      await expectChosen(page, "Comics");
+      await expect
+        .poll(async () => (await boxOf(emptyCategory(page, "Comics"))).x)
+        .toBeCloseTo(atRest.x, 0);
+    });
+
+    test("lands on an empty category's state after dragging the covers on tablets", async ({
+      page,
+    }, testInfo) => {
+      skipUnlessTablet(page, testInfo.project.use.hasTouch);
+      await openLibrary(page);
+      await chosenTab(page, "Manga").click();
+      await expect(chosenCovers(page)).toHaveCount(MANGA.length);
+
+      const drag = await beginDrag(page, seriesList(page));
+      await drag.to(-SWIPE_PX);
+      await drag.release();
+
+      await expectChosen(page, "Comics");
+      await expect(emptyCategory(page, "Comics")).toBeVisible();
+      await expect(page.locator("[data-swiping]")).toHaveCount(0);
     });
 
     test("springs back to the empty tab after a short drag", async ({

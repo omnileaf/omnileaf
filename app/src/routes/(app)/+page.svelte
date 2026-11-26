@@ -574,13 +574,6 @@
     ),
   );
   const isEmpty = $derived(emptyCause?.kind === "library");
-
-  function drawsEmptyState(cause: EmptyCause): boolean {
-    return (
-      cause.kind === "tab" ||
-      (cause.kind === "filters" && chosenListing !== undefined)
-    );
-  }
   const libraryView = $derived(
     view.reading.kind === "read" ? view.reading.value : undefined,
   );
@@ -1464,9 +1457,7 @@
         usesStandIns={screenshotMode.isOn}
         onDismissed={returnFocusFromNotice}
       />
-      {#if !isPaging && emptyCause !== undefined && drawsEmptyState(emptyCause)}
-        {@render tabEmptyState(emptyCause)}
-      {:else if loaded !== undefined && (isPaging || emptyCause?.kind !== "counting")}
+      {#if loaded !== undefined}
         {#if loaded.view.showsContinueRow && emptyCause === undefined}
           <div class={COVERS_GAP}>
             <ContinueRow usesStandIns={screenshotMode.isOn} />
@@ -1475,34 +1466,18 @@
         <div
           class={[
             PAGE_BLEED,
-            !isPaging && COVERS_GAP,
+            !isPaging && emptyCause === undefined && COVERS_GAP,
             "flex flex-1 flex-col overflow-x-clip",
           ]}
         >
           <div
             bind:this={pager}
-            class={["relative flex-1", isPaging && "flex flex-col"]}
+            class={[
+              "relative flex-1",
+              (isPaging || emptyCause !== undefined) && "flex flex-col",
+            ]}
           >
-            {#if groups.length > 0}
-              <div
-                class={[
-                  PAGE_INSET,
-                  "flex flex-col gap-xl android:max-medium:gap-sm",
-                ]}
-              >
-                {#each groups as group (group.key)}
-                  <SeriesGroup
-                    name={group.name}
-                    creator={group.creator}
-                    pointer={group.pointer}
-                    listSeries={group.listSeries}
-                    countSeries={group.countSeries}
-                    {listed}
-                    {covers}
-                  />
-                {/each}
-              </div>
-            {:else if isPaging}
+            {#if isPaging}
               {#each pagerSlots as slot (slot.key)}
                 {@const isChosen = slot.offset === 0}
                 {@const cause = isChosen
@@ -1552,6 +1527,29 @@
                   </div>
                 </div>
               {/each}
+            {:else if emptyCause !== undefined}
+              <div class={[PAGE_INSET, "flex flex-1 flex-col"]}>
+                {@render tabEmptyState(emptyCause)}
+              </div>
+            {:else if groups.length > 0}
+              <div
+                class={[
+                  PAGE_INSET,
+                  "flex flex-col gap-xl android:max-medium:gap-sm",
+                ]}
+              >
+                {#each groups as group (group.key)}
+                  <SeriesGroup
+                    name={group.name}
+                    creator={group.creator}
+                    pointer={group.pointer}
+                    listSeries={group.listSeries}
+                    countSeries={group.countSeries}
+                    {listed}
+                    {covers}
+                  />
+                {/each}
+              </div>
             {:else}
               <div class={PAGE_INSET}>
                 <FastScroll total={seriesCount.count} {letterAt} />

@@ -3,4 +3,4 @@ type: fix
 area: library
 credit: [kaiserbh]
 ---
-Swiping away from an empty library tab on a phone now moves it with your finger, and an empty tab shows what it says as it slides in.
+Swiping to or from an empty Library tab now moves it with your finger, with its message in view.
