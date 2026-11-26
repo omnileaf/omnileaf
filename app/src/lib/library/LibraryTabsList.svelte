@@ -50,6 +50,7 @@
   interface Drag {
     readonly key: string;
     readonly pointerId: number;
+    readonly rowCount: number;
     readonly rows: RowDrag;
   }
 
@@ -153,6 +154,19 @@
     settling = undefined;
   }
 
+  function isUnderTheDrag({ key, rowCount, rows }: Drag): boolean {
+    const tab = tabs[rows.from];
+    return (
+      tabs.length === rowCount && tab !== undefined && tabKey(tab.id) === key
+    );
+  }
+
+  $effect.pre(() => {
+    if (drag !== undefined && !isUnderTheDrag(drag)) {
+      void endDrag(false);
+    }
+  });
+
   function isDragPointer(event: PointerEvent): boolean {
     return drag?.pointerId === event.pointerId;
   }
@@ -171,7 +185,7 @@
 
   function moveWithKeys(event: KeyboardEvent, at: number): void {
     const step = { ArrowUp: -1, ArrowDown: 1 }[event.key];
-    if (!event.altKey || step === undefined) {
+    if (!event.altKey || step === undefined || drag !== undefined) {
       return;
     }
     event.preventDefault();
@@ -189,6 +203,7 @@
     drag = {
       key: tabKey(tab.id),
       pointerId: event.pointerId,
+      rowCount: tabs.length,
       rows: new RowDrag(at, slotsOfRows(), event.clientY - listTop()),
     };
   }
