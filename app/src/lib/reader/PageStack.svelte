@@ -9,7 +9,6 @@
     EmptyMedia,
     EmptyTitle,
   } from "#lib/components/ui/empty/index.ts";
-  import { Spinner } from "#lib/components/ui/spinner/index.ts";
   import type { BookPage, PageCrop } from "#lib/ipc/bindings.ts";
   import { omniUrl } from "#lib/omni/omni-url.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -19,19 +18,29 @@
   import { fittedTo, type Size } from "#lib/reader/page-fit.ts";
   import type { PageFit } from "#lib/reader/reader-settings.svelte.ts";
   import { spreadAt, type Spread } from "#lib/reader/spreads.ts";
-  import { cellsAround } from "#lib/reader/page-cells.ts";
+  import { cellsAround, edgesAround } from "#lib/reader/page-cells.ts";
   import {
     type SlideStart,
     slideTiming,
     turnsOnScreen,
   } from "#lib/reader/page-flight.ts";
   import { pagesAround } from "#lib/reader/page-window.ts";
+  import PageLoading from "#lib/reader/PageLoading.svelte";
+
+  export interface EdgeView {
+    readonly isCurrent: boolean;
+    readonly isOnScreen: boolean;
+  }
+
+  export interface EdgePage {
+    readonly at: number;
+    readonly page: Snippet<[EdgeView]>;
+  }
 
   /** Pages decoded ahead of the one shown, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
   const PAGES_AHEAD = 3;
   /** How long a page may take before a spinner says it's on its way, so a quick one never flashes one. */
   const SPINNER_DELAY_MS = 100;
-  const SPINNER_SIZE = 20;
   const RESTING_ZOOM = 1;
   const LONGEST_DECODE_WAIT_MS = 250;
   const LONGEST_SLIDE_SPREADS = 2;
@@ -45,7 +54,8 @@
     crop,
     shown,
     spreads,
-    isPastEnd,
+    stripAt,
+    edges,
     fit,
     zoom,
     isReversed,
@@ -55,6 +65,7 @@
     slide,
     isSettling,
     startAt,
+    showsLoadingAtOnce,
     onNextPage,
     onShownReady,
     onSettled,
@@ -63,7 +74,8 @@
     crop: PageCrop;
     shown: number;
     spreads: readonly Spread[];
-    isPastEnd: boolean;
+    stripAt: number;
+    edges: readonly EdgePage[];
     fit: PageFit;
     zoom: number;
     isReversed: boolean;
@@ -73,6 +85,7 @@
     slide: number;
     isSettling: boolean;
     startAt: SpreadPlace | undefined;
+    showsLoadingAtOnce: boolean;
     onNextPage: () => void;
     onShownReady: () => void;
     onSettled: () => void;
@@ -100,12 +113,12 @@
   const croppedSizes = new SvelteMap<string, Size>();
   let spaceWidth = $state(0);
   let spaceHeight = $state(0);
-  let isSlow = $state(false);
+  let isSlow = $state(untrack(() => showsLoadingAtOnce));
   let startingPlace = untrack(() => startAt);
 
   const shownSpread = $derived(spreadAt(spreads, shown));
   const spread = $derived(spreads[shownSpread] ?? [shown]);
-  const position = $derived(isPastEnd ? spreads.length : shownSpread);
+  const position = $derived(stripAt);
   const nextSide = $derived(isReversed ? -1 : 1);
   let flight: Flight | undefined = $state.raw();
   let flying: Animation[] = [];
@@ -123,19 +136,25 @@
       nextSide,
     ),
   );
+  const inView = $derived({
+    at: position,
+    low: position + onScreen.low,
+    high: position + onScreen.high,
+  });
   const cells = $derived(
-    cellsAround(
-      spreads,
-      {
-        at: position,
-        low: position + onScreen.low,
-        high: position + onScreen.high,
-      },
-      pagesAround(shown, pages.length, PAGES_AHEAD),
-    ),
+    cellsAround(spreads, inView, pagesAround(shown, pages.length, PAGES_AHEAD)),
   );
   const isTargetReady = $derived(
     cells.every((cell) => cell.offset !== 0 || cell.spread.every(isReady)),
+  );
+  const edgeCells = $derived(
+    edgesAround(
+      edges.map(({ at }) => at),
+      inView,
+    ).flatMap((cell) => {
+      const edge = edges.find(({ at }) => at === cell.at);
+      return edge === undefined ? [] : [{ ...cell, page: edge.page }];
+    }),
   );
 
   $effect.pre(() => {
@@ -636,10 +655,7 @@
               })}
             </EmptyDescription>
           {:else if isSlow || isSlidingOntoUnready}
-            <Spinner size={SPINNER_SIZE} class="text-muted" />
-            <p class="text-small text-muted">
-              {m.reader_page_loading({ page: shown + 1 })}
-            </p>
+            <PageLoading page={shown + 1} />
           {/if}
         </div>
         {#if isShownFailed}
@@ -670,5 +686,23 @@
         {/if}
       </svelte:element>
     </div>
+    {#each edgeCells as edge (edge.at)}
+      {@const isNeighbour = edge.offset !== 0}
+      {@const isOnScreen = isPainted(edge.offset)}
+      <div
+        aria-hidden={isNeighbour ? "true" : undefined}
+        inert={isNeighbour}
+        data-turns={isOnScreen ? edge.offset : undefined}
+        class={[
+          "pointer-events-none fixed inset-s-none inset-bs-none overflow-hidden",
+          !isOnScreen && "invisible",
+        ]}
+        style:translate={placeOf(edge.offset)}
+        style:width="{spaceWidth}px"
+        style:height="{spaceHeight}px"
+      >
+        {@render edge.page({ isCurrent: !isNeighbour, isOnScreen })}
+      </div>
+    {/each}
   </div>
 </div>

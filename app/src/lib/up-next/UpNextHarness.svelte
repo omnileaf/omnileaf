@@ -50,4 +50,5 @@
       }}
   nextHref={isSeriesEnd ? undefined : resolve("/read/[book]", { book: NEXT })}
   direction="leftToRight"
+  isShown
 />

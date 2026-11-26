@@ -463,9 +463,14 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     const section = page.getByRole("region", { name: FINISHED });
     const content = await boxOf(section);
     const room = await boxOf(section.locator(".."));
+    const roomEnd = await section
+      .locator("..")
+      .evaluate((element) =>
+        Number.parseFloat(getComputedStyle(element).paddingBlockEnd),
+      );
 
     expect(content.y - room.y).toBeCloseTo(
-      room.y + room.height - (content.y + content.height),
+      room.y + room.height - roomEnd - (content.y + content.height),
       0,
     );
   });

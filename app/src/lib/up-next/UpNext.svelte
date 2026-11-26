@@ -7,7 +7,7 @@
     Library,
     Play,
   } from "@lucide/svelte";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   import { resolve } from "$app/paths";
   import type { ResolvedPathname } from "$app/types";
@@ -133,6 +133,7 @@
     next,
     nextHref,
     direction,
+    isShown,
   }: {
     book: BookId;
     title: string;
@@ -144,6 +145,7 @@
     next: SeriesNeighbour | null;
     nextHref: ResolvedPathname | undefined;
     direction: ReadingDirection;
+    isShown: boolean;
   } = $props();
 
   const skipUpNext = getSkipUpNextSetting();
@@ -213,13 +215,27 @@
         });
   }
 
-  onMount(() => {
-    heading?.focus();
+  function readSummary(): void {
     void commands.readingSummary(book).then((read) => {
       if (read.status === "ok") {
         summary = read.data;
       }
     });
+  }
+
+  onMount(() => {
+    if (!untrack(() => isShown)) {
+      readSummary();
+    }
+  });
+
+  $effect(() => {
+    if (isShown) {
+      untrack(() => {
+        heading?.focus({ preventScroll: true });
+        readSummary();
+      });
+    }
   });
 </script>
 
@@ -232,8 +248,9 @@
 {/snippet}
 
 <div
+  data-up-next
   data-ground="grouped"
-  class="pointer-events-none absolute inset-none flex flex-col bg-background text-foreground touch:bg-native-grouped-ground"
+  class="pointer-events-none absolute inset-none flex touch-pan-y flex-col bg-background text-foreground touch:bg-native-grouped-ground"
 >
   <nav
     aria-label={m.reader_breadcrumb()}
@@ -278,7 +295,7 @@
   </nav>
   <div
     class={[
-      "flex flex-1 flex-col overflow-y-auto",
+      "flex flex-1 touch-pan-y flex-col overflow-y-auto",
       isOnAndroidPhone ? ANDROID_ROOM : TODAYS_ROOM,
     ]}
   >
