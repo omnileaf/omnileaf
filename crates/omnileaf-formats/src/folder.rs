@@ -90,6 +90,13 @@ impl FolderBook {
         let Some(entry) = self.entries.iter().find(|entry| is_comic_info(entry)) else {
             return Ok(None);
         };
+        let too_large = || FormatError::ComicInfoTooLarge {
+            path: self.path.clone(),
+            limit: COMIC_INFO_LIMIT,
+        };
+        if is_listed_over(entry, COMIC_INFO_LIMIT) {
+            return Err(too_large());
+        }
         read_file_within(
             &*self.storage,
             &self.path.join(&entry.name),
@@ -97,10 +104,7 @@ impl FolderBook {
         )
         .map_err(read_failed(&self.path))?
         .map(Some)
-        .ok_or_else(|| FormatError::ComicInfoTooLarge {
-            path: self.path.clone(),
-            limit: COMIC_INFO_LIMIT,
-        })
+        .ok_or_else(too_large)
     }
 
     pub(crate) fn read_page(&self, index: usize) -> Result<Vec<u8>, FormatError> {
@@ -162,6 +166,10 @@ fn unreadable(entry: &Entry) -> Option<(&Path, io::ErrorKind)> {
         EntryKind::Unreadable(failure) => Some((Path::new(&entry.name), failure)),
         EntryKind::Folder | EntryKind::File { .. } | EntryKind::Other => None,
     }
+}
+
+fn is_listed_over(entry: &Entry, limit: u64) -> bool {
+    matches!(entry.kind, EntryKind::File { size } if size > limit)
 }
 
 fn is_comic_info(entry: &Entry) -> bool {

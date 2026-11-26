@@ -12,11 +12,7 @@ import type { LabelsFrom } from "./series-selection";
 const PHONE = { width: 390, height: 844 };
 const TABLET = { width: 1024, height: 800 };
 const ACTION_ICON_SIZE = 24;
-const ACTION_MIN_HEIGHT = 48;
-const ACTION_CORNER = "16px";
-const ACTION_INLINE_PADDING = "12px";
-const LABEL_SIZE = "12px";
-const LABEL_TRACKING = "0.5px";
+const ACTION_TARGET = 48;
 const DISABLED_OPACITY = "0.6";
 
 function mainLandmark(): HTMLElement {
@@ -61,25 +57,19 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-test("draws each action as a column of a 24px Material icon over a 12px label on an Android phone", async () => {
+test("draws each action as a 24px Material icon in a 48px target with no words on an Android phone", async () => {
   followCorePlatform("android");
   await drawBar();
 
-  for (const name of ["Categories", "Tags", "Mark as read"]) {
+  for (const name of ["Categories", "Tags", "Mark as read", "More"]) {
     const button = buttonOf(name);
-    const style = getComputedStyle(button);
+    const box = button.getBoundingClientRect();
     const icon = button.querySelector("[data-icon]");
 
     expect(icon?.getBoundingClientRect().width).toBe(ACTION_ICON_SIZE);
     expect(button.querySelector("svg")).toBeNull();
-    expect(style.flexDirection).toBe("column");
-    expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(
-      ACTION_MIN_HEIGHT,
-    );
-    expect(style.borderTopLeftRadius).toBe(ACTION_CORNER);
-    expect(style.paddingLeft).toBe(ACTION_INLINE_PADDING);
-    expect(style.fontSize).toBe(LABEL_SIZE);
-    expect(style.letterSpacing).toBe(LABEL_TRACKING);
+    expect(button.textContent.trim()).toBe("");
+    expect([box.width, box.height]).toEqual([ACTION_TARGET, ACTION_TARGET]);
   }
 });
 

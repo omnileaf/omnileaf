@@ -35,9 +35,9 @@
       "-mx-native-group-inset px-native-group-inset transition-control focus-visible:focus-ring focus-visible:-outline-offset-2 active:bg-native-group-row-pressed",
     ]}
   >
-    <span class={["flex-1 min-inline-none", LIST_TITLE, LIST_WORDS]}
-      >{label}</span
-    >
+    <span class={["flex-1 min-inline-none", LIST_TITLE, LIST_WORDS]}>
+      {label}
+    </span>
     <span lang={valueLang} class="text-muted">{value}</span>
     <ChevronRight
       size={CHEVRON_SIZE}

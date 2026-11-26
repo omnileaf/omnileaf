@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "#lib/components/ui/button/index.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   let {
@@ -15,7 +15,7 @@
     onClear: () => void;
   } = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
 </script>
 
 <div class="flex items-center gap-md px-lg py-md">
@@ -26,16 +26,20 @@
         android.isOn
           ? "font-regular tracking-native-row-title"
           : "font-medium expanded:font-semibold desktop:text-callout",
-      ]}>{title}</span
+      ]}
     >
+      {title}
+    </span>
     <span
       class={[
         "text-muted",
         android.isOn
           ? "text-native-row-subtitle/native-row-subtitle"
           : "text-detail",
-      ]}>{detail}</span
+      ]}
     >
+      {detail}
+    </span>
   </div>
   <Button
     type="button"

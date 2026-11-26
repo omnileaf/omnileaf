@@ -48,6 +48,8 @@ function fakeSeries(
       id: `0190a3e4-0000-8000-8000-${String(number).padStart(12, "0")}`,
       title,
       bookCount: 2,
+      volumeCount: 0,
+      chapterCount: 0,
       unreadCount: unread,
       cover: null,
       language: null,

@@ -64,7 +64,7 @@ export interface SettingsSection {
   readonly iconName?: IconName;
   /** The colour of the section's tile in the iOS Settings list. */
   readonly chip: SectionChip;
-  readonly isAndroidPhoneOnly?: boolean;
+  readonly isAndroidOnly?: boolean;
 }
 
 export interface ComingSoonSection {
@@ -136,7 +136,7 @@ const ACCESSIBILITY: SettingsSection = {
   icon: Accessibility,
   iconName: "accessibility",
   chip: "blue",
-  isAndroidPhoneOnly: true,
+  isAndroidOnly: true,
 };
 
 const PRIVACY: SettingsSection = {
@@ -195,9 +195,9 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] =
 
 export function sectionsShown(
   sections: readonly SettingsSection[],
-  isAndroidPhone: boolean,
+  drawsAndroidLists: boolean,
 ): readonly SettingsSection[] {
-  return isAndroidPhone
+  return drawsAndroidLists
     ? sections
-    : sections.filter(({ isAndroidPhoneOnly }) => isAndroidPhoneOnly !== true);
+    : sections.filter(({ isAndroidOnly }) => isAndroidOnly !== true);
 }

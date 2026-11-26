@@ -105,6 +105,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0069_key_reading_sessions_by_profile"),
     migration!("0070_read_again_the_books_whose_comic_info_volume_is_a_year"),
     migration!("0071_remember_where_each_emptied_series_was"),
+    migration!("0072_count_the_volumes_and_chapters_of_each_series"),
 ];
 
 pub(crate) fn pending(
@@ -2099,6 +2100,55 @@ mod tests {
             counted,
             [("harbour".to_owned(), 1), ("storms".to_owned(), 2)]
         );
+    }
+
+    #[test]
+    fn counts_the_volumes_and_chapters_of_each_series_kept_from_before_they_were_counted() {
+        let scratch = ScratchLibrary::new("series-kinds-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..71]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for (number, kind) in [
+            (1, Some("volume")),
+            (2, Some("volume")),
+            (3, Some("chapter")),
+            (4, Some("special")),
+            (5, None),
+        ] {
+            connection
+                .execute(
+                    "INSERT INTO book (
+                        id, series_local_id, title, reading_order_key, added_at_ms,
+                        kind, first_number, last_number, number_source
+                    )
+                     VALUES (?1, 1, 'Book', ?2, 0, ?3, ?4, ?4, ?5)",
+                    (
+                        book(number).as_bytes(),
+                        [u8::try_from(number).unwrap()],
+                        kind,
+                        kind.map(|_| number),
+                        kind.map(|_| "file_name"),
+                    ),
+                )
+                .unwrap();
+        }
+
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..72]).unwrap());
+
+        let counted: (i64, i64) = connection
+            .query_row(
+                "SELECT volume_books, chapter_books FROM series",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(counted, (2, 1));
     }
 
     #[test]

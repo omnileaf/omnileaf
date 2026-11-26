@@ -52,16 +52,17 @@
     <ReaderBackArrow {platform} {isOnPhone} />
   </a>
   {#if inLibraryPlace !== null && seriesHref !== undefined && namesSeries}
-    <a href={seriesHref} aria-hidden="true" tabindex="-1" class={seriesName}
-      >{inLibraryPlace.seriesTitle}</a
-    >
+    <a href={seriesHref} aria-hidden="true" tabindex="-1" class={seriesName}>
+      {inLibraryPlace.seriesTitle}
+    </a>
     <Breadcrumb class="hidden text-small expanded:block">
       <BreadcrumbItem class="min-inline-none">
         <a
           href={seriesHref}
           class="block truncate text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
-          >{inLibraryPlace.seriesTitle}</a
         >
+          {inLibraryPlace.seriesTitle}
+        </a>
       </BreadcrumbItem>
       <BreadcrumbSeparator class="text-muted" />
       <BreadcrumbItem class="min-inline-none">

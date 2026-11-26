@@ -7,7 +7,6 @@ import {
   DEFAULT_BACKEND,
   expect,
   fakeAppInfo,
-  screenSizeOf,
   test,
   testOnlyInItsWebview,
 } from "./fixtures.ts";
@@ -144,7 +143,7 @@ test.describe("on Android", () => {
     );
   });
 
-  test("ends with Open Android settings, in a list of its own on a phone", async ({
+  test("ends with Open Android settings, in a list of its own", async ({
     page,
   }) => {
     await openPermissions(page);
@@ -155,9 +154,7 @@ test.describe("on Android", () => {
     await expect(
       page.getByRole("main").getByRole("listitem").last(),
     ).toContainText("Open Android settings");
-    await expect(settingsRows).toHaveCount(
-      screenSizeOf(page) === "phone" ? 0 : 1,
-    );
+    await expect(settingsRows).toHaveCount(0);
   });
 });
 

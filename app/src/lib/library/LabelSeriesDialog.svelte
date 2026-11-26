@@ -38,11 +38,15 @@
     isOpen = $bindable(false),
     series,
     from,
+    onApplied,
+    onApplyFailed,
     onError,
   }: {
     isOpen?: boolean;
     series: readonly SeriesId[];
     from: LabelsFrom;
+    onApplied?: () => void;
+    onApplyFailed: (error: unknown) => void;
     onError: (error: unknown) => void;
   } = $props();
 
@@ -173,10 +177,11 @@
       tagsRemoved,
     });
     if (applied.status !== "ok") {
-      onError(applied.error);
+      onApplyFailed(applied.error);
       return;
     }
     isOpen = false;
+    onApplied?.();
   }
 </script>
 
@@ -253,9 +258,9 @@
                     : category.name}
                 />
                 <span class="flex flex-1 flex-col">
-                  <span class={titleClass(view === "wide")}
-                    >{category.name}</span
-                  >
+                  <span class={titleClass(view === "wide")}>
+                    {category.name}
+                  </span>
                   {#if choice === "some"}
                     <span
                       class={android.isOn && view !== "wide"
@@ -279,9 +284,9 @@
                   }
                   aria-label={name}
                 />
-                <span class={["flex-1", titleClass(view === "wide")]}
-                  >{name}</span
-                >
+                <span class={["flex-1", titleClass(view === "wide")]}>
+                  {name}
+                </span>
               </label>
             {/each}
           </div>

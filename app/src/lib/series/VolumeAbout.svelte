@@ -60,8 +60,10 @@
       <p class={ABOUT_META}>
         <a
           href={resolve("/(app)/series/[id]", { id: series.id })}
-          class={SERIES_LINK}>{series.title}</a
+          class={SERIES_LINK}
         >
+          {series.title}
+        </a>
       </p>
       <p class={ABOUT_META}>{counts}</p>
       {#if folder !== null}

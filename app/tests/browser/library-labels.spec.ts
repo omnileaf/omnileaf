@@ -4,7 +4,7 @@ import type {
   LibraryCategory,
   SeriesLabels,
 } from "../../src/lib/ipc/bindings.ts";
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   DEFAULT_BACKEND,
@@ -226,6 +226,73 @@ test.describe("while the library has no category or tag yet", () => {
     await expect(
       dialog.getByRole("textbox", { name: "Add a tag" }),
     ).toBeFocused();
+  });
+});
+
+function selectionBar(page: Page): Locator {
+  return page.getByRole("group", { name: "Selected series" });
+}
+
+test("stops choosing once Done has applied the labels", async ({ page }) => {
+  await pickTwo(page);
+  const dialog = await openLabels(page, "Categories");
+
+  await dialog.getByRole("checkbox", { name: "Comics" }).click();
+  await done(page);
+
+  await expect(selectionBar(page)).toBeHidden();
+  await expect(seriesList(page).getByRole("checkbox")).toHaveCount(0);
+});
+
+test("keeps the series chosen when the dialog is closed without Done", async ({
+  page,
+}) => {
+  await pickTwo(page);
+  await openLabels(page, "Categories");
+
+  await page.keyboard.press("Escape");
+
+  await expect(dialogOf(page)).toBeHidden();
+  await expect(selectionBar(page)).toBeVisible();
+  await expect(
+    seriesList(page).getByRole("checkbox", { checked: true }),
+  ).toHaveCount(2);
+});
+
+test.describe("when the labels can't be saved", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      librarySeries: () => ({ series: [...LIBRARY], next: null }),
+      librarySeriesCount: () => LIBRARY.length,
+      libraryCategories: () => [...CATEGORIES],
+      seriesLabels: (series) => labelsFor(series),
+      labelSeries: () => {
+        throw new CommandFailure({
+          code: "internal",
+          message: "the catalog couldn't be written",
+        });
+      },
+    } satisfies FakeBackend,
+  });
+
+  test("says so, keeping the dialog open and the series chosen", async ({
+    page,
+  }) => {
+    await pickTwo(page);
+    const dialog = await openLabels(page, "Categories");
+    await dialog.getByRole("checkbox", { name: "Comics" }).click();
+
+    await dialog.getByRole("button", { name: "Done" }).click();
+
+    await expect(
+      page.getByText("Couldn't change the categories and tags"),
+    ).toBeVisible();
+    await expect(dialog).toBeVisible();
+    await expect(selectionBar(page)).toBeVisible();
+    await expect(
+      seriesList(page).getByRole("checkbox", { checked: true }),
+    ).toHaveCount(2);
   });
 });
 

@@ -236,7 +236,7 @@
   --native-weight-search-field: var(--font-weight-regular);
   --native-tracking-search-field: 0;
   --native-radius-cover: 4px;
-  --native-radius-picked-cover: 12px;
+  --native-radius-picked-tile: 12px;
   --native-spacing-read-mark: 1.5rem;
   --native-radius-cover-badge: var(--radius-label-badge);
   --native-spacing-cover-badge: 16px;
@@ -246,8 +246,6 @@
   --native-radius-select: 2px;
   --native-spacing-select: 18px;
   --native-spacing-select-edge: 2px;
-  --native-spacing-select-inset: calc((var(--spacing-touch-target) - var(--native-spacing-select)) / 2);
-  --native-shadow-select-ring-lift: none;
   --native-color-dialog: var(--dialog-surface);
   --native-color-dialog-layer: transparent;
   --native-color-dialog-edge: var(--dialog-edge);
@@ -587,6 +585,7 @@
   --native-color-button-destructive-hover: #a8383614;
   --native-color-button-destructive-pressed: #a838361f;
   --native-color-reader-guide-menu-zone: #e2eae2e6;
+  --native-color-back-preview-scrim: rgba(0, 0, 0, 0.2);
   --native-color-on-top-bar: #2c352e;
   --native-color-top-bar-scrolled: #e9f0e8;
   --native-color-top-bar-scrolled-edge: transparent;
@@ -677,6 +676,7 @@
   --native-color-button-destructive-hover: #fa746f14;
   --native-color-button-destructive-pressed: #fa746f1f;
   --native-color-reader-guide-menu-zone: #1a211ce6;
+  --native-color-back-preview-scrim: rgba(0, 0, 0, 0.8);
   --native-color-on-top-bar: #dee8df;
   --native-color-top-bar-scrolled: #141b17;
   --native-color-top-bar-scrolled-edge: transparent;

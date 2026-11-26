@@ -49,6 +49,8 @@ const LISTED_SERIES = {
   id: SERIES_ID,
   title: SERIES_TITLE,
   bookCount: 3,
+  volumeCount: 0,
+  chapterCount: 0,
   unreadCount: 3,
   cover: null,
   language: null,

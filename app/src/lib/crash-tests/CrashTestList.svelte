@@ -117,8 +117,9 @@
           <span
             class="flex flex-1 flex-col min-inline-none touch:max-medium:gap-2xs"
           >
-            <span class="font-semibold desktop:text-callout">{row.title()}</span
-            >
+            <span class="font-semibold desktop:text-callout">
+              {row.title()}
+            </span>
             <span class="text-detail text-muted">{row.body()}</span>
           </span>
           <Play
@@ -137,8 +138,9 @@
     {beforeSection}<a
       href={resolve("/(app)/settings/privacy")}
       class="font-semibold text-accent underline underline-offset-2"
-      >{m.privacy_title()}</a
-    >{afterSection}
+    >
+      {m.privacy_title()}
+    </a>{afterSection}
   </p>
 </section>
 

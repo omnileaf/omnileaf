@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
@@ -118,6 +118,34 @@ test("removes the series from the library only when the files are left ticked of
   await expect(
     page.getByRole("group", { name: "Selected series" }),
   ).toBeHidden();
+});
+
+test.describe("when removing fails", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      librarySeries: () => ({ series: [...LIBRARY], next: null }),
+      librarySeriesCount: () => LIBRARY.length,
+      removeFromLibrary: () => {
+        throw new CommandFailure({
+          code: "internal",
+          message: "the catalog couldn't be written",
+        });
+      },
+    } satisfies FakeBackend,
+  });
+
+  test("says so and keeps the series selected", async ({ page }) => {
+    await pickTwo(page);
+    const dialog = await openDelete(page);
+
+    await dialog.getByRole("button", { name: "Remove" }).click();
+
+    await expect(page.getByText("Couldn't remove the series")).toBeVisible();
+    await expect(
+      seriesList(page).getByRole("checkbox", { checked: true }),
+    ).toHaveCount(2);
+  });
 });
 
 test("says how many files in how many folders go before it deletes them", async ({

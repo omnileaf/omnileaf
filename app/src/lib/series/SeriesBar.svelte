@@ -13,15 +13,17 @@
     isPhone,
     phoneOf,
   } from "#lib/page/platform.ts";
-  import { backIcon, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
+  import {
+    ANDROID_TOP_APP_BAR,
+    backIcon,
+    NATIVE_TOP_BAR,
+  } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { backChip, type BarPlacement, menuChip } from "./series-chip.ts";
   import SeriesMenu from "./SeriesMenu.svelte";
 
   const BACK_ICON_SIZE = 20;
-  const ANDROID_TOP_APP_BAR =
-    "box-content pbs-safe-top min-block-native-top-bar";
 
   let {
     title,
@@ -79,6 +81,7 @@
 
 <header
   bind:clientHeight={height}
+  data-hero-bar
   class={[
     "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end flex items-center gap-sm ps-series-bar-start pe-series-bar-end motion-safe:transition-colors motion-safe:duration-fade while-picking:invisible",
     barBlock,

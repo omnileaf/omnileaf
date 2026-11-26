@@ -244,6 +244,7 @@
   --native-spacing-reader-quick-pill-block: 0px;
   --native-spacing-reader-guide-card-end: 0px;
   --native-color-reader-guide-menu-zone: transparent;
+  --native-color-back-preview-scrim: transparent;
   --native-shadow-bar-button-lift: var(--shadow-raised);
   --native-color-on-top-bar: var(--foreground);
   --native-color-top-bar-scrolled: var(--background);
@@ -297,7 +298,7 @@
   --native-weight-search-field: var(--font-weight-regular);
   --native-tracking-search-field: 0;
   --native-radius-cover: var(--radius-cover);
-  --native-radius-picked-cover: var(--radius-cover);
+  --native-radius-picked-tile: var(--radius-cover);
   --native-spacing-read-mark: 1.5rem;
   --native-color-cover-badge: var(--card);
   --native-color-on-cover-badge: var(--foreground);
@@ -312,8 +313,6 @@
   --native-radius-select: var(--radius-series-check);
   --native-spacing-select: var(--spacing-series-check);
   --native-spacing-select-edge: 2px;
-  --native-spacing-select-inset: var(--spacing-xs);
-  --native-shadow-select-ring-lift: none;
   --native-color-sheet: var(--bottom-sheet-surface);
   --native-color-grouped-sheet: var(--bottom-sheet-surface);
   --native-color-sheet-group: var(--card);

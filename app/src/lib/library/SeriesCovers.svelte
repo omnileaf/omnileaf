@@ -70,6 +70,7 @@
   import SeriesLink from "./SeriesLink.svelte";
   import { coverLook } from "./cover-look";
   import { coverTileLook } from "./cover-tile";
+  import { seriesCountLine } from "./series-count-line";
   import { SCREEN_SIZES, viewDrawn } from "./library-view";
   import type { CoverUrl } from "./cover-url";
   import { realLook, standInLook } from "./series-look";
@@ -133,7 +134,9 @@
   const canHover = new MediaQuery("(hover: hover)");
   const selection = seriesSelection();
   const isSelecting = $derived(selection?.isSelecting === true);
-  const marksPicks = $derived(isSelecting && platform !== "macos");
+  const marksPicks = $derived(
+    isSelecting && platform !== "macos" && !androidPhone.isOn,
+  );
   const isMacTable = $derived(platform === "macos" && view.display === "list");
   const rowNumbers = $derived(
     new Map(series.map((one, index) => [one.id, index])),
@@ -416,6 +419,7 @@
             "flex flex-col gap-cover-caption min-inline-none medium:gap-sm",
             stack?.room,
             tile.link,
+            tile.captionedLink,
           ]}
         >
           <CoverSheets look={stack} bookCount={one.bookCount} />
@@ -477,7 +481,7 @@
                 tile.meta,
               ]}
             >
-              {m.library_series_books({ count: one.bookCount })}
+              {seriesCountLine(one, platform)}
             </p>
           </div>
         </SeriesLink>
@@ -711,7 +715,7 @@
         order={seriesOrder}
         class={rowLook.link}
       >
-        {#if isSelecting && !away}
+        {#if marksPicks && !away}
           <span
             class="relative shrink-0 block-series-check inline-series-check"
           >
@@ -762,7 +766,7 @@
             </span>
             <span class="flex flex-wrap items-center gap-sm">
               <span class={rowLook.meta}>
-                {m.library_series_books({ count: one.bookCount })}
+                {seriesCountLine(one, platform)}
               </span>
               {#if view.onCovers.showsLanguage && one.language !== null && !veiled}
                 <LanguageBadge language={one.language} class="bg-chip" />

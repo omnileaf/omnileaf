@@ -39,9 +39,9 @@
 <section aria-labelledby="{id}-heading" class="flex flex-col gap-xs">
   <h2 id="{id}-heading" class={LIST_HEADING}>{heading}</h2>
   <div class={[LIST_ROW, LIST_PLATE]}>
-    <span id="{id}-label" class={["flex-1", LIST_TITLE, LIST_WORDS]}
-      >{label}</span
-    >
+    <span id="{id}-label" class={["flex-1", LIST_TITLE, LIST_WORDS]}>
+      {label}
+    </span>
     <NativeSelect
       aria-labelledby="{id}-label"
       {value}
