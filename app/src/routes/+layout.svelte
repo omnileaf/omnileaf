@@ -30,10 +30,8 @@
   import { commands } from "#lib/ipc/bindings.ts";
   import { followHistoryForBack } from "#lib/navigation/android-back.ts";
   import { showOpeningPage } from "#lib/navigation/restored-route.ts";
-  import { giveBackOverlayEntriesBeforeLinkTo } from "#lib/navigation/overlay-back.ts";
+  import { giveBackOverlayEntriesBeforeLeavingPage } from "#lib/navigation/overlay-back.ts";
   import { followReaderOrigin } from "#lib/reader/reader-origin.ts";
-  import { READER_ROUTE_ID } from "#lib/reader/reader-route.ts";
-  import { VOLUME_ROUTE_ID } from "#lib/series-sections/volume-route.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
     languageSettingForDocument,
@@ -166,8 +164,7 @@
   setPreviousScreens(new PreviousScreens());
   followHistoryForBack(() => data.appInfo.platform);
   followReaderOrigin();
-  giveBackOverlayEntriesBeforeLinkTo(READER_ROUTE_ID);
-  giveBackOverlayEntriesBeforeLinkTo(VOLUME_ROUTE_ID);
+  giveBackOverlayEntriesBeforeLeavingPage();
   afterNavigate(({ type }) => {
     if (type === "enter") {
       void showOpeningPage(data.pageToRestore, data.appInfo.platform);
