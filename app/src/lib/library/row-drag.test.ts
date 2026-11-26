@@ -61,3 +61,33 @@ test("measures room by the dragged row's own height when rows differ", () => {
   expect(drag.gap).toBe(2);
   expect(drag.shiftOf(2)).toBe(-90);
 });
+
+test("drags the first row down past the others but never above the list", () => {
+  const top = 100 + ROW / 2;
+  const drag = new RowDrag(0, SLOTS, top);
+
+  expect(drag.to(top - 1000).offset).toBe(0);
+  expect(drag.to(top - 1000).gap).toBe(0);
+  expect(drag.to(top + 1000).offset).toBe(3 * ROW);
+  expect(drag.to(top + 1000).gap).toBe(3);
+  expect([1, 2, 3].map((at) => drag.to(top + 1000).shiftOf(at))).toEqual([
+    -ROW,
+    -ROW,
+    -ROW,
+  ]);
+});
+
+test("drags the last row up past the others but never below the list", () => {
+  const bottom = 100 + 3 * ROW + ROW / 2;
+  const drag = new RowDrag(3, SLOTS, bottom);
+
+  expect(drag.to(bottom + 1000).offset).toBe(0);
+  expect(drag.to(bottom + 1000).gap).toBe(3);
+  expect(drag.to(bottom - 1000).offset).toBe(-3 * ROW);
+  expect(drag.to(bottom - 1000).gap).toBe(0);
+  expect([0, 1, 2].map((at) => drag.to(bottom - 1000).shiftOf(at))).toEqual([
+    ROW,
+    ROW,
+    ROW,
+  ]);
+});
