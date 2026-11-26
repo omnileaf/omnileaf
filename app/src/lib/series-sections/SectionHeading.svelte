@@ -5,18 +5,22 @@
 
   let {
     id,
+    fieldId,
     heading,
     isFinding,
     isSorting,
     onFind,
     onSortAndFilter,
+    findButton = $bindable(null),
   }: {
     id: string;
+    fieldId: string;
     heading: string;
     isFinding: boolean;
     isSorting: boolean;
     onFind: () => void;
     onSortAndFilter: () => void;
+    findButton?: HTMLButtonElement | null;
   } = $props();
 </script>
 
@@ -29,11 +33,13 @@
     {heading}
   </h2>
   <Button
+    bind:ref={findButton}
     type="button"
     variant="plain"
     iconOnly
     label={m.series_find_book()}
     aria-expanded={isFinding}
+    aria-controls={isFinding ? fieldId : undefined}
     class="shrink-0"
     onclick={onFind}
   >

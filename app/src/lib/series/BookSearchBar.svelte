@@ -10,11 +10,13 @@
 
   let {
     field = $bindable(null),
+    id,
     search,
     onSearch,
     onClose,
   }: {
     field?: HTMLInputElement | null;
+    id: string;
     search: string;
     onSearch: (search: string) => void;
     onClose: () => void;
@@ -35,6 +37,7 @@
   <Input
     bind:ref={field}
     {@attach closesOnBack}
+    {id}
     type="search"
     aria-label={m.series_find_book()}
     placeholder={m.series_find_book()}

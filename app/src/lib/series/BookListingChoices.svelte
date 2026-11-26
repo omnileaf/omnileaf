@@ -63,6 +63,7 @@
   const isNativeDesktop = platform === "macos" || platform === "windows";
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const showLabelId = $props.id();
+  const searchFieldId = `${showLabelId}-search`;
   let searchField = $state<HTMLInputElement | null>(null);
 
   let findButton = $state<HTMLButtonElement | null>(null);
@@ -192,6 +193,7 @@
     iconOnly
     label={m.series_find_book()}
     aria-expanded={isSearching}
+    aria-controls={isSearching ? searchFieldId : undefined}
     class="shrink-0"
     onclick={() => {
       void reveal();
@@ -204,6 +206,7 @@
 {#snippet searchBar()}
   <BookSearchBar
     bind:field={searchField}
+    id={searchFieldId}
     {search}
     {onSearch}
     onClose={() => {
@@ -338,6 +341,7 @@
         <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
         <Input
           bind:ref={searchField}
+          id={searchFieldId}
           type="search"
           aria-label={m.series_find_book()}
           placeholder={m.series_find_book()}
@@ -382,6 +386,7 @@
           iconOnly
           label={m.series_find_book()}
           aria-expanded={isSearching}
+          aria-controls={isSearching ? searchFieldId : undefined}
           class="shrink-0"
           onclick={() => {
             void reveal();
@@ -414,6 +419,7 @@
           type="button"
           aria-label={m.series_find_book()}
           aria-expanded={isSearching}
+          aria-controls={isSearching ? searchFieldId : undefined}
           onclick={() => {
             void reveal();
           }}
