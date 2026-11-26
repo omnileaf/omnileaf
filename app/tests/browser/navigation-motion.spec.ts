@@ -19,12 +19,22 @@ const PILL_GROW = `pill-grow ${GROW}`;
 const ICON_POP = "nav-pop 0.3s cubic-bezier(0.32, 0.72, 0, 1)";
 const ICON_MOVE_TIMING = "0.3s ease-out";
 
-const ICON_MOVES = [
+interface IconMove {
+  readonly label: string;
+  readonly startFrom: string;
+  readonly move: string;
+}
+
+const ICON_MOVES: readonly IconMove[] = [
   { label: "Library", startFrom: "/settings", move: "book-open" },
   { label: "Browse", startFrom: "/", move: "needle-swing" },
   { label: "History", startFrom: "/", move: "hands-sweep" },
   { label: "Settings", startFrom: "/", move: "gear-turn" },
-] as const;
+];
+
+const ANDROID_ICON_MOVES: readonly IconMove[] = ICON_MOVES.map((icon) =>
+  icon.label === "History" ? { ...icon, move: "clock-rewind" } : icon,
+);
 
 interface Motion {
   readonly transitions: readonly string[];
@@ -150,6 +160,41 @@ async function expectToRunToItsEnd(
   );
 }
 
+interface KeyframeTurn {
+  readonly at: string;
+  readonly rotate: string;
+}
+
+function turnsIn(page: Page, animation: string): Promise<KeyframeTurn[]> {
+  return page.evaluate((name) => {
+    const keyframes = (rules: CSSRuleList): CSSKeyframesRule | undefined => {
+      for (const rule of rules) {
+        if (rule instanceof CSSKeyframesRule && rule.name === name) {
+          return rule;
+        }
+        if (rule instanceof CSSGroupingRule) {
+          const found = keyframes(rule.cssRules);
+          if (found !== undefined) {
+            return found;
+          }
+        }
+      }
+      return undefined;
+    };
+    const rule = Array.from(document.styleSheets)
+      .map((sheet) => keyframes(sheet.cssRules))
+      .find((found) => found !== undefined);
+    if (rule === undefined) {
+      throw new Error(`no keyframes named ${name}`);
+    }
+    return Array.from(rule.cssRules).flatMap((frame) =>
+      frame instanceof CSSKeyframeRule
+        ? [{ at: frame.keyText, rotate: frame.style.rotate }]
+        : [],
+    );
+  }, animation);
+}
+
 interface IconLayers {
   readonly outlined: string;
   readonly filled: string;
@@ -272,10 +317,16 @@ interface IconMoveScreens {
   readonly belowWidth: number;
   readonly where: string;
   readonly icon: string;
+  readonly moves: readonly IconMove[];
 }
 
-function testMovingIcons({ belowWidth, where, icon }: IconMoveScreens): void {
-  for (const { label, startFrom, move } of ICON_MOVES) {
+function testMovingIcons({
+  belowWidth,
+  where,
+  icon,
+  moves,
+}: IconMoveScreens): void {
+  for (const { label, startFrom, move } of moves) {
     test(`moves the ${label} icon as it becomes selected`, async ({ page }) => {
       test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
       await page.goto(startFrom);
@@ -298,8 +349,9 @@ function testMovingIcons({ belowWidth, where, icon }: IconMoveScreens): void {
 function testRunningIconMovesToTheirEnd({
   belowWidth,
   where,
+  moves,
 }: Omit<IconMoveScreens, "icon">): void {
-  for (const { label, startFrom, move } of ICON_MOVES) {
+  for (const { label, startFrom, move } of moves) {
     test(`runs the ${label} icon's move to its end when the tab is tapped`, async ({
       page,
     }) => {
@@ -319,7 +371,7 @@ function testKeepingTheIconStill({
   belowWidth,
   where,
   icon,
-}: IconMoveScreens): void {
+}: Omit<IconMoveScreens, "moves">): void {
   test("keeps the icon still while the section stays the same", async ({
     page,
   }) => {
@@ -444,15 +496,27 @@ test.describe("on Android", () => {
     expect(motion).toEqual({ transitions: [FADE], animations: [] });
   });
 
-  testKeepingTheIconStill({
+  testMovingIcons({
     belowWidth: EXPANDED_MIN_WIDTH,
     where: "bar and rail",
     icon: '[data-slot="navigation-icon"]',
+    moves: ANDROID_ICON_MOVES,
   });
 
   testRunningIconMovesToTheirEnd({
     belowWidth: EXPANDED_MIN_WIDTH,
     where: "bar and rail",
+    moves: ANDROID_ICON_MOVES,
+  });
+
+  test("turns the History icon back a little, the way its arrow points", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const turns = await turnsIn(page, "clock-rewind");
+
+    expect(turns).toEqual([{ at: "0%", rotate: "60deg" }]);
   });
 
   test("shows only the selected tab's icon filled", async ({ page }) => {
@@ -565,6 +629,7 @@ test.describe("on iOS", () => {
   testRunningIconMovesToTheirEnd({
     belowWidth: MEDIUM_MIN_WIDTH,
     where: "phones",
+    moves: ICON_MOVES,
   });
 
   testTurningTheScreen();
@@ -614,6 +679,7 @@ test.describe("on iOS", () => {
     belowWidth: MEDIUM_MIN_WIDTH,
     where: "phones",
     icon: "svg",
+    moves: ICON_MOVES,
   });
   testCrossfadingTheFill(MEDIUM_MIN_WIDTH);
   testReducingMotion();

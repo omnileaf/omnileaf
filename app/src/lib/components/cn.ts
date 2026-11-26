@@ -1066,6 +1066,7 @@ export const TOKEN_THEME = {
   ],
   animate: [
     "book-open",
+    "clock-rewind",
     "gear-turn",
     "hands-sweep",
     "nav-pop",

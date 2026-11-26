@@ -1,4 +1,5 @@
 import { expect, test } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -15,6 +16,8 @@ const SECTIONS: readonly Section[] = [
   "settings",
 ];
 const SIZE = 24;
+const PHONE_WIDTH = 390;
+const PHONE_HEIGHT = 844;
 
 function filledShapes(container: Element): number {
   return Array.from(container.querySelectorAll("svg *")).filter(
@@ -80,16 +83,27 @@ test("keeps the clock's circular arrow drawn when the history icon is filled", a
   expect(drawnAsLines.length).toBeGreaterThanOrEqual(2);
 });
 
-function shownLayers(container: Element): string[] {
-  return Array.from(container.querySelectorAll("[data-icon]"))
-    .filter((layer) => getComputedStyle(layer).opacity === "1")
-    .map((layer) =>
-      layer.hasAttribute("data-filled") ? "filled" : "outlined",
-    );
+interface Glyph {
+  readonly isFilled: boolean;
+  readonly opacity: string;
 }
 
+function glyphsOf(container: Element): Glyph[] {
+  return Array.from(container.querySelectorAll("[data-icon]")).map((glyph) => ({
+    isFilled: glyph.hasAttribute("data-filled"),
+    opacity: getComputedStyle(glyph).opacity,
+  }));
+}
+
+const ANDROID_MOVES: Record<Section, string> = {
+  library: "book-open",
+  browse: "needle-swing",
+  history: "clock-rewind",
+  settings: "gear-turn",
+};
+
 test.each(SECTIONS)(
-  "shows only the outlined %s icon on Android when it isn't selected",
+  "stacks an outlined and a filled %s glyph on Android, showing the outlined one when it isn't selected",
   async (section) => {
     followCorePlatform("android");
     const screen = await render(NavigationIcon, {
@@ -99,12 +113,15 @@ test.each(SECTIONS)(
       size: SIZE,
     });
 
-    expect(shownLayers(screen.container)).toEqual(["outlined"]);
+    expect(glyphsOf(screen.container)).toEqual([
+      { isFilled: false, opacity: "1" },
+      { isFilled: true, opacity: "0" },
+    ]);
   },
 );
 
 test.each(SECTIONS)(
-  "shows only the filled %s icon on Android when it is selected",
+  "stacks an outlined and a filled %s glyph on Android, showing the filled one when it is selected",
   async (section) => {
     followCorePlatform("android");
     const screen = await render(NavigationIcon, {
@@ -114,6 +131,29 @@ test.each(SECTIONS)(
       size: SIZE,
     });
 
-    expect(shownLayers(screen.container)).toEqual(["filled"]);
+    expect(glyphsOf(screen.container)).toEqual([
+      { isFilled: false, opacity: "0" },
+      { isFilled: true, opacity: "1" },
+    ]);
+  },
+);
+
+test.each(SECTIONS)(
+  "moves both %s glyphs together on Android while the tab arrives",
+  async (section) => {
+    followCorePlatform("android");
+    await page.viewport(PHONE_WIDTH, PHONE_HEIGHT);
+    const screen = await render(NavigationIcon, {
+      section,
+      isSelected: true,
+      isArriving: true,
+      size: SIZE,
+    });
+
+    const box = screen.container.querySelector('[data-slot="navigation-icon"]');
+
+    expect(box === null ? undefined : getComputedStyle(box).animationName).toBe(
+      ANDROID_MOVES[section],
+    );
   },
 );

@@ -88,6 +88,10 @@
     history: "icon-moves:motion-navigation:animate-hands-sweep",
     settings: "icon-moves:motion-navigation:animate-gear-turn",
   };
+  const ANDROID_MOVES: Record<Section, string> = {
+    ...MOVES,
+    history: "icon-moves:motion-navigation:animate-clock-rewind",
+  };
 
   const SHAPES: Record<Section, Snippet<[boolean]>> = {
     library,
@@ -176,7 +180,7 @@
   <span
     data-slot="navigation-icon"
     aria-hidden="true"
-    class={["relative flex", className, isArriving && MOVES[section]]}
+    class={["relative flex", className, isArriving && ANDROID_MOVES[section]]}
   >
     <Icon
       name={SECTION_ICONS[section]}
