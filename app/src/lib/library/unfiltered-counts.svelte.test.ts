@@ -152,3 +152,41 @@ test("reports a count that fails with the tab it counted, and holds it as failed
   expect(failures).toEqual([{ error: FAILURE, key: "manga" }]);
   expect(counts.of("manga")).toEqual({ kind: "failed" });
 });
+
+test("draws the count of a tab kept from before at once and counts it again behind", async () => {
+  const answers = answering();
+  const counts = new UnfilteredCounts(answers.countTab, ignoreFailure, {
+    manga: 4,
+  });
+
+  counts.ask([MANGA]);
+  const keptAtOnce = counts.of("manga");
+  await answerAll(answers, { status: "ok", data: 5 });
+
+  expect(keptAtOnce).toEqual({ kind: "counted", count: 4 });
+  expect(answers.asked).toEqual(["manga"]);
+  expect(counts.of("manga")).toEqual({ kind: "counted", count: 5 });
+});
+
+test("uses a kept count only the first time its tab is asked for", () => {
+  const answers = answering();
+  const counts = new UnfilteredCounts(answers.countTab, ignoreFailure, {
+    manga: 4,
+  });
+  counts.ask([MANGA]);
+  counts.ask([]);
+
+  counts.ask([MANGA]);
+
+  expect(counts.of("manga")).toEqual({ kind: "counting" });
+});
+
+test("keeps the tabs it has counted, leaving out those still counting", async () => {
+  const answers = answering();
+  const counts = new UnfilteredCounts(answers.countTab, ignoreFailure);
+  counts.ask([MANGA]);
+  await answerAll(answers, { status: "ok", data: 4 });
+  counts.ask([MANGA, COMICS]);
+
+  expect(counts.kept()).toEqual({ manga: 4 });
+});

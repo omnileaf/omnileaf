@@ -11,15 +11,29 @@ import { tabKey } from "./library-tabs.ts";
 
 export type CountTab = (tab: LibraryTabId) => CountSeries;
 
+export type KeptCounts = Readonly<Record<string, number>>;
+
 const NOT_COUNTED: TabCount = { kind: "counting" };
 
 export class UnfilteredCounts {
   readonly #asked = new SvelteMap<string, LibrarySeriesCount>();
+  #kept: KeptCounts;
 
   constructor(
     private readonly countTab: CountTab,
     private readonly onFailure: (error: IpcError, key: string) => void,
-  ) {}
+    kept: KeptCounts = {},
+  ) {
+    this.#kept = kept;
+  }
+
+  kept(): KeptCounts {
+    return Object.fromEntries(
+      [...this.#asked].flatMap(([key, { count }]) =>
+        count === undefined ? [] : [[key, count] as const],
+      ),
+    );
+  }
 
   ask(tabs: readonly LibraryTabId[]): void {
     const wanted = tabs.map(tabKey);
@@ -48,10 +62,19 @@ export class UnfilteredCounts {
   }
 
   #started(tab: LibraryTabId): LibrarySeriesCount {
-    const count = new LibrarySeriesCount(this.countTab(tab), (error) => {
-      this.onFailure(error, tabKey(tab));
-    });
-    void count.load();
+    const key = tabKey(tab);
+    const kept = this.#kept[key];
+    this.#kept = Object.fromEntries(
+      Object.entries(this.#kept).filter(([counted]) => counted !== key),
+    );
+    const count = new LibrarySeriesCount(
+      this.countTab(tab),
+      (error) => {
+        this.onFailure(error, key);
+      },
+      kept,
+    );
+    void (kept === undefined ? count.load() : count.refresh());
     return count;
   }
 }
