@@ -80,6 +80,10 @@
   import JumpToBook from "#lib/reader/JumpToBook.svelte";
   import KeyboardShortcuts from "#lib/reader/KeyboardShortcuts.svelte";
   import { fitPinch } from "#lib/reader/pinch-zoom.ts";
+  import {
+    DoubleTapWindow,
+    type TapPoint,
+  } from "#lib/reader/double-tap-window.ts";
   import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
   import { readerHints } from "#lib/reader/reader-hints.svelte.ts";
   import ReadingSettings from "#lib/reader/ReadingSettings.svelte";
@@ -121,8 +125,10 @@
   const MOUSE_BACK_BUTTON = 3;
   /** How near the window's top or bottom the pointer brings hidden controls back. */
   const REVEAL_EDGE_PX = 48;
-  /** Android's double-tap timeout, the longest a second tap may follow the first and still count as a double tap. */
-  const DOUBLE_TAP_MS = 300;
+  /** Android took a second tap 308 ms after the first lift as a double tap and refused one at 385 ms, so the reader's window reaches just past the first. */
+  const DOUBLE_TAP_WINDOW_MS = 310;
+  /** Android's double-tap slop, how far apart two taps may land and still make one double tap. */
+  const DOUBLE_TAP_SLOP_PX = 100;
   const TURN_STEPS = { next: 1, previous: -1 } as const satisfies Record<
     PageTurn,
     number
@@ -863,6 +869,11 @@
   let lastPointer = { x: Number.NaN, y: Number.NaN };
   let waitingTap: ReturnType<typeof setTimeout> | undefined;
   let tappedWith = "";
+  let isSecondTap = false;
+  const tapWindow = new DoubleTapWindow(
+    DOUBLE_TAP_WINDOW_MS,
+    DOUBLE_TAP_SLOP_PX,
+  );
 
   /** WebKit sends a pointermove whenever the page scrolls under a pointer that hasn't moved, so only a change of position counts. */
   function hasPointerMoved(event: PointerEvent): boolean {
@@ -892,13 +903,19 @@
       event.currentTarget.blur();
     }
     dropWaitingTap();
-    if (swipe.isClickASwipe() || event.detail > 1) {
+    const isZoomTap = isSecondTap;
+    isSecondTap = false;
+    if (swipe.isClickASwipe()) {
+      return;
+    }
+    if (isZoomTap) {
+      zoomOnDoubleTap(event);
       return;
     }
     waitingTap = setTimeout(() => {
       waitingTap = undefined;
       act("toggleControls");
-    }, DOUBLE_TAP_MS);
+    }, tapWindow.leftAfter(performance.now()));
   }
 
   function dropWaitingTap(): void {
@@ -944,6 +961,15 @@
     swipe.started(event);
     tappedWith = event.pointerType;
     dragFrom = 0;
+    isSecondTap =
+      waitingTap !== undefined && tapWindow.isSecondTap(tapPointOf(event));
+    if (isSecondTap) {
+      dropWaitingTap();
+    }
+  }
+
+  function tapPointOf(event: PointerEvent): TapPoint {
+    return { at: performance.now(), x: event.clientX, y: event.clientY };
   }
 
   function onSwipeMove(event: PointerEvent): void {
@@ -963,6 +989,7 @@
   }
 
   function onSwipeEnd(event: PointerEvent): void {
+    tapWindow.lifted(tapPointOf(event));
     const turn = swipe.ended(event);
     if (turn !== undefined && !isPagePanning) {
       turnBy(TURN_STEPS[inReadingOrder(turn, reading.direction)]);
@@ -1198,7 +1225,11 @@
             : m.reader_show_controls()}
           class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
           onclick={onMiddleTap}
-          ondblclick={zoomOnDoubleTap}
+          ondblclick={(event) => {
+            if (tappedWith === "mouse") {
+              zoomOnDoubleTap(event);
+            }
+          }}
         ></button>
       {/if}
     {/each}

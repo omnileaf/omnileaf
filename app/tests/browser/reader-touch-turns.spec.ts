@@ -46,6 +46,10 @@ const TAP_BURST_GAP_MS = 40;
 const MOST_CELLS_DRAWN = 3;
 const MOST_PAGES_HELD = 7;
 const WAIT_PAST_DOUBLE_TAP_MS = 600;
+const DOUBLE_TAP_GAPS_MS = [45, 256];
+const LATE_SECOND_TAP_MS = 305;
+const AFTER_THE_WINDOW_MS = 500;
+const BEFORE_THE_WINDOW_ENDS_MS = 150;
 const SHORT_DRAG_PX = -30;
 const AWAY_FROM_THE_TAP = { x: 60, y: 160 };
 const ARROW_RIGHT = {
@@ -539,6 +543,226 @@ test(
     await waitPastDoubleTap(page);
 
     expect(await controlsWereShown(page)).toBe(false);
+  },
+);
+
+interface ScriptedTaps {
+  readonly pointerType: string;
+  readonly gapAfterLiftMs: number;
+  readonly isDoubleTap: boolean;
+}
+
+async function tapTheMiddleTwice(
+  page: Page,
+  { pointerType, gapAfterLiftMs, isDoubleTap }: ScriptedTaps,
+): Promise<void> {
+  await page.evaluate(
+    async ({ type, gap, isDouble }) => {
+      const middle = [
+        ...document.querySelectorAll<HTMLElement>("[data-tap-zones] button"),
+      ].find((zone) =>
+        /the controls$/.test(zone.getAttribute("aria-label") ?? ""),
+      );
+      if (middle === undefined) {
+        throw new Error("the middle of the page is not on screen");
+      }
+      const box = middle.getBoundingClientRect();
+      const at = {
+        clientX: box.x + box.width / 2,
+        clientY: box.y + box.height / 2,
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+      };
+      const touch = { bubbles: true, cancelable: true, composed: true };
+      const tapOnce = (detail: number): void => {
+        middle.dispatchEvent(
+          new PointerEvent("pointerdown", {
+            ...at,
+            pointerType: type,
+            pointerId: 1,
+            isPrimary: true,
+          }),
+        );
+        middle.dispatchEvent(new TouchEvent("touchstart", touch));
+        middle.dispatchEvent(
+          new PointerEvent("pointerup", {
+            ...at,
+            pointerType: type,
+            pointerId: 1,
+            isPrimary: true,
+          }),
+        );
+        middle.dispatchEvent(new TouchEvent("touchend", touch));
+        middle.dispatchEvent(new MouseEvent("click", { ...at, detail }));
+      };
+      tapOnce(1);
+      await new Promise((due) => setTimeout(due, gap));
+      tapOnce(isDouble ? 2 : 1);
+      if (isDouble) {
+        middle.dispatchEvent(new MouseEvent("dblclick", { ...at, detail: 2 }));
+      }
+    },
+    { type: pointerType, gap: gapAfterLiftMs, isDouble: isDoubleTap },
+  );
+}
+
+async function areControlsShown(page: Page): Promise<boolean> {
+  return page.evaluate(
+    () => document.querySelector("[data-reader-resting-count]") === null,
+  );
+}
+
+async function tapTheMiddleOnceAs(
+  page: Page,
+  pointerType: string,
+): Promise<void> {
+  await page.evaluate((type) => {
+    const middle = [
+      ...document.querySelectorAll<HTMLElement>("[data-tap-zones] button"),
+    ].find((zone) =>
+      /the controls$/.test(zone.getAttribute("aria-label") ?? ""),
+    );
+    if (middle === undefined) {
+      throw new Error("the middle of the page is not on screen");
+    }
+    const box = middle.getBoundingClientRect();
+    const at = {
+      clientX: box.x + box.width / 2,
+      clientY: box.y + box.height / 2,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    };
+    const pointer = { ...at, pointerType: type, pointerId: 1, isPrimary: true };
+    middle.dispatchEvent(new PointerEvent("pointerdown", pointer));
+    middle.dispatchEvent(new PointerEvent("pointerup", pointer));
+    middle.dispatchEvent(new MouseEvent("click", { ...at, detail: 1 }));
+  }, pointerType);
+}
+
+async function waitInPage(page: Page, ms: number): Promise<void> {
+  await page.evaluate(
+    (wait) =>
+      new Promise((done) => {
+        setTimeout(done, wait);
+      }),
+    ms,
+  );
+}
+
+const DEVICE_DOUBLE_TAPS = [
+  ...DOUBLE_TAP_GAPS_MS.map((gapAfterLiftMs) => ({
+    pointerType: "",
+    gapAfterLiftMs,
+  })),
+  { pointerType: "touch", gapAfterLiftMs: LATE_SECOND_TAP_MS },
+];
+
+for (const { pointerType, gapAfterLiftMs } of DEVICE_DOUBLE_TAPS) {
+  test(
+    `zooms on a double tap of type "${pointerType}" ${String(gapAfterLiftMs)} ms apart without showing the controls`,
+    { tag: "@native" },
+    async ({ page }) => {
+      await servePages(page);
+      await openBookWith(page, { pageTurn: "slide" });
+      const session = await page.context().newCDPSession(page);
+      await hideControls(page, session);
+      await watchForControls(page);
+
+      await tapTheMiddleTwice(page, {
+        pointerType,
+        gapAfterLiftMs,
+        isDoubleTap: true,
+      });
+      await waitPastDoubleTap(page);
+
+      await expect(page.getByText("200%", { exact: false })).toBeVisible();
+      expect(await controlsWereShown(page)).toBe(false);
+    },
+  );
+}
+
+for (const gapMs of DOUBLE_TAP_GAPS_MS) {
+  test(
+    `zooms on a real double tap ${String(gapMs)} ms apart without showing the controls`,
+    { tag: "@native" },
+    async ({ page }) => {
+      await servePages(page);
+      await openBookWith(page, { pageTurn: "slide" });
+      const session = await page.context().newCDPSession(page);
+      await hideControls(page, session);
+      await watchForControls(page);
+      const middle = await centreOf(
+        page.getByRole("button", { name: "Show the controls" }),
+      );
+
+      await tapEvery(session, middle, { taps: 2, gapMs });
+      await waitPastDoubleTap(page);
+
+      await expect(page.getByText("200%", { exact: false })).toBeVisible();
+      expect(await controlsWereShown(page)).toBe(false);
+    },
+  );
+}
+
+test(
+  "takes a second tap after the double tap's window as a tap of its own",
+  { tag: "@native" },
+  async ({ page }) => {
+    await servePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    const session = await page.context().newCDPSession(page);
+    await hideControls(page, session);
+
+    await tapTheMiddleOnceAs(page, "");
+    await waitInPage(page, AFTER_THE_WINDOW_MS);
+    const afterTheFirst = await areControlsShown(page);
+    await tapTheMiddleOnceAs(page, "");
+    await waitInPage(page, AFTER_THE_WINDOW_MS);
+
+    expect(afterTheFirst).toBe(true);
+    expect(await areControlsShown(page)).toBe(false);
+    await expect(page.getByText("200%", { exact: false })).toBeHidden();
+  },
+);
+
+test(
+  "waits out the double tap's window before a tap of no named type shows the controls",
+  { tag: "@native" },
+  async ({ page }) => {
+    await servePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    const session = await page.context().newCDPSession(page);
+    await hideControls(page, session);
+
+    await tapTheMiddleOnceAs(page, "");
+    await waitInPage(page, BEFORE_THE_WINDOW_ENDS_MS);
+    const early = await areControlsShown(page);
+    await waitInPage(page, AFTER_THE_WINDOW_MS);
+
+    expect(early).toBe(false);
+    expect(await areControlsShown(page)).toBe(true);
+  },
+);
+
+test(
+  "shows the controls at once for a mouse click and for Enter on the middle of the page",
+  { tag: "@native" },
+  async ({ page }) => {
+    await servePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    const session = await page.context().newCDPSession(page);
+    await hideControls(page, session);
+
+    await tapTheMiddleOnceAs(page, "mouse");
+    const afterTheClick = await areControlsShown(page);
+    await page.getByRole("button", { name: "Hide the controls" }).focus();
+    await page.keyboard.press("Enter");
+    const afterEnter = await areControlsShown(page);
+
+    expect(afterTheClick).toBe(true);
+    expect(afterEnter).toBe(false);
   },
 );
 
