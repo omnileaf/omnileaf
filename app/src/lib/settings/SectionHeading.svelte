@@ -202,6 +202,7 @@
     data-title-bar
     class={cn(
       ANDROID_PINNED_BAR,
+      "ps-xs",
       NATIVE_TOP_BAR.edge,
       isTitleUnderBar ? NATIVE_TOP_BAR.scrolled : "border-transparent",
     )}
@@ -213,7 +214,7 @@
           href={resolve(parent.route)}
           data-back-link
           aria-label={backLabel}
-          class="native-target ms-xs flex shrink-0 items-center justify-center rounded-full text-native-on-top-bar block-native-button inline-native-button hover:bg-hover active:bg-pressed"
+          class="native-target mx-xs flex shrink-0 items-center justify-center rounded-full text-native-on-top-bar block-native-button inline-native-button hover:bg-hover active:bg-pressed"
         >
           <Icon name="arrow-left" size={ARROW_SIZE} class="rtl:-scale-x-100" />
         </a>
