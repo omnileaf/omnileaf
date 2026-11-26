@@ -17,9 +17,9 @@ import {
 } from "./fixtures.ts";
 
 const HINT =
-  "A notification when a new version is out, even if the app is closed. Android asks to allow notifications first.";
+  "Even when Omnileaf is closed. Android asks to allow notifications first.";
 const BLOCKED =
-  "Notifications are off for Omnileaf in Android settings. Turn them on there to get update notifications.";
+  "Notifications are off in Android settings. Turn them on there.";
 
 let status: UpdateStatus = {
   isAutomatic: true,

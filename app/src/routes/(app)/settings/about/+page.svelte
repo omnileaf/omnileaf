@@ -15,7 +15,6 @@
   import { Item } from "#lib/components/ui/item/index.ts";
   import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
-  import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import {
@@ -66,13 +65,6 @@
   const whatsNewHint = $derived(
     whatsNewRowHint(data.appInfo.platform, data.whatsNew),
   );
-  const reportHint = $derived(
-    isPointer(data.appInfo.platform)
-      ? m.about_report_problem_hint_computer()
-      : look !== "pane"
-        ? m.about_report_problem_hint_phone()
-        : m.about_report_problem_hint_tablet(),
-  );
 </script>
 
 <SectionHeading title={m.about_title()} />
@@ -117,9 +109,7 @@
         <li>
           <SettingSwitch
             label={m.about_check_automatically()}
-            description={updateCheck.isAutomatic
-              ? m.about_check_automatically_on()
-              : m.about_check_automatically_off()}
+            description={m.about_check_automatically_help()}
             isOn={updateCheck.isAutomatic}
             onToggle={() => {
               void updateCheck.setAutomatic(!updateCheck.isAutomatic);
@@ -143,7 +133,7 @@
         icon={Bug}
         iconName="bug"
         label={m.about_report_problem()}
-        hint={reportHint}
+        hint={m.about_report_problem_hint()}
         {look}
       />
       {#if yourReports.reports.length > 0}
@@ -162,7 +152,6 @@
         icon={FileText}
         iconName="file-text"
         label={m.about_licences()}
-        hint={m.about_licences_hint()}
         {look}
       />
       <Item look={look === "android" ? "row" : "about-version"}>

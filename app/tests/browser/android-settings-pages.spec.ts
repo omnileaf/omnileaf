@@ -174,12 +174,14 @@ test.describe(
       expect(list.y - (intro.y + intro.height)).toBeCloseTo(0, 0);
     });
 
-    test("says About's report is built on this phone", async ({ page }) => {
+    test("says on About's report row that nothing is sent until you choose", async ({
+      page,
+    }) => {
       await page.goto("/settings/about");
 
-      await expect(page.getByText(/^Builds a report on this/)).toHaveText(
-        "Builds a report on this phone; you choose where it goes",
-      );
+      await expect(
+        page.getByRole("link", { name: /^Report a problem/ }),
+      ).toContainText("Nothing is sent until you choose");
     });
   },
 );

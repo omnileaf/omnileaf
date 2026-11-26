@@ -30,8 +30,7 @@ const UP_TO_DATE: CheckedForUpdates = {
   outcome: "upToDate",
   status: { isAutomatic: true, release: { kind: "upToDate" } },
 };
-const OFF_LINE = "Off. When on, asks GitHub once a day and sends nothing else.";
-const ON_LINE = "On. Asks GitHub once a day and sends nothing else.";
+const WHAT_IT_SENDS = "Asks GitHub once a day and sends nothing else.";
 const PRIVACY_LINE = "Checks for a new version only if you turn it on.";
 
 let status: UpdateStatus = OFF;
@@ -86,7 +85,9 @@ test.describe("the automatic update check on About", () => {
     await page.goto("/settings/about");
 
     await expect(automaticSwitch(page)).not.toBeChecked();
-    await expect(automaticSwitch(page)).toHaveAccessibleDescription(OFF_LINE);
+    await expect(automaticSwitch(page)).toHaveAccessibleDescription(
+      WHAT_IT_SENDS,
+    );
   });
 
   test("turns on, then asks Android whether a check is due", async ({
@@ -99,7 +100,9 @@ test.describe("the automatic update check on About", () => {
     await automaticSwitch(page).click();
 
     await expect(automaticSwitch(page)).toBeChecked();
-    await expect(automaticSwitch(page)).toHaveAccessibleDescription(ON_LINE);
+    await expect(automaticSwitch(page)).toHaveAccessibleDescription(
+      WHAT_IT_SENDS,
+    );
     expect(asked).toEqual(["setAutomatic true", "checkIfDue"]);
   });
 

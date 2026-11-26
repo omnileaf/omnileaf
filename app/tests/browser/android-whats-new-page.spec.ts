@@ -228,7 +228,7 @@ test.describe("What’s new on an Android phone", { tag: "@native" }, () => {
 
       await expect(
         whatsNewRow(page).getByText(
-          `Notes for ${FAKE_APP_VERSION} and earlier versions`,
+          `Notes for ${FAKE_APP_VERSION} and earlier`,
           { exact: true },
         ),
       ).toBeVisible();
