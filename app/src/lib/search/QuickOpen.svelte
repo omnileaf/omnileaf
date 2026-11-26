@@ -483,11 +483,9 @@
       class="flex items-center gap-lg border-bs border-border px-lg text-caption text-muted block-key-hints"
     >
       <span>{m.search_key_move()}</span>
-      <span
-        >{platform === "macos"
-          ? m.search_key_open_mac()
-          : m.search_key_open()}</span
-      >
+      <span>
+        {platform === "macos" ? m.search_key_open_mac() : m.search_key_open()}
+      </span>
       <span>
         {platform === "macos"
           ? m.search_key_next_group_mac()

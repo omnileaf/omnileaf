@@ -21,9 +21,17 @@ pub(crate) enum Container {
 }
 
 impl Container {
-    /// Recognises an archive by its magic bytes rather than its file extension.
     pub(crate) fn of(storage: &dyn Storage, path: &Path) -> Result<Self, FormatError> {
-        if let Details::Folder { .. } = storage.details(path).map_err(read_failed(path))? {
+        let details = storage.details(path).map_err(read_failed(path))?;
+        Self::by_magic_bytes(storage, path, details)
+    }
+
+    pub(crate) fn by_magic_bytes(
+        storage: &dyn Storage,
+        path: &Path,
+        details: Details,
+    ) -> Result<Self, FormatError> {
+        if let Details::Folder { .. } = details {
             return Ok(Self::Folder);
         }
         let mut file = storage.open(path).map_err(read_failed(path))?;

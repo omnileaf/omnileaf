@@ -108,7 +108,7 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     await expect(add.getByText("New category")).toHaveCSS("font-size", "16px");
   });
 
-  test("sets the Hidden badge without a border and the note and footer at 14px", async ({
+  test("sets the Hidden badge without a border and the note at 14px", async ({
     page,
   }) => {
     await page.goto("/settings/library/tabs");
@@ -119,16 +119,13 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     const note = page
       .locator("p")
       .filter({ hasText: "Drag to reorder. Hiding a tab" });
-    const footer = page.getByText(/^Or All, or a tab you choose/);
 
     await expect(badge).toHaveCSS("border-top-width", "0px");
     await expect(badge).toHaveCSS("border-top-left-radius", "8px");
     expect((await boxOf(badge)).height).toBe(24);
-    for (const text of [note, footer]) {
-      await expect(text).toHaveCSS("font-size", "14px");
-      await expect(text).toHaveCSS("line-height", "20px");
-      await expect(text).toHaveCSS("padding-left", "16px");
-    }
+    await expect(note).toHaveCSS("font-size", "14px");
+    await expect(note).toHaveCSS("line-height", "20px");
+    await expect(note).toHaveCSS("padding-left", "16px");
   });
 
   test("sets where the library opens as a two-line row that opens a choice dialog", async ({
@@ -139,9 +136,6 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
 
     await expect(row).toContainText("The tab used last");
     await expect(row).toHaveAttribute("aria-haspopup", "dialog");
-    await expect(
-      page.getByText("If it would open on New chapters", { exact: false }),
-    ).toBeVisible();
     await row.click();
     const dialog = page.getByRole("dialog", { name: "The library opens on" });
     await expect(dialog.getByRole("radio")).toHaveCount(4);
@@ -151,7 +145,7 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     await expect(row).toContainText("Reading");
   });
 
-  test("lifts the row a little off the page while it is dragged, then sets it down", async ({
+  test("lifts the row a little off the page while it is dragged, no wider than the screen, then sets it down", async ({
     page,
   }) => {
     await page.goto("/settings/library/tabs");
@@ -159,15 +153,14 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     const handle = row.getByRole("button", { name: /^Move Reading/ });
     const box = await boxOf(handle);
 
-    await expect(row).toHaveCSS("scale", "none");
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 20);
 
-    await expect(row).toHaveCSS("scale", "1.02");
     await expect(row).toHaveCSS("translate", "0px -6px");
     await expect(row).not.toHaveCSS("box-shadow", "none");
-    await page.mouse.up();
     await expect(row).toHaveCSS("scale", "none");
+    await page.mouse.up();
+    await expect(row).toHaveCSS("translate", "none");
   });
 });

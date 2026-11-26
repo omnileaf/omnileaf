@@ -47,6 +47,7 @@ export const ANDROID_LIST_COVER = `${NATIVE_LIST_COVER} border-0!`;
 
 const ANDROID_PHONE: ListRowLook = {
   ...PHONE,
+  link: `${PHONE.link} aria-checked:bg-native-cover-accent/20`,
   cover: ANDROID_LIST_COVER,
   unread:
     "px-sm py-xs text-native-tab/native-tab font-native-tab tracking-native-tab bg-native-cover-badge text-native-on-cover-badge",

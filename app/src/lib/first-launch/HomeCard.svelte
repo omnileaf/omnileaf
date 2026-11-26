@@ -49,8 +49,9 @@
         <span
           id={pathId}
           class="text-caption wrap-anywhere whitespace-pre-wrap text-muted"
-          >{location}</span
         >
+          {location}
+        </span>
       </div>
       {@render change?.(titleId, pathId)}
     </div>
@@ -90,8 +91,9 @@
           <code
             id={pathId}
             class="font-mono text-native-row-subtitle/native-row-subtitle wrap-anywhere whitespace-break-spaces text-muted"
-            >{location}</code
           >
+            {location}
+          </code>
           {@render counting?.()}
         </div>
       {:else}
@@ -105,8 +107,9 @@
       <code
         id={pathId}
         class="mx-home-card mbe-home-card rounded-control border border-border bg-chip px-md py-home-path font-mono text-footnote wrap-anywhere whitespace-pre-wrap"
-        >{location}</code
       >
+        {location}
+      </code>
     {/if}
     <dl
       class="grid grid-cols-details divide-y divide-border border-bs border-border android:max-medium:flex android:max-medium:flex-col"

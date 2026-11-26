@@ -1,11 +1,15 @@
-use std::{ops::ControlFlow, path::Path, sync::Arc};
+use std::{
+    ops::ControlFlow,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use omnileaf_sync_proto::Fingerprint;
 
 #[cfg(feature = "rar")]
 use crate::rar_book::RarBook;
 use crate::{
-    ComicInfo, FormatError, Limits, LocalStorage, PageKind, Storage, container::Container,
+    ComicInfo, Details, FormatError, Limits, LocalStorage, PageKind, Storage, container::Container,
     error::read_failed, folder::FolderBook, natural_cmp, parse_comic_info,
     salvaged_zip_book::SalvagedZipBook, sevenz_book::SevenZipBook, zip_book::ZipBook,
 };
@@ -16,6 +20,14 @@ const FIRST_PAGE: usize = 0;
 pub struct Page {
     pub name: String,
     pub size: u64,
+}
+
+#[derive(Debug)]
+pub struct RecognisedBook {
+    storage: Arc<dyn Storage>,
+    path: PathBuf,
+    details: Details,
+    container: Container,
 }
 
 #[derive(Debug)]
@@ -145,20 +157,70 @@ pub fn open_book_with(path: &Path, limits: &Limits) -> Result<Book, FormatError>
     open_book_in(Arc::new(LocalStorage), path, limits)
 }
 
+pub fn recognise_book_in(
+    storage: &Arc<dyn Storage>,
+    path: &Path,
+) -> Result<RecognisedBook, FormatError> {
+    RecognisedBook::in_storage(Arc::clone(storage), path)
+}
+
+impl RecognisedBook {
+    fn in_storage(storage: Arc<dyn Storage>, path: &Path) -> Result<Self, FormatError> {
+        let details = storage.details(path).map_err(read_failed(path))?;
+        let container = Container::by_magic_bytes(&*storage, path, details)?;
+        Ok(Self {
+            storage,
+            path: path.to_path_buf(),
+            details,
+            container,
+        })
+    }
+
+    #[must_use]
+    pub fn details(&self) -> Details {
+        self.details
+    }
+
+    #[must_use]
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    #[must_use]
+    pub fn is_archive(&self) -> bool {
+        match self.container {
+            Container::Folder => false,
+            Container::Zip(_) | Container::SevenZip(_) => true,
+            #[cfg(feature = "rar")]
+            Container::Rar(_) => true,
+        }
+    }
+
+    pub fn open(self, limits: &Limits) -> Result<Book, FormatError> {
+        let Self {
+            storage,
+            path,
+            container,
+            ..
+        } = self;
+        match container {
+            Container::Folder => FolderBook::open(storage, &path, limits).map(Book::Folder),
+            Container::Zip(file) => ZipBook::from_file(file, &path, limits).map(Book::Archive),
+            Container::SevenZip(file) => {
+                SevenZipBook::from_file(file, &path, limits).map(Book::SevenZip)
+            }
+            #[cfg(feature = "rar")]
+            Container::Rar(file) => RarBook::from_file(file, &path, limits).map(Book::Rar),
+        }
+    }
+}
+
 pub fn open_book_in(
     storage: Arc<dyn Storage>,
     path: &Path,
     limits: &Limits,
 ) -> Result<Book, FormatError> {
-    match Container::of(&*storage, path)? {
-        Container::Folder => FolderBook::open(storage, path, limits).map(Book::Folder),
-        Container::Zip(file) => ZipBook::from_file(file, path, limits).map(Book::Archive),
-        Container::SevenZip(file) => {
-            SevenZipBook::from_file(file, path, limits).map(Book::SevenZip)
-        }
-        #[cfg(feature = "rar")]
-        Container::Rar(file) => RarBook::from_file(file, path, limits).map(Book::Rar),
-    }
+    RecognisedBook::in_storage(storage, path)?.open(limits)
 }
 
 pub fn salvage_book_in(

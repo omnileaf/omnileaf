@@ -1,4 +1,5 @@
 import { afterEach, expect, test } from "vitest";
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -124,3 +125,19 @@ test("calls onNewCategory when New category is pressed", async () => {
 
   expect(presses).toBe(1);
 });
+
+for (const platform of ["android", "ios", "linux"] as const) {
+  test(`says a move to screen readers without drawing it on ${platform}`, async () => {
+    followCorePlatform(platform);
+    const screen = await render(LibraryTabsList, PROPS);
+    const handle = screen.getByRole("button", { name: "Move All" });
+
+    handle.element().focus();
+    await userEvent.keyboard("{Alt>}{ArrowDown}{/Alt}");
+
+    const status = screen.getByRole("status").element();
+    expect(status.textContent).toContain("All moved down, to position 2 of 2");
+    expect(status.getBoundingClientRect().width).toBeLessThanOrEqual(1);
+    expect(getComputedStyle(status).clipPath).not.toBe("none");
+  });
+}

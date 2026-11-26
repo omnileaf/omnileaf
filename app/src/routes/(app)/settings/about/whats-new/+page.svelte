@@ -14,7 +14,7 @@
   parent={{ route: "/(app)/settings/about", title: m.about_title() }}
 />
 <div
-  class="mbs-pane-gap flex flex-col android:max-medium:mbs-none two-pane:max-inline-section"
+  class="mbs-pane-gap flex flex-col android:mbs-none two-pane:max-inline-section"
 >
   <NotesSections notes={data.installed} />
   {#if data.earlier.length > 0}

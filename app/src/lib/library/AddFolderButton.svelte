@@ -10,7 +10,7 @@
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { AndroidPhone } from "./android-phone.svelte";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import type { FolderAdding } from "./folder-adding.svelte";
 
   type Placement =
@@ -41,7 +41,7 @@
       "gap-sm rounded-full border border-accent px-lg text-accent inline-full min-block-touch-button touch:font-bold android:text-native-button-large android:touch:font-medium ios:rounded-ios-button desktop:rounded-control desktop:text-label desktop:min-block-pointer-button",
     "drop-area":
       "gap-sm rounded-control border-accent px-lg text-label transition-control min-block-pointer-target enabled:hover:tint-hover enabled:active:tint-pressed windows:rounded-shadcn-button windows:border-button-outline-edge windows:bg-button-outline windows:font-medium windows:border-be-windows-stroke-strong windows:min-block-shadcn-button",
-    "list-row": `${ROW_FOCUS_RING} justify-start gap-native-row-gap ps-native-row-start pe-native-row-end text-accent text-native-row-title/native-row-title font-native-row-title tracking-native-row-title min-block-native-row inline-full android:max-medium:rounded-none android:max-medium:text-foreground`,
+    "list-row": `${ROW_FOCUS_RING} justify-start gap-native-row-gap ps-native-row-start pe-native-row-end text-accent text-native-row-title/native-row-title font-native-row-title tracking-native-row-title min-block-native-row inline-full`,
   } satisfies Record<Placement, string>;
 
   const ICON_SIZE = 16;
@@ -57,7 +57,7 @@
     element?: HTMLElement | null;
   } = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const isInHeading = $derived(placement === "page-heading");
   const platform = currentPlatform();
   const width = new WindowWidth();
@@ -87,10 +87,11 @@
         "inline-flex shrink-0 items-center justify-center disabled:opacity-60",
         phone === undefined
           ? [
-              placement === "list-row"
-                ? "android:max-medium:font-regular"
-                : "font-semibold",
+              placement !== "list-row" && "font-semibold",
               PLACEMENTS[placement],
+              placement === "list-row" &&
+                android.isOn &&
+                "rounded-none font-regular text-foreground",
             ]
           : phone.fit,
       ]}
@@ -102,9 +103,9 @@
           size={placement === "list-row" ? LIST_ROW_ICON_SIZE : ICON_SIZE}
         />
       {/if}
-      <span class={{ "max-medium:sr-only": isInHeading }}
-        >{m.library_add_folder()}</span
-      >
+      <span class={{ "max-medium:sr-only": isInHeading }}>
+        {m.library_add_folder()}
+      </span>
     </Button>
   {/snippet}
 </Tooltip>

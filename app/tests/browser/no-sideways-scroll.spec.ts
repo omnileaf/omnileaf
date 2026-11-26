@@ -3,13 +3,17 @@ import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   APP_PAGES,
+  boxOf,
   expect,
+  LARGEST_TEXT_SCALE,
   onPlatform,
+  setTextScale,
   settle,
   sidewaysOverflow,
   test,
   testOnlyInItsWebview,
 } from "./fixtures.ts";
+import { ALL_SERIES } from "../../src/lib/library/library-tab.svelte.ts";
 import { goToStep } from "./first-launch-steps.ts";
 import { LONG_FOLDER_NAME, longFoldersOn } from "./long-folders.ts";
 import {
@@ -23,6 +27,11 @@ import {
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
 const PLATFORMS = ["ios", "android", "linux"] as const;
 const FIRST_LAUNCH_STEPS = ["welcome", "home", "link", "choices", "ready"];
+const TEXT_SCALES = {
+  "default text": 1,
+  "the largest text": LARGEST_TEXT_SCALE,
+};
+const DRAG_DISTANCE = 30;
 
 function withoutFolderChooser(): FakeBackend {
   return {
@@ -88,6 +97,35 @@ for (const platform of PLATFORMS) {
 
           expect(overflowing).toEqual([]);
         });
+      });
+
+      test.describe("with a Library tab lifted to reorder", () => {
+        test.use({ backend: onPlatform(platform).backend });
+
+        for (const [size, scale] of Object.entries(TEXT_SCALES)) {
+          test(`fits the lifted row to the screen with ${size}`, async ({
+            page,
+          }) => {
+            await setTextScale(page, scale);
+            await page.goto("/settings/library/tabs");
+            const handle = page.locator(`[data-tab-handle="${ALL_SERIES}"]`);
+            const row = page.locator("[data-tab-row]").filter({ has: handle });
+            const box = await boxOf(handle);
+            const middle = {
+              x: box.x + box.width / 2,
+              y: box.y + box.height / 2,
+            };
+
+            await page.mouse.move(middle.x, middle.y);
+            await page.mouse.down();
+            await page.mouse.move(middle.x, middle.y + DRAG_DISTANCE);
+            await expect(row).not.toHaveCSS("box-shadow", "none");
+            const overflowing = await sidewaysOverflow(page);
+            await page.mouse.up();
+
+            expect(overflowing).toEqual([]);
+          });
+        }
       });
 
       test.describe("with a file it can't open", () => {

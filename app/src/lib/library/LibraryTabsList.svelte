@@ -31,7 +31,7 @@
   import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
   import { TINTED } from "#lib/settings/setting-row-look.ts";
 
-  import { AndroidPhone } from "./android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
   import { IosPhone } from "./ios-phone.svelte.ts";
@@ -61,7 +61,7 @@
     onNewCategory?: (() => void) | undefined;
   } = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const ios = new IosPhone();
   const isDesktopLook = $derived(!android.isOn && !ios.isOn);
   const isMac = currentPlatform() === "macos";
@@ -204,7 +204,7 @@
           rowLook,
           drag?.key === key &&
             (android.isOn
-              ? "relative z-drag-box -translate-y-native-drag-lift scale-102 rounded-native-segment bg-android-container-high shadow-dialog"
+              ? "relative z-drag-box -translate-y-native-drag-lift rounded-native-segment bg-android-container-high shadow-dialog"
               : "relative z-drag-box rounded-card bg-card shadow-dialog"),
         ]}
       >
@@ -377,11 +377,4 @@
     </button>
   {/if}
 </div>
-<p
-  role="status"
-  class={announcement === ""
-    ? "sr-only"
-    : "fixed inset-e-lg inset-be-lg z-notice rounded-control border border-border bg-card px-md py-sm text-small shadow-dialog"}
->
-  {announcement}
-</p>
+<p role="status" class="sr-only">{announcement}</p>

@@ -70,8 +70,10 @@
           <AlertButton
             emphasis="quiet"
             class={ALERT_TEXT_BUTTON}
-            onclick={action.run}>{action.label}</AlertButton
+            onclick={action.run}
           >
+            {action.label}
+          </AlertButton>
         {/each}
       </AlertActions>
     </Alert>

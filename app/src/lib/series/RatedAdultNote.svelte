@@ -15,5 +15,7 @@
 
 {before}<a
   href={resolve("/(app)/settings/library/adult-content")}
-  class={linkClass}>{m.edit_details_settings_library()}</a
->{after}
+  class={linkClass}
+>
+  {m.edit_details_settings_library()}
+</a>{after}

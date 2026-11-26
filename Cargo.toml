@@ -61,7 +61,7 @@ png = "0.18.1"
 proptest = "1.11.0"
 quick-xml = "0.42.0"
 reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider", "json", "http2"] }
-rusqlite = { version = "0.42.0", default-features = false, features = ["bundled", "cache", "fallible_uint", "functions", "hooks"] }
+rusqlite = { version = "0.43.0", default-features = false, features = ["bundled", "cache", "fallible_uint", "functions", "hooks"] }
 rustix = { version = "1.1.5", features = ["fs"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 semver = "1.0.28"
@@ -126,6 +126,9 @@ miniz_oxide.opt-level = 3
 omnileaf-imaging.opt-level = 3
 png.opt-level = 3
 
-# Lets the Android activity turn off Tauri's always-on back callback, so Android 16 plays its back-to-home preview; drop once a Tauri release includes https://github.com/omnileaf/tauri/commit/03c1073c191ac0dbfb99b8f5831bfb493a7e4176
+# Tauri enables its Android back callback only while the webview can go back, so Android 16 plays its back-to-home preview; drop once a Tauri release includes https://github.com/tauri-apps/tauri/pull/16548
 [patch.crates-io]
-tauri = { git = "https://github.com/omnileaf/tauri", rev = "162277dcecf51ea24345a8a6b344a93215e0b732" }
+tauri = { git = "https://github.com/tauri-apps/tauri", rev = "3375654358f8168c691650118a6846e1948ab62c" }
+tauri-build = { git = "https://github.com/tauri-apps/tauri", rev = "3375654358f8168c691650118a6846e1948ab62c" }
+tauri-plugin = { git = "https://github.com/tauri-apps/tauri", rev = "3375654358f8168c691650118a6846e1948ab62c" }
+tauri-utils = { git = "https://github.com/tauri-apps/tauri", rev = "3375654358f8168c691650118a6846e1948ab62c" }

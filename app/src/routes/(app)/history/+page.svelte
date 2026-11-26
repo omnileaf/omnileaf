@@ -39,6 +39,7 @@
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { EMPTY_ACTION_GAP } from "#lib/page/empty-action.ts";
+  import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { whenInView } from "#lib/paging/in-view.ts";
@@ -54,10 +55,12 @@
   let { data }: PageProps = $props();
 
   const ANDROID_HISTORY_SEARCH_BAR =
-    "-ms-page-start -me-page-end px-sm block-native-search-view-bar";
+    "-ms-page-start -me-page-end -mbs-title-gap mbe-2xs px-sm block-native-top-bar";
   const ICON_SIZE = 18;
   const FIELD_ICON_SIZE = 16;
   const SKELETON_ROWS = 6;
+  const OUTLINED_GO_TO_LIBRARY =
+    "flex items-center gap-sm rounded-full border border-border bg-card px-lg font-medium min-block-touch-target hover:tint-hover active:tint-pressed desktop:min-block-pointer-button";
   const GROUP_NAMES = {
     today: m.history_today,
     yesterday: m.history_yesterday,
@@ -70,6 +73,11 @@
   const timeFormat = getTimeFormatSetting();
   const formats = $derived(whenFormats(getLocale(), timeFormat.hourCycle));
   const platform = $derived(data.appInfo.platform);
+  const goToLibraryLook = $derived(
+    platform === "android"
+      ? `gap-sm ${variantClasses("primary", "regular", false, platform)}`
+      : OUTLINED_GO_TO_LIBRARY,
+  );
   const width = new WindowWidth();
   const entryLook = $derived(historyEntryLook(platform, width.current));
   const headingId = $props.id();
@@ -342,10 +350,7 @@
       title={wasCleared ? m.history_cleared_title() : m.history_empty_title()}
       body={wasCleared ? m.history_cleared_body() : m.history_empty_body()}
     >
-      <a
-        href={resolve("/(app)")}
-        class="{EMPTY_ACTION_GAP} flex items-center gap-sm rounded-full border border-border bg-card px-lg font-medium min-block-touch-target hover:tint-hover active:tint-pressed desktop:min-block-pointer-button"
-      >
+      <a href={resolve("/(app)")} class={[EMPTY_ACTION_GAP, goToLibraryLook]}>
         {#if platform === "android"}
           <Icon name="library" size={FIELD_ICON_SIZE} />
         {:else}
