@@ -28,7 +28,6 @@ class MainActivity : TauriActivity() {
         private set
 
     override val handleBackNavigation = false
-    override val handleBackButton = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         launchRequests.takeCreating(intent.launchIntent(), savedInstanceState?.savedScreen())
@@ -76,11 +75,14 @@ class MainActivity : TauriActivity() {
         webView.followFontScale(resources.configuration)
         this.webView = webView
         backNavigation =
-            BackNavigation(WebViewHistory(webView), leaveTheApp = { finishAffinity() })
-                .also {
-                    it.followCover(appLock.isCovering)
-                    onBackPressedDispatcher.addCallback(this, it)
-                }
+            BackNavigation(
+                WebViewHistory(webView),
+                ScreenShape(heightPx = { webView.rootView.height.toFloat() }, cornerDp = { webView.screenCornerDp() }),
+                leaveTheApp = { finishAffinity() },
+            ).also {
+                it.followCover(appLock.isCovering)
+                onBackPressedDispatcher.addCallback(this, it)
+            }
         webView.setBackgroundColor(startingBackground)
     }
 

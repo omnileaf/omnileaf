@@ -3,7 +3,7 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
     ANDROID_LIST_HEADING,
@@ -69,7 +69,7 @@
     action: "mx-lg my-sm self-start px-lg min-block-touch-target",
   } satisfies Look;
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const isFlush = $derived(android.isOn && size === "regular");
   const look = $derived(isFlush ? FLUSH_LOOK : LOOKS[size]);
 
@@ -174,9 +174,9 @@
           <span class="flex flex-1 flex-col gap-2xs min-inline-none">
             <span id="{id}-{feature}" class={look.label}>{label}</span>
             {#if description !== undefined}
-              <span id="{id}-{feature}-description" class={look.description}
-                >{description}</span
-              >
+              <span id="{id}-{feature}-description" class={look.description}>
+                {description}
+              </span>
             {/if}
           </span>
         </Switch>

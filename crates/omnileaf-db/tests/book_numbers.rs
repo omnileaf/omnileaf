@@ -12,9 +12,10 @@ use omnileaf_db::{
     catalog::{
         BookDetails, BookFile, BookListing, BookNumber, BookSection, BookSummary, BooksShown,
         ChapterVolume, NewRoot, NewSeries, NumberRange, Numbering, PageRequest, PageSize, RootId,
-        RootKind, RootLocator, ScannedBook, SortDirection, Sourced, ValueSource, VolumeOverview,
-        add_root, record_moved_books, record_scanned_books, series_books, series_chapter_volumes,
-        series_numberings, series_volume,
+        RootKind, RootLocator, ScannedBook, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort,
+        SortDirection, Sourced, ValueSource, VolumeOverview, add_root, record_moved_books,
+        record_scanned_books, series_books, series_chapter_volumes, series_numberings, series_page,
+        series_volume,
     },
     rusqlite::types::Value,
 };
@@ -25,6 +26,8 @@ const ADDED_AT_MS: i64 = 1_790_000_000_000;
 const SERIES: &str = "Sample Series 01";
 
 type StoredNumbers = (String, Vec<Value>);
+
+type SeriesCounts = (String, u32, u32, u32);
 
 struct Library {
     database: Database,
@@ -147,6 +150,33 @@ impl Library {
             .read(move |connection| series_chapter_volumes(connection, series))
             .await
             .unwrap()
+    }
+
+    async fn series_counts(&self) -> Vec<SeriesCounts> {
+        let listing = SeriesListing {
+            sort: SeriesSort::ascending(SeriesOrder::Title),
+            filter: SeriesFilter::NONE,
+        };
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(10).unwrap(),
+        };
+        let page = self
+            .database
+            .read(move |connection| series_page(connection, &listing, &request))
+            .await
+            .unwrap();
+        page.items
+            .into_iter()
+            .map(|series| {
+                (
+                    series.title,
+                    series.book_count,
+                    series.volume_count,
+                    series.chapter_count,
+                )
+            })
+            .collect()
     }
 
     async fn numbers(&self) -> Vec<StoredNumbers> {
@@ -1099,4 +1129,89 @@ async fn reads_the_numbering_of_every_placed_book_of_a_series_in_reading_order()
         .unwrap();
 
     assert_eq!(numberings, expected);
+}
+
+#[tokio::test]
+async fn counts_the_volumes_and_chapters_of_a_series_leaving_out_its_specials() {
+    let library = Library::open("counts-every-kind").await;
+
+    library.record(every_kind_of_place(&library)).await;
+
+    assert_eq!(
+        library.series_counts().await,
+        [(SERIES.to_owned(), 6, 2, 3)]
+    );
+}
+
+#[tokio::test]
+async fn counts_a_book_again_when_a_scan_files_it_as_another_kind() {
+    let library = Library::open("counts-kind-changed").await;
+    library
+        .record(vec![chapter_numbered(&library, "Part 1", Some(1000))])
+        .await;
+
+    library
+        .record(vec![volume_numbered(&library, "Part 1", 1000)])
+        .await;
+
+    assert_eq!(
+        library.series_counts().await,
+        [(SERIES.to_owned(), 1, 1, 0)]
+    );
+}
+
+#[tokio::test]
+async fn counts_out_a_removed_book() {
+    let library = Library::open("counts-removed").await;
+    library.record(every_kind_of_place(&library)).await;
+
+    library
+        .change("DELETE FROM book WHERE title IN ('Volume 1', 'c001')")
+        .await;
+
+    assert_eq!(
+        library.series_counts().await,
+        [(SERIES.to_owned(), 4, 1, 2)]
+    );
+}
+
+#[tokio::test]
+async fn counts_a_book_moved_to_another_series_under_its_new_series() {
+    let library = Library::open("counts-moved").await;
+    library.record(every_kind_of_place(&library)).await;
+    let moved = ScannedBook {
+        series: NewSeries::local("Sample Series 02", ADDED_AT_MS).unwrap(),
+        ..volume_numbered(&library, "Volume 2", 2000)
+    };
+
+    library
+        .database
+        .write(move |transaction| record_moved_books(transaction, &[moved]))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        library.series_counts().await,
+        [
+            (SERIES.to_owned(), 5, 1, 3),
+            ("Sample Series 02".to_owned(), 1, 1, 0),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn leaves_a_series_of_unnumbered_books_with_no_volumes_or_chapters() {
+    let library = Library::open("counts-unnumbered").await;
+
+    library
+        .record(vec![
+            library.found("Sample Series 01", None),
+            library.found("Extra", None),
+        ])
+        .await;
+
+    assert_eq!(
+        library.series_counts().await,
+        [(SERIES.to_owned(), 2, 0, 0)]
+    );
 }

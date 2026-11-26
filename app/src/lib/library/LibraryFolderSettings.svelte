@@ -13,7 +13,7 @@
   import { FLUSH_NOTE } from "#lib/settings/android-flush-look.ts";
 
   import type { AddFolder } from "./add-folder";
-  import { AndroidPhone } from "./android-phone.svelte";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import EmptiedFolderCard from "./EmptiedFolderCard.svelte";
   import { folderLocation } from "./folder-location";
   import { FolderAdding } from "./folder-adding.svelte";
@@ -70,7 +70,7 @@
   } = $props();
 
   const width = new WindowWidth();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
 
   const folders = new LibraryFolders(
@@ -269,7 +269,7 @@
 {/snippet}
 
 <div
-  class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none android:max-medium:gap-none two-pane:max-inline-section"
+  class="mbs-pane-gap flex flex-col gap-pane-gap android:mbs-none android:gap-none two-pane:max-inline-section"
 >
   <HomeFolder
     folders={folders.list}

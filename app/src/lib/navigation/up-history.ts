@@ -5,7 +5,7 @@ export type HistoryMove =
   | { readonly kind: "back"; readonly steps: number }
   | { readonly kind: "replace"; readonly stepsBack: number };
 
-function wayUp(pathname: string): readonly string[] {
+export function wayUp(pathname: string): readonly string[] {
   const segments = pathname.split("/").filter(Boolean);
   return [
     SECTION_PATHNAMES.library,

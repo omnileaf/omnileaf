@@ -38,7 +38,7 @@
     aria-label={label}
     aria-labelledby={labelledBy}
     class={cn(
-      "block rounded-full border border-accent bg-background shadow-card-rest transition-control block-lg inline-lg focus-visible:focus-ring",
+      "block rounded-full border border-accent bg-background shadow-card-rest transition-control block-lg inline-lg focus-visible:focus-ring touch:native-target",
       WINDOWS_SLIDER_THUMB,
       "windows:focus-visible:ring-1 windows:focus-visible:ring-native-focus-ring-inner",
     )}

@@ -19,7 +19,6 @@ const INTRO =
   "Each language is shown in its own name. It changes straight away.";
 const INTRO_GAP = 8;
 const FOOTNOTE = "More languages arrive as people translate Omnileaf.";
-const TOUCH_ROW_HEIGHT = 48;
 const POINTER_ROW_HEIGHT = 44;
 const CHECK_SIZE = 20;
 const SHORT_VIEWPORT_HEIGHT = 240;
@@ -241,27 +240,6 @@ test.describe("on an Android phone", () => {
     await expect(
       page.getByRole("link", { name: "Back to General" }),
     ).toHaveAttribute("href", "/settings/general");
-  });
-});
-
-test.describe("on an Android tablet", () => {
-  testOnlyInItsWebview("android");
-  test.use(onPlatform("android"));
-
-  test("lists every option in one card of 48px rows with a 20px check", async ({
-    page,
-  }) => {
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "tablets only");
-    await page.goto(LANGUAGE_PAGE);
-
-    const system = await boxOf(option(page, SYSTEM_OPTION));
-    const english = await boxOf(option(page, "English"));
-    const check = await boxOf(option(page, SYSTEM_OPTION).locator("svg"));
-
-    expect(english.height).toBe(TOUCH_ROW_HEIGHT);
-    expect(check.width).toBe(CHECK_SIZE);
-    expect(english.y).toBe(system.y + system.height);
-    await expect(page.getByText(FOOTNOTE)).toBeHidden();
   });
 });
 

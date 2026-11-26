@@ -54,12 +54,13 @@
     <span
       lang={valueLang}
       class="text-native-row-subtitle/native-row-subtitle text-muted"
-      >{value}</span
     >
+      {value}
+    </span>
     {#if help !== undefined}
-      <span class="text-native-row-subtitle/native-row-subtitle text-muted"
-        >{help}</span
-      >
+      <span class="text-native-row-subtitle/native-row-subtitle text-muted">
+        {help}
+      </span>
     {/if}
   </span>
 </button>

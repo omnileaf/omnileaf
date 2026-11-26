@@ -26,7 +26,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
 
-  import { AndroidPhone } from "./android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
   import { IosPhone } from "./ios-phone.svelte.ts";
@@ -54,7 +54,7 @@
     onArrange: (tabs: readonly ArrangedTab[]) => void;
   } = $props();
 
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const isMac = currentPlatform() === "macos";
   const IOS_ICON_SIZE = 20;
   const ios = new IosPhone();
@@ -174,7 +174,7 @@
             : "gap-sm py-sm ps-xs pe-sm",
         drag?.key === key &&
           (android.isOn
-            ? "relative z-drag-box -translate-y-native-drag-lift scale-102 rounded-native-segment bg-android-container-high shadow-dialog"
+            ? "relative z-drag-box -translate-y-native-drag-lift rounded-native-segment bg-android-container-high shadow-dialog"
             : "relative z-drag-box rounded-card bg-card shadow-dialog"),
       ]}
     >
@@ -220,14 +220,18 @@
             ios.isOn &&
               "text-native-row-title/native-row-title tracking-native-row-title",
             !android.isOn && !ios.isOn && "font-medium",
-          ]}>{tab.name}</span
+          ]}
         >
+          {tab.name}
+        </span>
         <span
           class={[
             "text-muted",
             android.isOn || ios.isOn ? ROW_SUBTITLE_TYPE : "text-detail",
-          ]}>{detailOf(tab)}</span
+          ]}
         >
+          {detailOf(tab)}
+        </span>
       </span>
       {#if tab.isHidden}
         <span
@@ -321,11 +325,4 @@
     </li>
   {/each}
 </ul>
-<p
-  role="status"
-  class={announcement === ""
-    ? "sr-only"
-    : "fixed inset-e-lg inset-be-lg z-notice rounded-control border border-border bg-card px-md py-sm text-small shadow-dialog"}
->
-  {announcement}
-</p>
+<p role="status" class="sr-only">{announcement}</p>

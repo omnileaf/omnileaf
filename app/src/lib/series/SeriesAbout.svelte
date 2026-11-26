@@ -275,9 +275,9 @@
             {#snippet child({ props })}
               <CollapsibleTrigger {...props}>
                 <ItemMedia><Icon name="info" /></ItemMedia>
-                <ItemContent
-                  ><ItemTitle>{m.series_details()}</ItemTitle></ItemContent
-                >
+                <ItemContent>
+                  <ItemTitle>{m.series_details()}</ItemTitle>
+                </ItemContent>
                 <Icon
                   name={areDetailsOpen ? detailsRow.open : detailsRow.closed}
                   class="shrink-0 text-muted"

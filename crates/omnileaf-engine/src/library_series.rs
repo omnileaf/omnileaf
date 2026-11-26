@@ -12,6 +12,8 @@ pub struct LibrarySeries {
     pub id: SeriesId,
     pub title: String,
     pub book_count: u32,
+    pub volume_count: u32,
+    pub chapter_count: u32,
     pub unread_count: u32,
     pub cover: Option<CoverPath>,
     pub language: Option<String>,
@@ -44,6 +46,8 @@ impl LibrarySeries {
             id: SeriesId(series.id),
             title: series.title,
             book_count: series.book_count,
+            volume_count: series.volume_count,
+            chapter_count: series.chapter_count,
             unread_count: series.unread_count,
             cover: series.cover.map(CoverPath),
             language: series.language,
@@ -118,12 +122,13 @@ impl Type for SeriesCursor {
 mod tests {
     use super::*;
 
-    #[test]
-    fn carries_no_downloads_until_the_library_works_them_out() {
-        let summary = SeriesSummary {
+    fn summary() -> SeriesSummary {
+        SeriesSummary {
             id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
             title: "Sample Series 04".to_owned(),
             book_count: 8,
+            volume_count: 2,
+            chapter_count: 6,
             unread_count: 6,
             added_at_ms: 0,
             cover: None,
@@ -132,10 +137,20 @@ mod tests {
             is_rated_adult: true,
             is_marked_adult: false,
             is_connected: true,
-        };
+        }
+    }
 
-        let series = LibrarySeries::new(summary, AdultContent::default());
+    #[test]
+    fn carries_no_downloads_until_the_library_works_them_out() {
+        let series = LibrarySeries::new(summary(), AdultContent::default());
 
         assert!(!series.has_downloads);
+    }
+
+    #[test]
+    fn carries_the_volumes_and_chapters_the_library_counted() {
+        let series = LibrarySeries::new(summary(), AdultContent::default());
+
+        assert_eq!((series.volume_count, series.chapter_count), (2, 6));
     }
 }

@@ -1,3 +1,8 @@
+#![expect(
+    dead_code,
+    reason = "each test file reads, paces or changes only some of the tree, so the helpers it leaves out go unused there"
+)]
+
 use std::{
     fmt,
     fs::File,
@@ -7,27 +12,93 @@ use std::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
     },
+    thread,
+    time::{Duration, SystemTime},
 };
 
 use omnileaf_engine::OpenTree;
 use omnileaf_formats::{Details, Entry, LocalStorage, Storage};
-use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
+use omnileaf_testkit::{
+    Deadline, GENERATED_LIBRARY_NAME, GeneratedLibrary, InFlight, SAMPLE_LIBRARY_NAME,
+    write_generated_library, write_sample_library,
+};
 
 use crate::support::ScratchFolder;
 
+const ARCHIVE_EXTENSION: &str = "cbz";
+const A_PAIR: u64 = 2;
+
 pub(crate) struct TreeOfFolder {
     pub(crate) scratch: ScratchFolder,
+    library: WrittenLibrary,
+    pacing: Pacing,
     opened: Mutex<Vec<PathBuf>>,
+    open: InFlight,
     is_lost: AtomicBool,
+}
+
+struct WrittenLibrary {
+    name: &'static str,
+    files: Vec<PathBuf>,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum Opening {
+    Immediately,
+    After(Duration),
+    InCompanyWithin(Duration),
+    TimingOutInCompanyWithin(Duration),
+}
+
+#[derive(Clone, Copy)]
+enum Pacing {
+    Immediately,
+    After(Duration),
+    UntilInCompany(Deadline),
+    HoldingEachOpenForCompany(Duration),
+}
+
+impl Pacing {
+    fn of(opening: Opening) -> Self {
+        match opening {
+            Opening::Immediately => Self::Immediately,
+            Opening::After(latency) => Self::After(latency),
+            Opening::InCompanyWithin(longest) => Self::UntilInCompany(Deadline::after(longest)),
+            Opening::TimingOutInCompanyWithin(longest) => Self::HoldingEachOpenForCompany(longest),
+        }
+    }
 }
 
 impl TreeOfFolder {
     pub(crate) fn new(name: &str) -> Arc<Self> {
+        Self::opening(name, Opening::Immediately)
+    }
+
+    pub(crate) fn opening(name: &str, opening: Opening) -> Arc<Self> {
         let scratch = ScratchFolder::new(name);
-        write_sample_library(scratch.path()).unwrap();
+        let library = WrittenLibrary {
+            name: SAMPLE_LIBRARY_NAME,
+            files: write_sample_library(scratch.path()).unwrap(),
+        };
+        Self::holding(scratch, library, opening)
+    }
+
+    pub(crate) fn generated(name: &str, library: GeneratedLibrary, opening: Opening) -> Arc<Self> {
+        let scratch = ScratchFolder::new(name);
+        let library = WrittenLibrary {
+            name: GENERATED_LIBRARY_NAME,
+            files: write_generated_library(scratch.path(), library).unwrap(),
+        };
+        Self::holding(scratch, library, opening)
+    }
+
+    fn holding(scratch: ScratchFolder, library: WrittenLibrary, opening: Opening) -> Arc<Self> {
         Arc::new(Self {
             scratch,
+            library,
+            pacing: Pacing::of(opening),
             opened: Mutex::new(Vec::new()),
+            open: InFlight::new(),
             is_lost: AtomicBool::new(false),
         })
     }
@@ -36,23 +107,65 @@ impl TreeOfFolder {
         self.is_lost.store(true, Ordering::SeqCst);
     }
 
+    pub(crate) fn change_every_archive(&self, modified: SystemTime) {
+        for archive in self
+            .library
+            .files
+            .iter()
+            .filter(|file| file.extension().is_some_and(|ext| ext == ARCHIVE_EXTENSION))
+        {
+            File::options()
+                .write(true)
+                .open(self.scratch.path().join(archive))
+                .unwrap()
+                .set_modified(modified)
+                .unwrap();
+        }
+    }
+
     fn on_device(&self, path: &Path) -> io::Result<PathBuf> {
         if self.is_lost.load(Ordering::SeqCst) {
             return Err(io::ErrorKind::PermissionDenied.into());
         }
         let inside = path
-            .strip_prefix(SAMPLE_LIBRARY_NAME)
+            .strip_prefix(self.library.name)
             .map_err(|_| io::Error::from(io::ErrorKind::NotFound))?;
-        Ok(self.scratch.path().join(SAMPLE_LIBRARY_NAME).join(inside))
+        Ok(self.scratch.path().join(self.library.name).join(inside))
     }
 
     pub(crate) fn take_opened(&self) -> Vec<PathBuf> {
         std::mem::take(&mut self.opened.lock().unwrap())
     }
 
+    pub(crate) fn take_most_open_at_once(&self) -> u64 {
+        self.open.take_most_at_once()
+    }
+
     pub(crate) fn opener(self: &Arc<Self>) -> OpenTree {
         let tree = Arc::clone(self);
         Arc::new(move |_| Arc::clone(&tree) as Arc<dyn Storage>)
+    }
+
+    fn wait_to_open(&self) -> io::Result<()> {
+        match self.pacing {
+            Pacing::Immediately => Ok(()),
+            Pacing::After(latency) => {
+                thread::sleep(latency);
+                Ok(())
+            }
+            Pacing::UntilInCompany(deadline) => {
+                self.open.wait_until_most_at_once_reaches(A_PAIR, deadline);
+                Ok(())
+            }
+            Pacing::HoldingEachOpenForCompany(longest) => {
+                self.open.wait_for_company(Deadline::after(longest));
+                if self.open.has_company() {
+                    Err(io::ErrorKind::TimedOut.into())
+                } else {
+                    Ok(())
+                }
+            }
+        }
     }
 }
 
@@ -75,6 +188,9 @@ impl Storage for TreeOfFolder {
 
     fn open(&self, file: &Path) -> io::Result<File> {
         self.opened.lock().unwrap().push(file.to_path_buf());
-        LocalStorage.open(&self.on_device(file)?)
+        let _open = self.open.enter();
+        self.wait_to_open()
+            .and_then(|()| self.on_device(file))
+            .and_then(|on_device| LocalStorage.open(&on_device))
     }
 }

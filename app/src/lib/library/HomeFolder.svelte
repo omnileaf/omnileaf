@@ -16,7 +16,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { FLUSH_BLEED } from "#lib/settings/android-flush-look.ts";
 
-  import { AndroidPhone } from "./android-phone.svelte";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
 
   import { folderLocation } from "./folder-location";
   import type { FolderList } from "./library-folders.svelte";
@@ -44,7 +44,7 @@
   const pathId = `${headingId}-path`;
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
-  const android = new AndroidPhone();
+  const android = androidListLook();
 </script>
 
 <section data-settings-group aria-labelledby={headingId} class={className}>

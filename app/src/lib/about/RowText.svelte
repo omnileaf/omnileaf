@@ -40,14 +40,16 @@
   </ItemMedia>
 {/if}
 <ItemContent>
-  <ItemTitle class={look === "pane" ? PANE_LABEL : undefined}>{label}</ItemTitle
-  >
+  <ItemTitle class={look === "pane" ? PANE_LABEL : undefined}>
+    {label}
+  </ItemTitle>
   {#if hint !== undefined}
     <ItemDescription
       dir={isAddress ? "ltr" : undefined}
       translate={isAddress ? "no" : undefined}
       class="text-footnote android:max-medium:text-native-row-subtitle/native-row-subtitle"
-      >{hint}</ItemDescription
     >
+      {hint}
+    </ItemDescription>
   {/if}
 </ItemContent>

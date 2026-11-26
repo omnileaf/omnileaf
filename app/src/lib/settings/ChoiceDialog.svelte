@@ -98,8 +98,10 @@
             <span
               id="{id}-{choice.value}-label"
               lang={choice.lang}
-              class={look.label}>{choice.label}</span
+              class={look.label}
             >
+              {choice.label}
+            </span>
             {#if choice.hint !== undefined}
               <span class={look.hint}>{choice.hint}</span>
             {/if}

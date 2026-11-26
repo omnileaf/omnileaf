@@ -1,11 +1,13 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import { on } from "svelte/events";
 
   import { scrollerOf } from "#lib/virtual-grid/scroller.ts";
 
   const SCREENS_FOR_A_HANDLE = 8;
   const EDGE_GAP_PX = 2;
   const MOST_OF_THE_SCREEN_ABOVE_THE_TRACK = 0.4;
+  const MOVES_ENDING = ["transitionend", "transitioncancel"] as const;
 
   interface Frame {
     readonly top: number;
@@ -78,6 +80,10 @@
     };
   }
 
+  function isAroundTrack(moved: EventTarget | null): boolean {
+    return moved instanceof Node && anchor !== null && moved.contains(anchor);
+  }
+
   function grab(event: PointerEvent): void {
     if (event.button !== 0 || handle === null) {
       return;
@@ -119,9 +125,24 @@
     const target = scroller === document.scrollingElement ? document : scroller;
     target.addEventListener("scroll", follow, { passive: true });
     window.addEventListener("resize", follow, { passive: true });
+    const stopFollowingMoves = MOVES_ENDING.map((ending) =>
+      on(
+        document,
+        ending,
+        (event) => {
+          if (isAroundTrack(event.target)) {
+            follow();
+          }
+        },
+        { capture: true },
+      ),
+    );
     return () => {
       target.removeEventListener("scroll", follow);
       window.removeEventListener("resize", follow);
+      for (const stop of stopFollowingMoves) {
+        stop();
+      }
     };
   });
 </script>

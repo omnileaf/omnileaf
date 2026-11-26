@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { groupByLicence } from "#lib/licences/licences.ts";
   import LicenceGroupList from "#lib/licences/LicenceGroupList.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -14,7 +14,7 @@
   let { data }: PageProps = $props();
 
   const width = new WindowWidth();
-  const android = new AndroidPhone();
+  const android = androidListLook();
   const look = $derived(
     isPhone(data.appInfo.platform, width.current) ? "phone" : "pane",
   );
@@ -28,7 +28,7 @@
   parent={{ route: "/(app)/settings/about", title: m.about_title() }}
 />
 <div
-  class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none two-pane:max-inline-section"
+  class="mbs-pane-gap flex flex-col gap-sm android:mbs-none two-pane:max-inline-section"
 >
   <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
     {m.licences_intro()}
