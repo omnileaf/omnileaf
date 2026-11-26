@@ -17,11 +17,10 @@ import {
 
 type Phase = "held" | "cancelling";
 
-const AT_REST: SheetBackShape = { scaleX: 1, scaleY: 1, contentScaleY: 1 };
-const REST_SCALE = "1 1";
+const NO_SHAPE: SheetBackShape = { scale: 1, layoutHeight: 0 };
+const REST_SCALE = "1";
 const SHEETS_STILL = "sheets";
 const FOLLOWING_FINGER = "translate, transform, rotate";
-const PART_ORIGIN = "--sheet-back-origin";
 
 export function isSheetMotionOn(): boolean {
   const still = document.documentElement.dataset.still ?? "";
@@ -33,29 +32,29 @@ export function isSheetMotionOn(): boolean {
 function styleOf(shape: SheetBackShape): string {
   return [
     "transform-origin: 50% 100%",
-    `scale: ${String(shape.scaleX)} ${String(shape.scaleY)}`,
-    `--sheet-back-content: ${String(shape.contentScaleY)}`,
+    `scale: ${String(shape.scale)}`,
+    `block-size: ${String(shape.layoutHeight)}px`,
+    "max-block-size: none",
+    "inset-block-start: auto",
     `transition-property: ${FOLLOWING_FINGER}`,
   ].join("; ");
 }
 
-function shapeReachedBy(sheet: HTMLElement): SheetBackShape {
-  const [scaleX = 1, scaleY = scaleX] = getComputedStyle(sheet)
+function scaleReachedBy(sheet: HTMLElement): number {
+  const [scale = 1] = getComputedStyle(sheet)
     .scale.split(" ")
     .map(Number)
     .filter((value) => !Number.isNaN(value));
-  return { scaleX, scaleY, contentScaleY: scaleX / scaleY };
+  return scale;
 }
 
-function partsOf(sheet: HTMLElement): readonly HTMLElement[] {
-  return [...sheet.children].filter(
-    (part): part is HTMLElement => part instanceof HTMLElement,
-  );
-}
-
-function springBackOf(element: HTMLElement): Animation {
-  return element.animate(
-    [{ scale: getComputedStyle(element).scale }, { scale: REST_SCALE }],
+function springBackOf(sheet: HTMLElement, restHeight: number): Animation {
+  const reached = getComputedStyle(sheet);
+  return sheet.animate(
+    [
+      { scale: reached.scale, blockSize: reached.blockSize },
+      { scale: REST_SCALE, blockSize: `${String(restHeight)}px` },
+    ],
     {
       duration: ANDROID_BACK_SPRING.durationMs,
       easing: ANDROID_BACK_SPRING.easing,
@@ -65,12 +64,11 @@ function springBackOf(element: HTMLElement): Animation {
 
 export class SheetBackPreview {
   #phase: Phase | undefined = $state();
-  #shape: SheetBackShape = $state.raw(AT_REST);
+  #shape: SheetBackShape = $state.raw(NO_SHAPE);
   #size: SheetBackSize | undefined;
   #reached = 0;
   #watching: MutationObserver | undefined;
-  #parts: readonly HTMLElement[] = [];
-  #springs: readonly Animation[] = [];
+  #spring: Animation | undefined;
   #stopSettling: (() => void) | undefined;
   #stopChecking: (() => void) | undefined;
   readonly #sheet: () => HTMLElement | null;
@@ -129,10 +127,26 @@ export class SheetBackPreview {
     if (sheet === null || !this.#isMotionOn()) {
       return;
     }
-    const reached = this.#phase === undefined ? AT_REST : shapeReachedBy(sheet);
+    const size = this.#size ?? {
+      width: sheet.offsetWidth,
+      height: sheet.offsetHeight,
+    };
+    const reached =
+      this.#phase === undefined
+        ? 0
+        : Math.min(
+            1,
+            Math.max(
+              0,
+              sheetBackProgressOf(size, {
+                scale: scaleReachedBy(sheet),
+                layoutHeight: size.height,
+              }),
+            ),
+          );
     this.#release();
-    this.#size = { width: sheet.offsetWidth, height: sheet.offsetHeight };
-    this.#reached = sheetBackProgressOf(this.#size, reached);
+    this.#size = size;
+    this.#reached = reached;
     this.#watching = new MutationObserver(() => {
       if (sheet.dataset.state === "open") {
         this.#release();
@@ -142,11 +156,7 @@ export class SheetBackPreview {
       attributes: true,
       attributeFilter: ["data-state"],
     });
-    this.#parts = partsOf(sheet);
-    for (const part of this.#parts) {
-      part.style.setProperty(PART_ORIGIN, `${String(-part.offsetTop)}px`);
-    }
-    this.#shape = reached;
+    this.#shape = sheetBackShape(size, reached);
     this.#phase = "held";
   }
 
@@ -163,11 +173,11 @@ export class SheetBackPreview {
 
   #springBack(): void {
     const sheet = this.#sheet();
-    if (this.#phase !== "held" || sheet === null) {
+    if (this.#phase !== "held" || sheet === null || this.#size === undefined) {
       return;
     }
-    this.#springs = [sheet, ...this.#parts].map(springBackOf);
-    this.#shape = AT_REST;
+    this.#spring = springBackOf(sheet, this.#size.height);
+    this.#shape = sheetBackShape(this.#size, 0);
     this.#phase = "cancelling";
     this.#stopSettling = this.#scheduler.after(
       ANDROID_BACK_SPRING.durationMs,
@@ -182,19 +192,13 @@ export class SheetBackPreview {
     this.#stopSettling = undefined;
     this.#stopChecking?.();
     this.#stopChecking = undefined;
-    for (const spring of this.#springs) {
-      spring.cancel();
-    }
-    this.#springs = [];
-    for (const part of this.#parts) {
-      part.style.removeProperty(PART_ORIGIN);
-    }
-    this.#parts = [];
+    this.#spring?.cancel();
+    this.#spring = undefined;
     this.#watching?.disconnect();
     this.#watching = undefined;
     this.#size = undefined;
     this.#reached = 0;
-    this.#shape = AT_REST;
+    this.#shape = NO_SHAPE;
     this.#phase = undefined;
   }
 }

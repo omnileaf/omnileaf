@@ -101,7 +101,6 @@
       look.heights[height],
       !drag.isDragging &&
         "motion-sheets:transition-transform motion-sheets:duration-sheet-in motion-sheets:ease-sheet-in motion-sheets:closed:duration-sheet-out motion-sheets:closed:ease-sheet-out",
-      "data-back:*:sheet-back-content",
       className,
     )}
     {style}

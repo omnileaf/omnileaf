@@ -1969,11 +1969,6 @@
   box-shadow: inset 0 0 0 1px var(--native-color-button-outline-edge);
 }
 
-@utility sheet-back-content {
-  transform-origin: 0 var(--sheet-back-origin, 0);
-  scale: 1 var(--sheet-back-content);
-}
-
 @utility side-panel-shadow {
   box-shadow: -12px 0 32px var(--shadow-color);
 

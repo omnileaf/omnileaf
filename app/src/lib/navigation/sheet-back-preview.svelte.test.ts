@@ -6,7 +6,6 @@ import { SheetBackPreview } from "./sheet-back-preview.svelte";
 
 const SPRING_SETTLES_MS = 180;
 const COMPUTED_ROUNDING = 0.0001;
-const ORIGIN = "--sheet-back-origin";
 const mounted: HTMLElement[] = [];
 
 function at(progress: number): BackGestureAt {
@@ -99,31 +98,21 @@ test("holds the sheet at rest when a gesture starts", () => {
   sheet.follow(started);
 
   expect(sheet.phase).toBe("held");
-  expect(sheet.style).toContain("scale: 1 1");
+  expect(sheet.style).toContain("scale: 1;");
+  expect(sheet.style).toContain("block-size: 600px");
 });
 
-test("shrinks the sheet about its bottom edge with the gesture and scales its content back", () => {
+test("shrinks the sheet evenly about its bottom edge and lays it out taller to keep its height", () => {
   const { sheet } = preview();
   sheet.follow(started);
 
   sheet.follow(moved(1));
 
   expect(sheet.style).toContain("transform-origin: 50% 100%");
-  expect(sheet.style).toMatch(/scale: 0\.87\d+ 0\.96/);
-  expect(sheet.style).toMatch(/--sheet-back-content: 0\.91\d+/);
-});
-
-test("pivots each part of the sheet about the sheet's top", () => {
-  const { sheet, element } = preview();
-
-  sheet.follow(started);
-
-  const parts = [...element.children] as HTMLElement[];
-  expect(parts.map((part) => part.style.getPropertyValue(ORIGIN))).toEqual([
-    "0px",
-    "-20px",
-    "-120px",
-  ]);
+  expect(sheet.style).toMatch(/scale: 0\.87\d+;/);
+  expect(sheet.style).toMatch(/block-size: 65\d\.\d+px/);
+  expect(sheet.style).toContain("max-block-size: none");
+  expect(sheet.style).toContain("inset-block-start: auto");
 });
 
 test("leaves the sheet's own slide in the transitions while the gesture is held", () => {
@@ -137,7 +126,7 @@ test("leaves the sheet's own slide in the transitions while the gesture is held"
   expect(sheet.style).not.toMatch(/transition:/);
 });
 
-test("springs the sheet and its parts back to rest when the gesture ends, then lets go of them", () => {
+test("springs the sheet back to rest when the gesture ends, then lets go of it", () => {
   const { sheet, element, apply, settle, timers } = preview();
   sheet.follow(started);
   sheet.follow(moved(1));
@@ -146,20 +135,16 @@ test("springs the sheet and its parts back to rest when the gesture ends, then l
   sheet.follow(ended);
 
   expect(sheet.phase).toBe("cancelling");
-  expect(sheet.style).toContain("scale: 1 1");
+  expect(sheet.style).toContain("scale: 1;");
+  expect(sheet.style).toContain("block-size: 600px");
   expect(sheet.style).toContain(
     "transition-property: translate, transform, rotate",
   );
-  expect(element.getAnimations({ subtree: true })).toHaveLength(4);
+  expect(element.getAnimations()).toHaveLength(1);
   expect(timers.at(-1)?.ms).toBe(SPRING_SETTLES_MS);
   settle();
   expect([sheet.phase, sheet.style]).toEqual([undefined, undefined]);
-  const parts = [...element.children] as HTMLElement[];
-  expect(parts.map((part) => part.style.getPropertyValue(ORIGIN))).toEqual([
-    "",
-    "",
-    "",
-  ]);
+  expect(element.getAnimations()).toEqual([]);
 });
 
 test("starts a new gesture from the size the sheet has reached in a spring back", () => {
@@ -172,7 +157,7 @@ test("starts a new gesture from the size the sheet has reached in a spring back"
 
   sheet.follow(started);
 
-  const [scaleX] = (sheet.style?.match(/scale: ([\d.]+) /) ?? []).slice(1);
+  const [scaleX] = (sheet.style?.match(/scale: ([\d.]+);/) ?? []).slice(1);
   expect(Number(scaleX)).toBeLessThan(0.95);
 });
 
@@ -228,7 +213,7 @@ test("stays shrunk through the slide out when back is asked to close the sheet a
 });
 
 test("is at rest again once the sheet has gone", () => {
-  const { sheet, element, settle } = preview(true, "closed");
+  const { sheet, settle } = preview(true, "closed");
   sheet.follow(started);
   sheet.follow(moved(1));
 
@@ -236,12 +221,6 @@ test("is at rest again once the sheet has gone", () => {
   settle();
 
   expect([sheet.phase, sheet.style]).toEqual([undefined, undefined]);
-  const parts = [...element.children] as HTMLElement[];
-  expect(parts.map((part) => part.style.getPropertyValue(ORIGIN))).toEqual([
-    "",
-    "",
-    "",
-  ]);
 });
 
 test("shrinks again from rest after the sheet has gone and come back", () => {
@@ -252,7 +231,7 @@ test("shrinks again from rest after the sheet has gone and come back", () => {
 
   sheet.follow(started);
 
-  expect(sheet.style).toContain("scale: 1 1");
+  expect(sheet.style).toContain("scale: 1;");
 });
 
 test("never widens the sheet during a gesture that takes over from a spring back", () => {
@@ -263,7 +242,7 @@ test("never widens the sheet during a gesture that takes over from a spring back
   sheet.follow(ended);
   apply();
   sheet.follow(started);
-  const widthOf = () => Number(sheet.style?.match(/scale: ([\d.]+) /)?.[1]);
+  const widthOf = () => Number(sheet.style?.match(/scale: ([\d.]+);/)?.[1]);
   const startedAt = widthOf();
 
   sheet.follow(moved(0.05));
