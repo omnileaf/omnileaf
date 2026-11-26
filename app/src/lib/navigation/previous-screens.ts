@@ -73,9 +73,6 @@ function copyOf(screen: HTMLElement): ScreenCopy {
   for (const identified of content.querySelectorAll("[id]")) {
     identified.removeAttribute("id");
   }
-  for (const pressed of content.querySelectorAll("[data-pressed]")) {
-    pressed.removeAttribute("data-pressed");
-  }
   return { content, scrollTop: screen.scrollTop };
 }
 

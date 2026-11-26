@@ -48,7 +48,6 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { followWindowBackdropOnceThemed } from "#lib/page/display-modes.ts";
   import { isPhone, isPointer, opensHandedFiles } from "#lib/page/platform.ts";
-  import { markFingerPresses } from "#lib/page/finger-press.ts";
   import { followWindowActivity } from "#lib/page/window-activity.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -295,16 +294,11 @@
       void rescanEveryFolder();
     }
     const stopFollowingWindow = followWindowActivity(window);
-    const stopMarkingPresses =
-      data.appInfo.platform === "android"
-        ? markFingerPresses(document)
-        : undefined;
     const stopDelivering = appInterfaceErrors.deliverTo((error) => {
       void crashReporting.offerInterfaceError(error);
     });
     return () => {
       stopFollowingWindow();
-      stopMarkingPresses?.();
       stopDelivering();
     };
   });

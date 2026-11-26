@@ -80,17 +80,3 @@ test("places a layer over the area a screen took", () => {
     layer.style.height,
   ]).toEqual(["1px", "2px", "30px", "40px"]);
 });
-
-test("keeps no button pressed in the copy of a screen left under a finger", () => {
-  const screens = new PreviousScreens();
-  const screen = screenSaying("Series");
-  const held = document.createElement("button");
-  held.setAttribute("data-pressed", "");
-  screen.append(held);
-
-  screens.keep("/series/1", screen);
-
-  expect(
-    screens.of("/series/1")?.content.querySelectorAll("[data-pressed]"),
-  ).toHaveLength(0);
-});
