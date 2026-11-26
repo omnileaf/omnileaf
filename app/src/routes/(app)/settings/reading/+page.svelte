@@ -89,6 +89,13 @@
       label: READING_MODE_NAMES[choice](),
     })),
   );
+  const newSeriesChoicesWithHint = $derived(
+    newSeriesChoices.map((choice) =>
+      choice.value === "automatic"
+        ? { ...choice, hint: m.reading_mode_automatic_hint() }
+        : choice,
+    ),
+  );
 
   function chooseNewSeriesMode(choice: ReadingModeChoice): void {
     newSeries.choose(choice);
@@ -98,7 +105,6 @@
 {#snippet tapGuideRows()}
   <SettingSwitch
     label={m.reading_tap_guide()}
-    description={m.reading_tap_guide_help()}
     isOn={hints.showsTapGuide}
     onToggle={() => {
       hints.turnTapGuide(!hints.showsTapGuide);
@@ -108,7 +114,6 @@
   />
   <SettingActionRow
     label={m.reading_guide_again()}
-    description={m.reading_guide_again_help()}
     onPress={() => {
       hints.armReplay();
       notices.show({
@@ -126,7 +131,6 @@
   {#if hasVolumeKeys(currentPlatform())}
     <SettingSwitch
       label={m.reader_volume_keys()}
-      description={m.reader_volume_keys_help()}
       isOn={defaults.look.turnsPagesWithVolumeKeys}
       onToggle={() => {
         defaults.change(
@@ -139,8 +143,7 @@
     />
   {/if}
   <SettingSwitch
-    label={m.reader_keep_screen_on()}
-    description={m.reading_keep_screen_on_help()}
+    label={m.reading_keep_screen_on()}
     isOn={defaults.look.keepsScreenOn}
     onToggle={() => {
       defaults.change("keepsScreenOn", !defaults.look.keepsScreenOn);
@@ -190,8 +193,7 @@
       <SettingChoiceRow
         title={m.reading_mode_new_series()}
         value={READING_MODE_NAMES[newSeries.choice]()}
-        help={m.reading_mode_new_series_help()}
-        choices={newSeriesChoices}
+        choices={newSeriesChoicesWithHint}
         chosen={newSeries.choice}
         onChoose={chooseNewSeriesMode}
       />
@@ -201,8 +203,7 @@
           bleed=""
           title={m.reading_mode_new_series()}
           value={READING_MODE_NAMES[newSeries.choice]()}
-          help={m.reading_mode_new_series_help()}
-          choices={newSeriesChoices}
+          choices={newSeriesChoicesWithHint}
           chosen={newSeries.choice}
           onChoose={chooseNewSeriesMode}
         />
