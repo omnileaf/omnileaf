@@ -98,7 +98,6 @@
   let list = $state<HTMLElement | null>(null);
   let drag = $state<Drag | undefined>();
   let settling = $state<Settling | undefined>();
-  let settle: Animation | undefined;
   let announcement = $state("");
   let quiet: ReturnType<typeof setTimeout> | undefined;
 
@@ -149,8 +148,9 @@
   }
 
   function finishSettling(): void {
-    settle?.finish();
-    settle = undefined;
+    for (const animation of list?.getAnimations({ subtree: true }) ?? []) {
+      animation.finish();
+    }
     settling = undefined;
   }
 
@@ -240,7 +240,7 @@
     }
     await tick();
     const row = rowOf(key);
-    settle =
+    const settle =
       row === null || lifted === undefined ? undefined : settleRow(row, lifted);
     await settle?.finished.then(
       () => undefined,

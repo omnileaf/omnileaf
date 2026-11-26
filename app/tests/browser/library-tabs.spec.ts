@@ -96,6 +96,10 @@ async function bottomOfRow(page: Page, name: string): Promise<number> {
   return row.y + row.height - INSIDE_THE_ROW;
 }
 
+function middleOf({ y, height }: { y: number; height: number }): number {
+  return y + height / 2;
+}
+
 function savedOrder(): string[] | undefined {
   return saved?.map(({ id, isHidden }) => {
     const name = id.kind === "category" ? id.id : id.kind;
@@ -323,6 +327,49 @@ test.describe("in a library that keeps labels", () => {
       STARTING_ORDER,
     );
     expect(saved).toBeUndefined();
+  });
+
+  test("measures a new drag from where the rows rest while a cancelled drag still eases them back", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+    const reading = rowOf(page, "Reading");
+    const all = await boxOf(rowOf(page, "All"));
+    const readingAtRest = await boxOf(reading);
+    const mangaAtRest = await boxOf(rowOf(page, "Manga"));
+    const between =
+      (middleOf(readingAtRest) + middleOf(mangaAtRest)) / 2 -
+      (all.y + all.height);
+    const start = await boxOf(
+      reading.getByRole("button", { name: "Move Reading" }),
+    );
+    const handle = await boxOf(
+      rowOf(page, "All").getByRole("button", { name: "Move All" }),
+    );
+    const x = start.x + start.width / 2;
+    const y = handle.y + handle.height / 2;
+
+    await page.mouse.move(x, start.y + start.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x, await bottomOfRow(page, "Manga"), {
+      steps: DRAG_STEPS,
+    });
+    await expect
+      .poll(async () => (await boxOf(rowOf(page, "Manga"))).y)
+      .toBeCloseTo(readingAtRest.y, 0);
+    await slowMoves(page);
+    await reading
+      .getByRole("button", { name: "Move Reading" })
+      .dispatchEvent("pointercancel", { pointerId: 1 });
+    await page.mouse.up();
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y + between, { steps: DRAG_STEPS });
+    await page.mouse.up();
+
+    await expect
+      .poll(savedOrder)
+      .toEqual(["newChapters (hidden)", "reading", "all", "manga", "comics"]);
   });
 
   test("puts a dragged tab back when the app goes to the background", async ({
