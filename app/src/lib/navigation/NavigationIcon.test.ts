@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
+import "../../app.css";
+
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import NavigationIcon from "./NavigationIcon.svelte";
@@ -78,8 +80,16 @@ test("keeps the clock's circular arrow drawn when the history icon is filled", a
   expect(drawnAsLines.length).toBeGreaterThanOrEqual(2);
 });
 
+function shownLayers(container: Element): string[] {
+  return Array.from(container.querySelectorAll("[data-icon]"))
+    .filter((layer) => getComputedStyle(layer).opacity === "1")
+    .map((layer) =>
+      layer.hasAttribute("data-filled") ? "filled" : "outlined",
+    );
+}
+
 test.each(SECTIONS)(
-  "renders native Icon component for %s on Android",
+  "shows only the outlined %s icon on Android when it isn't selected",
   async (section) => {
     followCorePlatform("android");
     const screen = await render(NavigationIcon, {
@@ -89,13 +99,12 @@ test.each(SECTIONS)(
       size: SIZE,
     });
 
-    const icon = screen.container.querySelector("[data-icon]");
-    expect(icon).not.toBeNull();
+    expect(shownLayers(screen.container)).toEqual(["outlined"]);
   },
 );
 
 test.each(SECTIONS)(
-  "renders filled native Icon component for selected %s on Android",
+  "shows only the filled %s icon on Android when it is selected",
   async (section) => {
     followCorePlatform("android");
     const screen = await render(NavigationIcon, {
@@ -105,7 +114,6 @@ test.each(SECTIONS)(
       size: SIZE,
     });
 
-    const icon = screen.container.querySelector("[data-icon][data-filled]");
-    expect(icon).not.toBeNull();
+    expect(shownLayers(screen.container)).toEqual(["filled"]);
   },
 );

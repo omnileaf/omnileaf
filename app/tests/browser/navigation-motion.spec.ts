@@ -155,6 +155,56 @@ async function expectToRunToItsEnd(
   );
 }
 
+interface IconLayers {
+  readonly outlined: string;
+  readonly filled: string;
+}
+
+function iconLayersOf(link: Locator): Promise<IconLayers> {
+  return link.evaluate((root) => {
+    const opacityOf = (selector: string) => {
+      const layer = root.querySelector(selector);
+      if (layer === null) {
+        throw new Error(`the tab draws no ${selector}`);
+      }
+      return getComputedStyle(layer).opacity;
+    };
+    return {
+      outlined: opacityOf("[data-icon]:not([data-filled])"),
+      filled: opacityOf("[data-icon][data-filled]"),
+    };
+  });
+}
+
+async function iconFadesWhile(
+  page: Page,
+  act: () => Promise<void>,
+): Promise<readonly string[]> {
+  const faded = await navigation(page).evaluateHandle((root) => {
+    const log: string[] = [];
+    root.addEventListener("transitionrun", (event) => {
+      if (
+        !(event instanceof TransitionEvent) ||
+        !(event.target instanceof Element) ||
+        !event.target.hasAttribute("data-icon") ||
+        event.propertyName !== "opacity"
+      ) {
+        return;
+      }
+      const style = getComputedStyle(event.target);
+      const layer = event.target.hasAttribute("data-filled")
+        ? "filled"
+        : "outlined";
+      log.push(
+        `${event.target.closest("a")?.textContent.trim() ?? ""} ${layer} ${style.transitionDuration} ${style.transitionTimingFunction}`,
+      );
+    });
+    return log;
+  });
+  await act();
+  return (await faded.jsonValue()).toSorted();
+}
+
 async function turnTheScreen(page: Page): Promise<void> {
   const viewport = viewportOf(page);
   await page.setViewportSize({
@@ -186,6 +236,40 @@ function testReducingMotion(): void {
     );
 
     expect(started).toEqual([]);
+  });
+}
+
+function testHoldingStillWithNavigationOff(): void {
+  test("plays nothing on a tab change with Navigation animations off", async ({
+    page,
+  }) => {
+    await page.goto("/settings/advanced");
+    await page.getByRole("link", { name: "Animations" }).click();
+    await page.getByRole("switch", { name: "Navigation" }).click();
+    await expect(
+      page.getByRole("switch", { name: "Navigation" }),
+    ).not.toBeChecked();
+    await settle(navigation(page));
+    const faded = await navigation(page).evaluateHandle((root) => {
+      const log: string[] = [];
+      root.addEventListener("transitionrun", (event) => {
+        if (
+          event instanceof TransitionEvent &&
+          event.target instanceof Element &&
+          event.target.closest("svg, [data-slot^='navigation-']") !== null
+        ) {
+          log.push(event.propertyName);
+        }
+      });
+      return log;
+    });
+
+    const started = await animationsStartedWhile(page, () =>
+      openTabAndSettle(page, "History"),
+    );
+
+    expect(started).toEqual([]);
+    expect(await faded.jsonValue()).toEqual([]);
   });
 }
 
@@ -368,7 +452,7 @@ test.describe("on Android", () => {
   testKeepingTheIconStill({
     belowWidth: EXPANDED_MIN_WIDTH,
     where: "bar and rail",
-    icon: "[data-icon]",
+    icon: '[data-slot="navigation-icon"]',
   });
 
   testRunningIconMovesToTheirEnd({
@@ -376,21 +460,45 @@ test.describe("on Android", () => {
     where: "bar and rail",
   });
 
-  test("fills only the selected tab's icon", async ({ page }) => {
+  test("shows only the selected tab's icon filled", async ({ page }) => {
     await page.goto("/history");
+    await settle(navigation(page));
 
-    await expect(tab(page, "History").locator("[data-icon]")).toHaveAttribute(
-      "data-filled",
-      "",
+    const history = await iconLayersOf(tab(page, "History"));
+    const library = await iconLayersOf(tab(page, "Library"));
+
+    expect(history).toEqual({ outlined: "0", filled: "1" });
+    expect(library).toEqual({ outlined: "1", filled: "0" });
+  });
+
+  test("crossfades both tabs' icons over the pill's growth", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "bar and rail only",
     );
-    await expect(
-      tab(page, "Library").locator("[data-icon]"),
-    ).not.toHaveAttribute("data-filled");
+    await page.goto("/");
+    await settle(navigation(page));
+
+    const faded = await iconFadesWhile(page, () =>
+      openTabAndSettle(page, "History"),
+    );
+
+    expect(faded).toEqual(
+      [
+        `History filled ${GROW}`,
+        `History outlined ${GROW}`,
+        `Library filled ${GROW}`,
+        `Library outlined ${GROW}`,
+      ].toSorted(),
+    );
   });
 
   testFadingWithoutRestarting();
   testTurningTheScreen();
   testReducingMotion();
+  testHoldingStillWithNavigationOff();
 });
 
 test.describe("on iOS", () => {
@@ -514,6 +622,7 @@ test.describe("on iOS", () => {
   });
   testCrossfadingTheFill(MEDIUM_MIN_WIDTH);
   testReducingMotion();
+  testHoldingStillWithNavigationOff();
 });
 
 test.describe("on desktop", () => {
