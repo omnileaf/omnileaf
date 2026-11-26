@@ -86,3 +86,30 @@ test("draws the name in an outlined field on Android", async () => {
     nameField().element().closest('[data-slot="outlined-field"]'),
   ).not.toBeNull();
 });
+
+test("fills Rename in the accent on an iPhone, apart from Cancel", async () => {
+  await page.viewport(390, 844);
+  followCorePlatform("ios");
+  await showFor("Plan to read");
+
+  const rename = getComputedStyle(renameButton().element());
+  const cancel = getComputedStyle(
+    page.getByRole("button", { name: "Cancel" }).element(),
+  );
+
+  expect(rename.backgroundColor).not.toBe(cancel.backgroundColor);
+  expect(rename.color).not.toBe(cancel.color);
+});
+
+test("greys out Rename on an Android phone while the name is refused", async () => {
+  await page.viewport(390, 844);
+  followCorePlatform("android");
+  await showFor("Plan to read");
+  const offered = getComputedStyle(renameButton().element()).color;
+
+  await nameField().fill("Manga");
+
+  await expect
+    .poll(() => getComputedStyle(renameButton().element()).color)
+    .not.toBe(offered);
+});

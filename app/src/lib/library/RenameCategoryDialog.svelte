@@ -23,6 +23,8 @@
   import { categoryNameProblem } from "./category-name.ts";
 
   const REASON_ICON_SIZE = 16;
+  const CONFIRM_LOOK =
+    "aria-disabled:opacity-60 ios:max-medium:bg-native-button-primary ios:max-medium:text-native-on-button-primary ios:max-medium:hover:bg-native-button-primary ios:max-medium:active:bg-native-button-primary android:max-medium:aria-disabled:text-native-on-button-disabled android:max-medium:aria-disabled:opacity-100";
   const FIELD =
     "flex-none rounded-shadcn-control border border-field bg-input-fill px-md text-label shadow-raised block-pointer-button touch:text-body touch:block-touch-target ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:bg-native-search-view ios:max-medium:px-lg ios:max-medium:shadow-none ios:max-medium:block-native-button-large aria-invalid:border-danger";
 
@@ -179,7 +181,7 @@
             <Button
               type="button"
               {...look.buttons.confirm}
-              class={cn(ACCENT_CONFIRM_FILL, look.confirm)}
+              class={cn(ACCENT_CONFIRM_FILL, look.confirm, CONFIRM_LOOK)}
               aria-disabled={problem !== undefined || undefined}
               onclick={rename}
             >
