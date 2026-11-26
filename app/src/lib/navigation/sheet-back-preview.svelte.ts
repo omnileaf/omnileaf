@@ -17,9 +17,10 @@ import {
 type Phase = "held" | "cancelling";
 
 const AT_REST: SheetBackShape = { scaleX: 1, scaleY: 1, contentScaleY: 1 };
+const REST_SCALE = "1 1";
 const SHEETS_STILL = "sheets";
-const SPRING_BACK = `scale ${String(ANDROID_BACK_SPRING.durationMs)}ms ${ANDROID_BACK_SPRING.easing}`;
 const FOLLOWING_FINGER = "translate, transform, rotate";
+const PART_ORIGIN = "--sheet-back-origin";
 
 export function isSheetMotionOn(): boolean {
   const still = document.documentElement.dataset.still ?? "";
@@ -28,31 +29,47 @@ export function isSheetMotionOn(): boolean {
   );
 }
 
-function styleOf(shape: SheetBackShape, phase: Phase): string {
-  const placed = [
+function styleOf(shape: SheetBackShape): string {
+  return [
     "transform-origin: 50% 100%",
     `scale: ${String(shape.scaleX)} ${String(shape.scaleY)}`,
     `--sheet-back-content: ${String(shape.contentScaleY)}`,
-  ];
-  switch (phase) {
-    case "held":
-      return [...placed, `transition-property: ${FOLLOWING_FINGER}`].join("; ");
-    case "cancelling":
-      return [
-        ...placed,
-        `transition: ${SPRING_BACK}`,
-        `--sheet-back-settle: ${SPRING_BACK}`,
-      ].join("; ");
-    default:
-      return assertNever(phase);
-  }
+    `transition-property: ${FOLLOWING_FINGER}`,
+  ].join("; ");
+}
+
+function shapeReachedBy(sheet: HTMLElement): SheetBackShape {
+  const [scaleX = 1, scaleY = scaleX] = getComputedStyle(sheet)
+    .scale.split(" ")
+    .map(Number)
+    .filter((value) => !Number.isNaN(value));
+  return { scaleX, scaleY, contentScaleY: scaleX / scaleY };
+}
+
+function partsOf(sheet: HTMLElement): readonly HTMLElement[] {
+  return [...sheet.children].filter(
+    (part): part is HTMLElement => part instanceof HTMLElement,
+  );
+}
+
+function springBackOf(element: HTMLElement): Animation {
+  return element.animate(
+    [{ scale: getComputedStyle(element).scale }, { scale: REST_SCALE }],
+    {
+      duration: ANDROID_BACK_SPRING.durationMs,
+      easing: ANDROID_BACK_SPRING.easing,
+    },
+  );
 }
 
 export class SheetBackPreview {
   #phase: Phase | undefined = $state();
   #shape: SheetBackShape = $state.raw(AT_REST);
   #size: SheetBackSize | undefined;
+  #parts: readonly HTMLElement[] = [];
+  #springs: readonly Animation[] = [];
   #stopSettling: (() => void) | undefined;
+  #stopChecking: (() => void) | undefined;
   readonly #sheet: () => HTMLElement | null;
   readonly #isMotionOn: () => boolean;
   readonly #scheduler: PreviewScheduler;
@@ -72,9 +89,7 @@ export class SheetBackPreview {
   }
 
   get style(): string | undefined {
-    return this.#phase === undefined
-      ? undefined
-      : styleOf(this.#shape, this.#phase);
+    return this.#phase === undefined ? undefined : styleOf(this.#shape);
   }
 
   follow(step: BackGestureStep): void {
@@ -94,11 +109,16 @@ export class SheetBackPreview {
   }
 
   closed(): void {
-    this.#scheduler.nextFrame(() => {
+    this.#stopChecking?.();
+    this.#stopChecking = this.#scheduler.nextFrame(() => {
       if (this.#sheet()?.dataset.state === "open") {
         this.#springBack();
       }
     });
+  }
+
+  gone(): void {
+    this.#release();
   }
 
   #hold(): void {
@@ -106,9 +126,14 @@ export class SheetBackPreview {
     if (sheet === null || !this.#isMotionOn()) {
       return;
     }
-    this.#stopSettling?.();
+    const reached = this.#phase === undefined ? AT_REST : shapeReachedBy(sheet);
+    this.#release();
     this.#size = { width: sheet.offsetWidth, height: sheet.offsetHeight };
-    this.#shape = AT_REST;
+    this.#parts = partsOf(sheet);
+    for (const part of this.#parts) {
+      part.style.setProperty(PART_ORIGIN, `${String(-part.offsetTop)}px`);
+    }
+    this.#shape = reached;
     this.#phase = "held";
   }
 
@@ -120,16 +145,36 @@ export class SheetBackPreview {
   }
 
   #springBack(): void {
-    if (this.#phase !== "held") {
+    const sheet = this.#sheet();
+    if (this.#phase !== "held" || sheet === null) {
       return;
     }
+    this.#springs = [sheet, ...this.#parts].map(springBackOf);
     this.#shape = AT_REST;
     this.#phase = "cancelling";
     this.#stopSettling = this.#scheduler.after(
       ANDROID_BACK_SPRING.durationMs,
       () => {
-        this.#phase = undefined;
+        this.#release();
       },
     );
+  }
+
+  #release(): void {
+    this.#stopSettling?.();
+    this.#stopSettling = undefined;
+    this.#stopChecking?.();
+    this.#stopChecking = undefined;
+    for (const spring of this.#springs) {
+      spring.cancel();
+    }
+    this.#springs = [];
+    for (const part of this.#parts) {
+      part.style.removeProperty(PART_ORIGIN);
+    }
+    this.#parts = [];
+    this.#size = undefined;
+    this.#shape = AT_REST;
+    this.#phase = undefined;
   }
 }

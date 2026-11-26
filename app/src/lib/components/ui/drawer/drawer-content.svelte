@@ -94,7 +94,6 @@
     {@attach resolveFirstStyle}
     {@attach closesOnBackFollowedBy(back)}
     data-back={back.phase}
-    data-back-settling={back.phase === "cancelling" ? "" : undefined}
     class={cn(
       "fixed inset-none z-dialog mbs-auto flex touch-none flex-col overflow-hidden rounded-ss-bottom-sheet rounded-se-bottom-sheet bg-bottom-sheet text-foreground block-fit inline-full max-block-full desktop:border-bs desktop:border-border motion-sheets:data-starting-style:translate-y-full motion-sheets:starting:translate-y-full motion-sheets:closed:translate-y-full",
       look.surface,
@@ -102,7 +101,7 @@
       look.heights[height],
       !drag.isDragging &&
         "motion-sheets:transition-transform motion-sheets:duration-sheet-in motion-sheets:ease-sheet-in motion-sheets:closed:duration-sheet-out motion-sheets:closed:ease-sheet-out",
-      "data-back:*:sheet-back-content data-back-settling:*:sheet-back-settle",
+      "data-back:*:sheet-back-content",
       className,
     )}
     {style}

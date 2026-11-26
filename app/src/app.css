@@ -1970,12 +1970,8 @@
 }
 
 @utility sheet-back-content {
-  transform-origin: top;
+  transform-origin: 0 var(--sheet-back-origin, 0);
   scale: 1 var(--sheet-back-content);
-}
-
-@utility sheet-back-settle {
-  transition: var(--sheet-back-settle);
 }
 
 @utility side-panel-shadow {
