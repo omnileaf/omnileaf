@@ -5,7 +5,7 @@ import { DEFAULT_BACKEND, expect, test, tokenColour } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(40);
-const SEARCH_FIELD = "Search your library";
+const SEARCH_FIELD = "Search the library";
 
 test.use({
   backend: {

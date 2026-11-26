@@ -160,7 +160,7 @@ test.describe("Windows notices", () => {
         await page.goto("/search");
         const field = page
           .getByRole("main")
-          .getByRole("combobox", { name: "Search your library" });
+          .getByRole("combobox", { name: "Search the library" });
         await expect(field).toBeVisible();
         const before = await boxOf(field);
 

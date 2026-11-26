@@ -58,7 +58,7 @@ async function openSearch(page: Page): Promise<Locator> {
   await page.goto("/search");
   await page
     .getByRole("main")
-    .getByRole("combobox", { name: "Search your library" })
+    .getByRole("combobox", { name: "Search the library" })
     .fill("sample");
   const chips = scope(page);
   await expect(chips).toBeVisible();
@@ -225,7 +225,7 @@ test.describe(
       await page.goto("/search");
       const field = page
         .getByRole("main")
-        .getByRole("combobox", { name: "Search your library" });
+        .getByRole("combobox", { name: "Search the library" });
       await field.fill("unread sample");
       const inField = field.locator("xpath=..");
       const chip = inField.getByRole("listitem").filter({ hasText: "Unread" });
@@ -259,7 +259,7 @@ test.describe(
       await page.goto("/search");
       await page
         .getByRole("main")
-        .getByRole("combobox", { name: "Search your library" })
+        .getByRole("combobox", { name: "Search the library" })
         .fill(NOTHING);
       const title = page.getByRole("heading", { name: /^Nothing matches/ });
       await expect(title).toBeVisible();
@@ -403,7 +403,7 @@ test.describe(
       await page.goto("/search");
       await page
         .getByRole("main")
-        .getByRole("combobox", { name: "Search your library" })
+        .getByRole("combobox", { name: "Search the library" })
         .fill("sample");
 
       await expect(

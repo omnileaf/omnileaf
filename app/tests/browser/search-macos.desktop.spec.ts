@@ -36,7 +36,7 @@ test("holds the search field in the toolbar, ready to type in, and nowhere else"
     .pressSequentially("s");
   const field = page
     .locator("[data-page-toolbar]")
-    .getByRole("combobox", { name: "Search your library" });
+    .getByRole("combobox", { name: "Search the library" });
 
   await expect(field).toBeFocused();
   await expect(page.getByRole("combobox")).toHaveCount(1);
@@ -47,7 +47,7 @@ test("sets the scope in a bar under the title bar, labelled Search in", async ({
 }) => {
   await page.goto("/search");
   await page
-    .getByRole("combobox", { name: "Search your library" })
+    .getByRole("combobox", { name: "Search the library" })
     .fill("sample");
   const bar = page.getByRole("group", { name: "Search in" });
 
@@ -63,7 +63,7 @@ test("fills the chosen scope and leaves the others plain, 20px at each side", as
 }) => {
   await page.goto("/search");
   await page
-    .getByRole("combobox", { name: "Search your library" })
+    .getByRole("combobox", { name: "Search the library" })
     .fill("sample");
   const chosen = page.getByRole("button", { name: "Everything" });
   const other = page.getByRole("button", { name: "Manga" });
@@ -80,7 +80,7 @@ test("fills the chosen scope and leaves the others plain, 20px at each side", as
 test("narrows the search to the scope picked", async ({ page }) => {
   await page.goto("/search");
   await page
-    .getByRole("combobox", { name: "Search your library" })
+    .getByRole("combobox", { name: "Search the library" })
     .fill("sample");
 
   await page.getByRole("button", { name: "Manga" }).click();
@@ -95,7 +95,7 @@ test("keeps room to type in the toolbar field beside several filter words", asyn
   page,
 }) => {
   await page.goto("/search");
-  const field = page.getByRole("combobox", { name: "Search your library" });
+  const field = page.getByRole("combobox", { name: "Search the library" });
 
   await field.pressSequentially("unread started finished sample");
 
@@ -109,6 +109,6 @@ test("keeps the field in the toolbar in a narrow window", async ({ page }) => {
   await expect(
     page
       .locator("[data-page-toolbar]")
-      .getByRole("combobox", { name: "Search your library" }),
+      .getByRole("combobox", { name: "Search the library" }),
   ).toBeVisible();
 });

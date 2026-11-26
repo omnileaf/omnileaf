@@ -146,7 +146,7 @@ test.describe("a page inside a section on an iPad", () => {
   test("keeps the search field clear of the tab bar", async ({ page }) => {
     await page.goto("/search");
 
-    const field = page.getByRole("combobox", { name: "Search your library" });
+    const field = page.getByRole("combobox", { name: "Search the library" });
     await expect(field).toBeVisible();
     const [bar, box] = await Promise.all([boxOf(mainBar(page)), boxOf(field)]);
 

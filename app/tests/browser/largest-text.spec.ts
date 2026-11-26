@@ -315,7 +315,7 @@ for (const platform of PLATFORMS) {
 
       await page
         .getByRole("main")
-        .getByRole("combobox", { name: "Search your library" })
+        .getByRole("combobox", { name: "Search the library" })
         .pressSequentially("unread started finished harbour");
       await expect(
         page.getByRole("button", { name: /^Remove the/ }),
