@@ -4,7 +4,11 @@ import { DEFAULT_LIBRARY_VIEW } from "#lib/ipc/bindings.ts";
 import { shownListing } from "#lib/screenshot-mode/shown-listing.ts";
 
 import { NEW_ADULT_CONTENT } from "./adult-content";
-import { type LibraryScreen, LibraryReturn } from "./library-return";
+import {
+  KeptSections,
+  type LibraryScreen,
+  LibraryReturn,
+} from "./library-return";
 import { NEW_LIBRARY_LISTING, NO_FILTER_CHOICES } from "./library-listing";
 import { arrangedTabs, NEW_LIBRARY_TABS } from "./library-tabs";
 
@@ -33,6 +37,12 @@ function screenDrawn(usesStandIns: boolean): LibraryScreen {
     continueRow: undefined,
   };
 }
+
+const KEPT_GROUP = {
+  series: { items: [], next: null },
+  count: 3,
+};
+const KEPT_ROW = { items: [], next: null };
 
 test("gives back the Library as it was left", () => {
   const library = new LibraryReturn();
@@ -95,4 +105,26 @@ test("forgets the Library once its tabs are arranged differently", () => {
   );
 
   expect(library.screenFor(false)).toBeUndefined();
+});
+
+test("gives each kept section to the first that asks for it only", () => {
+  const sections = new KeptSections({
+    ...screenDrawn(false),
+    groups: [{ key: "writer:Author A", group: KEPT_GROUP }],
+    continueRow: KEPT_ROW,
+  });
+
+  const first = [
+    sections.takeGroup("writer:Author A"),
+    sections.takeContinueRow(),
+  ];
+  const again = [
+    sections.takeGroup("writer:Author A"),
+    sections.takeContinueRow(),
+  ];
+
+  expect([first, again]).toEqual([
+    [KEPT_GROUP, KEPT_ROW],
+    [undefined, undefined],
+  ]);
 });

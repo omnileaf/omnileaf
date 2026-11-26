@@ -65,6 +65,7 @@
   import {
     getLibraryReturn,
     GroupKeepers,
+    KeptSections,
     type KeepGroup,
     type LibraryScreen,
   } from "#lib/library/library-return.ts";
@@ -207,6 +208,7 @@
       ? libraryReturn.screenFor(screenshotMode.isOn)
       : undefined,
   );
+  const keptSections = new KeptSections(returnedTo);
   const needsAttention = getNeedsAttention();
   const showsAttentionDot = $derived(
     !isPointer(data.appInfo.platform) && needsAttention.problems.length > 0,
@@ -1596,7 +1598,7 @@
           <div class={COVERS_GAP}>
             <ContinueRow
               usesStandIns={screenshotMode.isOn}
-              kept={returnedTo?.continueRow}
+              kept={keptSections.takeContinueRow()}
               keeps={(keep: () => KeptHistory | undefined) => {
                 keepContinueRow = keep;
                 return () => {
@@ -1695,9 +1697,7 @@
                     {listed}
                     {libraryChanges}
                     {covers}
-                    kept={returnedTo?.groups.find(
-                      ({ key }) => key === group.key,
-                    )?.group}
+                    kept={keptSections.takeGroup(group.key)}
                     keeps={(keep: KeepGroup) =>
                       groupKeepers.add(group.key, keep)}
                   />

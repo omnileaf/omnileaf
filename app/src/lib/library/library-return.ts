@@ -120,5 +120,29 @@ export class GroupKeepers {
   }
 }
 
+export class KeptSections {
+  readonly #groups: Map<string, KeptGroup>;
+  #continueRow: KeptHistory | undefined;
+
+  constructor(screen: LibraryScreen | undefined) {
+    this.#groups = new Map(
+      screen?.groups.map(({ key, group }) => [key, group]) ?? [],
+    );
+    this.#continueRow = screen?.continueRow;
+  }
+
+  takeGroup(key: string): KeptGroup | undefined {
+    const group = this.#groups.get(key);
+    this.#groups.delete(key);
+    return group;
+  }
+
+  takeContinueRow(): KeptHistory | undefined {
+    const row = this.#continueRow;
+    this.#continueRow = undefined;
+    return row;
+  }
+}
+
 export const [getLibraryReturn, setLibraryReturn] =
   createContext<LibraryReturn>();
