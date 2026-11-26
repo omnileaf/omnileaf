@@ -17,10 +17,15 @@
     OutlinedField,
   } from "#lib/components/ui/outlined-field/index.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
+  import { lastShown } from "#lib/page/last-shown.svelte.ts";
   import { currentPlatform, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { categoryNameProblem } from "./category-name.ts";
+  import {
+    type CategoryNameProblem,
+    categoryNameProblem,
+    type RefusedName,
+  } from "./category-name.ts";
 
   const REASON_ICON_SIZE = 16;
   const CONFIRM_LOOK =
@@ -31,11 +36,15 @@
   let {
     name,
     otherNames,
+    refused,
+    isBusy = false,
     onRename,
     onClose,
   }: {
     name: string | undefined;
     otherNames: readonly string[];
+    refused?: RefusedName | undefined;
+    isBusy?: boolean;
     onRename: (to: string) => void;
     onClose: () => void;
   } = $props();
@@ -47,8 +56,9 @@
   const fieldId = $props.id();
   const reasonId = `${fieldId}-reason`;
 
-  let typed = $derived(name ?? "");
-  const problem = $derived(categoryNameProblem(typed, otherNames));
+  const shown = lastShown(() => name);
+  let typed = $derived(name ?? shown.current ?? "");
+  const problem = $derived(problemOf(typed));
   const reason = $derived.by(() => {
     switch (problem) {
       case "empty":
@@ -60,8 +70,17 @@
     }
   });
 
+  function problemOf(to: string): CategoryNameProblem | undefined {
+    if (name === undefined) {
+      return undefined;
+    }
+    return refused?.name === to.trim()
+      ? refused.problem
+      : categoryNameProblem(to, otherNames);
+  }
+
   function rename(): void {
-    if (name === undefined || problem !== undefined) {
+    if (name === undefined || problem !== undefined || isBusy) {
       return;
     }
     const to = typed.trim();
@@ -182,7 +201,7 @@
               type="button"
               {...look.buttons.confirm}
               class={cn(ACCENT_CONFIRM_FILL, look.confirm, CONFIRM_LOOK)}
-              aria-disabled={problem !== undefined || undefined}
+              aria-disabled={problem !== undefined || isBusy || undefined}
               onclick={rename}
             >
               {m.library_tabs_rename()}

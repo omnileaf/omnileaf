@@ -1,5 +1,10 @@
 export type CategoryNameProblem = "empty" | "taken";
 
+export interface RefusedName {
+  readonly name: string;
+  readonly problem: CategoryNameProblem;
+}
+
 const RUNS_OF_SPACE = /\s+/gu;
 
 function comparableName(name: string): string {
