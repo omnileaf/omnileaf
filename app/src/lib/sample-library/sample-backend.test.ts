@@ -1205,6 +1205,15 @@ test("deletes a category and leaves its series in the library", async () => {
   ).toBe("gone");
 });
 
+test("refuses an empty name before saying a category has gone, as the core does", async () => {
+  const { backend } = backendFor();
+  await backend.removeLibraryCategory("manga");
+
+  const renamed = await backend.renameLibraryCategory("manga", "  ");
+
+  expect(renamed.kind).toBe("nameEmpty");
+});
+
 test("lists the series read last first, then those never read", async () => {
   const { backend } = backendFor();
   const history = await backend.readingHistory(null, { kind: "everything" });

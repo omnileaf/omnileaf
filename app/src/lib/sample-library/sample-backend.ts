@@ -1608,12 +1608,14 @@ export function sampleBackend(
       const others = kept
         .filter(({ id }) => id !== category)
         .map(({ name }) => name);
+      const problem = categoryNameProblem(to, others);
+      if (problem === "empty") {
+        return { kind: "nameEmpty" };
+      }
       if (!kept.some(({ id }) => id === category)) {
         return { kind: "gone" };
       }
-      switch (categoryNameProblem(to, others)) {
-        case "empty":
-          return { kind: "nameEmpty" };
+      switch (problem) {
         case "taken":
           return { kind: "nameTaken" };
         case undefined:
