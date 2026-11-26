@@ -1026,7 +1026,7 @@
     noteRemoval(notices, removed.data);
     void library.load();
     if (countsSeries) {
-      void seriesCount.load();
+      void seriesCount.refresh();
     }
     pages.refreshBeside();
   }
@@ -1165,7 +1165,7 @@
       }
       void library.load();
       if (countsSeries) {
-        void seriesCount.load();
+        void seriesCount.refresh();
       }
       void unfilteredCounts.refresh();
       pages.refreshBeside();

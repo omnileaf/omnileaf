@@ -7,7 +7,11 @@ import {
   type LibraryView,
 } from "../../src/lib/ipc/bindings.ts";
 import { SKELETON_DELAY_MS } from "../../src/lib/library/skeleton-delay.svelte.ts";
-import { commandsAsked, type FakeBackend } from "./fake-backend.ts";
+import {
+  commandsAsked,
+  emitFakeEvent,
+  type FakeBackend,
+} from "./fake-backend.ts";
 import { expect, test } from "./fixtures.ts";
 import {
   answeringLikeAPhone,
@@ -360,6 +364,24 @@ test.describe(
           expectEveryFrameAsLeft(frames, left);
         });
       }
+
+      test("keeps the count on screen while counting again after a library change", async ({
+        page,
+      }) => {
+        await page.goto("/");
+        await libraryAtRest(page);
+        const left = await libraryFrameNow(page);
+        await slowTheCpu(page);
+        await startRecordingFrames(page);
+
+        await emitFakeEvent(page, "library-changed");
+
+        const frames = await framesUntilAtRest(page);
+        expect(
+          frames.filter((frame) => frame.count !== left.count),
+          describeFrames(frames),
+        ).toEqual([]);
+      });
 
       test("shows a series added while away once the Library has read itself again, holding the opened series in place", async ({
         page,
