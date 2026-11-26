@@ -36,6 +36,7 @@
   import PageHeading from "#lib/page/PageHeading.svelte";
   import { CARD_PLATE, GROUP_PLATE } from "#lib/page/plates.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { Selection } from "#lib/page/selection.svelte.ts";
   import type { SeriesId } from "#lib/series/series-id.ts";
   import SeriesBar from "#lib/series/SeriesBar.svelte";
@@ -139,6 +140,7 @@
         chosen={view}
         labelledBy="kit-view-{size}"
         {size}
+        hugsLabels={currentPlatform() === "android"}
         onChoose={(option: View) => {
           view = option;
         }}
