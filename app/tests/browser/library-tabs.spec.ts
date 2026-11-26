@@ -361,6 +361,7 @@ test.describe("in a library that keeps labels", () => {
       name: "Move Reading",
     });
     const start = await boxOf(handle);
+    const readingAtRest = await boxOf(rowOf(page, "Reading"));
     const x = start.x + start.width / 2;
 
     await page.mouse.move(x, start.y + start.height / 2);
@@ -368,8 +369,9 @@ test.describe("in a library that keeps labels", () => {
     await page.mouse.move(x, await bottomOfRow(page, "Manga"), {
       steps: DRAG_STEPS,
     });
+    const manga = await boxOf(rowOf(page, "Manga"));
 
-    await expect(rowOf(page, "Manga")).toHaveCSS("transition-duration", "0s");
+    expect(manga.y).toBeCloseTo(readingAtRest.y, 0);
     await page.mouse.up();
     await expect.poll(savedOrder).toBeDefined();
 
