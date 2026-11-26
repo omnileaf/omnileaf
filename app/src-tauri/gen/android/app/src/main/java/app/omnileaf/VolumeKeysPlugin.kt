@@ -24,7 +24,7 @@ class VolumeKeysPlugin(
         val shownActivity =
             PluginManager.activity as? MainActivity
                 ?: return invoke.reject("no activity is showing the app")
-        shownActivity.runOnUiThread { shownActivity.volumeKeys.capture { turn -> channel.sendObject(turn.id) } }
+        shownActivity.runOnUiThread { shownActivity.volumeKeys.capture { turn -> channel.sendObject(turn.message) } }
         invoke.resolve()
     }
 

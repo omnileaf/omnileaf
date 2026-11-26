@@ -3,7 +3,7 @@ import {
   type ReadingDirection,
   type ReadingMode,
 } from "#lib/reader/reading-direction.svelte.ts";
-import type { Platform } from "#lib/ipc/bindings.ts";
+import type { KeyPress, Platform } from "#lib/ipc/bindings.ts";
 import { usesCommandKey } from "#lib/page/platform.ts";
 import type { Shortcut } from "#lib/shortcut.ts";
 
@@ -22,8 +22,6 @@ export type ReaderAction =
   | "jump"
   | "back"
   | "toggleAutoScroll";
-
-export type KeyPress = "pressed" | "held";
 
 const ARROWS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight"]);
 

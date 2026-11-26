@@ -18,6 +18,34 @@ pub(crate) enum PageTurn {
     Next,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "Android hands the key presses to the interface without Rust making any"
+    )
+)]
+pub(crate) enum KeyPress {
+    Pressed,
+    Held,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "Android hands the volume key turns to the interface without Rust making any"
+    )
+)]
+pub(crate) struct VolumeKeyTurn {
+    turn: PageTurn,
+    press: KeyPress,
+}
+
 #[cfg(not(target_os = "android"))]
 #[expect(
     clippy::unused_async,
@@ -25,7 +53,7 @@ pub(crate) enum PageTurn {
 )]
 pub(crate) async fn capture(
     _app: &tauri::AppHandle,
-    _on_turn: tauri::ipc::Channel<PageTurn>,
+    _on_turn: tauri::ipc::Channel<VolumeKeyTurn>,
 ) -> Result<(), crate::ipc_error::IpcError> {
     Ok(())
 }
@@ -49,7 +77,7 @@ mod android {
         webview::PageLoadEvent,
     };
 
-    use super::PageTurn;
+    use super::VolumeKeyTurn;
     use crate::ipc_error::IpcError;
 
     const PLUGIN_NAME: &str = "volume-keys";
@@ -70,7 +98,7 @@ mod android {
 
     #[derive(Serialize)]
     struct Capturing {
-        channel: Channel<PageTurn>,
+        channel: Channel<VolumeKeyTurn>,
     }
 
     pub(crate) fn plugin() -> TauriPlugin<Wry> {
@@ -95,7 +123,7 @@ mod android {
 
     pub(crate) async fn capture(
         app: &AppHandle,
-        on_turn: Channel<PageTurn>,
+        on_turn: Channel<VolumeKeyTurn>,
     ) -> Result<(), IpcError> {
         ask(app, CAPTURE, Capturing { channel: on_turn })
             .await
@@ -131,7 +159,19 @@ mod android {
 
 #[cfg(test)]
 mod tests {
-    use super::PageTurn;
+    use super::{KeyPress, PageTurn, VolumeKeyTurn};
+
+    #[test]
+    fn names_a_held_volume_key_turn_as_android_sends_it() {
+        let turn = VolumeKeyTurn {
+            turn: PageTurn::Next,
+            press: KeyPress::Held,
+        };
+
+        let sent = serde_json::to_value(turn).unwrap();
+
+        assert_eq!(sent, serde_json::json!({ "turn": "next", "press": "held" }));
+    }
 
     #[test]
     fn names_the_page_turns_as_android_sends_them() {

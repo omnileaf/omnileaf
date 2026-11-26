@@ -1,6 +1,11 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { PageTurn, Platform } from "../../src/lib/ipc/bindings.ts";
+import type {
+  KeyPress,
+  PageTurn,
+  Platform,
+  VolumeKeyTurn,
+} from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend, FakeChannel } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -48,9 +53,10 @@ const VOLUME_KEYS_AND_SCREEN_ROWS =
 const VOLUME_KEYS_HELP =
   "Only in the reader; everywhere else they change the volume.";
 const COLOR_SCHEMES = ["light", "dark"] as const;
+const HELD_REPEATS = 5;
 
 const calls: VolumeKeyCall[] = [];
-const channels: FakeChannel<PageTurn>[] = [];
+const channels: FakeChannel<VolumeKeyTurn>[] = [];
 
 function volumeKeysBackend(
   platform: Platform,
@@ -97,9 +103,19 @@ async function openBookWith(page: Page, look: object): Promise<void> {
   ).toBeAttached();
 }
 
-async function press(turn: PageTurn): Promise<void> {
+async function press(
+  turn: PageTurn,
+  kind: KeyPress = "pressed",
+): Promise<void> {
   await expect.poll(() => calls.at(-1)).toBe("capture");
-  await channels.at(-1)?.send(turn);
+  await channels.at(-1)?.send({ turn, press: kind });
+}
+
+async function hold(turn: PageTurn, repeats: number): Promise<void> {
+  await press(turn);
+  for (let repeat = 0; repeat < repeats; repeat += 1) {
+    await press(turn, "held");
+  }
 }
 
 async function expectOnPage(page: Page, number: number): Promise<void> {
@@ -167,6 +183,37 @@ test.describe("on Android", () => {
     await press("previous");
 
     await expectOnPage(page, 14);
+  });
+
+  test("stops a held key on Up next rather than going on to the next book", async ({
+    page,
+  }) => {
+    await openBookWith(page, TURNS_PAGES);
+    await page.keyboard.press("End");
+    await expectOnPage(page, PAGE_COUNT);
+
+    await hold("next", HELD_REPEATS);
+
+    await expect(
+      page.getByRole("heading", { level: 2, name: `${BOOK_TITLE} finished` }),
+    ).toBeVisible();
+    await framesPassed(page);
+    await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+  });
+
+  test("stops a held key on the first page rather than going back to the book before", async ({
+    page,
+  }) => {
+    await openBookWith(page, TURNS_PAGES);
+    await page.keyboard.press("Home");
+    await press("next");
+    await expectOnPage(page, 2);
+
+    await hold("previous", HELD_REPEATS);
+
+    await expectOnPage(page, 1);
+    await framesPassed(page);
+    await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
   });
 
   test("leaves the keys to the volume with the setting off", async ({

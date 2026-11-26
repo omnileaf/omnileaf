@@ -61,7 +61,7 @@ use crate::{
     tray::{TrayItemChosen, TrayMenu},
     update_notices::{self, UpdateNoticeTurning, UpdateNoticeWords, UpdateNotices},
     version_details,
-    volume_keys::{self, PageTurn},
+    volume_keys::{self, VolumeKeyTurn},
     wallpaper_colours::{self, AccentColours, WallpaperColours},
 };
 
@@ -694,7 +694,10 @@ fn accent_colours() -> Option<AccentColours> {
 
 #[tauri::command]
 #[specta::specta]
-async fn capture_volume_keys(app: AppHandle, on_turn: Channel<PageTurn>) -> Result<(), IpcError> {
+async fn capture_volume_keys(
+    app: AppHandle,
+    on_turn: Channel<VolumeKeyTurn>,
+) -> Result<(), IpcError> {
     volume_keys::capture(&app, on_turn).await
 }
 

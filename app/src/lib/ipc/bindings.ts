@@ -58,7 +58,7 @@ export const commands = {
 	lightText: number,
 	darkText: number,
 } | null>("accent_colours"),
-	captureVolumeKeys: (onTurn: Channel<PageTurn>) => typedError<null, IpcError>(__TAURI_INVOKE("capture_volume_keys", { onTurn })),
+	captureVolumeKeys: (onTurn: Channel<VolumeKeyTurn>) => typedError<null, IpcError>(__TAURI_INVOKE("capture_volume_keys", { onTurn })),
 	releaseVolumeKeys: () => typedError<null, IpcError>(__TAURI_INVOKE("release_volume_keys")),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
 	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after, listing })),
@@ -652,6 +652,8 @@ export type IpcError = {
 
 export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "defaultViewerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookNotConnected" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "appLockUnavailable" | "updateCheckUnavailable" | "internal";
 
+export type KeyPress = "pressed" | "held";
+
 export type KnownRelease = { kind: "unchecked" } | { kind: "upToDate" } | {
 	kind: "newer",
 } & NewerRelease;
@@ -1244,6 +1246,11 @@ export type ValueSource = "folderName" | "fileName" | "files";
 export type VersionNotes = {
 	version: string,
 	entries: ChangeEntry[],
+};
+
+export type VolumeKeyTurn = {
+	turn: PageTurn,
+	press: KeyPress,
 };
 
 export type WallpaperColours = {

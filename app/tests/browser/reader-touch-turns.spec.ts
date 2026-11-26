@@ -59,6 +59,11 @@ const ARROW_RIGHT = {
   code: "ArrowRight",
   windowsVirtualKeyCode: 39,
 };
+const ARROW_LEFT = {
+  key: "ArrowLeft",
+  code: "ArrowLeft",
+  windowsVirtualKeyCode: 37,
+};
 
 test.use({ backend: readerBackend(DEFAULT_BACKEND, OPENING) });
 
@@ -240,7 +245,7 @@ async function tapEvery(
 
 async function holdKey(
   session: CDPSession,
-  key: typeof ARROW_RIGHT,
+  key: typeof ARROW_RIGHT | typeof ARROW_LEFT,
   forMs: number,
 ): Promise<void> {
   const start = Date.now();
@@ -1081,6 +1086,29 @@ test.describe("at the end of a book", { tag: "@native" }, () => {
       await expect(page).toHaveURL(NEXT_BOOK_PAGE);
       await expect(shownPage(page, 1)).toBeVisible();
       await waitFrames(page, FRAMES_TO_SETTLE);
+      expect(await pageNumber(page)).toBe(1);
+    });
+  });
+
+  test.describe("held back from a few pages in", () => {
+    const FOUR_PAGES_IN = {
+      reading: { state: "started", page: 4 },
+      startPage: 3,
+    } as const;
+
+    test.use({ backend: readerBackend(DEFAULT_BACKEND, FOUR_PAGES_IN) });
+
+    test("ends a held key at rest on the first page, not in the book before", async ({
+      page,
+    }) => {
+      await openNear(page, 4);
+      const session = await page.context().newCDPSession(page);
+
+      await holdKey(session, ARROW_LEFT, HELD_KEY_MS);
+      await expect.poll(() => slidesRunning(page)).toBe(0);
+      await waitFrames(page, FRAMES_TO_SETTLE);
+
+      await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
       expect(await pageNumber(page)).toBe(1);
     });
   });

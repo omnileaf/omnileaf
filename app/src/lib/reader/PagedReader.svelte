@@ -18,6 +18,7 @@
   import { reportFailure } from "#lib/errors/report-failure.ts";
   import {
     commands,
+    type KeyPress,
     type OpenedBook,
     type Platform,
     type SeriesNeighbour,
@@ -64,7 +65,6 @@
   import StripScrubber from "#lib/reader/StripScrubber.svelte";
   import StripStack from "#lib/reader/StripStack.svelte";
   import {
-    type KeyPress,
     type ReaderAction,
     readerShortcuts,
   } from "#lib/reader/reader-keys.ts";
@@ -691,11 +691,16 @@
     const isHeldPastTheBook =
       isHoldFromAnotherBook ||
       leaving !== undefined ||
-      (step > 0 && turner.isPastEnd);
+      (step > 0 && turner.isPastEnd) ||
+      (step < 0 && isOnFirstSpread());
     if (press === "held" && isHeldPastTheBook) {
       return;
     }
     turnBy(step);
+  }
+
+  function isOnFirstSpread(): boolean {
+    return !isStrip && !turner.isPastEnd && spreadIndex === 0;
   }
 
   function turnBy(step: number): void {
@@ -1217,7 +1222,11 @@
   );
 
   $effect(() =>
-    turnsPagesWithVolumeKeys ? followVolumeKeys(act, reportFailure) : undefined,
+    turnsPagesWithVolumeKeys
+      ? followVolumeKeys(({ turn, press }) => {
+          act(turn, press);
+        }, reportFailure)
+      : undefined,
   );
 
   onMount(() => {

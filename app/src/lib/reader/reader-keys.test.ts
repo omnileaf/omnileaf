@@ -2,13 +2,9 @@ import { afterEach, expect, test } from "vitest";
 
 import { shortcut } from "#lib/shortcut.ts";
 
-import {
-  type KeyPress,
-  type ReaderAction,
-  readerShortcuts,
-} from "./reader-keys";
+import { type ReaderAction, readerShortcuts } from "./reader-keys";
 import type { ReadingDirection, ReadingMode } from "./reading-direction.svelte";
-import type { Platform } from "#lib/ipc/bindings.ts";
+import type { KeyPress, Platform } from "#lib/ipc/bindings.ts";
 
 const detachments: (() => void)[] = [];
 
