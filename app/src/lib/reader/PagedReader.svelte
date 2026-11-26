@@ -884,7 +884,7 @@
   }
 
   function onMiddleTap(event: MouseEvent): void {
-    if (!isPointerClick(event) || tappedWith !== "touch") {
+    if (!isPointerClick(event) || tappedWith === "mouse") {
       onZone(event, "toggleControls");
       return;
     }

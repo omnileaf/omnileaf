@@ -512,6 +512,37 @@ test(
 );
 
 test(
+  "zooms on a pen's double tap without showing the controls first",
+  { tag: "@native" },
+  async ({ page }) => {
+    await servePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    const session = await page.context().newCDPSession(page);
+    await hideControls(page, session);
+    await watchForControls(page);
+    const middle = await centreOf(
+      page.getByRole("button", { name: "Show the controls" }),
+    );
+
+    for (const clickCount of [1, 2]) {
+      for (const type of ["mousePressed", "mouseReleased"] as const) {
+        await session.send("Input.dispatchMouseEvent", {
+          type,
+          ...middle,
+          button: "left",
+          clickCount,
+          pointerType: "pen",
+        });
+      }
+    }
+    await expect(page.getByText("200%", { exact: false })).toBeVisible();
+    await waitPastDoubleTap(page);
+
+    expect(await controlsWereShown(page)).toBe(false);
+  },
+);
+
+test(
   "zooms on a double tap without showing the controls first",
   { tag: "@native" },
   async ({ page }) => {
