@@ -37,7 +37,7 @@
   import { IosPhone } from "./ios-phone.svelte.ts";
   import { type ArrangedTab, tabKey } from "./library-tabs.ts";
   import { RowDrag, type Slot } from "./row-drag.ts";
-  import { settleRow } from "./settle-row.ts";
+  import { poseOf, settleRow } from "./settle-row.ts";
   import { moved, shownAs } from "./tab-order.ts";
 
   const ICON_SIZE = 16;
@@ -210,7 +210,8 @@
       tab !== undefined &&
       tabKey(tab.id) === key &&
       rows.gap !== rows.from;
-    const liftedTop = rowOf(key)?.getBoundingClientRect().top;
+    const liftedRow = rowOf(key);
+    const lifted = liftedRow === null ? undefined : poseOf(liftedRow);
     settling = { key, easesNeighbours: !isMoved };
     drag = undefined;
     if (isMoved) {
@@ -220,9 +221,7 @@
     await tick();
     const row = rowOf(key);
     settle =
-      row === null || liftedTop === undefined
-        ? undefined
-        : settleRow(row, liftedTop);
+      row === null || lifted === undefined ? undefined : settleRow(row, lifted);
     await settle?.finished.then(
       () => undefined,
       () => undefined,
@@ -298,9 +297,6 @@
             (android.isOn
               ? "-translate-y-native-drag-lift shadow-dialog"
               : "shadow-dialog"),
-          isRaised &&
-            !isLifted &&
-            "transition-[scale,box-shadow] duration-move ease-emphasized",
         ]}
       >
         <button

@@ -5,7 +5,11 @@ import type {
   LibraryTab,
 } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
-import { heldAnimations, holdScriptedAnimations } from "./held-animations.ts";
+import {
+  heldAnimations,
+  holdScriptedAnimations,
+  slowMoves,
+} from "./held-animations.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -395,6 +399,41 @@ test.describe("in a library that keeps labels", () => {
         (await heldAnimations(page)).map(({ duration }) => duration),
       )
       .toEqual([MOVE_MS]);
+  });
+
+  test("fades a dropped tab's shadow while it settles", async ({ page }) => {
+    await page.goto("/settings/library/tabs");
+    await slowMoves(page);
+    const row = rowOf(page, "Reading");
+    const start = await boxOf(
+      row.getByRole("button", { name: "Move Reading" }),
+    );
+    const x = start.x + start.width / 2;
+
+    await page.mouse.move(x, start.y + start.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x, await bottomOfRow(page, "Manga"), {
+      steps: DRAG_STEPS,
+    });
+    const lifted = await row.evaluate(
+      (element) => getComputedStyle(element).boxShadow,
+    );
+    await page.mouse.up();
+    const shadows = await row.evaluate((element) => {
+      const settles = element.getAnimations();
+      for (const settle of settles) {
+        settle.pause();
+        settle.currentTime = 0;
+      }
+      const start = getComputedStyle(element).boxShadow;
+      for (const settle of settles) {
+        settle.finish();
+      }
+      return { start, end: getComputedStyle(element).boxShadow };
+    });
+
+    expect(lifted).not.toBe("none");
+    expect(shadows).toEqual({ start: lifted, end: "none" });
   });
 
   test("leaves a drag to the pointer that started it", async ({ page }) => {
