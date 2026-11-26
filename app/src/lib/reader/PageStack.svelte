@@ -18,7 +18,8 @@
 
   import { fittedTo, type Size } from "#lib/reader/page-fit.ts";
   import type { PageFit } from "#lib/reader/reader-settings.svelte.ts";
-  import type { Spread } from "#lib/reader/spreads.ts";
+  import { spreadAt, type Spread } from "#lib/reader/spreads.ts";
+  import { cellsAround } from "#lib/reader/page-cells.ts";
   import { pagesAround } from "#lib/reader/page-window.ts";
 
   /** Pages decoded ahead of the one shown, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
@@ -35,7 +36,8 @@
     pages,
     crop,
     shown,
-    spread,
+    spreads,
+    isPastEnd,
     fit,
     zoom,
     isReversed,
@@ -47,11 +49,13 @@
     startAt,
     onNextPage,
     onShownReady,
+    onSettled,
   }: {
     pages: readonly BookPage[];
     crop: PageCrop;
     shown: number;
-    spread: Spread;
+    spreads: readonly Spread[];
+    isPastEnd: boolean;
     fit: PageFit;
     zoom: number;
     isReversed: boolean;
@@ -63,6 +67,7 @@
     startAt: SpreadPlace | undefined;
     onNextPage: () => void;
     onShownReady: () => void;
+    onSettled: () => void;
   } = $props();
 
   let scroller: HTMLDivElement | undefined = $state();
@@ -76,7 +81,16 @@
   let isSlow = $state(false);
   let startingPlace = untrack(() => startAt);
 
-  const kept = $derived(pagesAround(shown, pages.length, PAGES_AHEAD));
+  const shownSpread = $derived(spreadAt(spreads, shown));
+  const spread = $derived(spreads[shownSpread] ?? [shown]);
+  const cells = $derived(
+    cellsAround(
+      spreads,
+      isPastEnd ? spreads.length : shownSpread,
+      pagesAround(shown, pages.length, PAGES_AHEAD),
+    ),
+  );
+  const nextSide = $derived(isReversed ? -1 : 1);
   const isShownReady = $derived(
     isBlank || decoded.has(shown) || failed.has(shown),
   );
@@ -85,8 +99,6 @@
     isBlank || spread.every((index) => decoded.has(index) || failed.has(index)),
   );
   const id = $props.id();
-
-  const spreadHeight = $derived(heightOfSpread());
 
   function ratioOf(index: number): number | undefined {
     const page = pages[index];
@@ -97,12 +109,12 @@
       : size.width / size.height;
   }
 
-  function heightOfSpread(): number | undefined {
+  function heightOfSpread(pagesShown: Spread): number | undefined {
     if (crop === "whole") {
       return undefined;
     }
     let width = 0;
-    for (const index of spread) {
+    for (const index of pagesShown) {
       const ratio = ratioOf(index);
       if (ratio === undefined) {
         return undefined;
@@ -116,20 +128,34 @@
     ).height;
   }
 
-  function sizeOf(index: number) {
+  function sizeOf(index: number, pagesShown: Spread) {
     const ratio = ratioOf(index);
     if (ratio === undefined) {
       return undefined;
     }
+    const spreadHeight = heightOfSpread(pagesShown);
     return zoomed(
       spreadHeight === undefined
         ? fittedTo(
             { width: ratio, height: 1 },
-            { width: spaceWidth / spread.length, height: spaceHeight },
+            { width: spaceWidth / pagesShown.length, height: spaceHeight },
             fit,
           )
         : { width: spreadHeight * ratio, height: spreadHeight },
     );
+  }
+
+  function settleOnceStill(
+    event: TransitionEvent & { currentTarget: HTMLElement },
+  ): void {
+    if (event.currentTarget.getAnimations().length === 0) {
+      onSettled();
+    }
+  }
+
+  function placeOf(offset: number): string | undefined {
+    const across = offset * nextSide * spaceWidth + slide;
+    return across === 0 && !isSettling ? undefined : `${String(across)}px 0`;
   }
 
   function zoomed(size: { width: number; height: number }) {
@@ -249,153 +275,168 @@
   });
 </script>
 
-<div
-  bind:this={scroller}
-  bind:clientWidth={spaceWidth}
-  bind:clientHeight={spaceHeight}
-  class={[
-    "absolute inset-none grid",
-    fit === "screen" && zoom === 1
-      ? "overflow-hidden"
-      : "overflow-auto overscroll-contain",
-  ]}
->
+<div class="absolute inset-none contain-paint">
   <div
+    bind:this={scroller}
+    bind:clientWidth={spaceWidth}
+    bind:clientHeight={spaceHeight}
     class={[
-      "col-start-1 row-start-1 flex items-center justify-center",
-      isReversed && "flex-row-reverse",
-      isSettling &&
-        "motion-reader:transition-transform motion-reader:duration-slide motion-reader:ease-emphasized",
+      "absolute inset-none grid",
+      fit === "screen" && zoom === 1
+        ? "overflow-hidden"
+        : "overflow-auto overscroll-contain",
     ]}
-    style:translate={slide !== 0 || isSettling
-      ? `${String(slide)}px 0`
-      : undefined}
-    style:min-width="{spaceWidth}px"
-    style:min-height="{spaceHeight}px"
   >
-    {#each kept as index (index)}
-      {@const page = pages[index]}
-      {#if page !== undefined}
-        {@const size = sizeOf(index)}
-        {@const isShown = spread.includes(index)}
-        <div
-          class={[
-            isShown ? "relative shrink-0" : "invisible absolute inset-none",
-            isShown && decoded.has(index) && "bg-reader-page",
-            isShown &&
-              (size === undefined
-                ? "block-full inline-full"
-                : "reader-page-size"),
-          ]}
-          style:--page-inline={size === undefined
-            ? undefined
-            : `${String(size.width)}px`}
-          style:--page-block={size === undefined
-            ? undefined
-            : `${String(size.height)}px`}
-        >
-          {#if isBlank}
+    {#each cells as cell (cell.spread[0])}
+      {@const isNeighbour = cell.offset !== 0}
+      <div
+        aria-hidden={isNeighbour ? "true" : undefined}
+        class={[
+          "flex",
+          isNeighbour
+            ? "fixed inset-s-none inset-bs-none overflow-hidden"
+            : "col-start-1 row-start-1",
+          isReversed && "flex-row-reverse",
+          isSettling &&
+            "motion-reader:transition-transform motion-reader:duration-slide motion-reader:ease-emphasized",
+        ]}
+        style:translate={placeOf(cell.offset)}
+        style:min-width="{spaceWidth}px"
+        style:min-height="{spaceHeight}px"
+        style:width={isNeighbour ? `${String(spaceWidth)}px` : undefined}
+        style:height={isNeighbour ? `${String(spaceHeight)}px` : undefined}
+        ontransitionend={settleOnceStill}
+      >
+        {#each cell.spread as index (index)}
+          {@const page = pages[index]}
+          {#if page !== undefined}
+            {@const size = sizeOf(index, cell.spread)}
+            {@const isShown = spread.includes(index)}
             <div
-              role="img"
-              aria-label={m.reader_page({ page: index + 1 })}
-              aria-hidden={isShown ? undefined : "true"}
-              class="flex items-center justify-center bg-reader-grey text-body font-semibold text-on-reader block-full inline-full"
-            >
-              <span aria-hidden="true">
-                {m.reader_blank_page({ page: index + 1, count: pages.length })}
-              </span>
-            </div>
-          {:else}
-            <img
-              {@attach freshImage(index)}
-              src={sourceOf(page, index)}
-              alt={m.reader_page({ page: index + 1 })}
-              aria-hidden={isShown ? undefined : "true"}
-              decoding="async"
-              draggable="false"
               class={[
-                "object-contain select-none block-full inline-full",
-                !decoded.has(index) && "invisible",
+                "relative my-auto shrink-0",
+                isReversed
+                  ? "first:me-auto last:ms-auto"
+                  : "first:ms-auto last:me-auto",
+                decoded.has(index) && "bg-reader-page",
+                size === undefined
+                  ? "block-full inline-full"
+                  : "reader-page-size",
               ]}
-              onload={(event) => {
-                if (event.currentTarget instanceof HTMLImageElement) {
-                  sizeToCroppedImage(event.currentTarget, page);
-                  void decode(event.currentTarget, index);
-                }
-              }}
-              onerror={() => {
-                onFailure(index);
-              }}
-            />
+              style:--page-inline={size === undefined
+                ? undefined
+                : `${String(size.width)}px`}
+              style:--page-block={size === undefined
+                ? undefined
+                : `${String(size.height)}px`}
+            >
+              {#if isBlank}
+                <div
+                  role="img"
+                  aria-label={m.reader_page({ page: index + 1 })}
+                  aria-hidden={isShown ? undefined : "true"}
+                  class="flex items-center justify-center bg-reader-grey text-body font-semibold text-on-reader block-full inline-full"
+                >
+                  <span aria-hidden="true">
+                    {m.reader_blank_page({
+                      page: index + 1,
+                      count: pages.length,
+                    })}
+                  </span>
+                </div>
+              {:else}
+                <img
+                  {@attach freshImage(index)}
+                  src={sourceOf(page, index)}
+                  alt={m.reader_page({ page: index + 1 })}
+                  aria-hidden={isShown ? undefined : "true"}
+                  decoding="async"
+                  draggable="false"
+                  class={[
+                    "object-contain select-none block-full inline-full",
+                    !decoded.has(index) && "invisible",
+                  ]}
+                  onload={(event) => {
+                    if (event.currentTarget instanceof HTMLImageElement) {
+                      sizeToCroppedImage(event.currentTarget, page);
+                      void decode(event.currentTarget, index);
+                    }
+                  }}
+                  onerror={() => {
+                    onFailure(index);
+                  }}
+                />
+              {/if}
+            </div>
+          {/if}
+        {/each}
+      </div>
+    {/each}
+    <div
+      class="sticky inset-s-none inset-bs-none col-start-1 row-start-1"
+      style:width="{spaceWidth}px"
+      style:height="{spaceHeight}px"
+    >
+      {@render overlay()}
+      <svelte:element
+        this={isShownFailed ? "section" : "div"}
+        aria-labelledby={isShownFailed ? `${id}-problem` : undefined}
+        class="pointer-events-none absolute inset-none flex flex-col items-center justify-center gap-lg px-xl"
+      >
+        <div
+          role="status"
+          class="flex flex-col items-center gap-sm text-center max-inline-page-problem"
+        >
+          {#if isShownFailed}
+            <EmptyMedia>
+              <ImageOff size={PROBLEM_ICON_SIZE} aria-hidden="true" />
+            </EmptyMedia>
+            <EmptyTitle
+              id="{id}-problem"
+              class="text-group-title font-semibold expanded:text-body"
+            >
+              {m.reader_page_failed()}
+            </EmptyTitle>
+            <EmptyDescription class="text-small">
+              {m.reader_page_failed_body({
+                page: shown + 1,
+                title: bookTitle,
+              })}
+            </EmptyDescription>
+          {:else if isSlow}
+            <Spinner size={SPINNER_SIZE} class="text-muted" />
+            <p class="text-small text-muted">
+              {m.reader_page_loading({ page: shown + 1 })}
+            </p>
           {/if}
         </div>
-      {/if}
-    {/each}
-  </div>
-  <div
-    class="sticky inset-s-none inset-bs-none col-start-1 row-start-1"
-    style:width="{spaceWidth}px"
-    style:height="{spaceHeight}px"
-  >
-    {@render overlay()}
-    <svelte:element
-      this={isShownFailed ? "section" : "div"}
-      aria-labelledby={isShownFailed ? `${id}-problem` : undefined}
-      class="pointer-events-none absolute inset-none flex flex-col items-center justify-center gap-lg px-xl"
-    >
-      <div
-        role="status"
-        class="flex flex-col items-center gap-sm text-center max-inline-page-problem"
-      >
         {#if isShownFailed}
-          <EmptyMedia>
-            <ImageOff size={PROBLEM_ICON_SIZE} aria-hidden="true" />
-          </EmptyMedia>
-          <EmptyTitle
-            id="{id}-problem"
-            class="text-group-title font-semibold expanded:text-body"
-          >
-            {m.reader_page_failed()}
-          </EmptyTitle>
-          <EmptyDescription class="text-small">
-            {m.reader_page_failed_body({
-              page: shown + 1,
-              title: bookTitle,
-            })}
-          </EmptyDescription>
-        {:else if isSlow}
-          <Spinner size={SPINNER_SIZE} class="text-muted" />
-          <p class="text-small text-muted">
-            {m.reader_page_loading({ page: shown + 1 })}
-          </p>
+          <div class="pointer-events-auto flex flex-wrap justify-center gap-sm">
+            <button
+              type="button"
+              class="flex items-center gap-sm rounded-shadcn-button border border-border bg-card px-lg text-body font-medium transition-control min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button"
+              onclick={() => {
+                tryAgain(shown);
+              }}
+            >
+              <RefreshCw size={BUTTON_ICON_SIZE} aria-hidden="true" />
+              {m.reader_try_again()}
+            </button>
+            <button
+              type="button"
+              class="flex items-center gap-sm rounded-shadcn-button bg-accent px-lg text-body font-medium text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button"
+              onclick={onNextPage}
+            >
+              {m.reader_next_page()}
+              <ChevronRight
+                size={BUTTON_ICON_SIZE}
+                aria-hidden="true"
+                class="rtl:-scale-x-100"
+              />
+            </button>
+          </div>
         {/if}
-      </div>
-      {#if isShownFailed}
-        <div class="pointer-events-auto flex flex-wrap justify-center gap-sm">
-          <button
-            type="button"
-            class="flex items-center gap-sm rounded-shadcn-button border border-border bg-card px-lg text-body font-medium transition-control min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button"
-            onclick={() => {
-              tryAgain(shown);
-            }}
-          >
-            <RefreshCw size={BUTTON_ICON_SIZE} aria-hidden="true" />
-            {m.reader_try_again()}
-          </button>
-          <button
-            type="button"
-            class="flex items-center gap-sm rounded-shadcn-button bg-accent px-lg text-body font-medium text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button"
-            onclick={onNextPage}
-          >
-            {m.reader_next_page()}
-            <ChevronRight
-              size={BUTTON_ICON_SIZE}
-              aria-hidden="true"
-              class="rtl:-scale-x-100"
-            />
-          </button>
-        </div>
-      {/if}
-    </svelte:element>
+      </svelte:element>
+    </div>
   </div>
 </div>

@@ -614,6 +614,7 @@
       turner.turn(1);
     }
     zoom = 1;
+    isSettling = look.pageTurn === "slide";
     controls.hide();
     if (turner.isPastEnd && skipUpNext.isOn) {
       goStraightOn();
@@ -734,9 +735,14 @@
     );
 
   function turnTo(index: number): void {
-    turner.goTo(index);
+    jumpTo(index);
     zoom = 1;
     controls.hide();
+  }
+
+  function jumpTo(index: number): void {
+    isSettling = false;
+    turner.goTo(index);
   }
 
   /** Shows the controls for a focused control, holding them up only while it was focused from the keyboard, and never for the heading focused as the book opens. */
@@ -885,32 +891,17 @@
     }
   }
 
-  function onSwipeEnd(
-    event: PointerEvent & { currentTarget: HTMLElement },
-  ): void {
+  function onSwipeEnd(event: PointerEvent): void {
     const turn = swipe.ended(event);
-    const before = turner.shown;
     if (turn !== undefined && !isZoomedIn(viewportScale)) {
       turnBy(TURN_STEPS[inReadingOrder(turn, reading.direction)]);
     }
-    if (turner.shown === before || slide === 0) {
-      settleSlide();
-    } else {
-      slideIn(event.currentTarget.clientWidth);
-    }
+    settleSlide();
   }
 
   function settleSlide(): void {
-    isSettling = slide !== 0;
+    isSettling ||= slide !== 0;
     slide = 0;
-  }
-
-  function slideIn(width: number): void {
-    isSettling = false;
-    slide = slide < 0 ? slide + width : slide - width;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(settleSlide);
-    });
   }
 
   $effect(() => {
@@ -1043,7 +1034,7 @@
       void markRead();
     }}
     onStartOver={() => {
-      turner.goTo(0);
+      jumpTo(0);
     }}
     onShowFile={libraryBookFileShower(book, notices)}
     onOpenChange={holdControls}
@@ -1211,7 +1202,8 @@
               pages={cropped.pages}
               crop={cropped.crop}
               shown={turner.shown}
-              {spread}
+              {spreads}
+              isPastEnd={turner.isPastEnd}
               fit={look.fit}
               {zoom}
               isReversed={reading.direction === "rightToLeft"}
@@ -1224,6 +1216,9 @@
               startAt={startAt?.kind === "spread" ? startAt : undefined}
               onNextPage={() => {
                 act("next");
+              }}
+              onSettled={() => {
+                isSettling = false;
               }}
               onShownReady={() => {
                 startAt = undefined;
@@ -1412,7 +1407,7 @@
             ? undefined
             : (pageCount - turner.shown) * book.secondsPerPage}
           onSeek={(index: number) => {
-            turner.goTo(index);
+            jumpTo(index);
           }}
         />
       </div>
