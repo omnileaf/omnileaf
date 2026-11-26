@@ -59,7 +59,6 @@
     narrowsLibrary,
   } from "#lib/library/empty-cause.ts";
   import EmptyTab from "#lib/library/EmptyTab.svelte";
-  import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { defaultLibraryView, viewDrawn } from "#lib/library/library-view.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
@@ -97,6 +96,7 @@
   } from "#lib/library/library-tabs.ts";
   import { countOf, type TabPage } from "#lib/library/tab-page.svelte.ts";
   import { TabPages } from "#lib/library/tab-pages.svelte.ts";
+  import { UnfilteredCounts } from "#lib/library/unfiltered-counts.svelte.ts";
   import FastScroll from "#lib/library/FastScroll.svelte";
   import NoMatches from "#lib/library/NoMatches.svelte";
   import SeriesCount from "#lib/library/SeriesCount.svelte";
@@ -502,42 +502,27 @@
   const listsNothing = $derived(
     library.list.kind === "loaded" && library.list.items.length === 0,
   );
-  interface AskedCount {
-    readonly count: LibrarySeriesCount;
-    readonly askedFor: () => string | undefined;
-  }
-
-  const libraryCount = new LibrarySeriesCount(
-    countOf(ALL_TAB, NEW_LIBRARY_LISTING),
+  const unfilteredCounts = new UnfilteredCounts(
+    (tab) => countOf(tab, NEW_LIBRARY_LISTING),
     (error) => {
       reportError(error);
     },
   );
-  const listedTabCount = new LibrarySeriesCount(
-    () => countOf(listedTab?.id ?? ALL_TAB, NEW_LIBRARY_LISTING)(),
-    (error) => {
-      reportError(error);
-    },
-  );
-  const libraryCountAskedFor = $derived(
-    listsNothing && narrowsLibrary({ listedTab, isFilterOn })
-      ? ALL_SERIES
-      : undefined,
-  );
-  const tabCountAskedFor = $derived(
-    listsNothing && listedTabKey !== ALL_SERIES ? listedTabKey : undefined,
-  );
-  const emptyListCounts: readonly AskedCount[] = [
-    { count: libraryCount, askedFor: () => libraryCountAskedFor },
-    { count: listedTabCount, askedFor: () => tabCountAskedFor },
-  ];
+  const tabsCountedUnfiltered = $derived<readonly LibraryTabId[]>([
+    ...(listsNothing && narrowsLibrary({ listedTab, isFilterOn })
+      ? [ALL_TAB]
+      : []),
+    ...(listsNothing && listedTab !== undefined && listedTabKey !== ALL_SERIES
+      ? [listedTab.id]
+      : []),
+  ]);
   const emptyCause = $derived(
     listsNothing
       ? emptyCauseOf({
           listedTab,
           isFilterOn,
-          libraryCount: libraryCount.reading,
-          listedTabCount: listedTabCount.reading,
+          libraryCount: unfilteredCounts.of(ALL_SERIES),
+          listedTabCount: unfilteredCounts.of(listedTabKey),
         })
       : undefined,
   );
@@ -656,22 +641,12 @@
     });
   });
 
-  function countOnlyWhileAsked({ count, askedFor }: AskedCount): void {
-    $effect.pre(() => {
-      const tab = askedFor();
-      untrack(() => {
-        if (tab === undefined) {
-          count.clear();
-        } else {
-          void count.load();
-        }
-      });
+  $effect.pre(() => {
+    const tabs = tabsCountedUnfiltered;
+    untrack(() => {
+      unfilteredCounts.ask(tabs);
     });
-  }
-
-  for (const asked of emptyListCounts) {
-    countOnlyWhileAsked(asked);
-  }
+  });
 
   const listingShown = $derived(
     chosenListing === undefined
@@ -1036,11 +1011,7 @@
       if (countsSeries) {
         void seriesCount.load();
       }
-      for (const { count, askedFor } of emptyListCounts) {
-        if (askedFor() !== undefined) {
-          void count.refresh();
-        }
-      }
+      void unfilteredCounts.refresh();
       pages.refreshBeside();
     }, reportFailure);
     return () => {
