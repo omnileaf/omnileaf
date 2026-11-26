@@ -16,8 +16,10 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
 
 const LIBRARY = sampleSeries(6);
+const SHELF = new FakeShelf([{ state: "notStarted" }, { state: "notStarted" }]);
 const MANY_CHOICES: LibraryFilterChoices = {
   formats: ["comic", "manga", "book"],
   languages: ["ja", "en", "fr", "de"],
@@ -43,6 +45,9 @@ test.use({
     appInfo: () => fakeAppInfo("android"),
     librarySeries: pagedSeries(() => LIBRARY),
     librarySeriesCount: () => LIBRARY.length,
+    seriesOverview: (id) => SHELF.backend().seriesOverview(id),
+    seriesBooks: (id, listing, after) =>
+      SHELF.backend().seriesBooks(id, listing, after),
     watchBackSwipes: (channel) => {
       gestures = channel;
       return null;
@@ -129,13 +134,17 @@ async function expectSheetShrunkBy(
   eased: number,
 ): Promise<void> {
   const widthLost = SHRINK_WIDTH_PX * eased;
-  const heightLost = SHRINK_HEIGHT_PX * eased;
+  const proportional = rest.height * ((rest.width - widthLost) / rest.width);
+  const shortened = rest.height - SHRINK_HEIGHT_PX * eased;
   await expect
     .poll(async () => (await boxOf(sheet)).width)
     .toBeCloseTo(rest.width - widthLost, 0);
   const box = await boxOf(sheet);
-  expect(Math.abs(box.height - (rest.height - heightLost))).toBeLessThanOrEqual(
-    TOLERANCE_PX,
+  expect(box.height).toBeGreaterThanOrEqual(
+    Math.min(proportional, shortened) - TOLERANCE_PX,
+  );
+  expect(box.height).toBeLessThanOrEqual(
+    Math.max(proportional, shortened) + TOLERANCE_PX,
   );
   expect(
     Math.abs(box.y + box.height - (rest.y + rest.height)),
@@ -460,6 +469,46 @@ for (const size of PHONE_SIZES) {
       await expectSheetAtRest(menu, menuRest);
     });
 
+    test("shrinks a sheet that fills its height with its content in proportion, leaving no gap under it", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES_ID}`);
+      await page
+        .getByRole("button", { name: `More for ${SHELF.titleOf(0)}` })
+        .click();
+      const sheet = page.getByRole("dialog", { name: SHELF.titleOf(0) });
+      await expect(sheet).toBeVisible();
+      await settle(sheet);
+      const last = sheet.locator(":scope > *").last();
+      const rest = await boxOf(sheet);
+      const restGap =
+        rest.y +
+        rest.height -
+        (await boxOf(last)).y -
+        (await boxOf(last)).height;
+      const factor = (rest.width - SHRINK_WIDTH_PX) / rest.width;
+
+      await gesture(started());
+      await gesture(moved(FULL_PROGRESS));
+
+      await expect
+        .poll(async () => (await boxOf(sheet)).width)
+        .toBeCloseTo(rest.width - SHRINK_WIDTH_PX, 0);
+      const surface = await boxOf(sheet);
+      const content = await boxOf(last);
+      expect(
+        Math.abs(surface.height - rest.height * factor),
+      ).toBeLessThanOrEqual(TOLERANCE_PX);
+      expect(
+        Math.abs(
+          surface.y +
+            surface.height -
+            (content.y + content.height) -
+            restGap * factor,
+        ),
+      ).toBeLessThanOrEqual(TOLERANCE_PX);
+    });
+
     test.describe("a Sort and filter sheet tall enough to scroll", () => {
       test.use({
         backend: {
@@ -494,20 +543,65 @@ for (const size of PHONE_SIZES) {
         return rest;
       }
 
-      test("keeps the scrolling body reaching the pinned footer while held", async ({
+      test("ends 24 px shorter than it rests with more of the list showing", async ({
         page,
       }) => {
         const sheet = await openTallSheet(page);
-        const footer = sheet
-          .getByRole("button", { name: /^Show \d+ series$/ })
-          .locator("xpath=..");
+        const body = sheet.locator(".overflow-y-auto");
+        const rest = await boxOf(sheet);
+        const restBody = await boxOf(body);
 
         await holdAtFullProgress(sheet);
 
-        const body = await boxOf(sheet.locator(".overflow-y-auto"));
+        const surface = await boxOf(sheet);
         expect(
-          Math.abs(body.y + body.height - (await boxOf(footer)).y),
+          Math.abs(surface.height - (rest.height - SHRINK_HEIGHT_PX)),
         ).toBeLessThanOrEqual(TOLERANCE_PX);
+        const held = await body.evaluate((element) => element.clientHeight);
+        expect(held).toBeGreaterThan(
+          restBody.height * (1 - SHRINK_WIDTH_PX / rest.width),
+        );
+      });
+
+      test("keeps a body scrolled to its end at its end once the gesture is cancelled", async ({
+        page,
+      }) => {
+        const sheet = await openTallSheet(page);
+        const body = sheet.locator(".overflow-y-auto");
+        const distanceFromEnd = () =>
+          body.evaluate(
+            (element) =>
+              element.scrollHeight - element.clientHeight - element.scrollTop,
+          );
+        await body.evaluate((element) => {
+          element.scrollTop = element.scrollHeight;
+        });
+        expect(await distanceFromEnd()).toBe(0);
+
+        await holdAtFullProgress(sheet);
+        await gesture({ kind: "cancelled" });
+
+        await expect(sheet).not.toHaveAttribute("data-back", /.*/);
+        expect(await distanceFromEnd()).toBe(0);
+      });
+
+      test("keeps a body scrolled within the extra height where it was once the gesture is cancelled", async ({
+        page,
+      }) => {
+        const sheet = await openTallSheet(page);
+        const body = sheet.locator(".overflow-y-auto");
+        const before = await body.evaluate((element) => {
+          element.scrollTop = element.scrollHeight - element.clientHeight - 10;
+          return element.scrollTop;
+        });
+
+        await holdAtFullProgress(sheet);
+        await gesture({ kind: "cancelled" });
+
+        await expect(sheet).not.toHaveAttribute("data-back", /.*/);
+        expect(await body.evaluate((element) => element.scrollTop)).toBe(
+          before,
+        );
       });
 
       test("keeps the pinned footer at the surface's bottom, scaled with the sheet, while held", async ({
