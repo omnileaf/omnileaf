@@ -423,9 +423,11 @@
                         ? ANDROID_FILTER_CHIP_LOOK.removeSize
                         : REMOVE_ICON_SIZE}
                       aria-hidden="true"
-                      class={isAndroidSheet && "shrink-0"}
+                      class={isAndroidSheet ? "shrink-0" : undefined}
                     />
-                    <span class={isAndroidSheet && "truncate"}>{tag}</span>
+                    <span class={isAndroidSheet ? "truncate" : undefined}>
+                      {tag}
+                    </span>
                   </Button>
                 {/each}
               </div>
