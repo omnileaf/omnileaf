@@ -3,7 +3,6 @@
   import { MediaQuery } from "svelte/reactivity";
 
   import { resolve } from "$app/paths";
-  import { afterNavigate, beforeNavigate } from "$app/navigation";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { paneFoldQuery } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -48,12 +47,14 @@
   let navigation: HTMLElement | undefined = $state();
   let arriving: Section | undefined = $state();
   let heldPress: Section | undefined = $state();
-  let isHeldPressNavigating = false;
   let previous: Section | undefined;
 
   $effect(() => {
     if (previous !== undefined && previous !== current) {
       arriving = current;
+      if (heldPress !== current) {
+        heldPress = undefined;
+      }
     }
     previous = current;
   });
@@ -66,22 +67,6 @@
     return () => {
       cancelAnimationFrame(frame);
     };
-  });
-
-  beforeNavigate(({ complete }) => {
-    const held = heldPress;
-    if (held === undefined) {
-      return;
-    }
-    complete.catch(() => {
-      releasePress(held);
-    });
-  });
-
-  afterNavigate(() => {
-    if (heldPress !== current) {
-      heldPress = undefined;
-    }
   });
 
   function endArrivalOnceStill(): void {
@@ -97,25 +82,19 @@
 
   /** SvelteKit lets the browser paint once between a link's click and its navigation, so the press is held across that frame. */
   function holdPressUntilChosen(section: Section): void {
-    if (section === current) {
-      return;
-    }
-    heldPress = section;
-    isHeldPressNavigating = false;
-  }
-
-  function keepPressIfItNavigates(event: MouseEvent): void {
-    const isNavigating = event.defaultPrevented;
-    isHeldPressNavigating = isNavigating;
-    if (!isNavigating) {
-      releasePress(heldPress);
+    if (section !== current) {
+      heldPress = section;
     }
   }
 
-  function releaseUnusedPress(): void {
-    if (!isHeldPressNavigating) {
-      releasePress(heldPress);
+  function keepPressIfRouted(event: MouseEvent): void {
+    if (!event.defaultPrevented) {
+      heldPress = undefined;
     }
+  }
+
+  function dropPress(): void {
+    heldPress = undefined;
   }
 
   function releasePress(section: Section | undefined): void {
@@ -125,10 +104,7 @@
   }
 </script>
 
-<svelte:window
-  onclick={keepPressIfItNavigates}
-  onpointerdown={releaseUnusedPress}
-/>
+<svelte:window onclick={keepPressIfRouted} onpointerdown={dropPress} />
 
 <nav
   data-app-navigation

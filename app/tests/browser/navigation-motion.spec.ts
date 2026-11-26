@@ -46,6 +46,7 @@ const REST_TOLERANCE = 0.01;
 const VISIBLY_MOVED = 0.05;
 const PRESS_FRAMES = 4;
 const LONG_PRESS_MS = 800;
+const TAP_MS = 50;
 const FINGER = { pointerType: "touch", isPrimary: true } as const;
 const HAND_OVER_FRAMES = 40;
 
@@ -251,9 +252,31 @@ interface PillFrame {
   readonly pill: number;
 }
 
+async function pressWithTheMouse(page: Page, link: Locator): Promise<void> {
+  const { x, y, width, height } = await boxOf(link);
+  await page.mouse.move(x + width / 2, y + height / 2);
+  await page.mouse.down();
+  await page.mouse.up();
+}
+
+async function tapWithAFinger(page: Page, link: Locator): Promise<void> {
+  const { x, y, width, height } = await boxOf(link);
+  const browser = await page.context().newCDPSession(page);
+  await browser.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: x + width / 2, y: y + height / 2 }],
+  });
+  await page.waitForTimeout(TAP_MS);
+  await browser.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+}
+
 async function pillFramesWhilePressing(
   page: Page,
   label: string,
+  press: (page: Page, link: Locator) => Promise<void> = pressWithTheMouse,
 ): Promise<PillFrame[]> {
   const link = tab(page, label);
   const recording = await link.evaluateHandle((root) => {
@@ -275,20 +298,19 @@ async function pillFramesWhilePressing(
     requestAnimationFrame(record);
     return frames;
   });
-  const { x, y, width, height } = await boxOf(link);
-  await page.mouse.move(x + width / 2, y + height / 2);
-  await page.mouse.down();
   await expect
     .poll(() => recording.evaluate((frames) => frames.length))
     .toBeGreaterThan(PRESS_FRAMES);
-  await page.mouse.up();
+  await press(page, link);
   await expect(link).toHaveAttribute("aria-current", "page");
   const pressedAt = await recording.evaluate((frames) => frames.length);
   await expect
     .poll(() => recording.evaluate((frames) => frames.length))
     .toBeGreaterThan(pressedAt + HAND_OVER_FRAMES);
   const frames = await recording.jsonValue();
-  return frames.slice(frames.findIndex(({ isPressed }) => isPressed));
+  return frames.slice(
+    frames.findIndex(({ isPressed, isHeld }) => isPressed || isHeld),
+  );
 }
 
 function showsAPill({ isPressed, isHeld, isTinted, pill }: PillFrame): boolean {
@@ -728,20 +750,29 @@ test.describe("on Android", () => {
     expect(samples[2]?.scaleX).toBeGreaterThan(1);
   });
 
-  test("keeps a pill on a pressed tab until it is chosen", async ({ page }) => {
-    test.skip(
-      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
-      "bar and rail only",
-    );
-    await page.goto("/");
-    await settle(navigation(page));
+  for (const { from, label } of [
+    { from: "/", label: "History" },
+    { from: "/browse", label: "History" },
+    { from: "/history", label: "Settings" },
+    { from: "/settings", label: "Library" },
+  ]) {
+    test(`keeps a pill on ${label} from a finger's tap on ${from} until it is chosen`, async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+        "bar and rail only",
+      );
+      await page.goto(from);
+      await settle(navigation(page));
 
-    const frames = await pillFramesWhilePressing(page, "History");
+      const frames = await pillFramesWhilePressing(page, label, tapWithAFinger);
 
-    expect(frames.length).toBeGreaterThan(HAND_OVER_FRAMES);
-    expect(frames.filter((frame) => !showsAPill(frame))).toEqual([]);
-    expect(frames.some(({ isHeld }) => isHeld)).toBe(true);
-  });
+      expect(frames.length).toBeGreaterThan(HAND_OVER_FRAMES);
+      expect(frames.filter((frame) => !showsAPill(frame))).toEqual([]);
+      expect(frames.some(({ isHeld }) => isHeld)).toBe(true);
+    });
+  }
 
   test("leaves no grey on the open tab when it is tapped", async ({ page }) => {
     await page.goto("/history");
