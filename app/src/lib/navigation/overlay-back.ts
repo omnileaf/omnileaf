@@ -1,11 +1,11 @@
 import type { Attachment } from "svelte/attachments";
 
 import { beforeNavigate, goto } from "$app/navigation";
-import type { PageRouteId } from "$app/types";
 import { reportFailure } from "#lib/errors/report-failure.ts";
 import { currentPlatform } from "#lib/page/platform.ts";
 
 import { resolvedPathOf } from "./app-path";
+import { isInAppShell } from "./sections";
 import { followsHistoryForBack, tellAndroidHowFarBack } from "./android-back";
 import type { BackGestureStep } from "./back-preview";
 
@@ -206,17 +206,55 @@ export function leaveOverlaysThen(go: () => Promise<unknown>): void {
   void overlays.giveBack().then(go).catch(reportFailure);
 }
 
-export function giveBackOverlayEntriesBeforeLinkTo(routeId: PageRouteId): void {
-  beforeNavigate(({ type, to, cancel }) => {
+export interface PageNavigation {
+  readonly type: "enter" | "form" | "leave" | "link" | "goto" | "popstate";
+  readonly from: { readonly url: URL } | null;
+  readonly to: {
+    readonly url: URL;
+    readonly route: { readonly id: string | null };
+  } | null;
+}
+
+const LEAVING_TYPES: ReadonlySet<PageNavigation["type"]> = new Set([
+  "link",
+  "goto",
+  "form",
+]);
+
+export function mustLeaveOverlaysBefore(
+  navigation: PageNavigation,
+  overlays: Pick<OverlayBack, "mustGiveBackBeforeLeaving">,
+): boolean {
+  const { from, to } = navigation;
+  if (
+    !LEAVING_TYPES.has(navigation.type) ||
+    from === null ||
+    to === null ||
+    from.url.pathname === to.url.pathname
+  ) {
+    return false;
+  }
+  const isGuardedLink =
+    navigation.type === "link" &&
+    to.route.id !== null &&
+    isInAppShell(to.route.id);
+  return !isGuardedLink && overlays.mustGiveBackBeforeLeaving();
+}
+
+export const mustLeaveOverlays = (): boolean =>
+  overlays.mustGiveBackBeforeLeaving();
+
+export function giveBackOverlayEntriesBeforeLeavingPage(): void {
+  beforeNavigate((navigation) => {
     if (
-      type !== "link" ||
-      to?.route.id !== routeId ||
-      !overlays.mustGiveBackBeforeLeaving()
+      !mustLeaveOverlaysBefore(navigation, overlays) ||
+      navigation.to === null
     ) {
       return;
     }
-    cancel();
-    leaveOverlaysThen(() => goto(resolvedPathOf(to.url)));
+    const { url } = navigation.to;
+    navigation.cancel();
+    leaveOverlaysThen(() => goto(resolvedPathOf(url)));
   });
 }
 

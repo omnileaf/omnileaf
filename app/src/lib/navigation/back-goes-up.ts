@@ -7,11 +7,53 @@ import {
   onNavigate,
   type AfterNavigate,
 } from "$app/navigation";
+import { page } from "$app/state";
 import type { ResolvedPathname } from "$app/types";
+import { reportFailure } from "#lib/errors/report-failure.ts";
 
 import { resolvedPathOf } from "./app-path";
+import { leaveOverlaysThen, mustLeaveOverlays } from "./overlay-back";
 import { isInAppShell } from "./sections";
 import { type HistoryMove, moveTo } from "./up-history";
+
+/** How long a step back may take to arrive before the guard looks where the browser really is, since SvelteKit ignores a step back onto an entry with the page's own history index. */
+export const TRAVERSAL_SETTLE_MS = 1500;
+
+export interface BackGuardEnvironment {
+  readonly beforeNavigate: typeof beforeNavigate;
+  readonly afterNavigate: typeof afterNavigate;
+  readonly onNavigate: typeof onNavigate;
+  readonly goto: (
+    target: string,
+    options?: { readonly replace?: boolean },
+  ) => Promise<unknown>;
+  readonly stepBackBy: (steps: number) => void;
+  readonly browserAt: () => URL;
+  readonly pageAt: () => URL;
+  readonly after: (ms: number, run: () => void) => () => void;
+  mustLeaveOverlays: () => boolean;
+  leaveOverlaysThen: (go: () => Promise<unknown>) => void;
+}
+
+const BROWSER: BackGuardEnvironment = {
+  beforeNavigate,
+  afterNavigate,
+  onNavigate,
+  goto,
+  stepBackBy: (steps) => {
+    history.go(-steps);
+  },
+  browserAt: () => new URL(location.href),
+  pageAt: () => new URL(page.url.href),
+  after: (ms, run) => {
+    const timer = setTimeout(run, ms);
+    return () => {
+      clearTimeout(timer);
+    };
+  },
+  mustLeaveOverlays,
+  leaveOverlaysThen,
+};
 
 type Replacing = Extract<HistoryMove, { kind: "replace" }>;
 
@@ -22,7 +64,7 @@ export interface BackGoesUp {
   followLinkTo(target: ResolvedPathname): Promise<void>;
 }
 
-export function makeBackGoUp(): BackGoesUp {
+export function makeBackGoUp(env: BackGuardEnvironment = BROWSER): BackGoesUp {
   let entries: readonly string[] = [];
   let isMoving = false;
   let isPassingThrough = false;
@@ -46,10 +88,30 @@ export function makeBackGoUp(): BackGoesUp {
     }
   }
 
+  async function recoverFromTraversal(steps: number): Promise<void> {
+    const here = env.browserAt();
+    if (here.pathname === entries.at(-1 - steps)) {
+      entries = entries.slice(0, entries.length - steps);
+    }
+    if (env.pageAt().pathname !== here.pathname) {
+      await env.goto(resolvedPathOf(here), { replace: true });
+    }
+  }
+
   function goBack(steps: number): Promise<void> {
     return new Promise((arrived) => {
-      settle = arrived;
-      history.go(-steps);
+      const stopWaiting = env.after(TRAVERSAL_SETTLE_MS, () => {
+        settle = undefined;
+        recoverFromTraversal(steps).then(arrived, (error: unknown) => {
+          arrived();
+          reportFailure(error);
+        });
+      });
+      settle = () => {
+        stopWaiting();
+        arrived();
+      };
+      env.stepBackBy(steps);
     });
   }
 
@@ -63,10 +125,10 @@ export function makeBackGoUp(): BackGoesUp {
   }
 
   async function replaceWith(target: ResolvedPathname): Promise<void> {
-    const { pathname } = new URL(target, location.href);
+    const { pathname } = new URL(target, env.browserAt());
     replacing.add(pathname);
     try {
-      await goto(target, { replace: true });
+      await env.goto(target, { replace: true });
     } finally {
       replacing.delete(pathname);
     }
@@ -92,7 +154,7 @@ export function makeBackGoUp(): BackGoesUp {
       next = followedWhileMoving;
       followedWhileMoving = undefined;
     }
-    if (next !== undefined && next.href !== location.href) {
+    if (next !== undefined && next.href !== env.browserAt().href) {
       await follow(moveTo(entries, next.pathname), next);
     }
   }
@@ -101,7 +163,7 @@ export function makeBackGoUp(): BackGoesUp {
     const path = resolvedPathOf(target);
     switch (planned.kind) {
       case "push":
-        return goto(path);
+        return env.goto(path).then(() => undefined);
       case "back":
         return move(goBack(planned.steps));
       case "replace":
@@ -120,16 +182,21 @@ export function makeBackGoUp(): BackGoesUp {
   }
 
   function followLinkTo(target: ResolvedPathname): Promise<void> {
-    return followOrQueue(new URL(target, location.href));
+    return followOrQueue(new URL(target, env.browserAt()));
   }
 
-  beforeNavigate(({ type, to, cancel }) => {
+  env.beforeNavigate(({ type, from, to, cancel }) => {
     if (
       type !== "link" ||
       to === null ||
       to.route.id === null ||
       !isInAppShell(to.route.id)
     ) {
+      return;
+    }
+    if (from?.url.pathname !== to.url.pathname && env.mustLeaveOverlays()) {
+      cancel();
+      env.leaveOverlaysThen(() => followOrQueue(to.url));
       return;
     }
     if (isMoving) {
@@ -145,9 +212,9 @@ export function makeBackGoUp(): BackGoesUp {
     void follow(planned, to.url);
   });
 
-  onNavigate(record);
+  env.onNavigate(record);
 
-  afterNavigate((navigation) => {
+  env.afterNavigate((navigation) => {
     if (navigation.type === "enter") {
       record(navigation);
     }

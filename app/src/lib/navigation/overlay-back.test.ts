@@ -3,8 +3,10 @@ import { expect, test } from "vitest";
 import type { BackGestureStep } from "./back-preview";
 import {
   closesOnBackFollowedBy,
+  mustLeaveOverlaysBefore,
   OverlayBack,
   type PageHistory,
+  type PageNavigation,
 } from "./overlay-back";
 
 function pageHistory() {
@@ -395,4 +397,78 @@ test("tells a follower its overlay is gone once the overlay's element goes", () 
   detach?.();
 
   expect([before, gone.count]).toEqual([0, 1]);
+});
+
+const SERIES_ROUTE = "/(app)/series/[id]";
+const SETTINGS_ROUTE = "/(app)/settings";
+
+function navigation(
+  type: PageNavigation["type"],
+  toPath: string,
+  routeId: string | null = SERIES_ROUTE,
+): PageNavigation {
+  return {
+    type,
+    from: { url: new URL("https://app.test/history") },
+    to: { url: new URL(`https://app.test${toPath}`), route: { id: routeId } },
+  };
+}
+
+function holding(isHolding: boolean) {
+  const { overlays } = overlayBack();
+  if (isHolding) {
+    overlays.hold(() => undefined);
+  }
+  return overlays;
+}
+
+test("must leave an overlay's entry before a program navigates to another page", () => {
+  expect(
+    mustLeaveOverlaysBefore(navigation("goto", "/series/1"), holding(true)),
+  ).toBe(true);
+});
+
+test("must leave an overlay's entry before a link to a page outside the app's tabs", () => {
+  expect(
+    mustLeaveOverlaysBefore(
+      navigation("link", "/read/1", "/read/[book]"),
+      holding(true),
+    ),
+  ).toBe(true);
+});
+
+test("must leave an overlay's entry before a form leaves the page", () => {
+  expect(
+    mustLeaveOverlaysBefore(navigation("form", "/search"), holding(true)),
+  ).toBe(true);
+});
+
+test("leaves a link into the app's tabs to the guard that plans the history", () => {
+  expect(
+    mustLeaveOverlaysBefore(
+      navigation("link", "/settings", SETTINGS_ROUTE),
+      holding(true),
+    ),
+  ).toBe(false);
+});
+
+test("leaves an overlay's entry alone when the page stays the same", () => {
+  expect(
+    mustLeaveOverlaysBefore(
+      navigation("goto", "/history?q=blue"),
+      holding(true),
+    ),
+  ).toBe(false);
+});
+
+test("leaves an overlay's entry alone for a step in the history", () => {
+  expect(
+    mustLeaveOverlaysBefore(navigation("popstate", "/"), holding(true)),
+  ).toBe(false);
+});
+
+test("leaves a navigation alone when no overlay holds an entry", () => {
+  expect(
+    mustLeaveOverlaysBefore(navigation("goto", "/series/1"), holding(false)),
+  ).toBe(false);
 });
