@@ -106,9 +106,9 @@
               {choice.label}
             </span>
             {#if choice.hint !== undefined}
-              <span id="{id}-{choice.value}-hint" class={look.hint}
-                >{choice.hint}</span
-              >
+              <span id="{id}-{choice.value}-hint" class={look.hint}>
+                {choice.hint}
+              </span>
             {/if}
           </span>
         </RadioGroupItem>
