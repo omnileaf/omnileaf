@@ -122,3 +122,91 @@ test("reads the next page of a new list though the list before was still reading
 
   expect(asked).toEqual([null, 1, null, 5]);
 });
+
+test("shows the pages kept from before at once and reads on from where they end", async () => {
+  const asked: (number | null)[] = [];
+  const list = new PagedList<number, number>(
+    (after) => {
+      asked.push(after);
+      return Promise.resolve({
+        status: "ok",
+        data: { items: [after ?? 0], next: null },
+      });
+    },
+    { items: [0, 1], next: 2 },
+  );
+  const shownAtOnce = list.list;
+
+  await list.loadMore();
+
+  expect([shownAtOnce, asked, list.list]).toEqual([
+    { kind: "loaded", items: [0, 1], isComplete: false },
+    [2],
+    { kind: "loaded", items: [0, 1, 2], isComplete: true },
+  ]);
+});
+
+test("keeps the pages from the start through the one holding the last item shown", async () => {
+  const { list } = numbers(7);
+  await list.load();
+  await list.loadMore();
+  await list.loadMore();
+
+  const kept = [1, 3, 4, 5].map((shown) => list.keptThrough(shown));
+
+  expect(kept).toEqual([
+    { items: [0, 1], next: 2 },
+    { items: [0, 1, 2, 3], next: 4 },
+    { items: [0, 1, 2, 3], next: 4 },
+    { items: [0, 1, 2, 3, 4, 5], next: 6 },
+  ]);
+});
+
+test("keeps the first page of a list that shows none of its items", async () => {
+  const { list } = numbers(5);
+  await list.load();
+  await list.loadMore();
+
+  expect(list.keptThrough(0)).toEqual({ items: [0, 1], next: 2 });
+});
+
+test("keeps a whole list that ends on the page shown", async () => {
+  const { list } = numbers(3);
+  await list.load();
+  await list.loadMore();
+
+  expect(list.keptThrough(3)).toEqual({ items: [0, 1, 2], next: null });
+});
+
+test("keeps the pages of a list read again from its start as the pages they were read in", async () => {
+  const { list } = numbers(7);
+  await list.load();
+  await list.loadMore();
+  await list.loadMore();
+
+  await list.load();
+
+  expect(list.keptThrough(3)).toEqual({ items: [0, 1, 2, 3], next: 4 });
+});
+
+test("keeps the pages read on from a kept list", async () => {
+  const { list } = numbers(7);
+  await list.load();
+  const returned = new PagedList((after: number | null) => {
+    const start = after ?? 0;
+    return Promise.resolve({
+      status: "ok" as const,
+      data: { items: [start, start + 1], next: start + 2 },
+    });
+  }, list.keptThrough(2));
+
+  await returned.loadMore();
+
+  expect(returned.keptThrough(3)).toEqual({ items: [0, 1, 2, 3], next: 4 });
+});
+
+test("keeps nothing of a list not read yet", () => {
+  const { list } = numbers(3);
+
+  expect(list.keptThrough(1)).toBeUndefined();
+});

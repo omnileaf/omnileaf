@@ -13,6 +13,11 @@ export type ReadPage<Item, Cursor> = (
   after: Cursor | null,
 ) => Promise<PageResult<Item, Cursor>>;
 
+export interface KeptPages<Item, Cursor> {
+  readonly items: readonly Item[];
+  readonly next: Cursor | null;
+}
+
 export type ListState<Item> =
   | { readonly kind: "loading" }
   | {
@@ -22,11 +27,16 @@ export type ListState<Item> =
     }
   | { readonly kind: "failed" };
 
+interface PageEnd<Cursor> {
+  readonly end: number;
+  readonly next: Cursor | null;
+}
+
 type Read<Item, Cursor> =
   | {
       readonly kind: "read";
       readonly items: readonly Item[];
-      readonly next: Cursor | null;
+      readonly pageEnds: readonly PageEnd<Cursor>[];
     }
   | { readonly kind: "failed" }
   | { readonly kind: "superseded" };
@@ -37,10 +47,34 @@ export class PagedList<Item, Cursor> {
   #latestLoad = 0;
   #listsBegun = 0;
   #next: Cursor | null = null;
+  #pageEnds: readonly PageEnd<Cursor>[] = [];
   #loadingMore:
     { readonly list: number; readonly read: Promise<void> } | undefined;
 
-  constructor(private readonly readPage: ReadPage<Item, Cursor>) {}
+  constructor(
+    private readonly readPage: ReadPage<Item, Cursor>,
+    kept?: KeptPages<Item, Cursor>,
+  ) {
+    if (kept !== undefined) {
+      this.#show({
+        kind: "read",
+        items: kept.items,
+        pageEnds: [{ end: kept.items.length, next: kept.next }],
+      });
+    }
+  }
+
+  /** The pages from the start through the one holding the last of the items shown, at least the first. */
+  keptThrough(shown: number): KeptPages<Item, Cursor> | undefined {
+    if (this.list.kind !== "loaded") {
+      return undefined;
+    }
+    const ending =
+      this.#pageEnds.find(({ end }) => end >= shown) ?? this.#pageEnds.at(-1);
+    return ending === undefined
+      ? undefined
+      : { items: this.list.items.slice(0, ending.end), next: ending.next };
+  }
 
   /** Reads from the start as many items as the list shows, at least a page, and only the most recently started load shows its list. */
   async load(): Promise<void> {
@@ -88,15 +122,19 @@ export class PagedList<Item, Cursor> {
     if (shownList !== this.#listsBegun) {
       return;
     }
-    this.#show(
-      page.status === "ok"
-        ? {
-            kind: "read",
-            items: [...shown, ...page.data.items],
-            next: page.data.next,
-          }
-        : { kind: "failed" },
-    );
+    if (page.status === "error") {
+      this.#show({ kind: "failed" });
+      return;
+    }
+    const items = [...shown, ...page.data.items];
+    this.#show({
+      kind: "read",
+      items,
+      pageEnds: [
+        ...this.#pageEnds,
+        { end: items.length, next: page.data.next },
+      ],
+    });
   }
 
   async #loadAtLeast(count: number): Promise<void> {
@@ -112,6 +150,7 @@ export class PagedList<Item, Cursor> {
     atLeast: number,
   ): Promise<Read<Item, Cursor>> {
     const items: Item[] = [];
+    const pageEnds: PageEnd<Cursor>[] = [];
     let after: Cursor | null = null;
     do {
       const page: PageResult<Item, Cursor> = await this.readPage(after);
@@ -123,8 +162,9 @@ export class PagedList<Item, Cursor> {
       }
       items.push(...page.data.items);
       after = page.data.next;
+      pageEnds.push({ end: items.length, next: after });
     } while (after !== null && items.length < atLeast);
-    return { kind: "read", items, next: after };
+    return { kind: "read", items, pageEnds };
   }
 
   #show(read: Exclude<Read<Item, Cursor>, { kind: "superseded" }>): void {
@@ -133,11 +173,13 @@ export class PagedList<Item, Cursor> {
       this.list = { kind: "failed" };
       return;
     }
-    this.#next = read.next;
+    const next = read.pageEnds.at(-1)?.next ?? null;
+    this.#next = next;
+    this.#pageEnds = read.pageEnds;
     this.list = {
       kind: "loaded",
       items: read.items,
-      isComplete: read.next === null,
+      isComplete: next === null,
     };
   }
 }
