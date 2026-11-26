@@ -86,9 +86,7 @@ for (const { platform, size } of LOOKS) {
     followCorePlatform(platform);
     const screen = await render(SmartFeaturesSection, { heading: "h2", size });
 
-    const row = screen
-      .getByRole("button", { name: "Turn all off" })
-      .element();
+    const row = screen.getByRole("button", { name: "Turn all off" }).element();
     const lastSwitch = screen.getByRole("switch").last().element();
     const rowBox = row.getBoundingClientRect();
     const switchBox = lastSwitch.getBoundingClientRect();
@@ -103,9 +101,7 @@ for (const { platform, size } of LOOKS) {
     followCorePlatform(platform);
     const screen = await render(SmartFeaturesSection, { heading: "h2", size });
 
-    const row = screen
-      .getByRole("button", { name: "Turn all off" })
-      .element();
+    const row = screen.getByRole("button", { name: "Turn all off" }).element();
     const icon = row.querySelector("[data-icon='power']");
     const label = screen.getByText("Turn all off").element();
 
