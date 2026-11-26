@@ -9,6 +9,7 @@ import {
   testDurations,
   testListMismatch,
   testPath,
+  testsOnScreens,
   type Timings,
 } from "../shard-test-list.ts";
 
@@ -460,4 +461,29 @@ test("tells apart tests whose titles join into the same path", () => {
     missing: [listed("p", "a › b")],
     extra: [listed("p", "a", "b")],
   });
+});
+
+test("leaves out the tests of the screens that are not picked, and keeps the native and speed projects", () => {
+  const tests = [
+    listed("chromium-phone", "a"),
+    listed("webkit-tablet", "a"),
+    listed("chromium-desktop", "a"),
+    listed("ios-phone", "a"),
+    listed("speed", "a"),
+  ];
+
+  const kept = testsOnScreens(tests, ["phone", "desktop"]);
+
+  expect(kept.map((test) => test.project)).toEqual([
+    "chromium-phone",
+    "chromium-desktop",
+    "ios-phone",
+    "speed",
+  ]);
+});
+
+test("keeps every test when every screen is picked", () => {
+  const tests = [listed("webkit-tablet", "a"), listed("chromium-phone", "a")];
+
+  expect(testsOnScreens(tests, null)).toEqual(tests);
 });

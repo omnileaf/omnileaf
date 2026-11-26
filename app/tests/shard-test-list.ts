@@ -1,4 +1,5 @@
 import { isRecord, listOf } from "./app/json.ts";
+import { isOnScreens, type ScreenName } from "./screens.ts";
 import type { Shard } from "./shard.ts";
 
 export interface ListedTest {
@@ -51,6 +52,13 @@ export function testPath(test: ListedTest): string {
 
 export function listedTests(report: unknown): ListedTest[] {
   return testRuns(report).map(({ test }) => test);
+}
+
+export function testsOnScreens(
+  tests: readonly ListedTest[],
+  screens: readonly ScreenName[] | null,
+): ListedTest[] {
+  return tests.filter((test) => isOnScreens(test.project, screens));
 }
 
 export function testDurations(report: unknown): Timings {
