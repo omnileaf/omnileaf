@@ -30,6 +30,9 @@ const PHONE_IN_LANDSCAPE = { width: 700, height: 360 };
 const PHONE_IN_PORTRAIT = { width: 360, height: 800 };
 const LIBRARY_CHANGED = "library-changed";
 const KEYBOARD_HEIGHT = 336;
+const SEARCH_VIEW_HEIGHT = 56;
+const GAP_ABOVE_SEARCH_VIEW = 12;
+const TOUCH_TARGET = 48;
 
 function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
@@ -638,6 +641,14 @@ test.describe(
       return page.getByRole("searchbox", { name: "Find a book" });
     }
 
+    function searchView(page: Page) {
+      return page.locator("[data-slot=input-group]", { has: findField(page) });
+    }
+
+    function closeButton(page: Page) {
+      return page.getByRole("button", { name: "Close the search" });
+    }
+
     function countHeading(page: Page) {
       return page.getByRole("heading", { level: 2, name: "2 volumes" });
     }
@@ -649,40 +660,105 @@ test.describe(
       await expect(findField(page)).toBeFocused();
     }
 
-    test("opens the field across the tabs' width at a full touch height", async ({
+    /** Android's WebView scrolls the focused field into view once the keyboard resizes it, which a desktop browser leaves undone. */
+    async function showKeyboard(page: Page): Promise<void> {
+      const { width, height } = viewportOf(page);
+      await page.setViewportSize({ width, height: height - KEYBOARD_HEIGHT });
+      await page.evaluate(() => {
+        document.documentElement.toggleAttribute("data-keyboard-shown", true);
+      });
+      await findField(page).evaluate((field) => {
+        field.scrollIntoView({ block: "nearest" });
+      });
+    }
+
+    test("opens a full search field across the page's column under the tabs", async ({
       page,
     }) => {
       await openFinding(page);
 
-      const [tabs, group] = await Promise.all([
-        boxOf(kinds(page)),
-        boxOf(
-          page.locator("[data-slot=input-group]", { has: findField(page) }),
-        ),
-      ]);
-      expect(group.x).toBeCloseTo(tabs.x, 0);
-      expect(group.width).toBeCloseTo(tabs.width, 0);
-      expect(group.height).toBeGreaterThanOrEqual(48);
-    });
-
-    test("opens without moving the heading or the tabs", async ({ page }) => {
-      await openSeries(page);
-      await countHeading(page).scrollIntoViewIfNeeded();
-      const [headingBefore, tabsBefore] = await Promise.all([
+      const [heading, tabs, field] = await Promise.all([
         boxOf(countHeading(page)),
         boxOf(kinds(page)),
+        boxOf(searchView(page)),
+      ]);
+      const { width } = viewportOf(page);
+      expect(field.x).toBeCloseTo(heading.x, 0);
+      expect(field.x + field.width).toBeCloseTo(width - heading.x, 0);
+      expect(field.height).toBeCloseTo(SEARCH_VIEW_HEIGHT, 0);
+      expect(field.y - (tabs.y + tabs.height)).toBeCloseTo(
+        GAP_ABOVE_SEARCH_VIEW,
+        0,
+      );
+    });
+
+    test("draws the search field as a filled pill", async ({ page }) => {
+      await openFinding(page);
+
+      const look = await searchView(page).evaluate((field) => {
+        const style = getComputedStyle(field);
+        return {
+          radius: parseFloat(style.borderStartStartRadius),
+          height: field.getBoundingClientRect().height,
+          background: style.backgroundColor,
+        };
+      });
+      expect(look.radius).toBeGreaterThanOrEqual(look.height / 2);
+      expect(look.background).toBe(
+        await tokenColour(page, "--native-color-search-view"),
+      );
+    });
+
+    test("leads with the search icon and ends with Close the search, empty or typed", async ({
+      page,
+    }) => {
+      await openFinding(page);
+      await expect(findField(page)).toHaveAttribute(
+        "placeholder",
+        "Find a book",
+      );
+      const empty = await Promise.all([
+        boxOf(searchView(page)),
+        boxOf(searchView(page).locator("[aria-hidden=true]").first()),
+        boxOf(findField(page)),
+        boxOf(closeButton(page)),
+      ]);
+
+      await findField(page).fill("Summer");
+
+      const typed = await boxOf(closeButton(page));
+      const [field, icon, input, close] = empty;
+      expect(icon.x + icon.width).toBeLessThanOrEqual(input.x);
+      expect(input.x + input.width).toBeLessThanOrEqual(close.x);
+      expect(close.x + close.width).toBeLessThanOrEqual(field.x + field.width);
+      expect([close.width, close.height]).toEqual([TOUCH_TARGET, TOUCH_TARGET]);
+      expect(typed).toEqual(close);
+      await expect(findField(page)).toHaveValue("Summer");
+    });
+
+    test("opens without moving the heading, the tabs or the page", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await countHeading(page).scrollIntoViewIfNeeded();
+      const [headingBefore, tabsBefore, scrolledBefore] = await Promise.all([
+        boxOf(countHeading(page)),
+        boxOf(kinds(page)),
+        page.evaluate(() => window.scrollY),
       ]);
 
       await findButton(page).click();
 
       await expect(findField(page)).toBeFocused();
-      const [headingAfter, tabsAfter] = await Promise.all([
+      const [headingAfter, tabsAfter, scrolledAfter] = await Promise.all([
         boxOf(countHeading(page)),
         boxOf(kinds(page)),
+        page.evaluate(() => window.scrollY),
       ]);
-      expect([headingAfter.y, tabsAfter.y]).toEqual([
+      expect([headingAfter.y, tabsAfter.y, scrolledAfter]).toEqual([
         headingBefore.y,
         tabsBefore.y,
+        scrolledBefore,
       ]);
     });
 
@@ -692,7 +768,7 @@ test.describe(
       await openFinding(page);
       await findField(page).fill("Summer");
 
-      await page.getByRole("button", { name: "Close the search" }).click();
+      await closeButton(page).click();
 
       await expect(findField(page)).toHaveCount(0);
       await expect(findButton(page)).toBeFocused();
@@ -724,23 +800,42 @@ test.describe(
       await expect(findField(page)).toBeFocused();
     });
 
-    test("keeps the field in view and its search once the keyboard opens", async ({
+    test("keeps the field and its search above the keyboard", async ({
       page,
     }) => {
       await openFinding(page);
       await findField(page).fill("2");
-      const { width, height } = viewportOf(page);
 
-      await page.setViewportSize({ width, height: height - KEYBOARD_HEIGHT });
-      await page.evaluate(() => {
-        document.documentElement.toggleAttribute("data-keyboard-shown", true);
-      });
+      await showKeyboard(page);
 
-      await expect(findField(page)).toBeInViewport();
+      await expect(findField(page)).toBeInViewport({ ratio: 1 });
       await expect(findField(page)).toBeFocused();
       await expect(findField(page)).toHaveValue("2");
       await expect(covers(page, "Volumes")).toHaveCount(1);
     });
+
+    for (const width of [360, 320]) {
+      test(`scrolls nothing sideways with a long search at ${String(width)} pixels`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: PHONE_IN_PORTRAIT.height });
+        await openFinding(page);
+
+        await findField(page).fill(
+          "A search far longer than the field is wide",
+        );
+
+        const [field, edges] = await Promise.all([
+          boxOf(searchView(page)),
+          page.evaluate(() => ({
+            page: document.documentElement.scrollWidth,
+            window: window.innerWidth,
+          })),
+        ]);
+        expect(edges.page).toBe(edges.window);
+        expect(field.x + field.width).toBeLessThanOrEqual(width);
+      });
+    }
   },
 );
 

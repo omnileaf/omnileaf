@@ -19,6 +19,7 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import type { ListState } from "#lib/paging/paged-list.svelte.ts";
+  import BookSearchBar from "#lib/series/BookSearchBar.svelte";
   import {
     type BooksControls,
     OWN_CONTROLS,
@@ -33,7 +34,6 @@
     sectionView,
     shownSection,
   } from "./section-listing";
-  import BookSearchField from "./BookSearchField.svelte";
   import type { ChapterVolumes } from "./chapter-volumes";
   import { sectionCount, tabWords } from "./section-names";
   import { showsSectionNotes } from "./section-note";
@@ -86,6 +86,7 @@
   let isFinding = $state(false);
   let isSorting = $state(false);
   let findField = $state<HTMLInputElement | null>(null);
+  let findButton = $state<HTMLButtonElement | null>(null);
   const headedSection = $derived(
     sections.find((shown) => shown.section === section),
   );
@@ -175,6 +176,12 @@
     search = "";
   }
 
+  async function closeSearch(): Promise<void> {
+    closeFinding();
+    await tick();
+    findButton?.focus();
+  }
+
   async function toggleFinding(): Promise<void> {
     if (isFinding) {
       closeFinding();
@@ -196,6 +203,7 @@
 
 {#snippet sectionHeading(headed: SeriesSection)}
   <SectionHeading
+    bind:findButton
     id={headingId}
     heading={sectionCount(headed)}
     {isFinding}
@@ -210,11 +218,16 @@
 {/snippet}
 
 {#snippet findingField()}
-  <BookSearchField
-    bind:field={findField}
-    search={choices.search}
-    onSearch={choices.onSearch}
-  />
+  <div class="flex mbs-xs">
+    <BookSearchBar
+      bind:field={findField}
+      search={choices.search}
+      onSearch={choices.onSearch}
+      onClose={() => {
+        void closeSearch();
+      }}
+    />
+  </div>
 {/snippet}
 
 {#if tabs.length > 0 && section !== undefined}

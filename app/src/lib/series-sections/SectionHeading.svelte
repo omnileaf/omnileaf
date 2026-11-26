@@ -10,6 +10,7 @@
     isSorting,
     onFind,
     onSortAndFilter,
+    findButton = $bindable(null),
   }: {
     id: string;
     heading: string;
@@ -17,6 +18,7 @@
     isSorting: boolean;
     onFind: () => void;
     onSortAndFilter: () => void;
+    findButton?: HTMLButtonElement | null;
   } = $props();
 </script>
 
@@ -29,6 +31,7 @@
     {heading}
   </h2>
   <Button
+    bind:ref={findButton}
     type="button"
     variant="plain"
     iconOnly
