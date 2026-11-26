@@ -47,6 +47,16 @@ async function rowSubtitleType(
   });
 }
 
+async function gapUnderSend(page: Page): Promise<number> {
+  const send = page.getByRole("button", { name: "Send to Omnileaf" });
+  const note = page.locator(
+    `#${String(await send.getAttribute("aria-describedby"))}`,
+  );
+  const heading = page.getByRole("heading", { name: "Other ways to send it" });
+  const noteBox = await boxOf(note);
+  return (await boxOf(heading)).y - (noteBox.y + noteBox.height);
+}
+
 test.describe(
   "Report a problem on an Android phone",
   { tag: "@native" },
@@ -230,5 +240,17 @@ test.describe(
         });
       }
     }
+
+    test("leaves the same gap under Send to Omnileaf as on a phone", async ({
+      page,
+    }) => {
+      await page.setViewportSize(PHONE);
+      await page.goto("/settings/about/report");
+      const onPhone = await gapUnderSend(page);
+
+      await page.setViewportSize(TABLET);
+
+      await expect.poll(() => gapUnderSend(page)).toBeCloseTo(onPhone, 0);
+    });
   },
 );

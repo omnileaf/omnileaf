@@ -30,7 +30,7 @@
   const isAddressRefused = $derived(failure?.code === "replyAddressInvalid");
 </script>
 
-<div class="mbs-lg mbe-xs flex flex-col android:max-medium:mbe-none">
+<div class="mbs-lg mbe-xs flex flex-col android:mbe-none">
   <div class={["flex flex-col gap-sm", look.card]}>
     <label for={fieldId} class="text-label font-medium">
       {m.report_reply_email()}
