@@ -4,7 +4,7 @@
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import type { Selection } from "#lib/page/selection.svelte.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import SectionCover from "./SectionCover.svelte";
@@ -40,6 +40,7 @@
   const look = sectionTileLook(platform);
   const width = new WindowWidth();
   const grid = $derived(coversGrid(platform, width.current));
+  const marksPicks = $derived(phoneOf(platform, width.current) !== "android");
   const pickOrder = () => pickKeysOf(tiles);
 
   function shownCover(book: SeriesBook): ShownCover {
@@ -59,6 +60,7 @@
       cover={shownCover(tile.book)}
       {look}
       {selection}
+      {marksPicks}
       order={pickOrder}
     />
   {:else if tile.kind === "volume"}
@@ -68,6 +70,7 @@
       cover={shownCover(tile.chapters[0])}
       {look}
       {selection}
+      {marksPicks}
       order={pickOrder}
     />
   {:else}
