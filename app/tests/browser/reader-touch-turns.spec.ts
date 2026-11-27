@@ -14,6 +14,7 @@ import {
   readerBook,
   servePages,
 } from "./reader-book.ts";
+import { recordBarePages, stopRecordingBarePages } from "./reader-paint.ts";
 
 const LOOK_KEY = "omnileaf.readerSettings.all";
 const GUIDES_SEEN = [
@@ -47,6 +48,8 @@ const PAGES_READ_ON = 12;
 const EVEN_TAP_GAP_MS = 160;
 const MIDWAY_TAP_GAP_MS = 120;
 const MIDWAY_CATCHES = 3;
+const ALTERNATING_TAPS = 8;
+const READ_AHEAD = [16, 17] as const;
 const MOST_CELLS_DRAWN = 3;
 const MOST_PAGES_HELD = 7;
 const WAIT_PAST_DOUBLE_TAP_MS = 600;
@@ -87,10 +90,10 @@ interface PagesHeld {
 declare global {
   interface Window {
     omnileafGappedFrames?: number[];
-    omnileafBarePages?: string[];
     omnileafRecording?: boolean;
     omnileafControlsShown?: boolean;
     omnileafPagesHeld?: { mostDrawn: number; mostMounted: number };
+    omnileafHeldPages?: HTMLImageElement[];
   }
 }
 
@@ -155,6 +158,30 @@ async function serveLargePages(
     await new Promise((arrived) => setTimeout(arrived, delayMs));
     await route.fulfill({ contentType: "image/jpeg", body: jpeg });
   });
+}
+
+async function holdPages(
+  page: Page,
+  numbers: readonly number[],
+): Promise<void> {
+  await page.evaluate(
+    (alts) => {
+      window.omnileafHeldPages = alts.flatMap(
+        (alt) =>
+          document.querySelector<HTMLImageElement>(`main img[alt="${alt}"]`) ??
+          [],
+      );
+    },
+    numbers.map((number) => `Page ${String(number)}`),
+  );
+}
+
+async function pagesStillHeld(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    (window.omnileafHeldPages ?? [])
+      .filter((image) => image.isConnected)
+      .map((image) => image.alt),
+  );
 }
 
 async function openBookWith(page: Page, look: object): Promise<void> {
@@ -359,68 +386,6 @@ async function recordUncoveredFrames(page: Page): Promise<void> {
     };
     requestAnimationFrame(record);
   }, COVER_SAMPLES);
-}
-
-async function recordBarePages(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    window.omnileafBarePages = [];
-    window.omnileafRecording = true;
-    const isShowing = (element: Element | null | undefined): boolean =>
-      element?.textContent.trim().startsWith("Loading page") === true &&
-      element.checkVisibility({ visibilityProperty: true });
-    const record = (): void => {
-      if (window.omnileafRecording !== true) {
-        return;
-      }
-      const area = document
-        .querySelector("[data-shown-page]")
-        ?.getBoundingClientRect();
-      if (area !== undefined) {
-        const isOverlayLoading = isShowing(
-          document.querySelector('main [role="status"] p'),
-        );
-        const bare = [
-          ...document.querySelectorAll<HTMLElement>("main [data-turns]"),
-        ]
-          .filter((cell) => {
-            const box = cell.getBoundingClientRect();
-            return (
-              cell.checkVisibility({ visibilityProperty: true }) &&
-              box.right > area.left + 1 &&
-              box.left < area.right - 1
-            );
-          })
-          .flatMap((cell) => {
-            const isResting =
-              cell.dataset.turns === "0" && cell.style.translate === "";
-            return [
-              ...cell.querySelectorAll<HTMLImageElement>('img[alt^="Page "]'),
-            ]
-              .filter(
-                (image) =>
-                  !image.hasAttribute("data-decoded") &&
-                  !isShowing(
-                    image.parentElement?.querySelector("[data-page-loading]"),
-                  ) &&
-                  !(isResting && isOverlayLoading),
-              )
-              .map((image) => image.alt);
-          });
-        if (bare.length > 0) {
-          window.omnileafBarePages?.push(bare.join(", "));
-        }
-      }
-      requestAnimationFrame(record);
-    };
-    requestAnimationFrame(record);
-  });
-}
-
-async function stopRecordingBarePages(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    window.omnileafRecording = false;
-    return window.omnileafBarePages ?? [];
-  });
 }
 
 async function stopRecording(page: Page): Promise<number[]> {
@@ -675,6 +640,38 @@ test(
     const bare = await barePagesTurningBack(page, bursts);
 
     expect(bare).toEqual([]);
+  },
+);
+
+test(
+  "keeps the pages read ahead through taps back and forth",
+  { tag: "@native" },
+  async ({ page }) => {
+    await serveLargePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    await expect(
+      page.getByRole("main").locator('img[alt="Page 17"]'),
+    ).not.toHaveClass(/invisible/, { timeout: 15_000 });
+    const session = await page.context().newCDPSession(page);
+    const next = await centreOf(
+      page.getByRole("button", { name: "Next page" }),
+    );
+    const previous = await centreOf(
+      page.getByRole("button", { name: "Previous page" }),
+    );
+    await holdPages(page, READ_AHEAD);
+
+    for (let turn = 0; turn < ALTERNATING_TAPS; turn += 1) {
+      const isForward = turn % 2 === 0;
+      await tap(session, isForward ? next : previous);
+      await expectOnPage(page, isForward ? 15 : 14);
+      await expect.poll(() => slidesRunning(page)).toBe(0);
+      await waitFrames(page, FRAMES_TO_SETTLE);
+    }
+
+    expect(await pagesStillHeld(page)).toEqual(
+      READ_AHEAD.map((number) => `Page ${String(number)}`),
+    );
   },
 );
 

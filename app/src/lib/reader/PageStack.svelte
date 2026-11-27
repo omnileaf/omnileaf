@@ -34,6 +34,7 @@
   /** Pages decoded on the side the reader is heading, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
   const PAGES_LEADING = 3;
   const PAGES_TRAILING = 1;
+  const TURNS_TO_CHANGE_HEADING = 2;
   /** How long a page may take before a spinner says it's on its way, so a quick one never flashes one. */
   const SPINNER_DELAY_MS = 100;
   const SPINNER_SIZE = 20;
@@ -122,6 +123,7 @@
   let lastWidth = untrack(() => spaceWidth);
   let heldPoint: HeldPoint | undefined;
   let heading: Heading = $state("forward");
+  let turnsAgainstHeading = 0;
   const onScreen = $derived(
     turnsOnScreen(
       flight === undefined
@@ -249,6 +251,18 @@
     return isBlank || decodedInView.has(index) || failed.has(index);
   }
 
+  function followHeading(turned: number): void {
+    if (turned === 0) {
+      return;
+    }
+    const towards: Heading = turned > 0 ? "forward" : "back";
+    turnsAgainstHeading = towards === heading ? 0 : turnsAgainstHeading + 1;
+    if (turnsAgainstHeading >= TURNS_TO_CHANGE_HEADING) {
+      heading = towards;
+      turnsAgainstHeading = 0;
+    }
+  }
+
   function keptAround(towards: Heading): PagesKept {
     return towards === "forward"
       ? { ahead: PAGES_LEADING, behind: PAGES_TRAILING }
@@ -265,9 +279,7 @@
 
   function followTurn(at: number, across: number, settles: boolean): void {
     const turned = at - lastPosition;
-    if (turned !== 0) {
-      heading = turned > 0 ? "forward" : "back";
-    }
+    followHeading(turned);
     const isLetGo = lastSlide !== 0 && across === 0;
     if (settles && (turned !== 0 || isLetGo)) {
       const shift = flight === undefined ? lastSlide : shiftInFlight();
