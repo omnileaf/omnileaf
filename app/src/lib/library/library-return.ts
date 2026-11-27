@@ -23,6 +23,7 @@ import type { KeptCounts } from "./unfiltered-counts.svelte.ts";
 export interface KeptGroup {
   readonly series: KeptSeries;
   readonly count: number | undefined;
+  readonly wasNear: boolean;
 }
 
 export interface KeptGroupOf {

@@ -46,6 +46,7 @@ const HIDING_ADULT = {
 const KEPT_GROUP = {
   series: { items: [], next: null },
   count: 3,
+  wasNear: true,
 };
 const KEPT_ROW = { items: [], next: null };
 
