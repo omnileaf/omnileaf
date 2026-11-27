@@ -23,6 +23,7 @@ const SHORT_BOOK_PAGES = 60;
 const WIDE_PAGE = { width: 2700, height: 1800 };
 const PAGE_TO_SCROLL_TO = 40;
 const SCROLLS_UP = 6;
+const FARTHEST_READ_AHEAD = 3;
 const SCREEN_SHARE_PER_SCROLL = 0.25;
 const SCREENSHOT_MODE_SHORTCUT = "Control+Shift+H";
 const RAIL_STEPS = 6;
@@ -134,6 +135,28 @@ test.describe("a long strip of tall pages", () => {
     await expectScreenLoaded(page);
     return traffic;
   }
+
+  test("keeps reading ahead downwards while cropped pages above settle their height", async ({
+    page,
+  }) => {
+    await markStripSeen(page, {
+      "omnileaf.readerSettings.all": JSON.stringify({ cropsBorders: true }),
+    });
+    const traffic = await servePagesSlowly(page);
+    await page.goto(`/read/${BOOK_ID}`);
+    await expectScreenLoaded(page);
+
+    await scrollStripTo(page, LONG_BOOK_PAGES / 2);
+
+    await expect
+      .poll(async () => {
+        const shown = await pagesOnScreen(page);
+        return traffic.pages.asked.includes(
+          Math.max(...shown.indices) + FARTHEST_READ_AHEAD,
+        );
+      })
+      .toBe(true);
+  });
 
   test("reads ahead again once a drag of the rail is cancelled", async ({
     page,

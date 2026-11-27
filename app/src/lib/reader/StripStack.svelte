@@ -172,7 +172,10 @@
         : 0;
     element.style.aspectRatio = ratioOf(page);
     if (shareAbove > 0) {
-      scroller.scrollTop += (element.offsetHeight - before) * shareAbove;
+      keepPlaceAt(
+        scroller,
+        scroller.scrollTop + (element.offsetHeight - before) * shareAbove,
+      );
     }
     measure();
   }
@@ -212,9 +215,16 @@
   function scrollToPlace(target: StripPlace): void {
     const element = pageElements[target.page];
     if (scroller !== null && element !== undefined) {
-      scroller.scrollTop =
-        element.offsetTop + element.offsetHeight * target.shareOfPage;
+      keepPlaceAt(
+        scroller,
+        element.offsetTop + element.offsetHeight * target.shareOfPage,
+      );
     }
+  }
+
+  function keepPlaceAt(element: HTMLDivElement, top: number): void {
+    element.scrollTop = top;
+    lastScrollTop = element.scrollTop;
   }
 
   function reportShown(): void {
