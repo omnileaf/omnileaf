@@ -39,9 +39,10 @@ const PAN_PAST_EDGE_PX = 3000;
 const DRAG_STEPS = 12;
 const CLOSE_PX = 4;
 const LONG_BOOK_PAGES = 200;
-const KEY_REPEAT_MS = 30;
+const KEY_REPEATS = 60;
+const FRAMES_PER_KEY_REPEAT = 2;
+const FRAMES_BETWEEN_BURST_TAPS = 2;
 const PAGE_ARRIVAL_MS = 300;
-const HELD_KEY_MS = 2000;
 const TAP_BURST = 12;
 const TAP_BURST_GAP_MS = 40;
 const PAGES_READ_ON = 12;
@@ -275,25 +276,30 @@ async function tapEvery(
 }
 
 async function holdKey(
+  page: Page,
   session: CDPSession,
   key: typeof ARROW_RIGHT,
-  forMs: number,
 ): Promise<void> {
-  const start = Date.now();
-  let presses = 0;
-  while (Date.now() - start < forMs) {
+  for (let press = 0; press < KEY_REPEATS; press += 1) {
     await session.send("Input.dispatchKeyEvent", {
       type: "keyDown",
       ...key,
-      autoRepeat: presses > 0,
+      autoRepeat: press > 0,
     });
-    presses += 1;
-    const due = start + presses * KEY_REPEAT_MS - Date.now();
-    if (due > 0) {
-      await new Promise((ready) => setTimeout(ready, due));
-    }
+    await waitFrames(page, FRAMES_PER_KEY_REPEAT);
   }
   await session.send("Input.dispatchKeyEvent", { type: "keyUp", ...key });
+}
+
+async function tapBurst(
+  page: Page,
+  session: CDPSession,
+  at: Point,
+): Promise<void> {
+  for (let taps = 0; taps < TAP_BURST; taps += 1) {
+    await tap(session, at);
+    await waitFrames(page, FRAMES_BETWEEN_BURST_TAPS);
+  }
 }
 
 async function fingerDown(session: CDPSession, at: Point): Promise<void> {
@@ -1030,7 +1036,7 @@ test.describe("a long book", { tag: "@native" }, () => {
     page,
   }) => {
     await expectPagesKeptUp(page, (session) =>
-      holdKey(session, ARROW_RIGHT, HELD_KEY_MS),
+      holdKey(page, session, ARROW_RIGHT),
     );
   });
 
@@ -1041,10 +1047,7 @@ test.describe("a long book", { tag: "@native" }, () => {
       const next = await centreOf(
         page.getByRole("button", { name: "Next page" }),
       );
-      await tapEvery(session, next, {
-        taps: TAP_BURST,
-        gapMs: TAP_BURST_GAP_MS,
-      });
+      await tapBurst(page, session, next);
     });
   });
 });
