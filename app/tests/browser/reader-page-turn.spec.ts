@@ -1487,19 +1487,24 @@ test.describe("turning between books", () => {
     test.use({
       backend: {
         ...DEFAULT_BACKEND,
-        openBook: (id) => ({
-          ...readerBook(OPENING),
-          id,
-          next: { ...READ_NEXT_BOOK, pageCount: NEXT_PAGE_COUNT },
-        }),
+        openBook: async (id) => {
+          if (id === NEXT_BOOK.id) {
+            await nextBookOpened;
+          }
+          return {
+            ...readerBook(OPENING),
+            id,
+            next: { ...READ_NEXT_BOOK, pageCount: NEXT_PAGE_COUNT },
+          };
+        },
       },
     });
 
     test("names the next book on its loading page, since the page it opens on is not known", async ({
       page,
     }) => {
+      nextBookOpened = new Promise(() => undefined);
       await onUpNext(page, {});
-      await page.route(`**/read/${NEXT_BOOK.id}**`, () => undefined);
 
       await page.keyboard.press("ArrowRight");
 
