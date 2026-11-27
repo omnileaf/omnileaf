@@ -104,7 +104,7 @@ async function backToLibraryFromSeries(page: Page): Promise<Locator> {
   return card;
 }
 
-function seriesLinkInView(page: Page): Promise<string> {
+function shownSeriesLinkIn(page: Page): Promise<string> {
   return main(page).evaluate((scroller) => {
     const shown = scroller.getBoundingClientRect();
     const link = [
@@ -112,14 +112,20 @@ function seriesLinkInView(page: Page): Promise<string> {
     ].find((candidate) => {
       const box = candidate.getBoundingClientRect();
       return (
-        box.top > shown.top + shown.height / 3 && box.bottom < shown.bottom
+        candidate.closest("[inert]") === null &&
+        box.top > shown.top + shown.height / 3 &&
+        box.bottom < shown.bottom
       );
     });
-    if (link === undefined) {
-      throw new Error("no series in view");
-    }
-    return link.getAttribute("href") ?? "";
+    return link?.getAttribute("href") ?? "";
   });
+}
+
+async function seriesLinkInView(page: Page): Promise<string> {
+  await expect
+    .poll(() => shownSeriesLinkIn(page), { message: "no series in view" })
+    .not.toBe("");
+  return shownSeriesLinkIn(page);
 }
 
 test.describe("going back on an Android phone", { tag: "@native" }, () => {

@@ -6,7 +6,11 @@ import {
   type SeriesPage,
 } from "#lib/ipc/bindings.ts";
 
-import { librarySeriesList, type ListSeries } from "./library-series.svelte.ts";
+import {
+  type KeptSeries,
+  librarySeriesList,
+  type ListSeries,
+} from "./library-series.svelte.ts";
 import {
   type CountSeries,
   LibrarySeriesCount,
@@ -43,6 +47,17 @@ export function countOf(
   }
 }
 
+export interface TabReads {
+  readonly listedBy: () => LibraryListing;
+  readonly onFailure: (error: IpcError) => void;
+}
+
+export interface KeptTabPage {
+  readonly tab: LibraryTabId;
+  readonly series: KeptSeries;
+  readonly count: number | undefined;
+}
+
 export class TabPage {
   readonly series: ReturnType<typeof librarySeriesList>;
   readonly count: LibrarySeriesCount;
@@ -50,17 +65,30 @@ export class TabPage {
 
   constructor(
     tab: LibraryTabId,
-    listedBy: () => LibraryListing,
-    onFailure: (error: IpcError) => void,
+    { listedBy, onFailure }: TabReads,
+    kept?: KeptTabPage,
   ) {
     this.#tab = tab;
-    this.series = librarySeriesList((after) =>
-      seriesOf(this.#tab, listedBy())(after),
+    this.series = librarySeriesList(
+      (after) => seriesOf(this.#tab, listedBy())(after),
+      kept?.series,
     );
     this.count = new LibrarySeriesCount(
       () => countOf(this.#tab, listedBy())(),
       onFailure,
+      kept?.count,
     );
+  }
+
+  get tab(): LibraryTabId {
+    return this.#tab;
+  }
+
+  kept(shown: number): KeptTabPage | undefined {
+    const series = this.series.pagesThroughShown(shown);
+    return series === undefined
+      ? undefined
+      : { tab: this.#tab, series, count: this.count.count };
   }
 
   showing(tab: LibraryTabId): this {
