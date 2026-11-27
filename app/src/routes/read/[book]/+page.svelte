@@ -121,6 +121,7 @@
       platform={data.appInfo.platform}
       opensAtEnd={page.state.readerOpensAtEnd === true}
       hasJumped={page.state.readerJumped === true}
+      isPagedInto={page.state.readerPagedInto === true}
       {wayBack}
       {leaveReader}
     />

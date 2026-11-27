@@ -6,6 +6,7 @@ import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  framesPassed,
   test,
 } from "./fixtures.ts";
 import {
@@ -110,6 +111,7 @@ async function openSettings(page: Page): Promise<void> {
   await page
     .getByRole("button", { name: "Reading settings", exact: true })
     .click();
+  await framesPassed(page);
 }
 
 function cropSwitch(page: Page): Locator {

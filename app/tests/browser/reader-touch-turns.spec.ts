@@ -4,7 +4,10 @@ import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { fakeProtocolRoute } from "./fake-backend.ts";
 import {
   BOOK_ID,
+  BOOK_SERIES_ID,
   BOOK_TITLE,
+  NEXT_BOOK,
+  NOT_STARTED,
   PAGE_COUNT,
   PAGE_HEIGHT,
   PAGE_WIDTH,
@@ -65,6 +68,11 @@ const ARROW_RIGHT = {
   code: "ArrowRight",
   windowsVirtualKeyCode: 39,
 };
+const ARROW_LEFT = {
+  key: "ArrowLeft",
+  code: "ArrowLeft",
+  windowsVirtualKeyCode: 37,
+};
 
 test.use({ backend: readerBackend(DEFAULT_BACKEND, OPENING) });
 
@@ -94,6 +102,7 @@ declare global {
     omnileafRecording?: boolean;
     omnileafControlsShown?: boolean;
     omnileafPagesHeld?: { mostDrawn: number; mostMounted: number };
+    omnileafMostPainted?: number;
     omnileafHeldPages?: HTMLImageElement[];
   }
 }
@@ -278,7 +287,7 @@ async function tapEvery(
 async function holdKey(
   page: Page,
   session: CDPSession,
-  key: typeof ARROW_RIGHT,
+  key: typeof ARROW_RIGHT | typeof ARROW_LEFT,
 ): Promise<void> {
   for (let press = 0; press < KEY_REPEATS; press += 1) {
     await session.send("Input.dispatchKeyEvent", {
@@ -1122,5 +1131,307 @@ test.describe("a book read right to left", { tag: "@native" }, () => {
     page,
   }) => {
     await expectZoomedPagePans(page);
+  });
+});
+
+test.describe("at the end of a book", { tag: "@native" }, () => {
+  const THREE_BEFORE_THE_END = {
+    reading: { state: "started", page: PAGE_COUNT - 3 },
+    startPage: PAGE_COUNT - 4,
+  } as const;
+  const ON_THE_LAST_PAGE = {
+    reading: { state: "started", page: PAGE_COUNT },
+    startPage: PAGE_COUNT - 1,
+  } as const;
+  const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
+  const SERIES_PAGE = new RegExp(`/series/${BOOK_SERIES_ID}$`);
+  const SKIP_UP_NEXT_KEY = "omnileaf.skipUpNext";
+  const FINISHED = `${BOOK_TITLE} finished`;
+  const ZOOMED_DRAG_PX = -150;
+
+  async function openNear(
+    page: Page,
+    shownFirst: number,
+    stored: Record<string, string> = {},
+  ): Promise<void> {
+    await page.addInitScript(
+      ({ key, value, guides, entries }) => {
+        localStorage.setItem(key, value);
+        for (const guide of [...guides, ...Object.keys(entries)]) {
+          localStorage.setItem(guide, entries[guide] ?? "seen");
+        }
+      },
+      {
+        key: LOOK_KEY,
+        value: JSON.stringify({ pageTurn: "slide" }),
+        guides: GUIDES_SEEN,
+        entries: stored,
+      },
+    );
+    await servePages(page);
+    await page.goto(`/read/${BOOK_ID}`);
+    await expect(shownPage(page, shownFirst)).toBeVisible();
+  }
+
+  async function recordMostPainted(page: Page): Promise<void> {
+    await page.evaluate(() => {
+      window.omnileafMostPainted = 0;
+      window.omnileafRecording = true;
+      const record = (): void => {
+        if (window.omnileafRecording !== true) {
+          return;
+        }
+        const painted = document.querySelectorAll("main [data-turns]").length;
+        window.omnileafMostPainted = Math.max(
+          window.omnileafMostPainted ?? 0,
+          painted,
+        );
+        requestAnimationFrame(record);
+      };
+      requestAnimationFrame(record);
+    });
+  }
+
+  async function stopRecordingMostPainted(page: Page): Promise<number> {
+    return page.evaluate(() => {
+      window.omnileafRecording = false;
+      return window.omnileafMostPainted ?? 0;
+    });
+  }
+
+  async function holdToTheEnd(page: Page): Promise<number> {
+    const session = await page.context().newCDPSession(page);
+    await recordMostPainted(page);
+    await holdKey(page, session, ARROW_RIGHT);
+    await expect.poll(() => slidesRunning(page)).toBe(0);
+    await waitFrames(page, FRAMES_TO_SETTLE);
+    return stopRecordingMostPainted(page);
+  }
+
+  test.describe("held at three pages before it", () => {
+    test.use({
+      backend: {
+        ...DEFAULT_BACKEND,
+        openBook: (id) => ({
+          ...readerBook(id === BOOK_ID ? THREE_BEFORE_THE_END : NOT_STARTED),
+          id,
+        }),
+      },
+    });
+
+    test("ends a held key at rest on Up next, never painting more than three pages", async ({
+      page,
+    }) => {
+      await openNear(page, PAGE_COUNT - 3);
+
+      const mostPainted = await holdToTheEnd(page);
+
+      expect(mostPainted).toBeLessThanOrEqual(MOST_CELLS_DRAWN);
+      await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+      await expect(
+        page.getByRole("heading", { level: 2, name: FINISHED }),
+      ).toBeVisible();
+      expect(
+        await page
+          .locator("main [data-turns]")
+          .evaluateAll((cells) =>
+            cells.map((cell) => cell.getAttribute("data-turns")),
+          ),
+      ).toEqual(["0"]);
+    });
+
+    test("ends a held key at rest on the next book's first page with Skip Up next on", async ({
+      page,
+    }) => {
+      await openNear(page, PAGE_COUNT - 3, { [SKIP_UP_NEXT_KEY]: "on" });
+
+      const mostPainted = await holdToTheEnd(page);
+
+      expect(mostPainted).toBeLessThanOrEqual(MOST_CELLS_DRAWN);
+      await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+      await expect(shownPage(page, 1)).toBeVisible();
+      await waitFrames(page, FRAMES_TO_SETTLE);
+      expect(await pageNumber(page)).toBe(1);
+    });
+  });
+
+  test.describe("held back from a few pages in", () => {
+    const FOUR_PAGES_IN = {
+      reading: { state: "started", page: 4 },
+      startPage: 3,
+    } as const;
+
+    test.use({ backend: readerBackend(DEFAULT_BACKEND, FOUR_PAGES_IN) });
+
+    test("ends a held key at rest on the first page, not in the book before", async ({
+      page,
+    }) => {
+      await openNear(page, 4);
+      const session = await page.context().newCDPSession(page);
+
+      await holdKey(page, session, ARROW_LEFT);
+      await expect.poll(() => slidesRunning(page)).toBe(0);
+      await waitFrames(page, FRAMES_TO_SETTLE);
+
+      await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+      expect(await pageNumber(page)).toBe(1);
+    });
+  });
+
+  test.describe("on Up next", () => {
+    const QUICKER_THAN_A_DOUBLE_TAP_MS = 150;
+
+    test.use({ backend: readerBackend(DEFAULT_BACKEND, ON_THE_LAST_PAGE) });
+
+    async function openUpNext(page: Page): Promise<CDPSession> {
+      await openNear(page, PAGE_COUNT);
+      await page.keyboard.press("ArrowRight");
+      await expect(
+        page.getByRole("heading", { level: 2, name: FINISHED }),
+      ).toBeVisible();
+      await expect.poll(() => slidesRunning(page)).toBe(0);
+      return page.context().newCDPSession(page);
+    }
+
+    async function dragFrom(
+      page: Page,
+      session: CDPSession,
+      start: Locator,
+    ): Promise<void> {
+      const from = await centreOf(start);
+      await fingerDown(session, from);
+      await moveFinger(
+        session,
+        from,
+        movedBy(from, { x: ZOOMED_DRAG_PX, y: 0 }),
+      );
+      await liftFinger(session);
+      await expect.poll(() => slidesRunning(page)).toBeLessThanOrEqual(1);
+    }
+
+    test("turns on with a touch drag that starts on its card", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+
+      await dragFrom(
+        page,
+        session,
+        page.getByRole("heading", { level: 2, name: "Up next" }),
+      );
+
+      await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    });
+
+    test("turns on rather than presses a button a touch drag starts on", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+
+      await dragFrom(
+        page,
+        session,
+        page.getByRole("link", { name: "Back to the series" }),
+      );
+
+      await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    });
+
+    test("presses a button on a touch tap", async ({ page }) => {
+      const session = await openUpNext(page);
+
+      await tap(
+        session,
+        await centreOf(page.getByRole("link", { name: "Back to the series" })),
+      );
+
+      await expect(page).toHaveURL(SERIES_PAGE);
+    });
+
+    test("does not zoom on a double tap", async ({ page }) => {
+      const session = await openUpNext(page);
+      const blank = await page.evaluate(() => {
+        const x = window.innerWidth / 2;
+        for (let y = window.innerHeight - 1; y > 0; y -= 1) {
+          const name = document
+            .elementFromPoint(x, y)
+            ?.getAttribute("aria-label");
+          if (name === "Show the controls" || name === "Hide the controls") {
+            return { x, y };
+          }
+        }
+        throw new Error("Up next leaves no room to tap its page");
+      });
+
+      await tap(session, blank);
+      await waitFrames(page, FRAMES_BETWEEN_DOUBLE_TAPS);
+      await tap(session, blank);
+      await waitPastDoubleTap(page);
+
+      await expect(page.getByText("200%", { exact: false })).toHaveCount(0);
+      await expect(
+        page.getByRole("heading", { level: 2, name: FINISHED }),
+      ).toBeVisible();
+    });
+
+    test("presses a button at once on a tap, without waiting out a double tap", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+      const back = page.getByRole("link", { name: "Back to the series" });
+      await back.evaluate((link) => {
+        link.addEventListener(
+          "click",
+          (event) => {
+            event.preventDefault();
+            link.dataset.pressedAfter = String(
+              performance.now() - Number(link.dataset.liftedAt),
+            );
+          },
+          { capture: true },
+        );
+        link.addEventListener("pointerup", () => {
+          link.dataset.liftedAt = String(performance.now());
+        });
+      });
+
+      await tap(session, await centreOf(back));
+
+      await expect(back).toHaveAttribute("data-pressed-after");
+      expect(
+        Number(await back.getAttribute("data-pressed-after")),
+      ).toBeLessThan(QUICKER_THAN_A_DOUBLE_TAP_MS);
+    });
+  });
+
+  test.describe("zoomed on its last page", () => {
+    test.use({ backend: readerBackend(DEFAULT_BACKEND, ON_THE_LAST_PAGE) });
+
+    test("pans rather than brings Up next in on a drag", async ({ page }) => {
+      await openNear(page, PAGE_COUNT);
+      const session = await page.context().newCDPSession(page);
+      await hideControls(page, session);
+      await doubleTapToZoom(page, session);
+      const upNext = page.locator("[data-up-next]");
+      const middle = await centreOf(page.locator("[data-shown-page]"));
+
+      await fingerDown(session, middle);
+      await moveFinger(
+        session,
+        middle,
+        movedBy(middle, { x: ZOOMED_DRAG_PX, y: 0 }),
+      );
+      const isInViewMidDrag = await upNext.evaluate((element) =>
+        element.checkVisibility({ visibilityProperty: true }),
+      );
+      await liftFinger(session);
+      await expect.poll(() => slidesRunning(page)).toBe(0);
+
+      expect(isInViewMidDrag).toBe(false);
+      await expect(
+        page.getByRole("heading", { level: 2, name: FINISHED }),
+      ).toBeHidden();
+      await expectOnPage(page, PAGE_COUNT);
+    });
   });
 });

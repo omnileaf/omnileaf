@@ -11,6 +11,7 @@ import {
   DEFAULT_BACKEND,
   EXPANDED_MIN_WIDTH,
   expect,
+  framesPassed,
   LARGE_MIN_WIDTH,
   MEDIUM_MIN_WIDTH,
   onPlatform,
@@ -38,6 +39,7 @@ import {
 } from "./reader-book.ts";
 
 const SWIPE_PX = 120;
+const DRAG_INSET_PX = 4;
 const ANDROID_TOUCH_TARGET_PX = 48;
 const FADE_MS = "0.15s";
 const NO_TIME = "0s";
@@ -376,16 +378,6 @@ test("shows small thumbnails of the nearby pages, not the pages themselves", asy
   for (const source of sources) {
     expect(source).toContain("/page-thumb/v1/");
   }
-});
-
-test("stays on the first page when asked to turn back from it", async ({
-  page,
-}) => {
-  await openBook(page);
-
-  await zone(page, "Previous page").click();
-
-  await expectOnPage(page, 1);
 });
 
 test("says which page is up to a screen reader as pages turn", async ({
@@ -793,6 +785,32 @@ test("turns on from a page that can't be shown with Next page", async ({
   await pageProblem(page).getByRole("button", { name: "Next page" }).click();
 
   await expectOnPage(page, 2);
+});
+
+test("turns once on a drag inside the Next page button of a page that can't be shown", async ({
+  page,
+}) => {
+  await page.unrouteAll();
+  await page.route(fakeProtocolRoute("omni"), (route) => route.abort());
+  await openBook(page);
+  const next = pageProblem(page).getByRole("button", { name: "Next page" });
+  const box = await next.boundingBox();
+  if (box === null) {
+    throw new Error("the Next page button is not on screen");
+  }
+  const y = box.y + box.height / 2;
+
+  await page.mouse.move(box.x + box.width - DRAG_INSET_PX, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + DRAG_INSET_PX, y, { steps: 5 });
+  await page.mouse.up();
+  await framesPassed(page);
+
+  await expect(
+    page.getByText(
+      `Page 2 may be damaged. The rest of ${BOOK_TITLE} still opens.`,
+    ),
+  ).toBeVisible();
 });
 
 test("asks again for a page that couldn't be shown with Try again", async ({
@@ -1781,6 +1799,16 @@ test.describe("the first book of a series", () => {
       ...DEFAULT_BACKEND,
       openBook: () => ({ ...readerBook(NOT_STARTED), previous: null }),
     },
+  });
+
+  test("stays on the first page when asked to turn back from it", async ({
+    page,
+  }) => {
+    await openBook(page);
+
+    await zone(page, "Previous page").click();
+
+    await expectOnPage(page, 1);
   });
 
   test("has no book before it to go back to", async ({ page }) => {

@@ -1,14 +1,26 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { DEFAULT_BACKEND, expect, settle, test } from "./fixtures.ts";
+import {
+  DEFAULT_BACKEND,
+  expect,
+  pixelAt,
+  pixelOf,
+  screenshotPixels,
+  settle,
+  test,
+} from "./fixtures.ts";
 import {
   BOOK_ID,
+  BOOK_SERIES_ID,
   BOOK_TITLE,
+  NEXT_BOOK,
+  NOT_STARTED,
   PAGE_COUNT,
   PAGE_HEIGHT,
   PAGE_WIDTH,
   pageDrawnAtRest,
   pinchTo,
+  PREVIOUS_BOOK,
   readerBackend,
   readerBook,
   servePages,
@@ -276,7 +288,9 @@ async function slowSlides(page: Page): Promise<void> {
 async function finishSlides(page: Page): Promise<void> {
   await page.evaluate(() => {
     for (const animation of document.getAnimations()) {
-      animation.finish();
+      if (animation.effect?.getComputedTiming().endTime !== Infinity) {
+        animation.finish();
+      }
     }
   });
 }
@@ -807,45 +821,54 @@ test("paints only the pages on screen, at rest and mid-turn", async ({
   ]);
 });
 
-test("draws nothing before the first page and springs it back after a drag back", async ({
-  page,
-}) => {
-  await openBookWith(page, { pageTurn: "slide" });
-  await page.keyboard.press("Home");
-  await expect(shownPage(page, 1)).toBeVisible();
-  const start = await leftOf(shownPage(page, 1));
-
-  await dragBy(page, DRAG_PX);
-  const dragged = await cellsOfTheTurn(page, AT_REST);
-  expectNear(await leftOf(shownPage(page, 1)), start + DRAG_PX);
-  await page.mouse.up();
-  const { frames } = await framesOfTheTurn(page, [1]);
-
-  expect(dragged.map(({ offScreen }) => offScreen)).toEqual([0]);
-  expectNear(frames[0]?.[0]?.x, start + DRAG_PX);
-  expectNear(frames.at(-1)?.[0]?.x, start);
-  await expectOnPage(page, 1);
-});
-
-test("leaves no slide waiting after a turn that moves nothing", async ({
-  page,
-}) => {
-  await openBookWith(page, { pageTurn: "slide" });
-  await page.keyboard.press("Home");
-  await expect(shownPage(page, 1)).toBeVisible();
-  await page.keyboard.press("ArrowLeft");
-  const size = page.viewportSize();
-  if (size === null) {
-    throw new Error("the page has no viewport size");
-  }
-
-  await page.setViewportSize({
-    width: size.width - SMALL_MOVE_PX,
-    height: size.height,
+test.describe("the first book of a series", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      openBook: () => ({ ...readerBook(OPENING), previous: null }),
+    },
   });
-  const { moving } = await framesOfTheTurn(page, [1]);
 
-  expect(moving).toBe(0);
+  test("draws nothing before the first page and springs it back after a drag back", async ({
+    page,
+  }) => {
+    await openBookWith(page, { pageTurn: "slide" });
+    await page.keyboard.press("Home");
+    await expect(shownPage(page, 1)).toBeVisible();
+    const start = await leftOf(shownPage(page, 1));
+
+    await dragBy(page, DRAG_PX);
+    const dragged = await cellsOfTheTurn(page, AT_REST);
+    expectNear(await leftOf(shownPage(page, 1)), start + DRAG_PX);
+    await page.mouse.up();
+    const { frames } = await framesOfTheTurn(page, [1]);
+
+    expect(dragged.map(({ offScreen }) => offScreen)).toEqual([0]);
+    expectNear(frames[0]?.[0]?.x, start + DRAG_PX);
+    expectNear(frames.at(-1)?.[0]?.x, start);
+    await expectOnPage(page, 1);
+  });
+
+  test("leaves no slide waiting after a turn that moves nothing", async ({
+    page,
+  }) => {
+    await openBookWith(page, { pageTurn: "slide" });
+    await page.keyboard.press("Home");
+    await expect(shownPage(page, 1)).toBeVisible();
+    await page.keyboard.press("ArrowLeft");
+    const size = page.viewportSize();
+    if (size === null) {
+      throw new Error("the page has no viewport size");
+    }
+
+    await page.setViewportSize({
+      width: size.width - SMALL_MOVE_PX,
+      height: size.height,
+    });
+    const { moving } = await framesOfTheTurn(page, [1]);
+
+    expect(moving).toBe(0);
+  });
 });
 
 test("waits for the page it slides to from rest to decode before sliding", async ({
@@ -1166,4 +1189,589 @@ test("chooses Slide under Pages in Reading settings", async ({ page }) => {
       .getByRole("region", { name: "Screen" })
       .getByRole("switch", { name: "Keep the screen on" }),
   ).toBeVisible();
+});
+
+test.describe("turning between books", () => {
+  const UP_NEXT = "[data-up-next]";
+  const UP_NEXT_TITLE = "[data-up-next] h2";
+  const LAST_PAGE = `main img[alt="Page ${String(PAGE_COUNT)}"]`;
+  const FIRST_PAGE = 'main img[alt="Page 1"]';
+  const BOOK_LOADING = "[data-book-loading]";
+  const LOADING_A_PAGE = /^Loading page \d+$/;
+  const LOADING_THE_NEXT_BOOKS_PAGE = /^Loading page 1$/;
+  const LOADING_THE_FIRST_PAGE = /^Loading page 1$/;
+  const LONGER_THAN_THE_SPINNER_WAITS_MS = 400;
+  const NEXT_PAGE_COUNT = 184;
+  const BLANK_INSET_PX = 8;
+  const READ_NEXT_BOOK = { ...NEXT_BOOK, reading: { state: "read" } } as const;
+  const SKIP_UP_NEXT_KEY = "omnileaf.skipUpNext";
+  const SERIES_PAGE = new RegExp(`/series/${BOOK_SERIES_ID}$`);
+  const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
+  const PREVIOUS_BOOK_PAGE = new RegExp(`/read/${PREVIOUS_BOOK.id}$`);
+  let nextBookOpened: Promise<void> = Promise.resolve();
+  let previousBookOpened: Promise<void> = Promise.resolve();
+
+  test.afterEach(() => {
+    nextBookOpened = Promise.resolve();
+    previousBookOpened = Promise.resolve();
+  });
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      openBook: async (id) => {
+        if (id === NEXT_BOOK.id) {
+          await nextBookOpened;
+        }
+        if (id === PREVIOUS_BOOK.id) {
+          await previousBookOpened;
+        }
+        return {
+          ...readerBook(id === NEXT_BOOK.id ? NOT_STARTED : OPENING),
+          id,
+          next: { ...NEXT_BOOK, pageCount: NEXT_PAGE_COUNT },
+        };
+      },
+    },
+  });
+
+  interface Place {
+    readonly x: number;
+    readonly y: number;
+    readonly isVisible: boolean;
+  }
+
+  function placesThroughTheTurn(
+    page: Page,
+    selectors: readonly string[],
+  ): Promise<{ moving: number; frames: Place[][] }> {
+    return page.evaluate(
+      ({ wanted, shares }) => {
+        const moving = document
+          .getAnimations()
+          .filter(
+            (animation) =>
+              animation.effect instanceof KeyframeEffect &&
+              animation.effect
+                .getKeyframes()
+                .some((frame) => "translate" in frame),
+          );
+        for (const animation of moving) {
+          animation.pause();
+        }
+        const placeOf = (selector: string): Place => {
+          const element = document.querySelector(selector);
+          if (element === null) {
+            return { x: Number.NaN, y: Number.NaN, isVisible: false };
+          }
+          const box = element.getBoundingClientRect();
+          return {
+            x: box.x,
+            y: box.y,
+            isVisible: element.checkVisibility({ visibilityProperty: true }),
+          };
+        };
+        const frames = shares.map((share) => {
+          for (const animation of moving) {
+            const duration = Number(
+              animation.effect?.getTiming().duration ?? 0,
+            );
+            animation.currentTime = share * duration;
+          }
+          return wanted.map(placeOf);
+        });
+        for (const animation of moving) {
+          animation.finish();
+        }
+        return { moving: moving.length, frames };
+      },
+      { wanted: selectors, shares: TURN_SHARES },
+    );
+  }
+
+  /** SvelteKit keeps a history entry's page state flattened by devalue under its own key, so a flat value is read back by its index. */
+  function entryState(page: Page, key: string): Promise<unknown> {
+    return page.evaluate((wanted) => {
+      const metadata: unknown = Reflect.get(
+        Object(history.state),
+        "sveltekit:metadata",
+      );
+      const serialized: unknown = Reflect.get(Object(metadata), "state");
+      if (typeof serialized !== "string") {
+        return undefined;
+      }
+      const flat: unknown = JSON.parse(serialized);
+      if (!Array.isArray(flat)) {
+        return undefined;
+      }
+      const values: readonly unknown[] = flat;
+      const index: unknown = Reflect.get(Object(values[0]), wanted);
+      return typeof index === "number" ? values[index] : undefined;
+    }, key);
+  }
+
+  async function pageArea(page: Page): Promise<{ x: number; width: number }> {
+    const box = await page.locator("[data-shown-page]").boundingBox();
+    if (box === null) {
+      throw new Error("the page area is not on screen");
+    }
+    return { x: box.x, width: box.width };
+  }
+
+  async function placeOf(page: Page, selector: string): Promise<Place> {
+    const [place] =
+      (await placesThroughTheTurn(page, [selector])).frames[0] ?? [];
+    if (place === undefined) {
+      throw new Error(`nothing matches ${selector}`);
+    }
+    return place;
+  }
+
+  async function onTheLastPage(page: Page, look: object): Promise<void> {
+    await openBookWith(page, look);
+    await page.keyboard.press("End");
+    await expect(shownPage(page, PAGE_COUNT)).toBeVisible();
+    await finishSlides(page);
+  }
+
+  async function onUpNext(page: Page, look: object): Promise<void> {
+    await onTheLastPage(page, look);
+    await page.keyboard.press("ArrowRight");
+    await expect(upNext(page)).toBeVisible();
+    await finishSlides(page);
+  }
+
+  async function onTheFirstPage(page: Page, look: object): Promise<void> {
+    await openBookWith(page, look);
+    await page.keyboard.press("Home");
+    await expect(shownPage(page, 1)).toBeVisible();
+    await finishSlides(page);
+  }
+
+  async function dragFrom(
+    page: Page,
+    target: Locator,
+    across: number,
+  ): Promise<void> {
+    const box = await target.boundingBox();
+    if (box === null) {
+      throw new Error("the drag's start is not on screen");
+    }
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + across, y, { steps: 5 });
+  }
+
+  async function expectBarsHidden(page: Page): Promise<void> {
+    const shownNow = await page
+      .getByRole("button", { name: "Hide the controls" })
+      .count();
+    expect(shownNow).toBe(0);
+  }
+
+  test("draws Up next beside the last page while a drag turns to it, both moving with the finger", async ({
+    page,
+  }) => {
+    await onTheLastPage(page, { pageTurn: "slide" });
+    const area = await pageArea(page);
+    const start = await placeOf(page, LAST_PAGE);
+
+    await dragBy(page, -DRAG_PX);
+
+    const [last, next] =
+      (await placesThroughTheTurn(page, [LAST_PAGE, UP_NEXT])).frames[0] ?? [];
+    expect([last?.isVisible, next?.isVisible]).toEqual([true, true]);
+    expectNear(last?.x, start.x - DRAG_PX);
+    expectNear(next?.x, area.x + area.width - DRAG_PX);
+  });
+
+  test("carries the last page and Up next on together after a drag past the last page, Up next never moving down", async ({
+    page,
+  }) => {
+    await onTheLastPage(page, { pageTurn: "slide" });
+    const area = await pageArea(page);
+    const margin = (await placeOf(page, LAST_PAGE)).x - area.x;
+    await dragBy(page, -DRAG_PX);
+
+    await page.mouse.up();
+    const { moving, frames } = await placesThroughTheTurn(page, [
+      LAST_PAGE,
+      UP_NEXT,
+      UP_NEXT_TITLE,
+    ]);
+    const resting = await placeOf(page, UP_NEXT_TITLE);
+
+    expect(moving).toBeGreaterThan(0);
+    for (const [last, next, title] of frames) {
+      expect([last?.isVisible, next?.isVisible]).toEqual([true, true]);
+      expectNear(
+        (next?.x ?? Number.NaN) - (last?.x ?? Number.NaN) + margin,
+        area.width,
+      );
+      expectNear(title?.y, resting.y);
+    }
+    expectNear(frames.at(-1)?.[1]?.x, area.x);
+  });
+
+  test("slides Up next in on the right arrow with Slide", async ({ page }) => {
+    await onTheLastPage(page, { pageTurn: "slide" });
+    const area = await pageArea(page);
+
+    await page.keyboard.press("ArrowRight");
+    const { moving, frames } = await placesThroughTheTurn(page, [UP_NEXT]);
+
+    expect(moving).toBeGreaterThan(0);
+    expectNear(frames[0]?.[0]?.x, area.x + area.width);
+    expectNear(frames.at(-1)?.[0]?.x, area.x);
+  });
+
+  test("swaps Up next in at once on the right arrow with Instant", async ({
+    page,
+  }) => {
+    await onTheLastPage(page, {});
+    const area = await pageArea(page);
+
+    await page.keyboard.press("ArrowRight");
+    const { moving, frames } = await placesThroughTheTurn(page, [UP_NEXT]);
+
+    expect(moving).toBe(0);
+    expectNear(frames[0]?.[0]?.x, area.x);
+  });
+
+  test("swaps Up next in at once with Slide under reduced motion", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await onTheLastPage(page, { pageTurn: "slide" });
+    const area = await pageArea(page);
+
+    await page.keyboard.press("ArrowRight");
+    const { moving, frames } = await placesThroughTheTurn(page, [UP_NEXT]);
+
+    expect(moving).toBe(0);
+    expectNear(frames[0]?.[0]?.x, area.x);
+  });
+
+  test("moves Up next with a drag that starts on its card and turns on from it", async ({
+    page,
+  }) => {
+    await onUpNext(page, { pageTurn: "slide" });
+    const area = await pageArea(page);
+
+    await dragFrom(
+      page,
+      page.getByRole("heading", { level: 2, name: "Up next" }),
+      -DRAG_PX,
+    );
+
+    expectNear((await placeOf(page, UP_NEXT)).x, area.x - DRAG_PX);
+    await page.mouse.up();
+    await finishSlides(page);
+    await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+  });
+
+  test("turns rather than presses a button a drag starts on, and presses it on a tap", async ({
+    page,
+  }) => {
+    await onUpNext(page, { pageTurn: "slide" });
+    const back = page.getByRole("link", { name: "Back to the series" });
+
+    await dragFrom(page, back, DRAG_PX);
+    await page.mouse.up();
+    await finishSlides(page);
+
+    await expect(shownPage(page, PAGE_COUNT)).toBeVisible();
+    await page.keyboard.press("ArrowRight");
+    await finishSlides(page);
+    await back.click();
+    await expect(page).toHaveURL(SERIES_PAGE);
+  });
+
+  test("draws the previous book's loading page beside the first page while a drag turns back", async ({
+    page,
+  }) => {
+    await onTheFirstPage(page, { pageTurn: "slide" });
+    const area = await pageArea(page);
+
+    await dragBy(page, DRAG_PX);
+
+    const loading = await placeOf(page, BOOK_LOADING);
+    expect(loading.isVisible).toBe(true);
+    expectNear(loading.x, area.x - area.width + DRAG_PX);
+  });
+
+  test("slides back from the first page into the previous book, opening it on its last page with the bars hidden", async ({
+    page,
+  }) => {
+    await onTheFirstPage(page, { pageTurn: "slide" });
+    const area = await pageArea(page);
+
+    await page.keyboard.press("ArrowLeft");
+    const { moving, frames } = await placesThroughTheTurn(page, [
+      FIRST_PAGE,
+      BOOK_LOADING,
+    ]);
+    await expect(page).toHaveURL(PREVIOUS_BOOK_PAGE);
+    await expect(shownPage(page, PAGE_COUNT)).toBeVisible();
+
+    expect(moving).toBeGreaterThan(0);
+    expectNear(frames.at(-1)?.[1]?.x, area.x);
+    await expectOnPage(page, PAGE_COUNT);
+    await expectBarsHidden(page);
+  });
+
+  test("slides on from Up next into the next book's first page with the bars hidden", async ({
+    page,
+  }) => {
+    await onUpNext(page, { pageTurn: "slide" });
+    const area = await pageArea(page);
+
+    await page.keyboard.press("ArrowRight");
+    const { moving, frames } = await placesThroughTheTurn(page, [
+      UP_NEXT,
+      BOOK_LOADING,
+    ]);
+    await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    await expect(shownPage(page, 1)).toBeVisible();
+
+    expect(moving).toBeGreaterThan(0);
+    expectNear(frames[0]?.[1]?.x, area.x + area.width);
+    expectNear(frames.at(-1)?.[1]?.x, area.x);
+    await expectBarsHidden(page);
+  });
+
+  test("says no page is loading while resting on Up next", async ({ page }) => {
+    await onUpNext(page, {});
+
+    await page.waitForTimeout(LONGER_THAN_THE_SPINNER_WAITS_MS);
+
+    await expect(page.getByText(LOADING_A_PAGE)).toHaveCount(0);
+  });
+
+  test("names only the next book's page as loading while that book opens", async ({
+    page,
+  }) => {
+    nextBookOpened = new Promise(() => undefined);
+    await onUpNext(page, {});
+
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator(BOOK_LOADING)).toBeVisible();
+    await page.waitForTimeout(LONGER_THAN_THE_SPINNER_WAITS_MS);
+
+    await expect(
+      page
+        .getByText(LOADING_A_PAGE)
+        .filter({ hasNotText: LOADING_THE_NEXT_BOOKS_PAGE }),
+    ).toHaveCount(0);
+  });
+
+  test("stops naming the first page as loading while the book before opens", async ({
+    page,
+  }) => {
+    previousBookOpened = new Promise(() => undefined);
+    await onTheFirstPage(page, {});
+
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.locator(BOOK_LOADING)).toBeVisible();
+    await page.waitForTimeout(LONGER_THAN_THE_SPINNER_WAITS_MS);
+
+    await expect(page.getByText(LOADING_THE_FIRST_PAGE)).toHaveCount(0);
+  });
+
+  test("shows the next book's loading page, with no bars, until the book opens", async ({
+    page,
+  }) => {
+    let open = (): void => undefined;
+    nextBookOpened = new Promise((opened) => {
+      open = opened;
+    });
+    await onUpNext(page, {});
+
+    await page.keyboard.press("ArrowRight");
+
+    await expect(
+      page.getByRole("status").filter({ hasText: "Loading page 1" }),
+    ).toBeVisible();
+    await expect(page.locator("main [data-reader-resting-count]")).toHaveText(
+      `1 / ${String(NEXT_PAGE_COUNT)}`,
+    );
+    await expect(
+      page.getByRole("button", { name: "Reading settings", exact: true }),
+    ).toHaveCount(0);
+    open();
+    await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    await expect(shownPage(page, 1)).toBeVisible();
+    await expectBarsHidden(page);
+  });
+
+  test("opens the next book with the bars hidden when Skip Up next is on", async ({
+    page,
+  }) => {
+    await openBookWith(page, {}, { stored: { [SKIP_UP_NEXT_KEY]: "on" } });
+    await page.keyboard.press("End");
+    await expect(shownPage(page, PAGE_COUNT)).toBeVisible();
+
+    await page.keyboard.press("ArrowRight");
+
+    await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    await expect(shownPage(page, 1)).toBeVisible();
+    await expectBarsHidden(page);
+  });
+
+  test.describe("with a next book already read", () => {
+    test.use({
+      backend: {
+        ...DEFAULT_BACKEND,
+        openBook: async (id) => {
+          if (id === NEXT_BOOK.id) {
+            await nextBookOpened;
+          }
+          return {
+            ...readerBook(OPENING),
+            id,
+            next: { ...READ_NEXT_BOOK, pageCount: NEXT_PAGE_COUNT },
+          };
+        },
+      },
+    });
+
+    test("names the next book on its loading page, since the page it opens on is not known", async ({
+      page,
+    }) => {
+      nextBookOpened = new Promise(() => undefined);
+      await onUpNext(page, {});
+
+      await page.keyboard.press("ArrowRight");
+
+      await expect(page.locator(BOOK_LOADING)).toHaveText(READ_NEXT_BOOK.title);
+    });
+  });
+
+  test("says the loading page in the reader's own status line, kept from before the turn", async ({
+    page,
+  }) => {
+    nextBookOpened = new Promise(() => undefined);
+    await onUpNext(page, {});
+    const said = await page.locator("main p[role=status]").elementHandle();
+
+    await page.keyboard.press("ArrowRight");
+
+    await expect
+      .poll(() => said.evaluate((status) => status.textContent))
+      .toContain("Loading page 1");
+  });
+
+  test("moves focus to the reader's heading when turning back from Up next", async ({
+    page,
+  }) => {
+    await onUpNext(page, {});
+
+    await page.keyboard.press("ArrowLeft");
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: BOOK_TITLE }),
+    ).toBeFocused();
+  });
+
+  test("keeps the loading page still under a drag once the next book is opening", async ({
+    page,
+  }) => {
+    nextBookOpened = new Promise(() => undefined);
+    await onUpNext(page, { pageTurn: "slide" });
+    await page.keyboard.press("ArrowRight");
+    await finishSlides(page);
+    const area = await pageArea(page);
+
+    await dragBy(page, DRAG_PX);
+
+    expectNear((await placeOf(page, BOOK_LOADING)).x, area.x);
+  });
+
+  test("keeps no mark on the history entry of a book paged into once it has opened", async ({
+    page,
+  }) => {
+    await onUpNext(page, {});
+    await page.keyboard.press("ArrowRight");
+    await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    await expect(shownPage(page, 1)).toBeVisible();
+
+    await expect.poll(() => entryState(page, "readerPagedInto")).not.toBe(true);
+  });
+
+  test("leaves Up next undimmed at the lowest light", async ({ page }) => {
+    await onUpNext(page, {
+      light: { isOn: true, brightness: 0, warmth: 0 },
+    });
+    const ground = await page
+      .locator(UP_NEXT)
+      .evaluate((upNext) => getComputedStyle(upNext).backgroundColor);
+    const area = await pageArea(page);
+
+    const pixels = await screenshotPixels(page, {
+      x: area.x + area.width - BLANK_INSET_PX,
+      y: BLANK_INSET_PX,
+      width: 1,
+      height: 1,
+    });
+
+    expect(pixelAt(pixels, 0, 0)).toEqual(await pixelOf(page, ground));
+  });
+
+  test.describe("read right to left", () => {
+    test.use({
+      backend: {
+        ...DEFAULT_BACKEND,
+        openBook: (id) => ({
+          ...readerBook(OPENING),
+          id,
+          readingDirection: "rightToLeft",
+        }),
+      },
+    });
+
+    test("draws Up next on the left of the last page while a drag turns to it", async ({
+      page,
+    }) => {
+      await onTheLastPage(page, { pageTurn: "slide" });
+      const area = await pageArea(page);
+
+      await dragBy(page, DRAG_PX);
+
+      const next = await placeOf(page, UP_NEXT);
+      expect(next.isVisible).toBe(true);
+      expectNear(next.x, area.x - area.width + DRAG_PX);
+    });
+
+    test("slides back from the first page into the previous book from the right", async ({
+      page,
+    }) => {
+      await onTheFirstPage(page, { pageTurn: "slide" });
+      const area = await pageArea(page);
+
+      await page.keyboard.press("ArrowRight");
+      const { frames } = await placesThroughTheTurn(page, [BOOK_LOADING]);
+
+      expectNear(frames[0]?.[0]?.x, area.x + area.width);
+      expectNear(frames.at(-1)?.[0]?.x, area.x);
+      await expect(page).toHaveURL(PREVIOUS_BOOK_PAGE);
+    });
+  });
+
+  test.describe("two pages at a time", () => {
+    test("draws Up next beside the last pair while a drag turns to it", async ({
+      page,
+    }) => {
+      await onTheLastPage(page, { pageTurn: "slide", layout: "two" });
+      const area = await pageArea(page);
+
+      await dragBy(page, -DRAG_PX);
+
+      expectNear(
+        (await placeOf(page, UP_NEXT)).x,
+        area.x + area.width - DRAG_PX,
+      );
+    });
+  });
 });
