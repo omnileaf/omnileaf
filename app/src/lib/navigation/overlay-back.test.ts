@@ -484,3 +484,21 @@ test("carries no options for a form", () => {
     optionsToCarry(navigation("form", "/search"), undefined),
   ).toBeUndefined();
 });
+
+test("must leave a closed overlay's entry before a navigation, and gives it back once, though the navigation comes before the step back is made", async () => {
+  const { overlays, page } = overlayBack();
+  const release = overlays.hold(() => undefined);
+  release();
+
+  const mustLeave = mustLeaveOverlaysBefore(
+    navigation("goto", "/series/1"),
+    overlays,
+  );
+  const giving = overlays.giveBack();
+  await Promise.resolve();
+  page.goBack();
+  await giving;
+
+  expect(mustLeave).toBe(true);
+  expect(page.entries.steps).toEqual([1]);
+});
