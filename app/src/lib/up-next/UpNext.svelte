@@ -553,12 +553,12 @@
           </Switch>
         {/if}
         <p class="text-center text-small text-muted">
-          <span class="desktop:hidden">
+          <span class="block desktop:hidden">
             {next === null
               ? m.reader_turn_again_to_series()
               : m.reader_turn_again({ title: next.title })}
           </span>
-          <span class="hidden desktop:inline">
+          <span class="hidden desktop:block">
             {next === null
               ? m.reader_press_again_to_series({ key: nextKey })
               : m.reader_press_again({ key: nextKey, title: next.title })}
