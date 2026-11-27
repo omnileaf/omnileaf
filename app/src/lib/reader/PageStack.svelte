@@ -25,10 +25,15 @@
     slideTiming,
     turnsOnScreen,
   } from "#lib/reader/page-flight.ts";
-  import { pagesAround } from "#lib/reader/page-window.ts";
+  import {
+    type Heading,
+    type PagesKept,
+    pagesAround,
+  } from "#lib/reader/page-window.ts";
 
-  /** Pages decoded ahead of the one shown, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
-  const PAGES_AHEAD = 3;
+  /** Pages decoded on the side the reader is heading, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
+  const PAGES_LEADING = 3;
+  const PAGES_TRAILING = 1;
   /** How long a page may take before a spinner says it's on its way, so a quick one never flashes one. */
   const SPINNER_DELAY_MS = 100;
   const SPINNER_SIZE = 20;
@@ -114,6 +119,7 @@
   let lastSpreads = untrack(() => spreads);
   let lastWidth = untrack(() => spaceWidth);
   let heldPoint: HeldPoint | undefined;
+  let heading: Heading = $state("forward");
   const onScreen = $derived(
     turnsOnScreen(
       flight === undefined
@@ -131,7 +137,7 @@
         low: position + onScreen.low,
         high: position + onScreen.high,
       },
-      pagesAround(shown, pages.length, PAGES_AHEAD),
+      pagesAround(shown, pages.length, keptAround(heading)),
     ),
   );
   const isTargetReady = $derived(
@@ -245,6 +251,12 @@
     return isBlank || decoded.has(index) || failed.has(index);
   }
 
+  function keptAround(towards: Heading): PagesKept {
+    return towards === "forward"
+      ? { ahead: PAGES_LEADING, behind: PAGES_TRAILING }
+      : { ahead: PAGES_TRAILING, behind: PAGES_LEADING };
+  }
+
   function isPainted(offset: number): boolean {
     return offset >= onScreen.low && offset <= onScreen.high;
   }
@@ -255,6 +267,9 @@
 
   function followTurn(at: number, across: number, settles: boolean): void {
     const turned = at - lastPosition;
+    if (turned !== 0) {
+      heading = turned > 0 ? "forward" : "back";
+    }
     const isLetGo = lastSlide !== 0 && across === 0;
     if (settles && (turned !== 0 || isLetGo)) {
       const shift = flight === undefined ? lastSlide : shiftInFlight();
