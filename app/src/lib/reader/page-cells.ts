@@ -11,14 +11,12 @@ export interface SpreadsInView {
   readonly at: number;
   readonly low: number;
   readonly high: number;
+  readonly reach: number;
 }
-
-const NEIGHBOUR_TURNS = 1;
 
 function isNearView(index: number, inView: SpreadsInView): boolean {
   return (
-    index >= inView.low - NEIGHBOUR_TURNS &&
-    index <= inView.high + NEIGHBOUR_TURNS
+    index >= inView.low - inView.reach && index <= inView.high + inView.reach
   );
 }
 

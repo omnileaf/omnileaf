@@ -25,6 +25,17 @@ import {
   readerBook,
   servePages,
 } from "./reader-book.ts";
+import {
+  decodedAt,
+  decodeLate,
+  firstMotionAt,
+  letDecodesRunLate,
+  recordBarePages,
+  recordFirstMotion,
+  recordSpinners,
+  stopRecordingBarePages,
+  stopRecordingSpinners,
+} from "./reader-paint.ts";
 
 const LOOK_KEY = "omnileaf.readerSettings.all";
 const GUIDES_SEEN = [
@@ -55,6 +66,10 @@ const OPENING = {
   reading: { state: "started", page: 14 },
   startPage: 13,
 } as const;
+const DECODE_WITHIN_THE_WAIT_MS = 150;
+const DECODE_PAST_THE_WAIT_MS = 1500;
+const QUICK_DECODE_MS = 50;
+const HOLD_MS = 300;
 const RIGHT = 1;
 const LEFT = -1;
 
@@ -651,6 +666,24 @@ test("brings the last page back from the left with a drag back from Up next", as
 });
 
 test.describe("two pages at a time", () => {
+  test("covers each page of the pair at rest with the page or its loading fill", async ({
+    page,
+  }) => {
+    await letDecodesRunLate(page);
+    await openBookWith(page, { pageTurn: "slide", layout: "two" });
+    await expect(shownPage(page, 15)).toBeVisible();
+    await expectDecoded(page, 17);
+    await decodeLate(page, [17], DECODE_PAST_THE_WAIT_MS);
+    await recordBarePages(page);
+
+    await page.keyboard.press("ArrowRight");
+
+    await expectOnPage(page, 16);
+    await expect.poll(() => decodedAt(page, 17)).toBeDefined();
+    const bare = await stopRecordingBarePages(page);
+    expect(bare).toEqual([]);
+  });
+
   for (const { turn, to, drag, side } of [
     { turn: "next", to: 16, drag: -DRAG_PX, side: RIGHT },
     { turn: "previous", to: 12, drag: DRAG_PX, side: LEFT },
@@ -836,6 +869,63 @@ test.describe("the first book of a series", () => {
 
     expect(moving).toBe(0);
   });
+});
+
+test("waits for the page it slides to from rest to decode before sliding", async ({
+  page,
+}) => {
+  await letDecodesRunLate(page);
+  await openBookWith(page, { pageTurn: "slide" });
+  await expectDecoded(page, 15);
+  await decodeLate(page, [15], DECODE_WITHIN_THE_WAIT_MS);
+  await recordFirstMotion(page);
+
+  await page.keyboard.press("ArrowRight");
+
+  await expectOnPage(page, 15);
+  await expect.poll(() => firstMotionAt(page)).toBeDefined();
+  await expect.poll(() => decodedAt(page, 15)).toBeDefined();
+  expect(await firstMotionAt(page)).toBeGreaterThanOrEqual(
+    (await decodedAt(page, 15)) ?? Number.POSITIVE_INFINITY,
+  );
+});
+
+test("slides a page still decoding in on its loading fill, its spinner following", async ({
+  page,
+}) => {
+  await letDecodesRunLate(page);
+  await openBookWith(page, { pageTurn: "slide" });
+  await expectDecoded(page, 15);
+  await decodeLate(page, [15], DECODE_PAST_THE_WAIT_MS);
+  await recordBarePages(page);
+  await recordSpinners(page);
+
+  await page.keyboard.press("ArrowRight");
+
+  await expectOnPage(page, 15);
+  await expect.poll(() => decodedAt(page, 15)).toBeDefined();
+  await settle(page.getByRole("main"));
+  const bare = await stopRecordingBarePages(page);
+  const spinning = await stopRecordingSpinners(page);
+  expect(bare).toEqual([]);
+  expect(spinning).toBeGreaterThan(0);
+});
+
+test("brings a page dragged into view in on its fill with no spinner when it decodes quickly", async ({
+  page,
+}) => {
+  await letDecodesRunLate(page);
+  await openBookWith(page, { pageTurn: "slide" });
+  await expectDecoded(page, 15);
+  await decodeLate(page, [15], QUICK_DECODE_MS);
+  await recordSpinners(page);
+
+  await dragBy(page, -DRAG_PX);
+  await page.waitForTimeout(HOLD_MS);
+
+  const spinning = await stopRecordingSpinners(page);
+  await page.mouse.up();
+  expect(spinning).toBe(0);
 });
 
 test("turns to a page that never arrives, showing it loading, and on past it", async ({

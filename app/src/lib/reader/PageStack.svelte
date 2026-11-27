@@ -28,11 +28,18 @@
     slideTiming,
     turnsOnScreen,
   } from "#lib/reader/page-flight.ts";
-  import { pagesAround } from "#lib/reader/page-window.ts";
+  import {
+    type Heading,
+    type PagesKept,
+    pagesAround,
+  } from "#lib/reader/page-window.ts";
   import PageLoading from "#lib/reader/PageLoading.svelte";
 
-  /** Pages decoded ahead of the one shown, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
-  const PAGES_AHEAD = 3;
+  /** Pages decoded on the side the reader is heading, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
+  const PAGES_LEADING = 3;
+  const PAGES_TRAILING = 1;
+  const TURNS_TO_CHANGE_HEADING = 2;
+  const NEIGHBOUR_TURNS = 1;
   /** How long a page may take before a spinner says it's on its way, so a quick one never flashes one. */
   const SPINNER_DELAY_MS = 100;
   const RESTING_ZOOM = 1;
@@ -106,6 +113,8 @@
   let scroller: HTMLDivElement | undefined = $state();
 
   const decoded = new SvelteSet<number>();
+  const decodedInView = new SvelteSet<number>();
+  const imagesInView = new WeakSet<HTMLImageElement>();
   const failed = new SvelteSet<number>();
   const retries = new SvelteMap<number, number>();
   const croppedSizes = new SvelteMap<string, Size>();
@@ -125,6 +134,8 @@
   let lastSpreads = untrack(() => spreads);
   let lastWidth = untrack(() => spaceWidth);
   let heldPoint: HeldPoint | undefined;
+  let heading: Heading = $state("forward");
+  let turnsAgainstHeading = 0;
   const onScreen = $derived(
     turnsOnScreen(
       flight === undefined
@@ -138,9 +149,14 @@
     at: position,
     low: position + onScreen.low,
     high: position + onScreen.high,
+    reach: flight?.kind === "cut" ? 0 : NEIGHBOUR_TURNS,
   });
   const cells = $derived(
-    cellsAround(spreads, inView, pagesAround(shown, pages.length, PAGES_AHEAD)),
+    cellsAround(
+      spreads,
+      inView,
+      pagesAround(shown, pages.length, keptAround(heading)),
+    ),
   );
   const isTargetReady = $derived(
     cells.every((cell) => cell.offset !== 0 || cell.spread.every(isReady)),
@@ -197,13 +213,9 @@
   });
 
   onDestroy(stopFlying);
-  const isShownReady = $derived(
-    isBlank || decoded.has(shown) || failed.has(shown),
-  );
+  const isShownReady = $derived(isReady(shown));
   const isShownFailed = $derived(failed.has(shown));
-  const isSlidingOntoUnready = $derived(
-    flight?.isFlying === true && !isShownReady,
-  );
+  const isAtRest = $derived(flight === undefined && slide === 0);
   const isSpreadSettled = $derived(
     isBlank || spread.every((index) => decoded.has(index) || failed.has(index)),
   );
@@ -259,7 +271,35 @@
   }
 
   function isReady(index: number): boolean {
-    return isBlank || decoded.has(index) || failed.has(index);
+    return isBlank || decodedInView.has(index) || failed.has(index);
+  }
+
+  function showWhenSlow(content: HTMLElement): () => void {
+    content.hidden = true;
+    const waiting = setTimeout(() => {
+      content.hidden = false;
+    }, SPINNER_DELAY_MS);
+    return () => {
+      clearTimeout(waiting);
+    };
+  }
+
+  function followHeading(turned: number): void {
+    if (turned === 0) {
+      return;
+    }
+    const towards: Heading = turned > 0 ? "forward" : "back";
+    turnsAgainstHeading = towards === heading ? 0 : turnsAgainstHeading + 1;
+    if (turnsAgainstHeading >= TURNS_TO_CHANGE_HEADING) {
+      heading = towards;
+      turnsAgainstHeading = 0;
+    }
+  }
+
+  function keptAround(towards: Heading): PagesKept {
+    return towards === "forward"
+      ? { ahead: PAGES_LEADING, behind: PAGES_TRAILING }
+      : { ahead: PAGES_TRAILING, behind: PAGES_LEADING };
   }
 
   function isPainted(offset: number): boolean {
@@ -272,6 +312,7 @@
 
   function followTurn(at: number, across: number, settles: boolean): void {
     const turned = at - lastPosition;
+    followHeading(turned);
     const isLetGo = lastSlide !== 0 && across === 0;
     if (settles && (turned !== 0 || isLetGo)) {
       const shift = flight === undefined ? lastSlide : shiftInFlight();
@@ -501,9 +542,34 @@
     try {
       await image.decode();
       decoded.add(index);
+      if (imagesInView.has(image)) {
+        decodedInView.add(index);
+      }
     } catch {
       failed.add(index);
     }
+  }
+
+  /** Decodes the page again each time it comes into view, as a browser may drop the pixels of an image it has not painted lately. */
+  function decodeOnEntry(
+    index: number,
+    isInView: boolean,
+  ): Attachment<HTMLImageElement> {
+    return (image) => {
+      untrack(() => {
+        decodedInView.delete(index);
+      });
+      if (!isInView) {
+        return;
+      }
+      imagesInView.add(image);
+      if (image.complete && image.naturalWidth > 0) {
+        void decode(image, index);
+      }
+      return () => {
+        imagesInView.delete(image);
+      };
+    };
   }
 
   $effect(() => {
@@ -542,6 +608,7 @@
     {#each cells as cell (cell.spread[0])}
       {@const isNeighbour = cell.offset !== 0}
       {@const isOnScreen = isPainted(cell.offset)}
+      {@const isInView = isOnScreen || !isNeighbour}
       <div
         aria-hidden={isNeighbour ? "true" : undefined}
         data-turns={isOnScreen ? cell.offset : undefined}
@@ -594,15 +661,33 @@
                   </span>
                 </div>
               {:else}
+                {#if isInView && !isReady(index) && !(isAtRest && index === shown)}
+                  <div
+                    data-page-loading
+                    aria-hidden="true"
+                    class="absolute inset-none bg-reader-page"
+                  >
+                    <div
+                      {@attach showWhenSlow}
+                      class="absolute inset-none flex flex-col items-center justify-center gap-sm text-center"
+                    >
+                      <PageLoading
+                        label={m.reader_page_loading({ page: index + 1 })}
+                      />
+                    </div>
+                  </div>
+                {/if}
                 <img
                   {@attach freshImage(index)}
+                  {@attach decodeOnEntry(index, isInView)}
+                  data-decoded={decodedInView.has(index) ? "" : undefined}
                   src={sourceOf(page, index)}
                   alt={m.reader_page({ page: index + 1 })}
                   aria-hidden={isShown ? undefined : "true"}
                   decoding="async"
                   draggable="false"
                   class={[
-                    "object-contain select-none block-full inline-full",
+                    "relative object-contain select-none block-full inline-full",
                     !decoded.has(index) && "invisible",
                   ]}
                   onload={(event) => {
@@ -652,7 +737,7 @@
                 title: bookTitle,
               })}
             </EmptyDescription>
-          {:else if isSlow || isSlidingOntoUnready}
+          {:else if isSlow && isAtRest}
             <PageLoading label={m.reader_page_loading({ page: shown + 1 })} />
           {/if}
         </div>

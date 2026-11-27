@@ -9,7 +9,7 @@
   import { onMount, type Snippet, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
-  import { goto } from "$app/navigation";
+  import { beforeNavigate, goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
@@ -50,6 +50,7 @@
   import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
   import FolderNotice from "#lib/library/FolderNotice.svelte";
   import ContinueRow from "#lib/library/ContinueRow.svelte";
+  import type { KeptHistory } from "#lib/history/history-list.svelte.ts";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import {
     actionOffered,
@@ -61,6 +62,14 @@
   } from "#lib/library/empty-cause.ts";
   import EmptyTab from "#lib/library/EmptyTab.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import {
+    getLibraryReturn,
+    GroupKeepers,
+    KeptSections,
+    type KeepGroup,
+    type LibraryScreen,
+  } from "#lib/library/library-return.ts";
+  import { SkeletonDelay } from "#lib/library/skeleton-delay.svelte.ts";
   import { defaultLibraryView, viewDrawn } from "#lib/library/library-view.ts";
   import { showsCountUnderCover } from "#lib/library/series-count-line.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
@@ -126,6 +135,7 @@
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import type { ListState } from "#lib/paging/paged-list.svelte.ts";
   import { holdScrollTop } from "#lib/navigation/hold-scroll.ts";
+  import { itemsDrawnIn } from "#lib/virtual-grid/drawn-items.ts";
   import { sendingNewest } from "#lib/navigation/newest-call.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -184,8 +194,21 @@
   const PAGE_BLEED = "-me-page-end max-medium:-ms-page-start medium:-ms-gutter";
   const COVERS_GAP = "mbs-lg medium:mbs-xl";
 
+  const libraryReturn = getLibraryReturn();
+  const groupKeepers = new GroupKeepers();
+  let keepContinueRow: (() => KeptHistory | undefined) | undefined;
+  const skeleton = new SkeletonDelay();
+  if (libraryReturn.wasLeft) {
+    skeleton.dueNow();
+  }
   const animations = getAnimationsSetting();
   const screenshotMode = getScreenshotMode();
+  const returnedTo = untrack(() =>
+    page.state.libraryTag === undefined
+      ? libraryReturn.screenFor(screenshotMode.isOn)
+      : undefined,
+  );
+  const keptSections = new KeptSections(returnedTo);
   const needsAttention = getNeedsAttention();
   const showsAttentionDot = $derived(
     !isPointer(data.appInfo.platform) && needsAttention.problems.length > 0,
@@ -199,6 +222,7 @@
     (error) => {
       reportError(error);
     },
+    returnedTo?.listing,
   );
   const view = new StoredChoice<LibraryView>(
     {
@@ -209,6 +233,7 @@
     (error) => {
       reportError(error);
     },
+    returnedTo?.view,
   );
   const adultContent = new StoredChoice<AdultContent>(
     {
@@ -219,22 +244,29 @@
     (error) => {
       reportError(error);
     },
+    returnedTo?.adultContent,
   );
   const tab = new LibraryTab();
-  let categories = $state<readonly LibraryCategory[]>([]);
-  let keptTabs = $state<readonly KeptTab[]>(NEW_LIBRARY_TABS);
+  let categories = $state<readonly LibraryCategory[]>(
+    returnedTo?.categories ?? [],
+  );
+  let keptTabs = $state<readonly KeptTab[]>(
+    returnedTo?.tabs ?? NEW_LIBRARY_TABS,
+  );
   const shownTabs = $derived(
     arrangedTabs(keptTabs, categories).filter(({ isHidden }) => !isHidden),
   );
-  let filterChoices = $state<LibraryFilterChoices>(NO_FILTER_CHOICES);
-  let folders = $state<readonly LibraryFolder[]>([]);
+  let filterChoices = $state<LibraryFilterChoices>(
+    returnedTo?.filterChoices ?? NO_FILTER_CHOICES,
+  );
+  let folders = $state<readonly LibraryFolder[]>(returnedTo?.folders ?? []);
   const androidPhone = new AndroidPhone();
   const groupBy = $derived<LibraryGrouping>(
     view.reading.kind === "read"
       ? viewDrawn(view.reading.value, androidPhone.isOn).groupBy
       : "none",
   );
-  let writers = $state<readonly LibraryWriter[]>([]);
+  let writers = $state<readonly LibraryWriter[]>(returnedTo?.writers ?? []);
   let libraryChanges = $state(0);
   const groups = $derived(groupsBy(groupBy));
   const tabsShown = $derived(
@@ -251,9 +283,13 @@
   const chosenTabKey = $derived(
     chosenTab === undefined ? ALL_SERIES : tabKey(chosenTab),
   );
-  const pages = new TabPages(listedBy, (error) => {
-    reportError(error);
-  });
+  const pages = new TabPages(
+    listedBy,
+    (error) => {
+      reportError(error);
+    },
+    returnedTo?.pages,
+  );
   const chosenPage = $derived(pages.of(chosenTab ?? ALL_TAB));
   const pagerSlots = $derived.by(() => {
     const chosenAt = pages.held.findIndex(({ key }) => key === chosenTabKey);
@@ -267,9 +303,11 @@
   const library = $derived(chosenPage.series);
   const seriesCount = $derived(chosenPage.count);
   const notices = getNotices();
-  let hiddenSeries = $state(0);
+  let hiddenSeries = $state(returnedTo?.hiddenSeries ?? 0);
   const folderCardsPhone = new FolderCardsPhone();
-  let missingFolders = $state<readonly MissingFolder[]>([]);
+  let missingFolders = $state<readonly MissingFolder[]>(
+    returnedTo?.missingFolders ?? [],
+  );
   let stillFailing = $state<readonly string[]>([]);
   const cardedFolders = $derived(
     folderCardsPhone.isOn
@@ -398,8 +436,8 @@
   );
   const updateCheck = updateCheckForApp();
   setSeriesSelection(selection);
-  let keepsLabels = $state(false);
-  let keepsDetailEdits = $state(false);
+  let keepsLabels = $state(returnedTo?.keepsLabels ?? false);
+  let keepsDetailEdits = $state(returnedTo?.keepsDetailEdits ?? false);
   let editedSeries = $state<EditedSeries | undefined>();
 
   function editDetails(series: LibrarySeries): void {
@@ -554,6 +592,7 @@
         reportError(error);
       }
     },
+    returnedTo?.unfilteredCounts,
   );
   const emptyCause = $derived(
     listsNothing
@@ -992,7 +1031,7 @@
     noteRemoval(notices, removed.data);
     void library.load();
     if (countsSeries) {
-      void seriesCount.load();
+      void seriesCount.refresh();
     }
     pages.refreshBeside();
   }
@@ -1064,7 +1103,54 @@
     await goto(resolve("/(app)"), { replaceState: true, state: {} });
   }
 
+  function itemsShownOn(key: string): number {
+    const shown = document.querySelector(
+      `[data-tab-page="${CSS.escape(key)}"]`,
+    );
+    return shown === null ? 0 : itemsDrawnIn(shown);
+  }
+
+  function screenNow(): LibraryScreen | undefined {
+    const tabPages = pages.keep(itemsShownOn);
+    if (
+      chosenListing === undefined ||
+      libraryView === undefined ||
+      adultContent.reading.kind !== "read" ||
+      tabPages === undefined
+    ) {
+      return undefined;
+    }
+    return {
+      listing: chosenListing,
+      view: libraryView,
+      adultContent: adultContent.reading.value,
+      categories,
+      tabs: keptTabs,
+      filterChoices,
+      folders,
+      writers,
+      missingFolders,
+      hiddenSeries,
+      keepsLabels,
+      keepsDetailEdits,
+      pages: tabPages,
+      unfilteredCounts: unfilteredCounts.kept(),
+      groups: groupKeepers.kept(),
+      continueRow: keepContinueRow?.(),
+      usesStandIns: screenshotMode.isOn,
+    };
+  }
+
+  beforeNavigate(() => {
+    libraryReturn.keep(screenNow());
+  });
+
+  $effect(() => skeleton.wait());
+
   onMount(() => {
+    if (returnedTo !== undefined) {
+      pages.readHeldAgain();
+    }
     void chooseTagFromLink();
     void view.load();
     void adultContent.load();
@@ -1085,7 +1171,7 @@
       }
       void library.load();
       if (countsSeries) {
-        void seriesCount.load();
+        void seriesCount.refresh();
       }
       void unfilteredCounts.refresh();
       pages.refreshBeside();
@@ -1143,8 +1229,27 @@
   {/if}
 {/snippet}
 
+{#snippet loadingCovers()}
+  {#if skeleton.isDue}
+    <CoverSkeletons
+      {...view.reading.kind === "read"
+        ? { coversPerRow: view.reading.value.coversPerRow }
+        : {}}
+      showsCount={showsCountUnderCover(
+        data.appInfo.platform,
+        (view.reading.kind === "read"
+          ? view.reading.value
+          : defaultLibraryView(data.appInfo.platform)
+        ).onCovers,
+      )}
+    />
+  {/if}
+{/snippet}
+
 {#snippet tabEmptyState(cause: EmptyCause)}
-  {#if cause.kind === "tab"}
+  {#if cause.kind === "counting"}
+    {@render loadingCovers()}
+  {:else if cause.kind === "tab"}
     <EmptyTab tab={cause.tab} onAddSeries={addSeries} />
   {:else if cause.kind === "filters" && chosenListing !== undefined}
     <NoMatches
@@ -1433,18 +1538,7 @@
       </EmptyState>
     {:else if library.list.kind === "loading"}
       <div class="mbs-lg medium:mbs-xl">
-        <CoverSkeletons
-          {...view.reading.kind === "read"
-            ? { coversPerRow: view.reading.value.coversPerRow }
-            : {}}
-          showsCount={showsCountUnderCover(
-            data.appInfo.platform,
-            (view.reading.kind === "read"
-              ? view.reading.value
-              : defaultLibraryView(data.appInfo.platform)
-            ).onCovers,
-          )}
-        />
+        {@render loadingCovers()}
       </div>
     {:else if library.list.kind === "failed"}
       <EmptyState
@@ -1503,7 +1597,16 @@
       {#if loaded !== undefined}
         {#if loaded.view.showsContinueRow && emptyCause === undefined}
           <div class={COVERS_GAP}>
-            <ContinueRow usesStandIns={screenshotMode.isOn} />
+            <ContinueRow
+              usesStandIns={screenshotMode.isOn}
+              kept={keptSections.takeContinueRow()}
+              keeps={(keep: () => KeptHistory | undefined) => {
+                keepContinueRow = keep;
+                return () => {
+                  keepContinueRow = undefined;
+                };
+              }}
+            />
           </div>
         {/if}
         <div
@@ -1533,6 +1636,7 @@
                   inert={!isChosen}
                   aria-hidden={isChosen ? undefined : "true"}
                   data-pager-page={isChosen ? "chosen" : "beside"}
+                  data-tab-page={slot.key}
                   class={isChosen
                     ? "relative flex flex-1 flex-col"
                     : "invisible absolute inset-bs-none overflow-clip block-full inline-full in-data-swiping:visible"}
@@ -1594,11 +1698,14 @@
                     {listed}
                     {libraryChanges}
                     {covers}
+                    kept={keptSections.takeGroup(group.key)}
+                    keeps={(keep: KeepGroup) =>
+                      groupKeepers.add(group.key, keep)}
                   />
                 {/each}
               </div>
             {:else}
-              <div class={PAGE_INSET}>
+              <div class={PAGE_INSET} data-tab-page={chosenTabKey}>
                 <FastScroll total={seriesCount.count} {letterAt} />
                 {@render seriesGrid(chosenPage, covers)}
               </div>

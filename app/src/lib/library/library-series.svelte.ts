@@ -1,7 +1,11 @@
 import type { commands, LibrarySeries } from "#lib/ipc/bindings.ts";
-import { PagedList } from "#lib/paging/paged-list.svelte.ts";
+import { type KeptPages, PagedList } from "#lib/paging/paged-list.svelte.ts";
 
-type SeriesCursor = NonNullable<Parameters<typeof commands.librarySeries>[0]>;
+export type SeriesCursor = NonNullable<
+  Parameters<typeof commands.librarySeries>[0]
+>;
+
+export type KeptSeries = KeptPages<LibrarySeries, SeriesCursor>;
 
 export type ListSeries = (
   after: SeriesCursor | null,
@@ -9,6 +13,7 @@ export type ListSeries = (
 
 export function librarySeriesList(
   listSeries: ListSeries,
+  kept?: KeptSeries,
 ): PagedList<LibrarySeries, SeriesCursor> {
   return new PagedList(async (after) => {
     const page = await listSeries(after);
@@ -18,5 +23,5 @@ export function librarySeriesList(
           data: { items: page.data.series, next: page.data.next },
         }
       : page;
-  });
+  }, kept);
 }
