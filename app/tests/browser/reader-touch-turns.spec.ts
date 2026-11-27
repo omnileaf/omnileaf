@@ -309,10 +309,15 @@ async function recordUncoveredFrames(page: Page): Promise<void> {
   await page.evaluate((samples) => {
     window.omnileafGappedFrames = [];
     window.omnileafRecording = true;
+    const isPageLoadingShown = (image: HTMLImageElement): boolean =>
+      image.parentElement
+        ?.querySelector("[data-page-loading]")
+        ?.checkVisibility({ visibilityProperty: true }) === true;
     const isDrawn = (image: HTMLImageElement): boolean =>
-      image.complete &&
-      image.naturalWidth > 0 &&
-      image.checkVisibility({ visibilityProperty: true });
+      (image.complete &&
+        image.naturalWidth > 0 &&
+        image.checkVisibility({ visibilityProperty: true })) ||
+      isPageLoadingShown(image);
     const record = (): void => {
       if (window.omnileafRecording !== true) {
         return;
