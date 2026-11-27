@@ -1,7 +1,5 @@
 <script lang="ts">
   import { onDestroy, type Snippet, untrack } from "svelte";
-  import type { Attachment } from "svelte/attachments";
-  import { SvelteSet } from "svelte/reactivity";
 
   import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import type { BookPage, PageCrop } from "#lib/ipc/bindings.ts";
@@ -10,16 +8,23 @@
 
   import { sizeOfPage, type StripPlace } from "#lib/reader/cropped-pages.ts";
   import type { Size } from "#lib/reader/page-fit.ts";
+  import { AskedImages } from "#lib/reader/asked-images.svelte.ts";
   import { pageLoads } from "#lib/reader/image-loads.svelte.ts";
-  import { nextPagesToAsk, pagesByUrgency } from "#lib/reader/page-requests.ts";
-  import { pagesAround } from "#lib/reader/page-window.ts";
+  import { pagesByUrgency } from "#lib/reader/page-requests.ts";
+  import {
+    type Heading,
+    type PagesKept,
+    type PagesOnScreen,
+    pagesAroundScreen,
+  } from "#lib/reader/page-window.ts";
   import { ThumbRest } from "#lib/reader/thumb-rest.svelte.ts";
 
   const UNSIZED_RATIO = "1 / 3";
   const SCREEN_SHARE = 0.8;
   const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-  const PAGES_KEPT = { ahead: 3, behind: 1 };
-  const PAGES_KEPT_WHILE_HELD = { ahead: 1, behind: 1 };
+  const PAGES_LEADING = 3;
+  const PAGES_TRAILING = 1;
+  const ONLY_THE_SCREEN = { ahead: 0, behind: 0 };
 
   let {
     pages,
@@ -65,33 +70,47 @@
   let track = $state<HTMLDivElement | null>(null);
   let isRailHeld = $state(false);
   const isAnySliderHeld = $derived(isSliderHeld || isRailHeld);
-  const asked = new SvelteSet<number>();
+  const asked = new AskedImages(pageLoads);
   const thumb = new ThumbRest();
+  let onScreen: PagesOnScreen = $state.raw(
+    untrack(() => ({ first: shown, last: shown })),
+  );
+  let heading: Heading = $state("forward");
+  let lastScrollTop = 0;
   const wanted = $derived(pagesWanted());
+
+  function keptAround(towards: Heading): PagesKept {
+    return towards === "forward"
+      ? { ahead: PAGES_LEADING, behind: PAGES_TRAILING }
+      : { ahead: PAGES_TRAILING, behind: PAGES_LEADING };
+  }
 
   function pagesWanted(): readonly number[] {
     if (isAnySliderHeld && thumb.restingOn !== shown) {
       return [];
     }
-    const kept = isAnySliderHeld ? PAGES_KEPT_WHILE_HELD : PAGES_KEPT;
+    const kept = isAnySliderHeld ? ONLY_THE_SCREEN : keptAround(heading);
     return pagesByUrgency(
-      pagesAround(shown, pages.length, kept).map((page) => ({
-        spread: [page],
-        offset: page - shown,
-      })),
-      "forward",
+      pagesAroundScreen(onScreen, pages.length, kept),
+      heading,
     );
   }
 
-  function loadWhenAsked(
-    page: BookPage,
-    index: number,
-  ): Attachment<HTMLImageElement> {
-    return (image) => {
-      if (asked.has(index)) {
-        pageLoads.load(image, omniUrl(page.path));
-      }
-    };
+  function followScreen(element: HTMLDivElement): void {
+    const top = element.scrollTop;
+    if (top !== lastScrollTop) {
+      heading = top > lastScrollTop ? "forward" : "back";
+      lastScrollTop = top;
+    }
+    const first = pageAt(top);
+    const last = pageAt(top + element.clientHeight - 1);
+    if (first !== onScreen.first || last !== onScreen.last) {
+      onScreen = { first, last };
+    }
+  }
+
+  function letGoOfRail(): void {
+    isRailHeld = false;
   }
 
   function measure(): void {
@@ -100,6 +119,7 @@
     }
     scrollRange = scroller.scrollHeight - scroller.clientHeight;
     progress = scrollRange > 0 ? scroller.scrollTop / scrollRange : 0;
+    followScreen(scroller);
   }
 
   function markAt(index: number): number {
@@ -293,25 +313,14 @@
   });
 
   $effect(() => {
-    const at = shown;
-    const isHeld = isAnySliderHeld;
+    const heldOn = isAnySliderHeld ? shown : undefined;
     untrack(() => {
-      if (isHeld) {
-        thumb.hold(at);
-      } else {
-        thumb.letGo();
-      }
+      thumb.heldOn(heldOn);
     });
   });
 
   $effect(() => {
-    const urgent = wanted;
-    const room = pageLoads.room;
-    untrack(() => {
-      for (const page of nextPagesToAsk(urgent, asked, room)) {
-        asked.add(page);
-      }
-    });
+    asked.askFor(wanted);
   });
 
   onDestroy(() => {
@@ -356,7 +365,8 @@
           ></div>
         {:else}
           <img
-            {@attach loadWhenAsked(page, index)}
+            {@attach asked.freshImage(index)}
+            {@attach asked.loadWhenAsked(index, omniUrl(page.path))}
             alt={m.reader_page({ page: index + 1 })}
             decoding="async"
             draggable="false"
@@ -393,9 +403,9 @@
       dragTo(event);
     }
   }}
-  onpointerup={() => {
-    isRailHeld = false;
-  }}
+  onpointerup={letGoOfRail}
+  onpointercancel={letGoOfRail}
+  onlostpointercapture={letGoOfRail}
 >
   <div
     class="absolute inset-none mx-auto rounded-full bg-reader-grey inline-strip-rail-track"
