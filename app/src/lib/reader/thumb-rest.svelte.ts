@@ -15,6 +15,14 @@ export class ThumbRest {
     }, THUMB_REST_MS);
   }
 
+  heldOn(page: number | undefined): void {
+    if (page === undefined) {
+      this.letGo();
+    } else {
+      this.hold(page);
+    }
+  }
+
   letGo(): void {
     clearTimeout(this.#waiting);
     this.#waiting = undefined;

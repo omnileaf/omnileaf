@@ -41,6 +41,16 @@ test("leaves the page it rested on as soon as the thumb moves on", () => {
   expect(rest.restingOn).toBeUndefined();
 });
 
+test("lets go when held on no page", () => {
+  const rest = new ThumbRest();
+  rest.heldOn(5);
+  vi.advanceTimersByTime(THUMB_REST_MS);
+
+  rest.heldOn(undefined);
+
+  expect(rest.restingOn).toBeUndefined();
+});
+
 test("rests on nothing once let go", () => {
   const rest = new ThumbRest();
   rest.hold(5);
