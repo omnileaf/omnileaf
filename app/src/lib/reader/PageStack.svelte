@@ -34,8 +34,9 @@
     pagesAround,
   } from "#lib/reader/page-window.ts";
   import PageLoading from "#lib/reader/PageLoading.svelte";
+  import { AskedImages } from "#lib/reader/asked-images.svelte.ts";
   import { pageLoads } from "#lib/reader/image-loads.svelte.ts";
-  import { nextPagesToAsk, pagesByUrgency } from "#lib/reader/page-requests.ts";
+  import { pagesByUrgency } from "#lib/reader/page-requests.ts";
   import { ThumbRest } from "#lib/reader/thumb-rest.svelte.ts";
 
   /** Pages decoded on the side the reader is heading, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
@@ -123,7 +124,7 @@
   const failed = new SvelteSet<number>();
   const retries = new SvelteMap<number, number>();
   const croppedSizes = new SvelteMap<string, Size>();
-  const asked = new SvelteSet<number>();
+  const asked = new AskedImages(pageLoads);
   const thumb = new ThumbRest();
   let spaceWidth = $state(0);
   let spaceHeight = $state(0);
@@ -221,25 +222,14 @@
   });
 
   $effect(() => {
-    const at = shown;
-    const isHeld = isSliderHeld;
+    const heldOn = isSliderHeld ? shown : undefined;
     untrack(() => {
-      if (isHeld) {
-        thumb.hold(at);
-      } else {
-        thumb.letGo();
-      }
+      thumb.heldOn(heldOn);
     });
   });
 
   $effect(() => {
-    const urgent = wanted;
-    const room = pageLoads.room;
-    untrack(() => {
-      for (const page of nextPagesToAsk(urgent, asked, room)) {
-        asked.add(page);
-      }
-    });
+    asked.askFor(wanted);
   });
 
   onDestroy(stopFlying);
@@ -544,7 +534,6 @@
         decoded.delete(index);
         failed.delete(index);
         retries.delete(index);
-        asked.delete(index);
       });
     };
   }
@@ -556,25 +545,22 @@
     return retry === undefined ? url : `${url}?retry=${String(retry)}`;
   }
 
-  function loadWhenAsked(
-    page: BookPage,
-    index: number,
-  ): Attachment<HTMLImageElement> {
-    return (image) => {
-      if (asked.has(index)) {
-        pageLoads.load(image, sourceOf(page, index));
-      }
+  function failsWhenStalled(index: number): () => void {
+    return () => {
+      failed.add(index);
     };
   }
 
   function tryAgain(index: number): void {
     failed.delete(index);
+    asked.askAgain(index);
     retries.set(index, (retries.get(index) ?? 0) + 1);
   }
 
   function onFailure(index: number): void {
     const tried = retries.get(index) ?? 0;
     if (tried < RETRIES) {
+      asked.askAgain(index);
       retries.set(index, tried + 1);
     } else {
       failed.add(index);
@@ -595,6 +581,7 @@
     try {
       await image.decode();
       decoded.add(index);
+      failed.delete(index);
       if (imagesInView.has(image)) {
         decodedInView.add(index);
       }
@@ -732,8 +719,13 @@
                 {/if}
                 <img
                   {@attach freshImage(index)}
+                  {@attach asked.freshImage(index)}
                   {@attach decodeOnEntry(index, isInView)}
-                  {@attach loadWhenAsked(page, index)}
+                  {@attach asked.loadWhenAsked(
+                    index,
+                    sourceOf(page, index),
+                    failsWhenStalled(index),
+                  )}
                   data-decoded={decodedInView.has(index) ? "" : undefined}
                   alt={m.reader_page({ page: index + 1 })}
                   aria-hidden={isShown ? undefined : "true"}
