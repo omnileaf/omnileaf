@@ -213,6 +213,7 @@
   let slide = $state(0);
   let dragFrom = 0;
   let isSettling = $state(false);
+  let isSliderHeld = $state(false);
   let leaving: "previous" | "next" | undefined = $state();
   let hasLeft = false;
   let hasShownUpNext = $state(false);
@@ -1646,6 +1647,7 @@
               marks={bookmarks === null ? [] : [...bookmarks]}
               overlay={stripZones}
               startAt={startAt?.kind === "strip" ? startAt : undefined}
+              {isSliderHeld}
               bind:progress={stripProgress}
               onShown={(index: number) => {
                 turner.goTo(index);
@@ -1669,6 +1671,7 @@
               {stripAt}
               {edges}
               showsLoadingAtOnce={isPagedInto}
+              {isSliderHeld}
               fit={look.fit}
               {zoom}
               isReversed={reading.direction === "rightToLeft"}
@@ -1813,6 +1816,9 @@
             onSeek={(index: number) => {
               turner.goTo(index);
             }}
+            onSliderHeld={(isHeld: boolean) => {
+              isSliderHeld = isHeld;
+            }}
           />
         </div>
       {/if}
@@ -1857,6 +1863,9 @@
             : (pageCount - turner.shown) * book.secondsPerPage}
           onSeek={(index: number) => {
             jumpTo(index);
+          }}
+          onSliderHeld={(isHeld: boolean) => {
+            isSliderHeld = isHeld;
           }}
         />
       </div>

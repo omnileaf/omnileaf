@@ -34,6 +34,10 @@
     pagesAround,
   } from "#lib/reader/page-window.ts";
   import PageLoading from "#lib/reader/PageLoading.svelte";
+  import { AskedImages } from "#lib/reader/asked-images.svelte.ts";
+  import { pageLoads } from "#lib/reader/image-loads.svelte.ts";
+  import { pagesByUrgency } from "#lib/reader/page-requests.ts";
+  import { ThumbRest } from "#lib/reader/thumb-rest.svelte.ts";
 
   /** Pages decoded on the side the reader is heading, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
   const PAGES_LEADING = 3;
@@ -69,6 +73,7 @@
     isSettling,
     startAt,
     showsLoadingAtOnce,
+    isSliderHeld,
     onNextPage,
     onShownReady,
     onSettled,
@@ -91,6 +96,7 @@
     isSettling: boolean;
     startAt: SpreadPlace | undefined;
     showsLoadingAtOnce: boolean;
+    isSliderHeld: boolean;
     onNextPage: () => void;
     onShownReady: () => void;
     onSettled: () => void;
@@ -118,6 +124,8 @@
   const failed = new SvelteSet<number>();
   const retries = new SvelteMap<number, number>();
   const croppedSizes = new SvelteMap<string, Size>();
+  const asked = new AskedImages(pageLoads);
+  const thumb = new ThumbRest();
   let spaceWidth = $state(0);
   let spaceHeight = $state(0);
   let isSlow = $state(untrack(() => showsLoadingAtOnce));
@@ -158,6 +166,7 @@
       pagesAround(shown, pages.length, keptAround(heading)),
     ),
   );
+  const wanted = $derived(pagesWanted());
   const isTargetReady = $derived(
     cells.every((cell) => cell.offset !== 0 || cell.spread.every(isReady)),
   );
@@ -212,7 +221,21 @@
     });
   });
 
+  $effect(() => {
+    const heldOn = isSliderHeld ? shown : undefined;
+    untrack(() => {
+      thumb.heldOn(heldOn);
+    });
+  });
+
+  $effect(() => {
+    asked.askFor(wanted);
+  });
+
   onDestroy(stopFlying);
+  onDestroy(() => {
+    thumb.letGo();
+  });
   const isShownReady = $derived(isReady(shown));
   const isShownFailed = $derived(failed.has(shown));
   const isAtRest = $derived(flight === undefined && slide === 0);
@@ -221,6 +244,13 @@
     isBlank || spread.every((index) => decoded.has(index) || failed.has(index)),
   );
   const id = $props.id();
+
+  function pagesWanted(): readonly number[] {
+    if (!isSliderHeld) {
+      return pagesByUrgency(cells, heading);
+    }
+    return thumb.restingOn === shown ? spread : [];
+  }
 
   function ratioOf(index: number): number | undefined {
     const page = pages[index];
@@ -515,14 +545,22 @@
     return retry === undefined ? url : `${url}?retry=${String(retry)}`;
   }
 
+  function failsWhenStalled(index: number): () => void {
+    return () => {
+      failed.add(index);
+    };
+  }
+
   function tryAgain(index: number): void {
     failed.delete(index);
+    asked.askAgain(index);
     retries.set(index, (retries.get(index) ?? 0) + 1);
   }
 
   function onFailure(index: number): void {
     const tried = retries.get(index) ?? 0;
     if (tried < RETRIES) {
+      asked.askAgain(index);
       retries.set(index, tried + 1);
     } else {
       failed.add(index);
@@ -543,6 +581,7 @@
     try {
       await image.decode();
       decoded.add(index);
+      failed.delete(index);
       if (imagesInView.has(image)) {
         decodedInView.add(index);
       }
@@ -680,9 +719,14 @@
                 {/if}
                 <img
                   {@attach freshImage(index)}
+                  {@attach asked.freshImage(index)}
                   {@attach decodeOnEntry(index, isInView)}
+                  {@attach asked.loadWhenAsked(
+                    index,
+                    sourceOf(page, index),
+                    failsWhenStalled(index),
+                  )}
                   data-decoded={decodedInView.has(index) ? "" : undefined}
-                  src={sourceOf(page, index)}
                   alt={m.reader_page({ page: index + 1 })}
                   aria-hidden={isShown ? undefined : "true"}
                   decoding="async"

@@ -24,5 +24,6 @@
     position="41 / 64"
     {onScrub}
     {onSeek}
+    onSliderHeld={nothing}
   />
 </main>

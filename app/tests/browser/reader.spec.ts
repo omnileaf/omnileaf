@@ -367,13 +367,12 @@ test("shows small thumbnails of the nearby pages, not the pages themselves", asy
   await page.mouse.down();
   await page.mouse.move(track.x + track.width / 2, y, { steps: 4 });
 
-  const sources = await nearbyPages(page)
-    .locator("img")
-    .evaluateAll((images) =>
-      images.map((image) =>
-        image instanceof HTMLImageElement ? image.src : "",
-      ),
-    );
+  const previews = nearbyPages(page).locator("img").filter({ visible: true });
+  await expect(previews.first()).toBeAttached();
+  await expect(previews.and(page.locator(":not([src])"))).toHaveCount(0);
+  const sources = await previews.evaluateAll((images) =>
+    images.map((image) => (image instanceof HTMLImageElement ? image.src : "")),
+  );
   expect(sources.length).toBeGreaterThan(0);
   for (const source of sources) {
     expect(source).toContain("/page-thumb/v1/");
