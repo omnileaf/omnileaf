@@ -282,6 +282,31 @@
   "library_tabs_new_category": "⟦Ñéŵ çáţéĝöŕý·····⟧",
   "library_tabs_category_name": "⟦Ñáɱé··⟧",
   "library_tabs_add": "⟦Áðð··⟧",
+  "library_tabs_rename": "⟦Ŕéñáɱé···⟧",
+  "library_tabs_rename_ask": "⟦Ŕéñáɱé…···⟧",
+  "library_tabs_delete": "⟦Ðéļéţé···⟧",
+  "library_tabs_delete_ask": "⟦Ðéļéţé…···⟧",
+  "library_tabs_rename_title": "⟦Ŕéñáɱé çáţéĝöŕý······⟧",
+  "library_tabs_name_empty": "⟦Éñţéŕ á ñáɱé.······⟧",
+  "library_tabs_name_taken": "⟦{name} íš áļŕéáðý á çáţéĝöŕý.············⟧",
+  "library_tabs_renamed": "⟦{tab} ŕéñáɱéð ţö {name}··········⟧",
+  "library_tabs_delete_title": "⟦Ðéļéţé {tab}?······⟧",
+  "library_tabs_delete_kept": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Íţš {formattedCount} šéŕíéš šţáýš íñ ýöûŕ ļíƀŕáŕý.····················⟧",
+        "countPlural=other": "⟦Íţš {formattedCount} šéŕíéš šţáý íñ ýöûŕ ļíƀŕáŕý.····················⟧"
+      }
+    }
+  ],
+  "library_tabs_delete_kept_uncounted": "⟦Íţš šéŕíéš šţáý íñ ýöûŕ ļíƀŕáŕý.·············⟧",
+  "library_tabs_deleted": "⟦{tab} ðéļéţéð······⟧",
   "library_tabs_category_count": [
     {
       "declarations": [

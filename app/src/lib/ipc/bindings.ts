@@ -73,6 +73,8 @@ export const commands = {
 	libraryTags: () => typedError<LibraryTag[], IpcError>(__TAURI_INVOKE("library_tags")),
 	renameLibraryTag: (tag: string, to: string) => typedError<null, IpcError>(__TAURI_INVOKE("rename_library_tag", { tag, to })),
 	removeLibraryTag: (tag: string) => typedError<(string & { readonly __brand: "SeriesId" })[], IpcError>(__TAURI_INVOKE("remove_library_tag", { tag })),
+	renameLibraryCategory: (category: string & { readonly __brand: "CategoryId" }, to: string) => typedError<CategoryRename, IpcError>(__TAURI_INVOKE("rename_library_category", { category, to })),
+	removeLibraryCategory: (category: string & { readonly __brand: "CategoryId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_category", { category })),
 	categorySeries: (category: string & { readonly __brand: "CategoryId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("category_series", { category, after, listing })),
 	categorySeriesCount: (category: string & { readonly __brand: "CategoryId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("category_series_count", { category, filter })),
 	categorylessSeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("categoryless_series", { after, listing })),
@@ -368,6 +370,8 @@ export type CategoryHeld = {
 	category: LibraryCategory,
 	holding: number,
 };
+
+export type CategoryRename = { kind: "renamed" } | { kind: "nameEmpty" } | { kind: "nameTaken" } | { kind: "gone" };
 
 export type ChangeEntry = {
 	kind: ChangeKind,

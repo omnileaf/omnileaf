@@ -1207,6 +1207,46 @@ test("removes a tag from every series, naming them so it can go back", async () 
   ]).toEqual([[sampleSeriesId(4)], true]);
 });
 
+test("renames a category, refusing a name another category has", async () => {
+  const { backend } = backendFor();
+  const plan = "plan-to-read";
+
+  const taken = await backend.renameLibraryCategory(plan, "manga");
+  const renamed = await backend.renameLibraryCategory(plan, " Later ");
+  const names = (await backend.libraryCategories()).map(({ name }) => name);
+
+  expect([taken.kind, renamed.kind]).toEqual(["nameTaken", "renamed"]);
+  expect(names).toContain("Later");
+  expect(names).not.toContain("Plan to read");
+});
+
+test("deletes a category and leaves its series in the library", async () => {
+  const { backend } = backendFor();
+  const manga = "manga";
+  const before = await backend.librarySeriesCount(NEW_LIBRARY_LISTING.filter);
+
+  await backend.removeLibraryCategory(manga);
+
+  expect(
+    (await backend.libraryCategories()).some(({ id }) => id === manga),
+  ).toBe(false);
+  expect(await backend.librarySeriesCount(NEW_LIBRARY_LISTING.filter)).toBe(
+    before,
+  );
+  expect(
+    (await backend.renameLibraryCategory(manga, "Comics again")).kind,
+  ).toBe("gone");
+});
+
+test("refuses an empty name before saying a category has gone, as the core does", async () => {
+  const { backend } = backendFor();
+  await backend.removeLibraryCategory("manga");
+
+  const renamed = await backend.renameLibraryCategory("manga", "  ");
+
+  expect(renamed.kind).toBe("nameEmpty");
+});
+
 test("lists the series read last first, then those never read", async () => {
   const { backend } = backendFor();
   const history = await backend.readingHistory(null, { kind: "everything" });

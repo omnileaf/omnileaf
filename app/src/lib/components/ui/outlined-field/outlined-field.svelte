@@ -10,18 +10,26 @@
     label,
     labelFor,
     labelClass = "bg-background",
+    isInvalid = false,
     children,
     trailing,
   }: {
     label: string;
     labelFor: string;
     labelClass?: ClassValue;
+    isInvalid?: boolean;
     children: Snippet;
     trailing?: Snippet;
   } = $props();
 </script>
 
-<div data-slot="outlined-field" class={OUTLINED_FIELD_BOX}>
+<div
+  data-slot="outlined-field"
+  class={cn(
+    OUTLINED_FIELD_BOX,
+    isInvalid && "border-danger focus-within:border-danger",
+  )}
+>
   <label for={labelFor} class={cn(OUTLINED_FIELD_LABEL, labelClass)}>
     {label}
   </label>

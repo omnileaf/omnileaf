@@ -25,12 +25,12 @@ test.each(PLATFORMS)(
 test.each(PLATFORMS.filter((platform) => platform !== "macos"))(
   "keeps %s's look when a dialog asks for the Mac alert",
   (platform) => {
-    expect(alertLook(platform, undefined, "alert")).toBe(alertLook(platform));
+    expect(alertLook(platform, { mac: "alert" })).toBe(alertLook(platform));
   },
 );
 
 test("puts Confirm above Cancel and draws the app icon in the Mac alert", () => {
-  const look = alertLook("macos", undefined, "alert");
+  const look = alertLook("macos", { mac: "alert" });
 
   expect(look.actionOrder).toEqual(["confirm", "cancel"]);
   expect(look.showsAppIcon).toBe(true);

@@ -173,4 +173,28 @@ test.describe("Library tabs on an iPhone", { tag: "@native" }, () => {
     expect(box.height).toBeCloseTo(34, 0);
     expect(icon.width).toBeCloseTo(20, 0);
   });
+  test("asks before deleting a category in an action sheet, Delete above Cancel", async ({
+    page,
+  }) => {
+    await page
+      .getByRole("listitem")
+      .filter({ has: page.getByText("Manga", { exact: true }) })
+      .getByRole("button", { name: "More for Manga" })
+      .click();
+    await expect(page.getByRole("menuitem")).toHaveText([
+      "Move up",
+      "Move down",
+      "Hide this tab",
+      "Rename",
+      "Delete",
+    ]);
+
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+
+    const sheet = page.getByRole("alertdialog", { name: "Delete Manga?" });
+    const remove = await boxOf(sheet.getByRole("button", { name: "Delete" }));
+    const cancel = await boxOf(sheet.getByRole("button", { name: "Cancel" }));
+    expect(remove.y).toBeLessThan(cancel.y);
+    await expect(sheet).toContainText("Its 6 series stay in your library.");
+  });
 });
