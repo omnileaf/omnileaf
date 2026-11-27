@@ -17,7 +17,7 @@
     position,
     onScrub,
     onSeek,
-    onHold,
+    onSliderHeld,
   }: {
     progress: number;
     shown: number;
@@ -25,11 +25,11 @@
     position: string;
     onScrub: (along: number) => void;
     onSeek: (index: number) => void;
-    onHold: (isHeld: boolean) => void;
+    onSliderHeld: (isHeld: boolean) => void;
   } = $props();
 
   function letGo(): void {
-    onHold(false);
+    onSliderHeld(false);
   }
 
   function step(key: string): number | undefined {
@@ -81,7 +81,7 @@
     }}
     onValueCommit={letGo}
     onpointerdown={() => {
-      onHold(true);
+      onSliderHeld(true);
     }}
     class={STRIP_SCRUBBER.track}
     style={`--progress: ${String(progress)}`}

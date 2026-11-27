@@ -29,7 +29,7 @@
     marks,
     overlay,
     startAt,
-    isScrubbing,
+    isSliderHeld,
     progress = $bindable(0),
     onShown,
     onShownReady,
@@ -41,7 +41,7 @@
     marks: readonly number[];
     overlay: Snippet;
     startAt: StripPlace | undefined;
-    isScrubbing: boolean;
+    isSliderHeld: boolean;
     progress?: number;
     onShown: (index: number) => void;
     onShownReady: () => void;
@@ -63,17 +63,17 @@
   let unscrolled = 0;
   let scrollRange = $state(0);
   let track = $state<HTMLDivElement | null>(null);
-  let isDragging = $state(false);
-  const isHeld = $derived(isScrubbing || isDragging);
+  let isRailHeld = $state(false);
+  const isAnySliderHeld = $derived(isSliderHeld || isRailHeld);
   const asked = new SvelteSet<number>();
   const thumb = new ThumbRest();
   const wanted = $derived(pagesWanted());
 
   function pagesWanted(): readonly number[] {
-    if (isHeld && thumb.restingOn !== shown) {
+    if (isAnySliderHeld && thumb.restingOn !== shown) {
       return [];
     }
-    const kept = isHeld ? PAGES_KEPT_WHILE_HELD : PAGES_KEPT;
+    const kept = isAnySliderHeld ? PAGES_KEPT_WHILE_HELD : PAGES_KEPT;
     return pagesByUrgency(
       pagesAround(shown, pages.length, kept).map((page) => ({
         spread: [page],
@@ -294,9 +294,9 @@
 
   $effect(() => {
     const at = shown;
-    const isThumbHeld = isHeld;
+    const isHeld = isAnySliderHeld;
     untrack(() => {
-      if (isThumbHeld) {
+      if (isHeld) {
         thumb.hold(at);
       } else {
         thumb.letGo();
@@ -384,17 +384,17 @@
   aria-hidden="true"
   class="absolute inset-e-md inset-bs-strip-rail-inset inset-be-strip-rail-inset hidden cursor-pointer inline-strip-rail-width desktop:block"
   onpointerdown={(event) => {
-    isDragging = true;
+    isRailHeld = true;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragTo(event);
   }}
   onpointermove={(event) => {
-    if (isDragging) {
+    if (isRailHeld) {
       dragTo(event);
     }
   }}
   onpointerup={() => {
-    isDragging = false;
+    isRailHeld = false;
   }}
 >
   <div

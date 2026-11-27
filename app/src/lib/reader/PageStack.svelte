@@ -72,7 +72,7 @@
     isSettling,
     startAt,
     showsLoadingAtOnce,
-    isScrubbing,
+    isSliderHeld,
     onNextPage,
     onShownReady,
     onSettled,
@@ -95,7 +95,7 @@
     isSettling: boolean;
     startAt: SpreadPlace | undefined;
     showsLoadingAtOnce: boolean;
-    isScrubbing: boolean;
+    isSliderHeld: boolean;
     onNextPage: () => void;
     onShownReady: () => void;
     onSettled: () => void;
@@ -222,7 +222,7 @@
 
   $effect(() => {
     const at = shown;
-    const isHeld = isScrubbing;
+    const isHeld = isSliderHeld;
     untrack(() => {
       if (isHeld) {
         thumb.hold(at);
@@ -256,7 +256,7 @@
   const id = $props.id();
 
   function pagesWanted(): readonly number[] {
-    if (!isScrubbing) {
+    if (!isSliderHeld) {
       return pagesByUrgency(cells, heading);
     }
     return thumb.restingOn === shown ? spread : [];

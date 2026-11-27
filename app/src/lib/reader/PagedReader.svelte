@@ -1560,7 +1560,7 @@
               marks={bookmarks === null ? [] : [...bookmarks]}
               overlay={stripZones}
               startAt={startAt?.kind === "strip" ? startAt : undefined}
-              isScrubbing={isSliderHeld}
+              {isSliderHeld}
               bind:progress={stripProgress}
               onShown={(index: number) => {
                 turner.goTo(index);
@@ -1584,7 +1584,7 @@
               {stripAt}
               {edges}
               showsLoadingAtOnce={isPagedInto}
-              isScrubbing={isSliderHeld}
+              {isSliderHeld}
               fit={look.fit}
               {zoom}
               isReversed={reading.direction === "rightToLeft"}
@@ -1729,7 +1729,7 @@
             onSeek={(index: number) => {
               turner.goTo(index);
             }}
-            onHold={(isHeld: boolean) => {
+            onSliderHeld={(isHeld: boolean) => {
               isSliderHeld = isHeld;
             }}
           />
