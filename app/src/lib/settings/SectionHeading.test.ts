@@ -101,6 +101,24 @@ test("sets the title under the back button on Android phones", async () => {
   );
 });
 
+test("sets the title beside the back button, in the top bar, when the page asks for it on Android phones", async () => {
+  await page.viewport(PHONE_WIDTH, VIEWPORT_HEIGHT);
+  followCorePlatform("android");
+  const screen = await render(SectionHeading, {
+    ...PROPS,
+    androidTitle: "in-bar",
+  });
+
+  const back = screen.getByRole("link", { name: "Back to Settings" }).element();
+  const titles = screen.getByRole("heading", { level: 1 }).elements();
+  const title = titles[0]?.getBoundingClientRect();
+  const backBox = back.getBoundingClientRect();
+
+  expect(titles).toHaveLength(1);
+  expect(title?.left).toBeGreaterThanOrEqual(backBox.right);
+  expect(title?.top).toBeLessThan(backBox.bottom);
+});
+
 test("sets the title on a 32px line on Android phones", async () => {
   await page.viewport(PHONE_WIDTH, VIEWPORT_HEIGHT);
   followCorePlatform("android");

@@ -1,4 +1,4 @@
-import type { LibrarySeries, Platform } from "#lib/ipc/bindings.ts";
+import type { LibrarySeries, OnCovers, Platform } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
 type CountedSeries = Pick<
@@ -10,11 +10,24 @@ const PLATFORMS_COUNTING_VOLUMES_AND_CHAPTERS: readonly Platform[] = [
   "android",
 ];
 
+export function countsVolumesAndChapters(platform: Platform): boolean {
+  return PLATFORMS_COUNTING_VOLUMES_AND_CHAPTERS.includes(platform);
+}
+
+export function showsCountUnderCover(
+  platform: Platform,
+  onCovers: OnCovers,
+): boolean {
+  return (
+    !countsVolumesAndChapters(platform) || onCovers.showsVolumeAndChapterCounts
+  );
+}
+
 export function seriesCountLine(
   series: CountedSeries,
   platform: Platform,
 ): string {
-  if (!PLATFORMS_COUNTING_VOLUMES_AND_CHAPTERS.includes(platform)) {
+  if (!countsVolumesAndChapters(platform)) {
     return m.library_series_books({ count: series.bookCount });
   }
   return volumesAndChaptersLine(series);

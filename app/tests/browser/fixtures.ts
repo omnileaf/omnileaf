@@ -191,6 +191,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   }),
   categorySeries: () => ({ series: [], next: null }),
   categorySeriesCount: () => 0,
+  categorylessSeries: () => ({ series: [], next: null }),
+  categorylessSeriesCount: () => 0,
   orientScreen: () => null,
   changeFullScreen: () => false,
   openBook: () => {
@@ -232,6 +234,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   libraryTags: () => [],
   renameLibraryTag: () => null,
   removeLibraryTag: () => [],
+  renameLibraryCategory: () => ({ kind: "renamed" }),
+  removeLibraryCategory: () => null,
   setScreenshotMode: () => undefined,
   getScreenshotMode: () => false,
   libraryAdultContent: () => NEW_ADULT_CONTENT,

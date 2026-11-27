@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ChevronRight, ImageOff, RefreshCw } from "@lucide/svelte";
-  import { type Snippet, untrack } from "svelte";
+  import { onDestroy, type Snippet, untrack } from "svelte";
   import type { Attachment } from "svelte/attachments";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
@@ -18,7 +18,13 @@
 
   import { fittedTo, type Size } from "#lib/reader/page-fit.ts";
   import type { PageFit } from "#lib/reader/reader-settings.svelte.ts";
-  import type { Spread } from "#lib/reader/spreads.ts";
+  import { spreadAt, type Spread } from "#lib/reader/spreads.ts";
+  import { cellsAround } from "#lib/reader/page-cells.ts";
+  import {
+    type SlideStart,
+    slideTiming,
+    turnsOnScreen,
+  } from "#lib/reader/page-flight.ts";
   import { pagesAround } from "#lib/reader/page-window.ts";
 
   /** Pages decoded ahead of the one shown, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
@@ -26,6 +32,9 @@
   /** How long a page may take before a spinner says it's on its way, so a quick one never flashes one. */
   const SPINNER_DELAY_MS = 100;
   const SPINNER_SIZE = 20;
+  const RESTING_ZOOM = 1;
+  const LONGEST_DECODE_WAIT_MS = 250;
+  const LONGEST_SLIDE_SPREADS = 2;
   const PROBLEM_ICON_SIZE = 20;
   const BUTTON_ICON_SIZE = 16;
   /** Asks again for a page that failed once, as the core may have dropped its request for newer ones. */
@@ -35,7 +44,8 @@
     pages,
     crop,
     shown,
-    spread,
+    spreads,
+    isPastEnd,
     fit,
     zoom,
     isReversed,
@@ -47,11 +57,13 @@
     startAt,
     onNextPage,
     onShownReady,
+    onSettled,
   }: {
     pages: readonly BookPage[];
     crop: PageCrop;
     shown: number;
-    spread: Spread;
+    spreads: readonly Spread[];
+    isPastEnd: boolean;
     fit: PageFit;
     zoom: number;
     isReversed: boolean;
@@ -63,7 +75,22 @@
     startAt: SpreadPlace | undefined;
     onNextPage: () => void;
     onShownReady: () => void;
+    onSettled: () => void;
   } = $props();
+
+  interface Flight {
+    readonly from: number;
+    readonly kind: "slide" | "cut";
+    readonly start: SlideStart;
+    readonly isFlying: boolean;
+  }
+
+  interface HeldPoint {
+    readonly x: number;
+    readonly y: number;
+    readonly shareAcross: number;
+    readonly shareDown: number;
+  }
 
   let scroller: HTMLDivElement | undefined = $state();
 
@@ -76,17 +103,94 @@
   let isSlow = $state(false);
   let startingPlace = untrack(() => startAt);
 
-  const kept = $derived(pagesAround(shown, pages.length, PAGES_AHEAD));
+  const shownSpread = $derived(spreadAt(spreads, shown));
+  const spread = $derived(spreads[shownSpread] ?? [shown]);
+  const position = $derived(isPastEnd ? spreads.length : shownSpread);
+  const nextSide = $derived(isReversed ? -1 : 1);
+  let flight: Flight | undefined = $state.raw();
+  let flying: Animation[] = [];
+  let lastPosition = untrack(() => position);
+  let lastSlide = untrack(() => slide);
+  let lastSpreads = untrack(() => spreads);
+  let lastWidth = untrack(() => spaceWidth);
+  let heldPoint: HeldPoint | undefined;
+  const onScreen = $derived(
+    turnsOnScreen(
+      flight === undefined
+        ? { from: slide, to: slide }
+        : { from: flight.from, to: flight.kind === "cut" ? flight.from : 0 },
+      spaceWidth,
+      nextSide,
+    ),
+  );
+  const cells = $derived(
+    cellsAround(
+      spreads,
+      {
+        at: position,
+        low: position + onScreen.low,
+        high: position + onScreen.high,
+      },
+      pagesAround(shown, pages.length, PAGES_AHEAD),
+    ),
+  );
+  const isTargetReady = $derived(
+    cells.every((cell) => cell.offset !== 0 || cell.spread.every(isReady)),
+  );
+
+  $effect.pre(() => {
+    const at = position;
+    const across = slide;
+    const settles = isSettling;
+    const laidOut = spreads;
+    const width = spaceWidth;
+    untrack(() => {
+      if (laidOut !== lastSpreads || width !== lastWidth) {
+        cutTo(at, across);
+        lastSpreads = laidOut;
+        lastWidth = width;
+        return;
+      }
+      followTurn(at, across, settles);
+    });
+  });
+
+  $effect(() => {
+    if (flight === undefined || flight.isFlying) {
+      return;
+    }
+    const settle = flight.kind === "cut" ? land : launch;
+    const isCaughtMidway =
+      flight.kind === "slide" && flight.start === "inMotion";
+    if (isTargetReady || isCaughtMidway) {
+      untrack(settle);
+      return;
+    }
+    const waiting = setTimeout(settle, LONGEST_DECODE_WAIT_MS);
+    return () => {
+      clearTimeout(waiting);
+    };
+  });
+
+  $effect(() => {
+    const scale = zoom;
+    untrack(() => {
+      keepHeldPoint(scale);
+    });
+  });
+
+  onDestroy(stopFlying);
   const isShownReady = $derived(
     isBlank || decoded.has(shown) || failed.has(shown),
   );
   const isShownFailed = $derived(failed.has(shown));
+  const isSlidingOntoUnready = $derived(
+    flight?.isFlying === true && !isShownReady,
+  );
   const isSpreadSettled = $derived(
     isBlank || spread.every((index) => decoded.has(index) || failed.has(index)),
   );
   const id = $props.id();
-
-  const spreadHeight = $derived(heightOfSpread());
 
   function ratioOf(index: number): number | undefined {
     const page = pages[index];
@@ -97,12 +201,12 @@
       : size.width / size.height;
   }
 
-  function heightOfSpread(): number | undefined {
+  function heightOfSpread(pagesShown: Spread): number | undefined {
     if (crop === "whole") {
       return undefined;
     }
     let width = 0;
-    for (const index of spread) {
+    for (const index of pagesShown) {
       const ratio = ratioOf(index);
       if (ratio === undefined) {
         return undefined;
@@ -116,24 +220,181 @@
     ).height;
   }
 
-  function sizeOf(index: number) {
+  function sizeOf(index: number, pagesShown: Spread, scale: number): Size {
     const ratio = ratioOf(index);
     if (ratio === undefined) {
-      return undefined;
+      return scaled(
+        { width: spaceWidth / pagesShown.length, height: spaceHeight },
+        scale,
+      );
     }
-    return zoomed(
+    const spreadHeight = heightOfSpread(pagesShown);
+    return scaled(
       spreadHeight === undefined
         ? fittedTo(
             { width: ratio, height: 1 },
-            { width: spaceWidth / spread.length, height: spaceHeight },
+            { width: spaceWidth / pagesShown.length, height: spaceHeight },
             fit,
           )
         : { width: spreadHeight * ratio, height: spreadHeight },
+      scale,
     );
   }
 
-  function zoomed(size: { width: number; height: number }) {
-    return { width: size.width * zoom, height: size.height * zoom };
+  function isReady(index: number): boolean {
+    return isBlank || decoded.has(index) || failed.has(index);
+  }
+
+  function isPainted(offset: number): boolean {
+    return offset >= onScreen.low && offset <= onScreen.high;
+  }
+
+  function restOf(offset: number): number {
+    return offset * nextSide * spaceWidth;
+  }
+
+  function followTurn(at: number, across: number, settles: boolean): void {
+    const turned = at - lastPosition;
+    const isLetGo = lastSlide !== 0 && across === 0;
+    if (settles && (turned !== 0 || isLetGo)) {
+      const shift = flight === undefined ? lastSlide : shiftInFlight();
+      const start = flight?.isFlying === true ? "inMotion" : "fromRest";
+      stopFlying();
+      const from = shift + restOf(turned);
+      flight = {
+        from,
+        kind:
+          Math.abs(from) < LONGEST_SLIDE_SPREADS * spaceWidth ? "slide" : "cut",
+        start,
+        isFlying: false,
+      };
+    } else if (!settles && flight !== undefined) {
+      stopFlying();
+      flight = undefined;
+    }
+    lastPosition = at;
+    lastSlide = across;
+  }
+
+  function cutTo(at: number, across: number): void {
+    lastPosition = at;
+    lastSlide = across;
+    if (flight === undefined) {
+      return;
+    }
+    stopFlying();
+    flight = undefined;
+    onSettled();
+  }
+
+  function launch(): void {
+    const leaving = flight;
+    if (leaving === undefined || scroller === undefined) {
+      return;
+    }
+    const timing = slideTiming(scroller, leaving.start);
+    const painted = [...scroller.querySelectorAll<HTMLElement>("[data-turns]")];
+    if (timing.duration <= 0 || painted.length === 0) {
+      land();
+      return;
+    }
+    const batch = painted.map((cell) => {
+      const rest = restOf(Number(cell.dataset.turns));
+      return cell.animate(
+        [
+          { translate: `${String(rest + leaving.from)}px 0` },
+          { translate: `${String(rest)}px 0` },
+        ],
+        timing,
+      );
+    });
+    flying = batch;
+    const [first] = batch;
+    if (first !== undefined) {
+      first.onfinish = () => {
+        if (flying === batch) {
+          land();
+        }
+      };
+    }
+    flight = { ...leaving, isFlying: true };
+  }
+
+  function land(): void {
+    flying = [];
+    flight = undefined;
+    onSettled();
+  }
+
+  function stopFlying(): void {
+    for (const animation of flying) {
+      animation.cancel();
+    }
+    flying = [];
+  }
+
+  function placeOf(offset: number): string | undefined {
+    const shift =
+      flight === undefined ? slide : flight.isFlying ? 0 : flight.from;
+    const across = restOf(offset) + shift;
+    return across === 0 && flight === undefined
+      ? undefined
+      : `${String(across)}px 0`;
+  }
+
+  function scaled(size: { width: number; height: number }, scale: number) {
+    return { width: size.width * scale, height: size.height * scale };
+  }
+
+  function shownPagesBox(): DOMRect | undefined {
+    const shownCell = scroller?.querySelector('[data-turns="0"]');
+    const boxes = [...(shownCell?.children ?? [])].map((page) =>
+      page.getBoundingClientRect(),
+    );
+    if (boxes.length === 0) {
+      return undefined;
+    }
+    const left = Math.min(...boxes.map((box) => box.left));
+    const top = Math.min(...boxes.map((box) => box.top));
+    const right = Math.max(...boxes.map((box) => box.right));
+    const bottom = Math.max(...boxes.map((box) => box.bottom));
+    return new DOMRect(left, top, right - left, bottom - top);
+  }
+
+  export function holdPoint(point: { x: number; y: number }): void {
+    const box = shownPagesBox();
+    heldPoint =
+      box === undefined || box.width <= 0 || box.height <= 0
+        ? undefined
+        : {
+            ...point,
+            shareAcross: (point.x - box.left) / box.width,
+            shareDown: (point.y - box.top) / box.height,
+          };
+  }
+
+  function keepHeldPoint(scale: number): void {
+    const held = heldPoint;
+    heldPoint = undefined;
+    const box = shownPagesBox();
+    if (held === undefined || box === undefined || scale <= RESTING_ZOOM) {
+      return;
+    }
+    scroller?.scrollBy({
+      left: box.left + held.shareAcross * box.width - held.x,
+      top: box.top + held.shareDown * box.height - held.y,
+      behavior: "instant",
+    });
+  }
+
+  export function shiftInFlight(): number {
+    const cell = scroller?.querySelector<HTMLElement>("[data-turns]");
+    if (cell === null || cell === undefined) {
+      return 0;
+    }
+    const [across = ""] = getComputedStyle(cell).translate.split(" ");
+    const shift = Number.parseFloat(across);
+    return Number.isNaN(shift) ? 0 : shift - restOf(Number(cell.dataset.turns));
   }
 
   /** Starts each spread at its top, since a page fitted to the width scrolls down. */
@@ -209,8 +470,8 @@
     }
   }
 
-  function sizeToCroppedImage(image: HTMLImageElement, page: BookPage): void {
-    if (crop !== "whole") {
+  function learnImageSize(image: HTMLImageElement, page: BookPage): void {
+    if (crop !== "whole" || page.size === null) {
       croppedSizes.set(page.path, {
         width: image.naturalWidth,
         height: image.naturalHeight,
@@ -249,153 +510,165 @@
   });
 </script>
 
-<div
-  bind:this={scroller}
-  bind:clientWidth={spaceWidth}
-  bind:clientHeight={spaceHeight}
-  class={[
-    "absolute inset-none grid",
-    fit === "screen" && zoom === 1
-      ? "overflow-hidden"
-      : "overflow-auto overscroll-contain",
-  ]}
->
+<div class="absolute inset-none contain-paint">
   <div
+    bind:this={scroller}
+    bind:clientWidth={spaceWidth}
+    bind:clientHeight={spaceHeight}
     class={[
-      "col-start-1 row-start-1 flex items-center justify-center",
-      isReversed && "flex-row-reverse",
-      isSettling &&
-        "motion-reader:transition-transform motion-reader:duration-slide motion-reader:ease-emphasized",
+      "absolute inset-none grid",
+      fit === "screen" && zoom === 1
+        ? "overflow-hidden"
+        : "overflow-auto overscroll-contain",
     ]}
-    style:translate={slide !== 0 || isSettling
-      ? `${String(slide)}px 0`
-      : undefined}
-    style:min-width="{spaceWidth}px"
-    style:min-height="{spaceHeight}px"
   >
-    {#each kept as index (index)}
-      {@const page = pages[index]}
-      {#if page !== undefined}
-        {@const size = sizeOf(index)}
-        {@const isShown = spread.includes(index)}
-        <div
-          class={[
-            isShown ? "relative shrink-0" : "invisible absolute inset-none",
-            isShown && decoded.has(index) && "bg-reader-page",
-            isShown &&
-              (size === undefined
-                ? "block-full inline-full"
-                : "reader-page-size"),
-          ]}
-          style:--page-inline={size === undefined
-            ? undefined
-            : `${String(size.width)}px`}
-          style:--page-block={size === undefined
-            ? undefined
-            : `${String(size.height)}px`}
-        >
-          {#if isBlank}
+    {#each cells as cell (cell.spread[0])}
+      {@const isNeighbour = cell.offset !== 0}
+      {@const isOnScreen = isPainted(cell.offset)}
+      <div
+        aria-hidden={isNeighbour ? "true" : undefined}
+        data-turns={isOnScreen ? cell.offset : undefined}
+        class={[
+          "flex",
+          isNeighbour
+            ? "fixed inset-s-none inset-bs-none overflow-hidden"
+            : "col-start-1 row-start-1",
+          !isOnScreen && "invisible",
+          isReversed && "flex-row-reverse",
+        ]}
+        style:translate={placeOf(cell.offset)}
+        style:min-width="{spaceWidth}px"
+        style:min-height="{spaceHeight}px"
+        style:width={isNeighbour ? `${String(spaceWidth)}px` : "max-content"}
+        style:height={isNeighbour ? `${String(spaceHeight)}px` : undefined}
+      >
+        {#each cell.spread as index (index)}
+          {@const page = pages[index]}
+          {#if page !== undefined}
+            {@const size = sizeOf(
+              index,
+              cell.spread,
+              isNeighbour ? RESTING_ZOOM : zoom,
+            )}
+            {@const isShown = spread.includes(index)}
             <div
-              role="img"
-              aria-label={m.reader_page({ page: index + 1 })}
-              aria-hidden={isShown ? undefined : "true"}
-              class="flex items-center justify-center bg-reader-grey text-body font-semibold text-on-reader block-full inline-full"
-            >
-              <span aria-hidden="true">
-                {m.reader_blank_page({ page: index + 1, count: pages.length })}
-              </span>
-            </div>
-          {:else}
-            <img
-              {@attach freshImage(index)}
-              src={sourceOf(page, index)}
-              alt={m.reader_page({ page: index + 1 })}
-              aria-hidden={isShown ? undefined : "true"}
-              decoding="async"
-              draggable="false"
               class={[
-                "object-contain select-none block-full inline-full",
-                !decoded.has(index) && "invisible",
+                "relative my-auto shrink-0 reader-page-size",
+                isReversed
+                  ? "first:me-auto last:ms-auto"
+                  : "first:ms-auto last:me-auto",
+                decoded.has(index) && "bg-reader-page",
               ]}
-              onload={(event) => {
-                if (event.currentTarget instanceof HTMLImageElement) {
-                  sizeToCroppedImage(event.currentTarget, page);
-                  void decode(event.currentTarget, index);
-                }
-              }}
-              onerror={() => {
-                onFailure(index);
-              }}
-            />
+              style:--page-inline="{size.width}px"
+              style:--page-block="{size.height}px"
+            >
+              {#if isBlank}
+                <div
+                  role="img"
+                  aria-label={m.reader_page({ page: index + 1 })}
+                  aria-hidden={isShown ? undefined : "true"}
+                  class="flex items-center justify-center bg-reader-grey text-body font-semibold text-on-reader block-full inline-full"
+                >
+                  <span aria-hidden="true">
+                    {m.reader_blank_page({
+                      page: index + 1,
+                      count: pages.length,
+                    })}
+                  </span>
+                </div>
+              {:else}
+                <img
+                  {@attach freshImage(index)}
+                  src={sourceOf(page, index)}
+                  alt={m.reader_page({ page: index + 1 })}
+                  aria-hidden={isShown ? undefined : "true"}
+                  decoding="async"
+                  draggable="false"
+                  class={[
+                    "object-contain select-none block-full inline-full",
+                    !decoded.has(index) && "invisible",
+                  ]}
+                  onload={(event) => {
+                    if (event.currentTarget instanceof HTMLImageElement) {
+                      learnImageSize(event.currentTarget, page);
+                      void decode(event.currentTarget, index);
+                    }
+                  }}
+                  onerror={() => {
+                    onFailure(index);
+                  }}
+                />
+              {/if}
+            </div>
+          {/if}
+        {/each}
+      </div>
+    {/each}
+    <div
+      class="sticky inset-s-none inset-bs-none col-start-1 row-start-1"
+      style:width="{spaceWidth}px"
+      style:height="{spaceHeight}px"
+    >
+      {@render overlay()}
+      <svelte:element
+        this={isShownFailed ? "section" : "div"}
+        aria-labelledby={isShownFailed ? `${id}-problem` : undefined}
+        class="pointer-events-none absolute inset-none flex flex-col items-center justify-center gap-lg px-xl"
+      >
+        <div
+          role="status"
+          class="flex flex-col items-center gap-sm text-center max-inline-page-problem"
+        >
+          {#if isShownFailed}
+            <EmptyMedia>
+              <ImageOff size={PROBLEM_ICON_SIZE} aria-hidden="true" />
+            </EmptyMedia>
+            <EmptyTitle
+              id="{id}-problem"
+              class="text-group-title font-semibold expanded:text-body"
+            >
+              {m.reader_page_failed()}
+            </EmptyTitle>
+            <EmptyDescription class="text-small">
+              {m.reader_page_failed_body({
+                page: shown + 1,
+                title: bookTitle,
+              })}
+            </EmptyDescription>
+          {:else if isSlow || isSlidingOntoUnready}
+            <Spinner size={SPINNER_SIZE} class="text-muted" />
+            <p class="text-small text-muted">
+              {m.reader_page_loading({ page: shown + 1 })}
+            </p>
           {/if}
         </div>
-      {/if}
-    {/each}
-  </div>
-  <div
-    class="sticky inset-s-none inset-bs-none col-start-1 row-start-1"
-    style:width="{spaceWidth}px"
-    style:height="{spaceHeight}px"
-  >
-    {@render overlay()}
-    <svelte:element
-      this={isShownFailed ? "section" : "div"}
-      aria-labelledby={isShownFailed ? `${id}-problem` : undefined}
-      class="pointer-events-none absolute inset-none flex flex-col items-center justify-center gap-lg px-xl"
-    >
-      <div
-        role="status"
-        class="flex flex-col items-center gap-sm text-center max-inline-page-problem"
-      >
         {#if isShownFailed}
-          <EmptyMedia>
-            <ImageOff size={PROBLEM_ICON_SIZE} aria-hidden="true" />
-          </EmptyMedia>
-          <EmptyTitle
-            id="{id}-problem"
-            class="text-group-title font-semibold expanded:text-body"
-          >
-            {m.reader_page_failed()}
-          </EmptyTitle>
-          <EmptyDescription class="text-small">
-            {m.reader_page_failed_body({
-              page: shown + 1,
-              title: bookTitle,
-            })}
-          </EmptyDescription>
-        {:else if isSlow}
-          <Spinner size={SPINNER_SIZE} class="text-muted" />
-          <p class="text-small text-muted">
-            {m.reader_page_loading({ page: shown + 1 })}
-          </p>
+          <div class="pointer-events-auto flex flex-wrap justify-center gap-sm">
+            <button
+              type="button"
+              class="flex items-center gap-sm rounded-shadcn-button border border-border bg-card px-lg text-body font-medium transition-control min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button"
+              onclick={() => {
+                tryAgain(shown);
+              }}
+            >
+              <RefreshCw size={BUTTON_ICON_SIZE} aria-hidden="true" />
+              {m.reader_try_again()}
+            </button>
+            <button
+              type="button"
+              class="flex items-center gap-sm rounded-shadcn-button bg-accent px-lg text-body font-medium text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button"
+              onclick={onNextPage}
+            >
+              {m.reader_next_page()}
+              <ChevronRight
+                size={BUTTON_ICON_SIZE}
+                aria-hidden="true"
+                class="rtl:-scale-x-100"
+              />
+            </button>
+          </div>
         {/if}
-      </div>
-      {#if isShownFailed}
-        <div class="pointer-events-auto flex flex-wrap justify-center gap-sm">
-          <button
-            type="button"
-            class="flex items-center gap-sm rounded-shadcn-button border border-border bg-card px-lg text-body font-medium transition-control min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button"
-            onclick={() => {
-              tryAgain(shown);
-            }}
-          >
-            <RefreshCw size={BUTTON_ICON_SIZE} aria-hidden="true" />
-            {m.reader_try_again()}
-          </button>
-          <button
-            type="button"
-            class="flex items-center gap-sm rounded-shadcn-button bg-accent px-lg text-body font-medium text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button"
-            onclick={onNextPage}
-          >
-            {m.reader_next_page()}
-            <ChevronRight
-              size={BUTTON_ICON_SIZE}
-              aria-hidden="true"
-              class="rtl:-scale-x-100"
-            />
-          </button>
-        </div>
-      {/if}
-    </svelte:element>
+      </svelte:element>
+    </div>
   </div>
 </div>

@@ -269,6 +269,20 @@ pub(crate) fn set_category_membership(
     )
 }
 
+#[cfg(test)]
+pub(crate) fn set_category_kept(
+    connection: &Connection,
+    category: CategoryId,
+    is_kept: bool,
+) -> Result<(), Error> {
+    if is_kept {
+        connection.execute(PROJECT_CATEGORY, (category.as_bytes(), "Shelf", 0))?;
+    } else {
+        connection.execute(REMOVE_CATEGORY, [category.as_bytes()])?;
+    }
+    Ok(())
+}
+
 fn named_row(
     connection: &Connection,
     entity: &str,

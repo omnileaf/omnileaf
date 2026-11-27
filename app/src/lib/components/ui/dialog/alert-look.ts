@@ -36,6 +36,9 @@ export interface AlertLook {
   readonly defaultAction: Readonly<Record<AlertTone, AlertAction>>;
 }
 
+export const ACCENT_CONFIRM_FILL =
+  "bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed";
+
 export const CONTENT_DIALOG_PANEL =
   "inset-none m-auto flex flex-col gap-lg overflow-hidden rounded-panel border border-dialog-edge bg-dialog px-sheet-inline py-sheet-inline text-foreground fade-motion dialog-drop shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit";
 
@@ -146,6 +149,14 @@ const ANDROID_LOOK: AlertLook = {
   defaultAction: CANCEL_BY_DEFAULT,
 };
 
+const ANDROID_ICON_DIALOG_LOOK: AlertLook = {
+  ...ANDROID_LOOK,
+  header: "max-medium:flex-col max-medium:gap-lg",
+  badge:
+    "max-medium:bg-transparent max-medium:text-muted max-medium:block-native-icon max-medium:inline-native-icon max-medium:[&>svg]:block-native-icon max-medium:[&>svg]:inline-native-icon",
+  title: `${ANDROID_LOOK.title} max-medium:text-center`,
+};
+
 const MAC_ACTION = "min-block-native-button-large rounded-full px-sm";
 
 const MAC_LOOK: AlertLook = {
@@ -196,18 +207,24 @@ export type IosPhoneConfirmLook = "actionSheet";
 
 export type MacConfirmLook = "alert" | "destructiveAlert";
 
-function isIosActionSheet(
-  platform: Platform,
-  iosPhoneLook: IosPhoneConfirmLook | undefined,
-): boolean {
-  return platform === "ios" && iosPhoneLook === "actionSheet";
+export type AndroidPhoneConfirmLook = "iconDialog";
+
+export interface ConfirmLooks {
+  readonly iosPhone?: IosPhoneConfirmLook | undefined;
+  readonly mac?: MacConfirmLook | undefined;
+  readonly androidPhone?: AndroidPhoneConfirmLook | undefined;
 }
 
-function isMacAlert(
-  platform: Platform,
-  macLook: MacConfirmLook | undefined,
-): boolean {
-  return platform === "macos" && macLook !== undefined;
+function isIosActionSheet(platform: Platform, looks: ConfirmLooks): boolean {
+  return platform === "ios" && looks.iosPhone === "actionSheet";
+}
+
+function isMacAlert(platform: Platform, looks: ConfirmLooks): boolean {
+  return platform === "macos" && looks.mac !== undefined;
+}
+
+function isAndroidIconDialog(platform: Platform, looks: ConfirmLooks): boolean {
+  return platform === "android" && looks.androidPhone === "iconDialog";
 }
 
 /** WinUI has no bottom sheets, so a Windows confirmation is always a ContentDialog. */
@@ -222,26 +239,28 @@ const HAS_BOTTOM_SHEETS = {
 export function opensAsAlert(
   platform: Platform,
   phoneLook: ConfirmPhoneLook,
-  iosPhoneLook?: IosPhoneConfirmLook,
-  macLook?: MacConfirmLook,
+  looks: ConfirmLooks = {},
 ): boolean {
   return (
     phoneLook === "dialog" ||
     !HAS_BOTTOM_SHEETS[platform] ||
-    isIosActionSheet(platform, iosPhoneLook) ||
-    isMacAlert(platform, macLook)
+    isIosActionSheet(platform, looks) ||
+    isMacAlert(platform, looks) ||
+    isAndroidIconDialog(platform, looks)
   );
 }
 
 export function alertLook(
   platform: Platform,
-  iosPhoneLook?: IosPhoneConfirmLook,
-  macLook?: MacConfirmLook,
+  looks: ConfirmLooks = {},
 ): AlertLook {
-  if (isMacAlert(platform, macLook)) {
-    return macLook === "destructiveAlert" ? MAC_DESTRUCTIVE_LOOK : MAC_LOOK;
+  if (isMacAlert(platform, looks)) {
+    return looks.mac === "destructiveAlert" ? MAC_DESTRUCTIVE_LOOK : MAC_LOOK;
   }
-  return isIosActionSheet(platform, iosPhoneLook)
+  if (isAndroidIconDialog(platform, looks)) {
+    return ANDROID_ICON_DIALOG_LOOK;
+  }
+  return isIosActionSheet(platform, looks)
     ? IOS_ACTION_SHEET_LOOK
     : ALERT_LOOKS[platform];
 }

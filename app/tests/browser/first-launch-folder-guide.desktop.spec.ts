@@ -1,5 +1,5 @@
 import type { FakeBackend } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { folderRow, goToStep, openFolderGuide } from "./first-launch-steps.ts";
 
 type WireFolder = Awaited<
@@ -49,6 +49,22 @@ test("the folder step opens How folders are read", async ({ page }) => {
   await expect(
     page.getByRole("table", { name: "An example folder" }),
   ).toBeVisible();
+});
+
+test("stacks Files under Folders in the setup dialog, where the list has less room", async ({
+  page,
+}) => {
+  await goToStep(page, LINK_STEP);
+  await openFolderGuide(page);
+  const folders = await boxOf(
+    page.getByRole("list", { name: "Folders", exact: true }),
+  );
+  const files = await boxOf(
+    page.getByRole("list", { name: "Files", exact: true }),
+  );
+
+  expect(files.x).toBeCloseTo(folders.x, 0);
+  expect(files.y).toBeGreaterThan(folders.y + folders.height - 1);
 });
 
 test("Back from the guide returns to the folder step without loading its folders again", async ({

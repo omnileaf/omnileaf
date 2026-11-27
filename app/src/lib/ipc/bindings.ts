@@ -73,8 +73,12 @@ export const commands = {
 	libraryTags: () => typedError<LibraryTag[], IpcError>(__TAURI_INVOKE("library_tags")),
 	renameLibraryTag: (tag: string, to: string) => typedError<null, IpcError>(__TAURI_INVOKE("rename_library_tag", { tag, to })),
 	removeLibraryTag: (tag: string) => typedError<(string & { readonly __brand: "SeriesId" })[], IpcError>(__TAURI_INVOKE("remove_library_tag", { tag })),
+	renameLibraryCategory: (category: string & { readonly __brand: "CategoryId" }, to: string) => typedError<CategoryRename, IpcError>(__TAURI_INVOKE("rename_library_category", { category, to })),
+	removeLibraryCategory: (category: string & { readonly __brand: "CategoryId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_category", { category })),
 	categorySeries: (category: string & { readonly __brand: "CategoryId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("category_series", { category, after, listing })),
 	categorySeriesCount: (category: string & { readonly __brand: "CategoryId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("category_series_count", { category, filter })),
+	categorylessSeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("categoryless_series", { after, listing })),
+	categorylessSeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("categoryless_series_count", { filter })),
 	folderSeries: (folder: string & { readonly __brand: "FolderId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("folder_series", { folder, after, listing })),
 	folderSeriesCount: (folder: string & { readonly __brand: "FolderId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("folder_series_count", { folder, filter })),
 	folderGroups: (after: string & { readonly __brand: "FolderGroupCursor" } | null) => typedError<FolderGroupPage, IpcError>(__TAURI_INVOKE("folder_groups", { after })),
@@ -271,7 +275,7 @@ export const COVERS_PER_ROW = {"desktop":{"fewest":4,"most":12},"phone":{"fewest
 
 export const DEFAULT_LIBRARY_LISTING = {"filter":{"adult":"any","bookmarked":"any","finished":"any","formats":[],"languages":[],"smart":[],"started":"any","tags":[],"unread":"any"},"sort":{"by":"title","direction":"ascending"}} as const;
 
-export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","fitsCoversToWidth":true,"groupBy":"none","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsCategoryTabs":true,"showsContinueRow":false,"showsItemCounts":true,"stacksSeriesCovers":true} as const;
+export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","fitsCoversToWidth":true,"groupBy":"none","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true,"showsVolumeAndChapterCounts":false},"showsCategoryTabs":true,"showsContinueRow":false,"showsItemCounts":true,"stacksSeriesCovers":true} as const;
 
 export const SEARCH_MAX_CHARS = 200 as const;
 
@@ -366,6 +370,8 @@ export type CategoryHeld = {
 	category: LibraryCategory,
 	holding: number,
 };
+
+export type CategoryRename = { kind: "renamed" } | { kind: "nameEmpty" } | { kind: "nameTaken" } | { kind: "gone" };
 
 export type ChangeEntry = {
 	kind: ChangeKind,
@@ -828,6 +834,7 @@ export type NumberRange = {
 
 export type OnCovers = {
 	showsUnreadCount: boolean,
+	showsVolumeAndChapterCounts: boolean,
 	showsDownloaded: boolean,
 	showsLanguage: boolean,
 	showsReadingProgress: boolean,

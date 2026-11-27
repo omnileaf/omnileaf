@@ -94,7 +94,7 @@
   const notices = getNotices();
   const theme = getThemeSetting();
   const screenshotMode = getScreenshotMode();
-  setBackGoesUp(makeBackGoUp());
+  const backGoesUp = setBackGoesUp(makeBackGoUp());
   const quickOpen = new QuickOpenState();
   const sidebar = setSidebarSetting(sidebarSettingForDocument());
   const tapOpenTab = setTapOpenTabSetting(tapOpenTabSettingForDocument());
@@ -299,6 +299,7 @@
             current={sectionOf(page.url.pathname)}
             isCollapsed={isTabBarCollapsed}
             onOpenTabTap={androidPhone.isOn ? tapOpenSection : undefined}
+            historyMoves={backGoesUp}
             attention={isPointer(data.appInfo.platform) &&
             needsAttention.problems.length > 0
               ? attention

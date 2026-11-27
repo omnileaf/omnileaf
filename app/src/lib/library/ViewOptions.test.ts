@@ -10,6 +10,7 @@ import {
   type Platform,
 } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
+import { LARGE_TEXT_SCALE } from "#lib/page/text-scale.svelte.ts";
 
 import ViewOptions from "./ViewOptions.svelte";
 
@@ -71,6 +72,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  document.documentElement.style.removeProperty("--text-scale");
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
   delete document.documentElement.dataset.contrast;
@@ -442,6 +444,36 @@ test("draws Display as one row of three options on an Android phone", async () =
   expect(display.height).toBeLessThanOrEqual(ANDROID_SETTING_ROW_HEIGHT);
 });
 
+test("moves Display and Covers per row under their names once the text grows large on an Android phone", async () => {
+  await openOn("android");
+  const display = page.getByRole("radiogroup", { name: "Display" }).element();
+  const coversPerRow = page
+    .getByRole("radiogroup", { name: "Covers per row" })
+    .element();
+  const displayLabel = page.getByText("Display", { exact: true }).element();
+  const coversLabel = page
+    .getByText("Covers per row", { exact: true })
+    .element();
+  const gapUnderName = (group: Element, label: Element): number =>
+    boxOf(group).top - boxOf(label).bottom;
+  await expect.poll(() => gapUnderName(display, displayLabel)).toBeLessThan(0);
+
+  document.documentElement.style.setProperty(
+    "--text-scale",
+    String(LARGE_TEXT_SCALE),
+  );
+
+  await expect
+    .poll(() =>
+      Math.min(
+        gapUnderName(display, displayLabel),
+        gapUnderName(coversPerRow, coversLabel),
+      ),
+    )
+    .toBeGreaterThanOrEqual(0);
+  expect(boxOf(display).width).toBeCloseTo(boxOf(coversPerRow).width, 0);
+});
+
 test("offers Stack series covers on an Android phone", async () => {
   await openOn("android");
 
@@ -517,5 +549,35 @@ for (const [platform, size] of [
 
     await expectOneChecked("Display", "Covers");
     await expectOneChecked("Group by", "Creator");
+  });
+}
+
+test("offers the volume and chapter counts under Show on covers on android, off, right after the unread count", async () => {
+  await openOn("android");
+
+  const unread = page.getByText("Unread count", { exact: true }).element();
+  const language = page.getByText("Language", { exact: true }).element();
+  const counts = page
+    .getByRole("switch", { name: "Volumes and chapters" })
+    .element();
+  expect(counts.getAttribute("aria-checked")).toBe("false");
+  expect(
+    unread.compareDocumentPosition(counts) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    counts.compareDocumentPosition(language) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});
+
+for (const platform of ["ios", "macos", "windows", "linux"] as const) {
+  test(`leaves the volume and chapter counts out of Show on covers on ${platform}`, async () => {
+    await openOn(platform);
+
+    await expect
+      .element(page.getByText("Unread count", { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(page.getByText("Volumes and chapters", { exact: true }))
+      .not.toBeInTheDocument();
   });
 }

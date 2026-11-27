@@ -203,3 +203,26 @@ export async function pinchTo(page: Page, scale: number): Promise<void> {
     viewport.dispatchEvent(new Event("resize"));
   }, scale);
 }
+
+export function pageDrawnAtRest(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const area = document
+      .querySelector("[data-shown-page]")
+      ?.getBoundingClientRect();
+    if (area === undefined) {
+      return Number.NaN;
+    }
+    const centre = area.left + area.width / 2;
+    const drawn = [
+      ...document.querySelectorAll<HTMLImageElement>('main img[alt^="Page "]'),
+    ].find((image) => {
+      const box = image.getBoundingClientRect();
+      return (
+        image.checkVisibility({ visibilityProperty: true }) &&
+        box.left <= centre &&
+        centre <= box.right
+      );
+    });
+    return Number(/Page (\d+)/.exec(drawn?.alt ?? "")?.[1]);
+  });
+}

@@ -29,9 +29,22 @@ export const ANDROID_SUGGESTION_CHIP = {
 } as const;
 
 export const ANDROID_VIEW_SETTING = {
-  row: "flex flex-wrap items-center justify-between gap-md ps-lg pe-xl min-block-touch-target",
-  stacked: "flex flex-col ps-lg pe-lg pbs-sm pbe-md",
-  words: "",
+  stacked: "flex flex-col ps-lg pe-xl pbs-sm pbe-md",
+} as const;
+
+export const ANDROID_VIEW_SETTING_LOOKS = {
+  atRowEnd: {
+    setting: "flex flex-wrap items-center gap-x-lg gap-y-sm ps-lg pe-xl py-sm",
+    words: "flex-1",
+    line: "basis-full",
+    isAtRowEnd: true,
+  },
+  underName: {
+    setting: "flex flex-col gap-sm ps-lg pe-xl py-sm",
+    words: "",
+    line: "",
+    isAtRowEnd: false,
+  },
 } as const;
 
 export const MAC_INSPECTOR = {

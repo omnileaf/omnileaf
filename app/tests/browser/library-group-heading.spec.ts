@@ -1,4 +1,9 @@
-import type { LibraryFolder } from "../../src/lib/ipc/bindings.ts";
+import type {
+  LibraryCategory,
+  LibraryDisplay,
+  LibraryFolder,
+  LibraryGrouping,
+} from "../../src/lib/ipc/bindings.ts";
 import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import { boxOf, expect, onPlatform, test, viewportOf } from "./fixtures.ts";
@@ -7,6 +12,7 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 const LIBRARY = sampleSeries(6);
 const GROUP_HEAD_GAP = 16;
 const GROUP_GAP = 40;
+const TITLE_TO_FIRST_GROUP = 32;
 const CHEVRON_END_GAP = 4;
 const FOLDER = {
   id: "comics-folder",
@@ -156,25 +162,6 @@ test.describe(
       ).toBeVisible();
     });
 
-    test("sets the covers 16px under the count and the next group 40px under the covers", async ({
-      page,
-    }) => {
-      await page.goto("/");
-      const section = page.getByRole("region", { name: "Author A" });
-      const count = await boxOf(section.getByText("3 series", { exact: true }));
-      const covers = section.getByRole("listitem");
-      const first = await boxOf(covers.first());
-      const last = await boxOf(covers.last());
-      const next = await boxOf(
-        page
-          .getByRole("region", { name: "No creator in the files" })
-          .getByRole("heading", { level: 2 }),
-      );
-
-      expect(first.y - (count.y + count.height)).toBeCloseTo(GROUP_HEAD_GAP, 0);
-      expect(next.y - (last.y + last.height)).toBeCloseTo(GROUP_GAP, 0);
-    });
-
     test.describe("with series hidden", () => {
       test.use({
         backend: { ...GROUPED_BY_WRITER, libraryHiddenSeriesCount: () => 2 },
@@ -215,6 +202,213 @@ test.describe(
           .getByRole("region", { name: "No creator in the files" })
           .getByRole("link", { name: /^Open/ }),
       ).toHaveCount(0);
+    });
+  },
+);
+
+const FIRST_HALF = LIBRARY.slice(0, 3);
+const SECOND_HALF = LIBRARY.slice(3);
+const SPACED_GROUPINGS: readonly {
+  groupBy: Exclude<LibraryGrouping, "none">;
+  first: string;
+  next: string;
+  backend: Partial<FakeBackend>;
+}[] = [
+  {
+    groupBy: "creator",
+    first: "Author A",
+    next: "No creator in the files",
+    backend: GROUPED_BY_WRITER,
+  },
+  {
+    groupBy: "category",
+    first: "Manga",
+    next: "No category",
+    backend: {
+      libraryCategories: () =>
+        [{ id: "manga", name: "Manga" }] as LibraryCategory[],
+      categorySeries: (_category, after, listing) =>
+        pagedSeries(() => FIRST_HALF)(after, listing),
+      categorySeriesCount: () => FIRST_HALF.length,
+      categorylessSeries: pagedSeries(() => SECOND_HALF),
+      categorylessSeriesCount: () => SECOND_HALF.length,
+    },
+  },
+  {
+    groupBy: "folder",
+    first: "Comics",
+    next: "Manga",
+    backend: {
+      libraryFolders: () => ({
+        folders: [FOLDER, { ...FOLDER, id: "manga-folder", name: "Manga" }],
+        next: null,
+      }),
+      folderSeries: (folder, after, listing) =>
+        pagedSeries(() => (folder === FOLDER.id ? FIRST_HALF : SECOND_HALF))(
+          after,
+          listing,
+        ),
+      folderSeriesCount: () => FIRST_HALF.length,
+    },
+  },
+];
+const SPACED_DISPLAYS: readonly LibraryDisplay[] = ["grid", "compact", "list"];
+
+for (const { groupBy, first, next, backend } of SPACED_GROUPINGS) {
+  for (const display of SPACED_DISPLAYS) {
+    test.describe(
+      `grouped by ${groupBy} in the ${display} display on an Android phone`,
+      { tag: "@native" },
+      () => {
+        test.use({
+          backend: {
+            ...GROUPED_BY_WRITER,
+            ...backend,
+            libraryView: () => ({ ...DEFAULT_LIBRARY_VIEW, groupBy, display }),
+          },
+        });
+
+        test.beforeEach(({ platform }) => {
+          test.skip(platform !== "android", "Android's Material group heading");
+        });
+
+        test(`starts the first group's heading ${String(TITLE_TO_FIRST_GROUP)}px under the Library's count`, async ({
+          page,
+        }) => {
+          await page.goto("/");
+          const count = await boxOf(
+            page
+              .getByRole("main")
+              .getByText(/^6 series/)
+              .first(),
+          );
+          const heading = await boxOf(
+            page
+              .getByRole("region", { name: first, exact: true })
+              .getByRole("heading", { level: 2 }),
+          );
+
+          expect(heading.y - (count.y + count.height)).toBeCloseTo(
+            TITLE_TO_FIRST_GROUP,
+            0,
+          );
+        });
+
+        test(`sets the covers ${String(GROUP_HEAD_GAP)}px under the group's count`, async ({
+          page,
+        }) => {
+          await page.goto("/");
+          const section = page.getByRole("region", {
+            name: first,
+            exact: true,
+          });
+          const count = await boxOf(
+            section.getByText("3 series", { exact: true }),
+          );
+          const covers = await boxOf(section.getByRole("listitem").first());
+
+          expect(covers.y - (count.y + count.height)).toBeCloseTo(
+            GROUP_HEAD_GAP,
+            0,
+          );
+        });
+
+        if (display !== "list") {
+          test(`sets the next group ${String(GROUP_GAP)}px under the covers`, async ({
+            page,
+          }) => {
+            await page.goto("/");
+            const last = await boxOf(
+              page
+                .getByRole("region", { name: first, exact: true })
+                .getByRole("listitem")
+                .last(),
+            );
+            const following = await boxOf(
+              page
+                .getByRole("region", { name: next, exact: true })
+                .getByRole("heading", { level: 2 }),
+            );
+
+            expect(following.y - (last.y + last.height)).toBeCloseTo(
+              GROUP_GAP,
+              0,
+            );
+          });
+        }
+      },
+    );
+  }
+}
+
+type WireEntry = Awaited<
+  ReturnType<FakeBackend["readingHistory"]>
+>["entries"][number];
+
+const ROW_TO_FIRST_GROUP = 16;
+const STARTED_SERIES = LIBRARY.slice(0, 2);
+
+function startedEntry(
+  series: (typeof STARTED_SERIES)[number],
+  number: number,
+): WireEntry {
+  return {
+    book: `0190a3e4-0000-8000-8002-${String(number).padStart(12, "0")}`,
+    bookTitle: `${series.title} v01`,
+    series: series.id,
+    seriesTitle: series.title,
+    position: 1,
+    cover: null,
+    startedAtMs: Date.UTC(2026, 9, 5, 20 - number),
+    utcOffsetMinutes: 0,
+    readSeconds: 600,
+    readTo: { state: "page", page: 10, pageCount: 40 },
+    reading: { state: "started", page: 10 },
+    day: { day: 20_731, readSeconds: 600 },
+  };
+}
+
+test.describe(
+  "grouped with the Continue row on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.use({
+      backend: {
+        ...GROUPED_BY_WRITER,
+        libraryView: () => ({
+          ...DEFAULT_LIBRARY_VIEW,
+          groupBy: "creator",
+          showsContinueRow: true,
+        }),
+        readingHistory: (_after, of) => ({
+          entries:
+            of.kind === "unfinished" ? STARTED_SERIES.map(startedEntry) : [],
+          next: null,
+        }),
+      },
+    });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's Material group heading");
+    });
+
+    test(`starts the first group's heading ${String(ROW_TO_FIRST_GROUP)}px under the Continue row`, async ({
+      page,
+    }) => {
+      await page.goto("/");
+      const row = await boxOf(
+        page.getByRole("region", { name: "Continue reading" }),
+      );
+      const heading = await boxOf(
+        page
+          .getByRole("region", { name: "Author A", exact: true })
+          .getByRole("heading", { level: 2 }),
+      );
+
+      expect(heading.y - (row.y + row.height)).toBeCloseTo(
+        ROW_TO_FIRST_GROUP,
+        0,
+      );
     });
   },
 );

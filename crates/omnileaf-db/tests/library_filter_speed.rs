@@ -13,8 +13,8 @@ use omnileaf_db::{
     Database,
     catalog::{
         Cursor, Inclusion, PageRequest, PageSize, SeriesFilter, SeriesFormat, SeriesListing,
-        SeriesOrder, SeriesSort, category_series_count, category_series_page, series_count,
-        series_page,
+        SeriesOrder, SeriesSort, category_series_count, category_series_page,
+        categoryless_series_count, categoryless_series_page, series_count, series_page,
     },
 };
 use omnileaf_sync_proto::CategoryId;
@@ -394,6 +394,132 @@ async fn reads_each_page_and_count_of_a_category_of_a_hundredth_or_a_tenth_of_10
     }
 
     assert_eq!(over_budget, Vec::<String>::new());
+}
+
+const SHELF: &str = "Shelf";
+const CATEGORISED_SHARES: [Categorised; 3] = [
+    Categorised::EveryTenth,
+    Categorised::AllButEverySixth,
+    Categorised::AllButEveryHundredth,
+];
+
+#[derive(Clone, Copy, Debug)]
+enum Categorised {
+    EveryTenth,
+    AllButEverySixth,
+    AllButEveryHundredth,
+}
+
+impl Categorised {
+    const fn condition(self) -> &'static str {
+        match self {
+            Self::EveryTenth => "added_at_ms % 10 = 0",
+            Self::AllButEverySixth => "added_at_ms % 6 != 0",
+            Self::AllButEveryHundredth => "added_at_ms % 100 != 0",
+        }
+    }
+}
+
+#[tokio::test]
+#[expect(
+    clippy::print_stderr,
+    reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
+)]
+#[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
+async fn reads_each_page_and_count_of_the_series_in_no_category_with_a_tenth_five_sixths_or_all_but_a_hundredth_of_10_000_in_one_within_4_ms_at_p95()
+ {
+    let trial = trial_within(
+        "a page of 100 or a count of the series in no category, with a tenth, five sixths or all but a hundredth of 10,000 series in one",
+        CROWDED_BUDGET,
+    );
+
+    let mut over_budget = Vec::new();
+    for categorised in CATEGORISED_SHARES {
+        let folder = ScratchFolder::new(&format!("categoryless-speed-{categorised:?}"));
+        let database = Database::open(&library_config(&folder)).unwrap();
+        add_generated_library(&database).await;
+        put_in_a_category(&database, categorised).await;
+        for sort in SORTS {
+            for filter in [
+                SeriesFilter::NONE,
+                SeriesFilter::NONE.with_unread(Inclusion::Only),
+            ] {
+                let listing = SeriesListing { sort, filter };
+                let outcome = trial
+                    .run(
+                        async |_| None,
+                        async |after| {
+                            *after =
+                                read_categoryless_page(&database, listing.clone(), after.take())
+                                    .await;
+                        },
+                    )
+                    .await;
+                eprintln!("{categorised:?} {listing:?}: {outcome}");
+                if !outcome.is_within_budget() {
+                    over_budget.push(format!("{categorised:?} {listing:?}: {outcome}"));
+                }
+            }
+        }
+        let filter = SeriesFilter::NONE.with_unread(Inclusion::Only);
+        let outcome = trial
+            .run(
+                async |_| (),
+                async |()| count_categoryless(&database, filter.clone()).await,
+            )
+            .await;
+        eprintln!("{categorised:?} count: {outcome}");
+        if !outcome.is_within_budget() {
+            over_budget.push(format!("{categorised:?} count: {outcome}"));
+        }
+    }
+
+    assert_eq!(over_budget, Vec::<String>::new());
+}
+
+async fn put_in_a_category(database: &Database, categorised: Categorised) {
+    let shelf = CategoryId::from_name(SHELF).unwrap();
+    database
+        .write(move |transaction| {
+            transaction.execute(
+                "INSERT INTO category (category_id, name, position) VALUES (?1, ?2, 0)",
+                (shelf.as_bytes(), SHELF),
+            )?;
+            transaction.execute(
+                &format!(
+                    "INSERT INTO series_category (series_id, category_id)
+                    SELECT id, ?1 FROM series WHERE {}",
+                    categorised.condition()
+                ),
+                [shelf.as_bytes()],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+}
+
+async fn read_categoryless_page(
+    database: &Database,
+    listing: SeriesListing,
+    after: Option<Cursor>,
+) -> Option<Cursor> {
+    let request = PageRequest {
+        after,
+        size: PageSize::try_from(PAGE_SIZE).unwrap(),
+    };
+    database
+        .read(move |connection| categoryless_series_page(connection, &listing, &request))
+        .await
+        .unwrap()
+        .next
+}
+
+async fn count_categoryless(database: &Database, filter: SeriesFilter) {
+    database
+        .read(move |connection| categoryless_series_count(connection, &filter))
+        .await
+        .unwrap();
 }
 
 async fn add_generated_categories(database: &Database) {
