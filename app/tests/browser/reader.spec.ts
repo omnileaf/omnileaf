@@ -367,7 +367,7 @@ test("shows small thumbnails of the nearby pages, not the pages themselves", asy
   await page.mouse.down();
   await page.mouse.move(track.x + track.width / 2, y, { steps: 4 });
 
-  const previews = nearbyPages(page).locator("img");
+  const previews = nearbyPages(page).locator("img").filter({ visible: true });
   await expect(previews.first()).toBeAttached();
   await expect(previews.and(page.locator(":not([src])"))).toHaveCount(0);
   const sources = await previews.evaluateAll((images) =>
