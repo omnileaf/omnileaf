@@ -33,6 +33,7 @@
       marks={[]}
       {overlay}
       startAt={undefined}
+      isScrubbing={false}
       onShown={nothing}
       onShownReady={nothing}
     />

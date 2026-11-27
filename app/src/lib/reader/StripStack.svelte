@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { type Snippet, untrack } from "svelte";
+  import { onDestroy, type Snippet, untrack } from "svelte";
+  import type { Attachment } from "svelte/attachments";
+  import { SvelteSet } from "svelte/reactivity";
 
   import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import type { BookPage, PageCrop } from "#lib/ipc/bindings.ts";
@@ -8,10 +10,16 @@
 
   import { sizeOfPage, type StripPlace } from "#lib/reader/cropped-pages.ts";
   import type { Size } from "#lib/reader/page-fit.ts";
+  import { pageLoads } from "#lib/reader/page-loads.svelte.ts";
+  import { nextPagesToAsk, pagesByUrgency } from "#lib/reader/page-requests.ts";
+  import { pagesAround } from "#lib/reader/page-window.ts";
+  import { ThumbRest } from "#lib/reader/thumb-rest.svelte.ts";
 
   const UNSIZED_RATIO = "1 / 3";
   const SCREEN_SHARE = 0.8;
   const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+  const PAGES_KEPT = { ahead: 3, behind: 1 };
+  const PAGES_KEPT_WHILE_HELD = { ahead: 1, behind: 1 };
 
   let {
     pages,
@@ -21,6 +29,7 @@
     marks,
     overlay,
     startAt,
+    isScrubbing,
     progress = $bindable(0),
     onShown,
     onShownReady,
@@ -32,6 +41,7 @@
     marks: readonly number[];
     overlay: Snippet;
     startAt: StripPlace | undefined;
+    isScrubbing: boolean;
     progress?: number;
     onShown: (index: number) => void;
     onShownReady: () => void;
@@ -53,7 +63,36 @@
   let unscrolled = 0;
   let scrollRange = $state(0);
   let track = $state<HTMLDivElement | null>(null);
-  let isDragging = false;
+  let isDragging = $state(false);
+  const isHeld = $derived(isScrubbing || isDragging);
+  const asked = new SvelteSet<number>();
+  const thumb = new ThumbRest();
+  const wanted = $derived(pagesWanted());
+
+  function pagesWanted(): readonly number[] {
+    if (isHeld && thumb.restingOn !== shown) {
+      return [];
+    }
+    const kept = isHeld ? PAGES_KEPT_WHILE_HELD : PAGES_KEPT;
+    return pagesByUrgency(
+      pagesAround(shown, pages.length, kept).map((page) => ({
+        spread: [page],
+        offset: page - shown,
+      })),
+      "forward",
+    );
+  }
+
+  function loadWhenAsked(
+    page: BookPage,
+    index: number,
+  ): Attachment<HTMLImageElement> {
+    return (image) => {
+      if (asked.has(index)) {
+        pageLoads.load(image, omniUrl(page.path));
+      }
+    };
+  }
 
   function measure(): void {
     if (scroller === null) {
@@ -254,6 +293,32 @@
   });
 
   $effect(() => {
+    const at = shown;
+    const isThumbHeld = isHeld;
+    untrack(() => {
+      if (isThumbHeld) {
+        thumb.hold(at);
+      } else {
+        thumb.letGo();
+      }
+    });
+  });
+
+  $effect(() => {
+    const urgent = wanted;
+    const room = pageLoads.room;
+    untrack(() => {
+      for (const page of nextPagesToAsk(urgent, asked, room)) {
+        asked.add(page);
+      }
+    });
+  });
+
+  onDestroy(() => {
+    thumb.letGo();
+  });
+
+  $effect(() => {
     if (spaceHeight > 0) {
       untrack(measure);
     }
@@ -291,9 +356,8 @@
           ></div>
         {:else}
           <img
-            src={omniUrl(page.path)}
+            {@attach loadWhenAsked(page, index)}
             alt={m.reader_page({ page: index + 1 })}
-            loading="lazy"
             decoding="async"
             draggable="false"
             class="block select-none block-full inline-full"

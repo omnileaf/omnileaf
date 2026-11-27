@@ -24,5 +24,6 @@
     position="41 / 64"
     {onScrub}
     {onSeek}
+    onHold={nothing}
   />
 </main>

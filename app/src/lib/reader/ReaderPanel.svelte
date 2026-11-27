@@ -52,6 +52,7 @@
     hidesSlider,
     onPlay,
     onSeek,
+    onSliderHeld,
   }: {
     pages: readonly BookPage[];
     shown: number;
@@ -68,6 +69,7 @@
     hidesSlider: boolean;
     onPlay: (() => void) | undefined;
     onSeek: (index: number) => void;
+    onSliderHeld: (isHeld: boolean) => void;
   } = $props();
 
   const count = $derived(pages.length);
@@ -204,6 +206,7 @@
         onDrag={(dragged: boolean) => {
           isDragged = dragged;
           staysUp ||= dragged;
+          onSliderHeld(dragged);
         }}
         onFocusChange={(isFocused: boolean) => {
           isSliderFocused = isFocused;

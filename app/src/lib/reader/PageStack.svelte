@@ -34,6 +34,9 @@
     pagesAround,
   } from "#lib/reader/page-window.ts";
   import PageLoading from "#lib/reader/PageLoading.svelte";
+  import { pageLoads } from "#lib/reader/page-loads.svelte.ts";
+  import { nextPagesToAsk, pagesByUrgency } from "#lib/reader/page-requests.ts";
+  import { ThumbRest } from "#lib/reader/thumb-rest.svelte.ts";
 
   /** Pages decoded on the side the reader is heading, enough that a turn rarely waits while the decoded pixels stay within a phone's means. */
   const PAGES_LEADING = 3;
@@ -69,6 +72,7 @@
     isSettling,
     startAt,
     showsLoadingAtOnce,
+    isScrubbing,
     onNextPage,
     onShownReady,
     onSettled,
@@ -91,6 +95,7 @@
     isSettling: boolean;
     startAt: SpreadPlace | undefined;
     showsLoadingAtOnce: boolean;
+    isScrubbing: boolean;
     onNextPage: () => void;
     onShownReady: () => void;
     onSettled: () => void;
@@ -118,6 +123,8 @@
   const failed = new SvelteSet<number>();
   const retries = new SvelteMap<number, number>();
   const croppedSizes = new SvelteMap<string, Size>();
+  const asked = new SvelteSet<number>();
+  const thumb = new ThumbRest();
   let spaceWidth = $state(0);
   let spaceHeight = $state(0);
   let isSlow = $state(untrack(() => showsLoadingAtOnce));
@@ -158,6 +165,7 @@
       pagesAround(shown, pages.length, keptAround(heading)),
     ),
   );
+  const wanted = $derived(pagesWanted());
   const isTargetReady = $derived(
     cells.every((cell) => cell.offset !== 0 || cell.spread.every(isReady)),
   );
@@ -212,7 +220,32 @@
     });
   });
 
+  $effect(() => {
+    const at = shown;
+    const isHeld = isScrubbing;
+    untrack(() => {
+      if (isHeld) {
+        thumb.hold(at);
+      } else {
+        thumb.letGo();
+      }
+    });
+  });
+
+  $effect(() => {
+    const urgent = wanted;
+    const room = pageLoads.room;
+    untrack(() => {
+      for (const page of nextPagesToAsk(urgent, asked, room)) {
+        asked.add(page);
+      }
+    });
+  });
+
   onDestroy(stopFlying);
+  onDestroy(() => {
+    thumb.letGo();
+  });
   const isShownReady = $derived(isReady(shown));
   const isShownFailed = $derived(failed.has(shown));
   const isAtRest = $derived(flight === undefined && slide === 0);
@@ -221,6 +254,13 @@
     isBlank || spread.every((index) => decoded.has(index) || failed.has(index)),
   );
   const id = $props.id();
+
+  function pagesWanted(): readonly number[] {
+    if (!isScrubbing) {
+      return pagesByUrgency(cells, heading);
+    }
+    return thumb.restingOn === shown ? spread : [];
+  }
 
   function ratioOf(index: number): number | undefined {
     const page = pages[index];
@@ -504,6 +544,7 @@
         decoded.delete(index);
         failed.delete(index);
         retries.delete(index);
+        asked.delete(index);
       });
     };
   }
@@ -513,6 +554,17 @@
     const retry = retries.get(index);
     const url = omniUrl(page.path);
     return retry === undefined ? url : `${url}?retry=${String(retry)}`;
+  }
+
+  function loadWhenAsked(
+    page: BookPage,
+    index: number,
+  ): Attachment<HTMLImageElement> {
+    return (image) => {
+      if (asked.has(index)) {
+        pageLoads.load(image, sourceOf(page, index));
+      }
+    };
   }
 
   function tryAgain(index: number): void {
@@ -681,8 +733,8 @@
                 <img
                   {@attach freshImage(index)}
                   {@attach decodeOnEntry(index, isInView)}
+                  {@attach loadWhenAsked(page, index)}
                   data-decoded={decodedInView.has(index) ? "" : undefined}
-                  src={sourceOf(page, index)}
                   alt={m.reader_page({ page: index + 1 })}
                   aria-hidden={isShown ? undefined : "true"}
                   decoding="async"
