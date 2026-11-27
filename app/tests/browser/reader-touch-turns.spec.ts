@@ -1,6 +1,6 @@
 import type { CDPSession, Locator, Page } from "@playwright/test";
 
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { DEFAULT_BACKEND, expect, test, viewportOf } from "./fixtures.ts";
 import { fakeProtocolRoute } from "./fake-backend.ts";
 import {
   BOOK_ID,
@@ -8,6 +8,7 @@ import {
   BOOK_TITLE,
   NEXT_BOOK,
   NOT_STARTED,
+  openLongStrip,
   PAGE_COUNT,
   PAGE_HEIGHT,
   PAGE_WIDTH,
@@ -16,8 +17,11 @@ import {
   readerBackend,
   readerBook,
   servePages,
+  tallStripBackend,
+  tallStripBook,
 } from "./reader-book.ts";
 import { recordBarePages, stopRecordingBarePages } from "./reader-paint.ts";
+import { overTheZone } from "./reader-zone-point.ts";
 
 const LOOK_KEY = "omnileaf.readerSettings.all";
 const GUIDES_SEEN = [
@@ -57,6 +61,7 @@ const READ_AHEAD = [16, 17] as const;
 const MOST_CELLS_DRAWN = 3;
 const MOST_PAGES_HELD = 7;
 const WAIT_PAST_DOUBLE_TAP_MS = 600;
+const DOUBLE_TAP_WINDOW_MS = 310;
 const DOUBLE_TAP_GAPS_MS = [45, 256];
 const LATE_SECOND_TAP_MS = 305;
 const AFTER_THE_WINDOW_MS = 500;
@@ -104,6 +109,8 @@ declare global {
     omnileafPagesHeld?: { mostDrawn: number; mostMounted: number };
     omnileafMostPainted?: number;
     omnileafHeldPages?: HTMLImageElement[];
+    omnileafPresses?: { at: number; path: string }[];
+    omnileafLifts?: number[];
   }
 }
 
@@ -237,6 +244,14 @@ async function centreOf(locator: Locator): Promise<Point> {
     throw new Error("the control is not on screen");
   }
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+function cardHeader(page: Page): Locator {
+  return page.locator("[data-up-next] [data-slot=card-header]");
+}
+
+function hint(page: Page): Locator {
+  return page.locator("[data-up-next] section > p");
 }
 
 async function waitFrames(page: Page, frames: number): Promise<void> {
@@ -445,6 +460,63 @@ async function stopRecordingPagesHeld(page: Page): Promise<PagesHeld> {
     window.omnileafRecording = false;
     return window.omnileafPagesHeld ?? { mostDrawn: 0, mostMounted: 0 };
   });
+}
+
+async function watchPressesAndLifts(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    window.omnileafPresses = [];
+    window.omnileafLifts = [];
+    addEventListener(
+      "pointerdown",
+      () => {
+        window.omnileafPresses?.push({
+          at: performance.now(),
+          path: location.pathname,
+        });
+      },
+      { capture: true },
+    );
+    addEventListener(
+      "pointerup",
+      () => {
+        window.omnileafLifts?.push(performance.now());
+      },
+      { capture: true },
+    );
+  });
+}
+
+async function secondPress(
+  page: Page,
+): Promise<{ afterFirstLiftMs: number; path: string }> {
+  return page.evaluate(() => {
+    const [firstLift] = window.omnileafLifts ?? [];
+    const second = window.omnileafPresses?.[1];
+    if (firstLift === undefined || second === undefined) {
+      throw new Error("no second press after a first lift");
+    }
+    return { afterFirstLiftMs: second.at - firstLift, path: second.path };
+  });
+}
+
+async function waitForTheReaderOf(page: Page, book: string): Promise<void> {
+  await page.evaluate(
+    (id) =>
+      new Promise<void>((arrived) => {
+        const check = (): void => {
+          if (
+            location.pathname.endsWith(`/read/${id}`) &&
+            document.querySelector("[data-up-next]") === null
+          ) {
+            arrived();
+            return;
+          }
+          requestAnimationFrame(check);
+        };
+        check();
+      }),
+    book,
+  );
 }
 
 async function waitPastDoubleTap(page: Page): Promise<void> {
@@ -1152,7 +1224,10 @@ test.describe("at the end of a book", { tag: "@native" }, () => {
   async function openNear(
     page: Page,
     shownFirst: number,
-    stored: Record<string, string> = {},
+    {
+      stored = {},
+      look = { pageTurn: "slide" },
+    }: { stored?: Record<string, string>; look?: object } = {},
   ): Promise<void> {
     await page.addInitScript(
       ({ key, value, guides, entries }) => {
@@ -1163,7 +1238,7 @@ test.describe("at the end of a book", { tag: "@native" }, () => {
       },
       {
         key: LOOK_KEY,
-        value: JSON.stringify({ pageTurn: "slide" }),
+        value: JSON.stringify(look),
         guides: GUIDES_SEEN,
         entries: stored,
       },
@@ -1243,7 +1318,9 @@ test.describe("at the end of a book", { tag: "@native" }, () => {
     test("ends a held key at rest on the next book's first page with Skip Up next on", async ({
       page,
     }) => {
-      await openNear(page, PAGE_COUNT - 3, { [SKIP_UP_NEXT_KEY]: "on" });
+      await openNear(page, PAGE_COUNT - 3, {
+        stored: { [SKIP_UP_NEXT_KEY]: "on" },
+      });
 
       const mostPainted = await holdToTheEnd(page);
 
@@ -1280,12 +1357,19 @@ test.describe("at the end of a book", { tag: "@native" }, () => {
 
   test.describe("on Up next", () => {
     const QUICKER_THAN_A_DOUBLE_TAP_MS = 150;
+    const DOUBLE_TAP_GAPS_WELL_INSIDE_ITS_WINDOW_MS = [45, 150];
 
     test.use({ backend: readerBackend(DEFAULT_BACKEND, ON_THE_LAST_PAGE) });
 
-    async function openUpNext(page: Page): Promise<CDPSession> {
-      await openNear(page, PAGE_COUNT);
-      await page.keyboard.press("ArrowRight");
+    async function openUpNext(
+      page: Page,
+      {
+        look = { pageTurn: "slide" },
+        nextKey = "ArrowRight",
+      }: { look?: object; nextKey?: string } = {},
+    ): Promise<CDPSession> {
+      await openNear(page, PAGE_COUNT, { look });
+      await page.keyboard.press(nextKey);
       await expect(
         page.getByRole("heading", { level: 2, name: FINISHED }),
       ).toBeVisible();
@@ -1401,6 +1485,324 @@ test.describe("at the end of a book", { tag: "@native" }, () => {
       expect(
         Number(await back.getAttribute("data-pressed-after")),
       ).toBeLessThan(QUICKER_THAN_A_DOUBLE_TAP_MS);
+    });
+
+    for (const pageTurn of ["slide", "instant"] as const) {
+      test(`turns on to the next book on a touch tap on its card over the next page's zone with ${pageTurn}`, async ({
+        page,
+      }) => {
+        const session = await openUpNext(page, { look: { pageTurn } });
+
+        await tap(session, await overTheZone(cardHeader(page), "next"));
+
+        await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+      });
+
+      test(`turns back to the last page on a touch tap on its card over the previous page's zone with ${pageTurn}`, async ({
+        page,
+      }) => {
+        const session = await openUpNext(page, { look: { pageTurn } });
+
+        await tap(session, await overTheZone(cardHeader(page), "previous"));
+
+        await expect(
+          page.getByRole("heading", { level: 2, name: FINISHED }),
+        ).toBeHidden();
+        await expectOnPage(page, PAGE_COUNT);
+      });
+    }
+
+    test("turns on to the next book on a touch tap on its hint over the next page's zone", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+
+      await tap(session, await overTheZone(hint(page), "next"));
+
+      await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    });
+
+    test("stays on Up next on a touch tap on its card over the middle zone", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+
+      await tap(session, await overTheZone(cardHeader(page), "middle"));
+      await waitPastDoubleTap(page);
+
+      await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+      await expect(
+        page.getByRole("heading", { level: 2, name: FINISHED }),
+      ).toBeVisible();
+    });
+
+    test("does not zoom on a double tap on its card over the middle zone", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+      const middle = await overTheZone(cardHeader(page), "middle");
+
+      await tap(session, middle);
+      await waitFrames(page, FRAMES_BETWEEN_DOUBLE_TAPS);
+      await tap(session, middle);
+      await waitPastDoubleTap(page);
+
+      await expect(page.getByText("200%", { exact: false })).toHaveCount(0);
+      await expect(
+        page.getByRole("heading", { level: 2, name: FINISHED }),
+      ).toBeVisible();
+    });
+
+    test("presses Back to the series on a touch tap over the next page's zone, never turning on", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+
+      await tap(
+        session,
+        await overTheZone(
+          page.getByRole("link", { name: "Back to the series" }),
+          "next",
+        ),
+      );
+
+      await expect(page).toHaveURL(SERIES_PAGE);
+    });
+
+    test("presses Read the next book on a touch tap over the previous page's zone, never turning back", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+
+      await tap(
+        session,
+        await overTheZone(
+          page.getByRole("link", { name: `Read ${NEXT_BOOK.title}` }),
+          "previous",
+        ),
+      );
+
+      await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    });
+
+    test("presses its way back on a touch tap over the previous page's zone, never turning back", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+
+      await tap(
+        session,
+        await overTheZone(
+          page.getByRole("navigation").getByRole("link").first(),
+          "previous",
+        ),
+      );
+
+      await expect(page).toHaveURL(SERIES_PAGE);
+    });
+
+    test("turns Skip this screen on with a touch tap over the next page's zone, staying on Up next", async ({
+      page,
+    }) => {
+      const session = await openUpNext(page);
+      const skip = page.getByRole("switch", { name: "Skip this screen" });
+
+      await tap(session, await overTheZone(skip, "next"));
+
+      await expect(skip).toBeChecked();
+      await waitPastDoubleTap(page);
+      await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+      await expect(
+        page.getByRole("heading", { level: 2, name: FINISHED }),
+      ).toBeVisible();
+    });
+
+    test.describe("with the next book opening on its first page", () => {
+      test.use({
+        backend: {
+          ...DEFAULT_BACKEND,
+          openBook: (id) => ({
+            ...readerBook(id === BOOK_ID ? ON_THE_LAST_PAGE : NOT_STARTED),
+            id,
+          }),
+        },
+      });
+
+      for (const gapMs of DOUBLE_TAP_GAPS_WELL_INSIDE_ITS_WINDOW_MS) {
+        test(`turns on once on a double tap ${String(gapMs)} ms apart on its card over the next page's zone while Up next slides away`, async ({
+          page,
+        }) => {
+          const session = await openUpNext(page);
+          const forward = await overTheZone(cardHeader(page), "next");
+
+          await tap(session, forward);
+          await waitInPage(page, gapMs);
+          await tap(session, forward);
+          await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+          await expect(shownPage(page, 1)).toBeVisible();
+          await waitPastDoubleTap(page);
+
+          expect(await pageNumber(page)).toBe(1);
+        });
+      }
+
+      test("leaves the next book on its first page when a double tap's second tap lands in it with Instant", async ({
+        page,
+      }) => {
+        const session = await openUpNext(page, {
+          look: { pageTurn: "instant" },
+        });
+        const forward = await overTheZone(cardHeader(page), "next");
+        await watchPressesAndLifts(page);
+
+        await tap(session, forward);
+        await waitForTheReaderOf(page, NEXT_BOOK.id);
+        await tap(session, forward);
+        await expect(shownPage(page, 1)).toBeVisible();
+        await waitPastDoubleTap(page);
+
+        const second = await secondPress(page);
+        expect(second.path).toMatch(NEXT_BOOK_PAGE);
+        expect(second.afterFirstLiftMs).toBeLessThan(DOUBLE_TAP_WINDOW_MS);
+        expect(await pageNumber(page)).toBe(1);
+      });
+
+      test("turns the next book's page on a tap once the double tap's window has passed", async ({
+        page,
+      }) => {
+        const session = await openUpNext(page, {
+          look: { pageTurn: "instant" },
+        });
+        const forward = await overTheZone(cardHeader(page), "next");
+
+        await tap(session, forward);
+        await waitForTheReaderOf(page, NEXT_BOOK.id);
+        await expect(shownPage(page, 1)).toBeVisible();
+        await waitPastDoubleTap(page);
+        await tap(session, forward);
+
+        await expectOnPage(page, 2);
+      });
+    });
+
+    test.describe("read right to left", () => {
+      test.use({
+        backend: {
+          ...DEFAULT_BACKEND,
+          openBook: () => ({
+            ...readerBook(ON_THE_LAST_PAGE),
+            readingDirection: "rightToLeft",
+          }),
+        },
+      });
+
+      test("turns on to the next book on a touch tap on its card over the next page's zone on the left", async ({
+        page,
+      }) => {
+        const session = await openUpNext(page, { nextKey: "ArrowLeft" });
+        const forward = await overTheZone(cardHeader(page), "next");
+
+        await tap(session, forward);
+
+        expect(forward.x).toBeLessThan(viewportOf(page).width / 2);
+        await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+      });
+
+      test("turns back to the last page on a touch tap on its card over the previous page's zone on the right", async ({
+        page,
+      }) => {
+        const session = await openUpNext(page, { nextKey: "ArrowLeft" });
+        const back = await overTheZone(cardHeader(page), "previous");
+
+        await tap(session, back);
+
+        expect(back.x).toBeGreaterThan(viewportOf(page).width / 2);
+        await expect(
+          page.getByRole("heading", { level: 2, name: FINISHED }),
+        ).toBeHidden();
+        await expectOnPage(page, PAGE_COUNT);
+      });
+    });
+
+    test.describe("at the end of the series", () => {
+      test.use({
+        backend: {
+          ...DEFAULT_BACKEND,
+          openBook: () => ({ ...readerBook(ON_THE_LAST_PAGE), next: null }),
+        },
+      });
+
+      test("goes back to the series on a touch tap on its card over the next page's zone", async ({
+        page,
+      }) => {
+        const session = await openUpNext(page);
+
+        await tap(session, await overTheZone(cardHeader(page), "next"));
+
+        await expect(page).toHaveURL(SERIES_PAGE);
+      });
+    });
+  });
+
+  test.describe("on Up next in the long strip", () => {
+    test.use({ backend: tallStripBackend(DEFAULT_BACKEND) });
+
+    test("turns on to the next book on a touch tap on its words over the scroll down zone", async ({
+      page,
+    }) => {
+      await openLongStrip(page);
+      await page.locator("[data-strip]").evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+      });
+      await expectOnPage(page, PAGE_COUNT);
+      await page.keyboard.press("ArrowDown");
+      await expect(
+        page.getByRole("heading", { level: 2, name: FINISHED }),
+      ).toBeVisible();
+      const session = await page.context().newCDPSession(page);
+
+      await tap(session, await overTheZone(hint(page), "scrollDown"));
+
+      await expect(page).toHaveURL(NEXT_BOOK_PAGE);
+    });
+
+    test.describe("with the next book opening as its own book", () => {
+      test.use({
+        backend: {
+          ...DEFAULT_BACKEND,
+          openBook: (id) => ({ ...tallStripBook(), id }),
+        },
+      });
+
+      test("leaves the next book at its top when a double tap's second tap lands in it", async ({
+        page,
+      }) => {
+        await openLongStrip(page);
+        const strip = page.locator("[data-strip]");
+        await strip.evaluate((element) => {
+          element.scrollTop = element.scrollHeight;
+        });
+        await expectOnPage(page, PAGE_COUNT);
+        await page.keyboard.press("ArrowDown");
+        await expect(
+          page.getByRole("heading", { level: 2, name: FINISHED }),
+        ).toBeVisible();
+        const session = await page.context().newCDPSession(page);
+        const forward = await overTheZone(hint(page), "scrollDown");
+        await watchPressesAndLifts(page);
+
+        await tap(session, forward);
+        await waitForTheReaderOf(page, NEXT_BOOK.id);
+        await tap(session, forward);
+        await waitPastDoubleTap(page);
+
+        const second = await secondPress(page);
+        expect(second.path).toMatch(NEXT_BOOK_PAGE);
+        expect(second.afterFirstLiftMs).toBeLessThan(DOUBLE_TAP_WINDOW_MS);
+        expect(
+          await strip.evaluate((element) => element.scrollTop),
+        ).toBeLessThan(CLOSE_PX);
+      });
     });
   });
 

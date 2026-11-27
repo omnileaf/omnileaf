@@ -1567,6 +1567,34 @@ test.describe("turning between books", () => {
     ).toHaveCount(0);
   });
 
+  test("names the next book in the reader's heading while that book opens", async ({
+    page,
+  }) => {
+    nextBookOpened = new Promise(() => undefined);
+    await onUpNext(page, {});
+
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator(BOOK_LOADING)).toBeVisible();
+
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      NEXT_BOOK.title,
+    );
+  });
+
+  test("names the book before in the reader's heading while that book opens", async ({
+    page,
+  }) => {
+    previousBookOpened = new Promise(() => undefined);
+    await onTheFirstPage(page, {});
+
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.locator(BOOK_LOADING)).toBeVisible();
+
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      PREVIOUS_BOOK.title,
+    );
+  });
+
   test("stops naming the first page as loading while the book before opens", async ({
     page,
   }) => {

@@ -29,6 +29,7 @@ import {
   readerBook,
   servePages,
 } from "./reader-book.ts";
+import { overTheZone } from "./reader-zone-point.ts";
 
 const READ_SECONDS = 72 * 60;
 const SECONDS_A_PAGE = 23;
@@ -42,6 +43,9 @@ const SERIES_PAGE = new RegExp(`/series/${BOOK_SERIES_ID}$`);
 const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
 const FINISHED = `${BOOK_TITLE} finished`;
 const TABLET = { width: 820, height: 1180 };
+const PAST_A_DOUBLE_TAP_MS = 600;
+const BESIDE_THE_SWITCH_PX = 4;
+const JUST_OFF_PX = 2;
 
 interface PhoneType {
   readonly size: string;
@@ -269,6 +273,16 @@ const TURNS_AGAIN = [
       page
         .getByRole("button", { name: "Next page" })
         .click({ position: { x: 8, y: 8 } }),
+  },
+  {
+    way: "a click on its card over the next page's zone",
+    turn: async (page: Page) => {
+      const { x, y } = await overTheZone(
+        page.locator("[data-up-next] [data-slot=card-header]"),
+        "next",
+      );
+      await page.mouse.click(x, y);
+    },
   },
   {
     way: "a swipe",
@@ -519,6 +533,36 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
 
     await expect(upNext(page)).toHaveCSS("text-align", "start");
     await expect(upNext(page)).toHaveCSS("font-size", TABLET_TITLE_SIZE);
+  });
+
+  test("stays on Up next on a touch tap on the Skip this screen row beside its switch on an iPhone", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "ios", "iPhones only");
+    await openBook(page);
+    await turnPastTheEnd(page);
+    const row = await boxOf(skipSwitch(page).locator(".."));
+    const zone = await boxOf(
+      page.locator('[data-tap-zones] > button[aria-label="Next page"]'),
+    );
+    const beside = {
+      x: Math.max(row.x, zone.x) + BESIDE_THE_SWITCH_PX,
+      y: row.y + row.height / 2,
+    };
+    const isOnTheSwitch = await page.evaluate(
+      ({ x, y }) =>
+        document.elementFromPoint(x, y)?.closest('[role="switch"]') !== null,
+      beside,
+    );
+    expect(isOnTheSwitch).toBe(false);
+
+    await page.touchscreen.tap(beside.x, beside.y);
+    await page.waitForTimeout(PAST_A_DOUBLE_TAP_MS);
+
+    await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+    await expect(upNext(page)).toBeVisible();
+    await expect(skipSwitch(page)).not.toBeChecked();
   });
 
   test("sets Skip this screen in a grouped row, on the cards' plate and toggled from its switch alone on an iPhone", async ({
@@ -848,6 +892,25 @@ test("goes back to the last page on turning back from up next", async ({
     "aria-valuetext",
     `Page ${String(PAGE_COUNT)} of ${String(PAGE_COUNT)}`,
   );
+});
+
+test("stays on up next when a press on a button is let go just off it", async ({
+  page,
+}) => {
+  await openBook(page);
+  await turnPastTheEnd(page);
+  const back = page.getByRole("link", { name: "Back to the series" });
+  const press = await overTheZone(back, "next");
+  const box = await boxOf(back);
+
+  await page.mouse.move(press.x, press.y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width + JUST_OFF_PX, press.y);
+  await page.mouse.up();
+  await page.waitForTimeout(PAST_A_DOUBLE_TAP_MS);
+
+  await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+  await expect(upNext(page)).toBeVisible();
 });
 
 test("goes back to the series from up next with Escape", async ({ page }) => {

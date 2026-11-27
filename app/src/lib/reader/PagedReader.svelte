@@ -84,9 +84,9 @@
   import JumpToBook from "#lib/reader/JumpToBook.svelte";
   import KeyboardShortcuts from "#lib/reader/KeyboardShortcuts.svelte";
   import { fitPinch } from "#lib/reader/pinch-zoom.ts";
-  import {
+  import type {
     DoubleTapWindow,
-    type TapPoint,
+    TapPoint,
   } from "#lib/reader/double-tap-window.ts";
   import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
   import { readerHints } from "#lib/reader/reader-hints.svelte.ts";
@@ -132,15 +132,32 @@
   const MOUSE_BACK_BUTTON = 3;
   /** How near the window's top or bottom the pointer brings hidden controls back. */
   const REVEAL_EDGE_PX = 48;
-  /** Android took a second tap 308 ms after the first lift as a double tap and refused one at 385 ms, so the reader's window reaches just past the first. */
-  const DOUBLE_TAP_WINDOW_MS = 310;
-  /** Android's double-tap slop, how far apart two taps may land and still make one double tap. */
-  const DOUBLE_TAP_SLOP_PX = 100;
   const TURN_STEPS = { next: 1, previous: -1 } as const satisfies Record<
     PageTurn,
     number
   >;
   const PREVIOUS_BOOK_AT = -1;
+  const UP_NEXT_CONTROLS = [
+    "a[href]",
+    "button",
+    "input",
+    "label",
+    "select",
+    "summary",
+    "textarea",
+    "[contenteditable]",
+    "[role=button]",
+    "[role=checkbox]",
+    "[role=link]",
+    "[role=menuitem]",
+    "[role=option]",
+    "[role=radio]",
+    "[role=slider]",
+    "[role=switch]",
+    "[role=tab]",
+    '[tabindex]:not([tabindex="-1"])',
+    "[data-setting-row]",
+  ].join(", ");
   const TURN_LABELS = {
     next: m.reader_next_page,
     previous: m.reader_previous_page,
@@ -161,6 +178,7 @@
     hasJumped,
     isPagedInto,
     wayBack,
+    tapWindow,
     leaveReader,
   }: {
     book: OpenedBook;
@@ -169,6 +187,7 @@
     hasJumped: boolean;
     isPagedInto: boolean;
     wayBack: ReaderWayBack;
+    tapWindow: DoubleTapWindow;
     leaveReader: () => Promise<void>;
   } = $props();
 
@@ -433,6 +452,13 @@
       case undefined:
         return undefined;
     }
+  });
+  let isNextBookOpening = $state(false);
+  const headingTitle = $derived.by(() => {
+    const opening = leaving ?? (isNextBookOpening ? "next" : undefined);
+    return opening === undefined
+      ? named.title
+      : (named[opening]?.title ?? named.title);
   });
   const isUpNextCurrent = $derived(
     turner.isPastEnd && leaving === undefined && !isStripShown,
@@ -836,6 +862,7 @@
   }
 
   function startNextBook(): void {
+    isNextBookOpening = true;
     void (nextHref === undefined
       ? goto(seriesHref).catch(reportFailure)
       : moveWithinReader(nextHref, { readerPagedInto: true }));
@@ -1058,10 +1085,8 @@
   let waitingTap: ReturnType<typeof setTimeout> | undefined;
   let tappedWith = "";
   let isSecondTap = false;
-  const tapWindow = new DoubleTapWindow(
-    DOUBLE_TAP_WINDOW_MS,
-    DOUBLE_TAP_SLOP_PX,
-  );
+  let isUntouchedSincePagedInto = untrack(() => isPagedInto);
+  let isSecondTapOfTheTurnIn = false;
 
   /** WebKit sends a pointermove whenever the page scrolls under a pointer that hasn't moved, so only a change of position counts. */
   function hasPointerMoved(event: PointerEvent): boolean {
@@ -1077,7 +1102,13 @@
       event.currentTarget.blur();
     }
     const action = zoneAction(zone, viewportScale);
-    if (!swipe.isClickASwipe() && action !== undefined) {
+    const wasSecondTapOfTheTurnIn = isSecondTapOfTheTurnIn;
+    isSecondTapOfTheTurnIn = false;
+    if (
+      !swipe.isClickASwipe() &&
+      !wasSecondTapOfTheTurnIn &&
+      action !== undefined
+    ) {
       act(action);
     }
   }
@@ -1131,6 +1162,45 @@
     return event.detail > 0;
   }
 
+  function isOnUpNextControl(event: Event): boolean {
+    return (
+      event.target instanceof Element &&
+      event.target.closest(UP_NEXT_CONTROLS) !== null
+    );
+  }
+
+  function zoneUnder(event: MouseEvent): HTMLButtonElement | undefined {
+    return document
+      .elementsFromPoint(event.clientX, event.clientY)
+      .find(
+        (element): element is HTMLButtonElement =>
+          element instanceof HTMLButtonElement &&
+          element.parentElement?.hasAttribute("data-tap-zones") === true,
+      );
+  }
+
+  const passesTapsToZones: Attachment<HTMLElement> = (element) => {
+    let isPressOnControl = false;
+    const stopWatchingPresses = on(element, "pointerdown", (event) => {
+      isPressOnControl = isOnUpNextControl(event);
+    });
+    const stopWatchingLifts = on(element, "pointerup", noteLift);
+    const stopPassingTaps = on(element, "click", (event: MouseEvent) => {
+      if (
+        isPointerClick(event) &&
+        !isPressOnControl &&
+        !isOnUpNextControl(event)
+      ) {
+        zoneUnder(event)?.dispatchEvent(new MouseEvent("click", event));
+      }
+    });
+    return () => {
+      stopWatchingPresses();
+      stopWatchingLifts();
+      stopPassingTaps();
+    };
+  };
+
   const controlEvents = {
     onpointerenter: () => {
       controls.pointerEntered();
@@ -1152,10 +1222,9 @@
     swipe.started(event);
     tappedWith = event.pointerType;
     dragFrom = 0;
+    const press = notePress(event);
     isSecondTap =
-      waitingTap !== undefined &&
-      !isOffPages &&
-      tapWindow.isSecondTap(tapPointOf(event));
+      waitingTap !== undefined && !isOffPages && tapWindow.isSecondTap(press);
     if (isSecondTap) {
       dropWaitingTap();
     }
@@ -1163,6 +1232,18 @@
 
   function tapPointOf(event: PointerEvent): TapPoint {
     return { at: performance.now(), x: event.clientX, y: event.clientY };
+  }
+
+  function notePress(event: PointerEvent): TapPoint {
+    const press = tapPointOf(event);
+    isSecondTapOfTheTurnIn =
+      isUntouchedSincePagedInto && tapWindow.isSecondTap(press);
+    isUntouchedSincePagedInto = false;
+    return press;
+  }
+
+  function noteLift(event: PointerEvent): void {
+    tapWindow.lifted(tapPointOf(event));
   }
 
   function onSwipeMove(event: PointerEvent): void {
@@ -1182,7 +1263,7 @@
   }
 
   function onSwipeEnd(event: PointerEvent): void {
-    tapWindow.lifted(tapPointOf(event));
+    noteLift(event);
     const turn = swipe.ended(event);
     if (turn !== undefined && !isPagePanning) {
       turnBy(TURN_STEPS[inReadingOrder(turn, reading.direction)]);
@@ -1381,7 +1462,11 @@
     role="presentation"
     data-tap-zones
     class="absolute inset-none grid touch-pan-y touch-pinch-zoom grid-strip-zones"
-    onpointerdown={pauseOnTouch}
+    onpointerdown={(event) => {
+      notePress(event);
+      pauseOnTouch();
+    }}
+    onpointerup={noteLift}
   >
     <span id={pausesHintId} hidden>{m.reader_auto_scroll_zone_pauses()}</span>
     {#if look.tapToScroll === "topAndBottom"}
@@ -1479,21 +1564,23 @@
 {/snippet}
 
 {#snippet upNext(isShown: boolean)}
-  <UpNext
-    book={book.id}
-    title={named.title}
-    seriesTitle={named.seriesTitle}
-    {seriesHref}
-    backHref={wayBack.href}
-    backLabel={wayBack.label}
-    onBack={() => {
-      void leaveReader();
-    }}
-    next={named.next}
-    {nextHref}
-    direction={reading.direction}
-    {isShown}
-  />
+  <div {@attach passesTapsToZones} class="contents">
+    <UpNext
+      book={book.id}
+      title={named.title}
+      seriesTitle={named.seriesTitle}
+      {seriesHref}
+      backHref={wayBack.href}
+      backLabel={wayBack.label}
+      onBack={() => {
+        void leaveReader();
+      }}
+      next={named.next}
+      {nextHref}
+      direction={reading.direction}
+      {isShown}
+    />
+  </div>
 {/snippet}
 
 {#snippet upNextPage({ isCurrent }: EdgeView)}
@@ -1622,7 +1709,7 @@
         {@render light()}
       {/if}
     </div>
-    <h1 bind:this={heading} tabindex="-1" class="sr-only">{named.title}</h1>
+    <h1 bind:this={heading} tabindex="-1" class="sr-only">{headingTitle}</h1>
     {#if isStripShown && turner.isPastEnd}
       {@render upNext(true)}
     {:else if !isOffPages}

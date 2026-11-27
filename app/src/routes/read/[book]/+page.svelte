@@ -18,6 +18,7 @@
   import UnsupportedBook from "#lib/reader/UnsupportedBook.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import { standInOpenedBook } from "#lib/series/series-stand-ins.ts";
+  import { readerTapWindow } from "#lib/reader/double-tap-window.ts";
   import { allowPinchZoom } from "#lib/reader/pinch-zoom.ts";
   import { readerLeaving } from "#lib/reader/reader-leaving.ts";
   import {
@@ -60,6 +61,7 @@
     ),
   );
   const leaveReader = readerLeaving(() => wayBack);
+  const tapWindow = readerTapWindow();
   const bookPresence = getBookPresence();
   const theme = getThemeSetting();
   let damagedBookRead: string | undefined = $state();
@@ -123,6 +125,7 @@
       hasJumped={page.state.readerJumped === true}
       isPagedInto={page.state.readerPagedInto === true}
       {wayBack}
+      {tapWindow}
       {leaveReader}
     />
   {/key}
