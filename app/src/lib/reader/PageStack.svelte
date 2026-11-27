@@ -251,6 +251,16 @@
     return isBlank || decodedInView.has(index) || failed.has(index);
   }
 
+  function showWhenSlow(content: HTMLElement): () => void {
+    content.hidden = true;
+    const waiting = setTimeout(() => {
+      content.hidden = false;
+    }, SPINNER_DELAY_MS);
+    return () => {
+      clearTimeout(waiting);
+    };
+  }
+
   function followHeading(turned: number): void {
     if (turned === 0) {
       return;
@@ -628,16 +638,21 @@
                   </span>
                 </div>
               {:else}
-                {#if isInView && !isReady(index) && !(isAtRest && isShown)}
+                {#if isInView && !isReady(index) && !(isAtRest && index === shown)}
                   <div
                     data-page-loading
                     aria-hidden="true"
-                    class="absolute inset-none flex flex-col items-center justify-center gap-sm text-center"
+                    class="absolute inset-none bg-reader-page"
                   >
-                    <Spinner size={SPINNER_SIZE} class="text-muted" />
-                    <p class="text-small text-muted">
-                      {m.reader_page_loading({ page: index + 1 })}
-                    </p>
+                    <div
+                      {@attach showWhenSlow}
+                      class="absolute inset-none flex flex-col items-center justify-center gap-sm text-center"
+                    >
+                      <Spinner size={SPINNER_SIZE} class="text-muted" />
+                      <p class="text-small text-muted">
+                        {m.reader_page_loading({ page: index + 1 })}
+                      </p>
+                    </div>
                   </div>
                 {/if}
                 <img
