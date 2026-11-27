@@ -70,7 +70,7 @@
 
   let changesRead = untrack(() => libraryChanges);
   let countsAsked = 0;
-  let isNear = false;
+  let isNear = keptAtStart?.wasNear ?? false;
   let isStale = false;
   const isShown = $derived(
     list.list.kind === "loaded" && list.list.items.length > 0,
@@ -105,7 +105,9 @@
     const series = list.pagesThroughShown(
       section === undefined ? 0 : itemsDrawnIn(section),
     );
-    return series === undefined ? undefined : { series, count };
+    return series === undefined
+      ? undefined
+      : { series, count, wasNear: isNear };
   }
 
   $effect(() => keeps?.(keptNow));
