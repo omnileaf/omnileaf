@@ -433,6 +433,11 @@
         return undefined;
     }
   });
+  const headingTitle = $derived(
+    leaving === undefined
+      ? named.title
+      : (named[leaving]?.title ?? named.title),
+  );
   const isUpNextCurrent = $derived(
     turner.isPastEnd && leaving === undefined && !isStripShown,
   );
@@ -1649,7 +1654,7 @@
         {@render light()}
       {/if}
     </div>
-    <h1 bind:this={heading} tabindex="-1" class="sr-only">{named.title}</h1>
+    <h1 bind:this={heading} tabindex="-1" class="sr-only">{headingTitle}</h1>
     {#if isStripShown && turner.isPastEnd}
       {@render upNext(true)}
     {:else if !isOffPages}
