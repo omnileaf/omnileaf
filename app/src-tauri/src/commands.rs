@@ -122,6 +122,8 @@ macro_rules! app_commands {
             remove_library_tag,
             category_series,
             category_series_count,
+            categoryless_series,
+            categoryless_series_count,
             folder_series,
             folder_series_count,
             folder_groups,
@@ -834,6 +836,25 @@ async fn category_series_count(
     filter: LibraryFilter,
 ) -> Result<u32, IpcError> {
     Ok(library.category_series_count(category, filter).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn categoryless_series(
+    library: State<'_, Library>,
+    after: Option<SeriesCursor>,
+    listing: LibraryListing,
+) -> Result<SeriesPage, IpcError> {
+    Ok(library.categoryless_series(listing, after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn categoryless_series_count(
+    library: State<'_, Library>,
+    filter: LibraryFilter,
+) -> Result<u32, IpcError> {
+    Ok(library.categoryless_series_count(filter).await?)
 }
 
 #[tauri::command]

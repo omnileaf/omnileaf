@@ -737,6 +737,11 @@ export function sampleBackend(
     ];
   }
 
+  function inNoCategory(): (series: SampleSeries) => boolean {
+    const holders = everyCategory().map(({ id }) => categoryHolds(id));
+    return (series) => !holders.some((holds) => holds(series));
+  }
+
   function categoryHolds(category: string): (series: SampleSeries) => boolean {
     const rule = SAMPLE_CATEGORIES.find(({ id }) => id === category)?.holds;
     return (series) => {
@@ -1673,6 +1678,18 @@ export function sampleBackend(
       const holds = categoryHolds(category);
       return library.filter(
         (series) => passes(series, filter, facts) && holds(series),
+      ).length;
+    },
+    categorylessSeries: async (after, chosen) => {
+      await libraryReady();
+      const page = pageOf(sorted(chosen).filter(inNoCategory()), after);
+      return { series: page.items.map(wireSeries), next: page.next };
+    },
+    categorylessSeriesCount: async (filter) => {
+      await libraryReady();
+      const isInNone = inNoCategory();
+      return library.filter(
+        (series) => passes(series, filter, facts) && isInNone(series),
       ).length;
     },
     folderSeries: async (folder, after, chosen) => {

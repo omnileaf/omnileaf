@@ -493,6 +493,39 @@ test("keeps the boards' categories, each listing only its own series", async () 
   ).toBe(sea.series.length);
 });
 
+test("lists and counts only the series in no category", async () => {
+  const { backend } = backendFor();
+  const categories = await backend.libraryCategories();
+  await backend.labelSeries([sampleSeriesId(2), sampleSeriesId(5)], {
+    categoriesAdded: [],
+    categoriesRemoved: categories.map(({ id }) => id),
+    categoriesCreated: [],
+    tagsAdded: [],
+    tagsRemoved: [],
+  });
+  const pages = await Promise.all(
+    categories.map(async ({ id }) =>
+      backend.categorySeries(id, null, NEW_LIBRARY_LISTING),
+    ),
+  );
+  const categorised = new Set(
+    pages.flatMap(({ series }) => series.map(({ title }) => title)),
+  );
+  const every = await backend.librarySeries(null, NEW_LIBRARY_LISTING);
+  const uncategorised = every.series
+    .map(({ title }) => title)
+    .filter((title) => !categorised.has(title));
+
+  const inNone = await backend.categorylessSeries(null, NEW_LIBRARY_LISTING);
+  const count = await backend.categorylessSeriesCount(
+    NEW_LIBRARY_LISTING.filter,
+  );
+
+  expect(uncategorised).toHaveLength(2);
+  expect(inNone.series.map(({ title }) => title)).toEqual(uncategorised);
+  expect(count).toBe(uncategorised.length);
+});
+
 test("keeps no categories in an empty library", async () => {
   const { backend } = backendFor("library=empty");
 

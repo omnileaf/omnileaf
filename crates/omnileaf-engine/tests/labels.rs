@@ -145,6 +145,38 @@ async fn makes_a_category_and_puts_the_series_in_it_in_one_write() {
 }
 
 #[tokio::test]
+async fn lists_and_counts_the_series_in_no_category() {
+    let labelled = Labelled::open("labels-categoryless").await;
+    labelled.label(2, creating("Sample Shelf")).await;
+
+    let mut listed: Vec<String> = labelled
+        .library
+        .categoryless_series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .into_iter()
+        .map(|series| series.title)
+        .collect();
+    listed.sort();
+    let counted = labelled
+        .library
+        .categoryless_series_count(LibraryListing::default().filter)
+        .await
+        .unwrap();
+
+    let mut uncategorised: Vec<String> = labelled
+        .series
+        .iter()
+        .skip(2)
+        .map(|(title, _)| title.clone())
+        .collect();
+    uncategorised.sort();
+    let expected_count = u32::try_from(uncategorised.len()).unwrap();
+    assert_eq!((listed, counted), (uncategorised, expected_count));
+}
+
+#[tokio::test]
 async fn takes_series_out_of_a_category_and_adds_others_with_one_call() {
     let labelled = Labelled::open("labels-move").await;
     labelled.label(2, creating("Sample Shelf")).await;
