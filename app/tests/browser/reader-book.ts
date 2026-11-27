@@ -111,10 +111,12 @@ export function pageIndexOf(url: string): number | undefined {
 }
 
 const IMMUTABLE = { "cache-control": "public, max-age=31536000, immutable" };
+export const AS_ANDROID_SERVES = { "cache-control": "no-store" };
 
 export async function servePages(
   page: Page,
   before: (route: Route, index: number) => Promise<void> = async () => {},
+  headers: Record<string, string> = IMMUTABLE,
 ): Promise<number[]> {
   const asked: number[] = [];
   await page.route(fakeProtocolRoute("omni"), async (route) => {
@@ -123,7 +125,7 @@ export async function servePages(
     if (thumbnailOf !== undefined) {
       await route.fulfill({
         contentType: "image/svg+xml",
-        headers: IMMUTABLE,
+        headers,
         body: pageImage(Number(thumbnailOf)),
       });
       return;
@@ -137,7 +139,7 @@ export async function servePages(
     await before(route, index);
     await route.fulfill({
       contentType: "image/svg+xml",
-      headers: IMMUTABLE,
+      headers,
       body: pageImage(index, cropOf(PAGE_PATH.exec(url)?.[2])),
     });
   });
