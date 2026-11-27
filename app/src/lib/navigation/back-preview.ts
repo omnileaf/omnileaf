@@ -4,7 +4,8 @@ import type { BackSwipe, SwipeEdge } from "#lib/ipc/bindings.ts";
 import { watchBackSwipes } from "./back-swipe-allowance";
 import { settlingOf } from "./back-spring";
 import { cssLinearEasing } from "./css-easing";
-import { cubicBezier, cubicPath } from "./cubic-bezier";
+import { easedBackProgress } from "./back-progress";
+import { cubicPath } from "./cubic-bezier";
 
 export interface BackGestureAt {
   readonly progress: number;
@@ -35,7 +36,6 @@ const ANDROID_BACK = {
   smallestScale: 0.9,
   edgeMarginPx: 8,
   enteringOffsetPx: 96,
-  gestureCurve: cubicBezier(0.1, 0.1, 0, 1),
 } as const;
 
 const EMPHASIZED_STOPS = 64;
@@ -100,10 +100,6 @@ function decelerate(ratio: number): number {
   return 1 - (1 - ratio) * (1 - ratio);
 }
 
-function clampedProgress(progress: number): number {
-  return Math.min(1, Math.max(0, progress));
-}
-
 function sidewaysShift(
   edge: SwipeEdge | null,
   scale: number,
@@ -144,7 +140,7 @@ export function backPreviewFrame(
       scrimOpacity: SCRIM_HIDDEN,
     };
   }
-  const eased = ANDROID_BACK.gestureCurve(clampedProgress(now.progress));
+  const eased = easedBackProgress(now.progress);
   const scale = 1 - (1 - ANDROID_BACK.smallestScale) * eased;
   const sideways = sidewaysShift(
     now.edge,
@@ -193,20 +189,23 @@ function stepOf(swipe: BackSwipe): BackGestureStep {
   }
 }
 
+export interface BackTaker {
+  readonly isTaking: () => boolean;
+  readonly follow: (step: BackGestureStep) => void;
+}
+
 export function previewBackGestures(
   follow: (step: BackGestureStep) => void,
   isScreenKept: () => boolean,
-  isBackTaken: () => boolean,
+  taker: BackTaker,
 ): () => void {
   let isHidden = false;
   const stopWatching = watchBackSwipes((swipe) => {
     if (swipe.kind === "started") {
-      isHidden = isBackTaken();
+      isHidden = taker.isTaking();
     }
     const step = stepOf(swipe);
-    if (!isHidden) {
-      follow(step);
-    }
+    (isHidden ? taker.follow : follow)(step);
     if (step.kind === "ended") {
       isHidden = false;
     }

@@ -32,7 +32,7 @@
     type ScrollPlace,
   } from "./hold-scroll";
   import { isLeavingGuarded } from "./leave-guard";
-  import { willOverlayTakeBack } from "./overlay-back";
+  import { followOverlayBack, willOverlayTakeBack } from "./overlay-back";
   import { ScrollMemory } from "./scroll-memory";
   import { focusArrival } from "./page-heading";
   import { getPreviousScreens } from "./previous-screens";
@@ -231,7 +231,10 @@
           () =>
             location.pathname === page.url.pathname &&
             location.search === page.url.search,
-          () => willOverlayTakeBack() || isLeavingGuarded(),
+          {
+            isTaking: () => willOverlayTakeBack() || isLeavingGuarded(),
+            follow: followOverlayBack,
+          },
         )
       : undefined;
     const stopListening = listenForLibraryChanges(() => {

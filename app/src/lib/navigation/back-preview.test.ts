@@ -6,6 +6,7 @@ import type { BackSwipe } from "#lib/ipc/bindings.ts";
 
 import {
   type BackGestureAt,
+  type BackTaker,
   type BackGestureStep,
   backPreviewFrame,
   leavingTarget,
@@ -13,6 +14,7 @@ import {
 } from "./back-preview";
 
 const SCREEN = { width: 400, height: 800 };
+const FREE_BACK: BackTaker = { isTaking: () => false, follow: () => undefined };
 const START: BackGestureAt = {
   progress: 0,
   edge: "left",
@@ -130,7 +132,7 @@ test("reports where a gesture starts and moves, and its end once it is cancelled
       shown.push(step);
     },
     () => true,
-    () => false,
+    FREE_BACK,
   );
 
   await expect
@@ -170,7 +172,7 @@ test("takes a gesture that says nothing of its edge, finger or corner as one fro
       shown.push(step);
     },
     () => true,
-    () => false,
+    FREE_BACK,
   );
 
   await expect
@@ -192,7 +194,7 @@ function previewOnce(isScreenKept: boolean) {
       shown.push(step);
     },
     () => isScreenKept,
-    () => false,
+    FREE_BACK,
   );
   return { shown, stop };
 }
@@ -241,7 +243,7 @@ test("hands the preview nothing more once it stops watching", async () => {
       shown.push(step);
     },
     () => true,
-    () => false,
+    FREE_BACK,
   );
   await expect.poll(() => channel).toBeDefined();
 
@@ -272,7 +274,10 @@ const RELEASE_SWIPE: BackSwipe = {
   velocity: 0,
 };
 
-async function watchedGestures(isBackTaken: () => boolean) {
+async function watchedGestures(
+  isBackTaken: () => boolean,
+  followTaken: (step: BackGestureStep) => void = () => undefined,
+) {
   let channel: Channel<BackSwipe> | undefined;
   mockIPC((command, args) => {
     if (command === "watch_back_swipes") {
@@ -286,7 +291,7 @@ async function watchedGestures(isBackTaken: () => boolean) {
       shown.push(step);
     },
     () => true,
-    isBackTaken,
+    { isTaking: isBackTaken, follow: followTaken },
   );
   await expect.poll(() => channel).toBeDefined();
   return {
@@ -345,6 +350,39 @@ test("keeps a gesture hidden when its overlay closes mid-gesture", async () => {
   swipe(MOVE_SWIPE, RELEASE_SWIPE);
 
   expect(shown).toEqual([]);
+  stop();
+  clearMocks();
+});
+
+test("hands the steps of a gesture that starts while back belongs to an overlay to what takes it", async () => {
+  const taken: BackGestureStep[] = [];
+  const { shown, stop, swipe } = await watchedGestures(
+    () => true,
+    (step) => {
+      taken.push(step);
+    },
+  );
+
+  swipe(START_SWIPE, MOVE_SWIPE, { kind: "cancelled" });
+
+  expect(shown).toEqual([]);
+  expect(taken.map((step) => step.kind)).toEqual(["started", "moved", "ended"]);
+  stop();
+  clearMocks();
+});
+
+test("hands what takes back nothing of a gesture that shows the page", async () => {
+  const taken: BackGestureStep[] = [];
+  const { stop, swipe } = await watchedGestures(
+    () => false,
+    (step) => {
+      taken.push(step);
+    },
+  );
+
+  swipe(START_SWIPE, MOVE_SWIPE, { kind: "cancelled" });
+
+  expect(taken).toEqual([]);
   stop();
   clearMocks();
 });

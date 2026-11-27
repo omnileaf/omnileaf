@@ -1,7 +1,9 @@
 import { expect, test } from "vitest";
 
+import type { BackGestureStep } from "./back-preview";
 import {
   type AfterDelay,
+  closesOnBackFollowedBy,
   closesOnBackIn,
   GIVE_BACK_SETTLES_MS,
   mustLeaveOverlaysBefore,
@@ -319,6 +321,113 @@ test("never will take back when the page does not follow history for back", () =
   overlays.hold(() => undefined);
 
   expect(overlays.willTakeBack()).toBe(false);
+});
+
+const STARTED: BackGestureStep = {
+  kind: "started",
+  at: { progress: 0, edge: "left", touchY: 0.5, cornerPx: 32 },
+};
+const MOVED: BackGestureStep = { ...STARTED, kind: "moved" };
+const ENDED: BackGestureStep = { kind: "ended" };
+
+function follower() {
+  const steps: BackGestureStep[] = [];
+  return {
+    steps,
+    follow: (step: BackGestureStep) => {
+      steps.push(step);
+    },
+  };
+}
+
+test("hands a gesture's steps to the overlay that takes back", () => {
+  const { overlays } = overlayBack();
+  const sheet = follower();
+  overlays.hold(() => undefined, sheet);
+
+  overlays.followBack(STARTED);
+  overlays.followBack(MOVED);
+  overlays.followBack(ENDED);
+
+  expect(sheet.steps).toEqual([STARTED, MOVED, ENDED]);
+});
+
+test("hands a gesture only to the overlay opened last", () => {
+  const { overlays } = overlayBack();
+  const sheet = follower();
+  const nextSheet = follower();
+  overlays.hold(() => undefined, sheet);
+  overlays.hold(() => undefined, nextSheet);
+
+  overlays.followBack(STARTED);
+
+  expect([sheet.steps, nextSheet.steps]).toEqual([[], [STARTED]]);
+});
+
+test("hands a gesture to no one when the overlay opened last has nothing to follow it", () => {
+  const { overlays } = overlayBack();
+  const sheet = follower();
+  overlays.hold(() => undefined, sheet);
+  overlays.hold(() => undefined);
+
+  overlays.followBack(STARTED);
+  overlays.followBack(MOVED);
+
+  expect(sheet.steps).toEqual([]);
+});
+
+test("keeps handing a gesture to the overlay it started on when another opens in the middle of it", () => {
+  const { overlays } = overlayBack();
+  const sheet = follower();
+  overlays.hold(() => undefined, sheet);
+  overlays.followBack(STARTED);
+  overlays.hold(() => undefined, follower());
+
+  overlays.followBack(MOVED);
+  overlays.followBack(ENDED);
+
+  expect(sheet.steps).toEqual([STARTED, MOVED, ENDED]);
+});
+
+test("picks the overlay afresh for the next gesture", () => {
+  const { overlays } = overlayBack();
+  const sheet = follower();
+  const nextSheet = follower();
+  overlays.hold(() => undefined, sheet);
+  overlays.followBack(STARTED);
+  overlays.followBack(ENDED);
+  overlays.hold(() => undefined, nextSheet);
+
+  overlays.followBack(STARTED);
+
+  expect([sheet.steps.length, nextSheet.steps]).toEqual([2, [STARTED]]);
+});
+
+test("hands nothing to an overlay once it has closed", () => {
+  const { overlays } = overlayBack();
+  const sheet = follower();
+  const release = overlays.hold(() => undefined, sheet);
+  release();
+
+  overlays.followBack(STARTED);
+
+  expect(sheet.steps).toEqual([]);
+});
+
+test("tells a follower its overlay is gone once the overlay's element goes", () => {
+  const gone = { count: 0 };
+  const attach = closesOnBackFollowedBy({
+    follow: () => undefined,
+    gone: () => {
+      gone.count += 1;
+    },
+  });
+
+  const detach = attach(document.createElement("div"));
+  const before = gone.count;
+  detach?.();
+
+  expect([before, gone.count]).toEqual([0, 1]);
 });
 
 const SERIES_ROUTE = "/(app)/series/[id]";
