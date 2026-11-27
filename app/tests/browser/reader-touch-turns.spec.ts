@@ -1296,6 +1296,7 @@ test.describe("at the end of a book", { tag: "@native" }, () => {
 
   test.describe("on Up next", () => {
     const QUICKER_THAN_A_DOUBLE_TAP_MS = 150;
+    const DOUBLE_TAP_GAPS_WELL_INSIDE_ITS_WINDOW_MS = [45, 150];
 
     test.use({ backend: readerBackend(DEFAULT_BACKEND, ON_THE_LAST_PAGE) });
 
@@ -1567,7 +1568,7 @@ test.describe("at the end of a book", { tag: "@native" }, () => {
       });
 
       for (const pageTurn of ["slide", "instant"] as const) {
-        for (const gapMs of DOUBLE_TAP_GAPS_MS) {
+        for (const gapMs of DOUBLE_TAP_GAPS_WELL_INSIDE_ITS_WINDOW_MS) {
           test(`turns on once on a double tap ${String(gapMs)} ms apart on its card over the next page's zone with ${pageTurn}`, async ({
             page,
           }) => {
