@@ -43,6 +43,10 @@ const PAGE_ARRIVAL_MS = 300;
 const HELD_KEY_MS = 2000;
 const TAP_BURST = 12;
 const TAP_BURST_GAP_MS = 40;
+const PAGES_READ_ON = 12;
+const EVEN_TAP_GAP_MS = 160;
+const MIDWAY_TAP_GAP_MS = 120;
+const MIDWAY_CATCHES = 3;
 const MOST_CELLS_DRAWN = 3;
 const MOST_PAGES_HELD = 7;
 const WAIT_PAST_DOUBLE_TAP_MS = 600;
@@ -83,6 +87,7 @@ interface PagesHeld {
 declare global {
   interface Window {
     omnileafGappedFrames?: number[];
+    omnileafBarePages?: string[];
     omnileafRecording?: boolean;
     omnileafControlsShown?: boolean;
     omnileafPagesHeld?: { mostDrawn: number; mostMounted: number };
@@ -131,16 +136,23 @@ async function largeNoisePage(page: Page): Promise<Buffer> {
 
 async function serveLargePages(
   page: Page,
-  { arrivesAfterMs }: { arrivesAfterMs: number } = { arrivesAfterMs: 0 },
+  {
+    arrivesAfterMs = 0,
+    arrivesAgainAfterMs = arrivesAfterMs,
+  }: { arrivesAfterMs?: number; arrivesAgainAfterMs?: number } = {},
 ): Promise<void> {
   const jpeg = await largeNoisePage(page);
+  const served = new Set<number>();
   await servePages(page);
   await page.route(fakeProtocolRoute("omni"), async (route) => {
-    if (pageIndexOf(route.request().url()) === undefined) {
+    const index = pageIndexOf(route.request().url());
+    if (index === undefined) {
       await route.fallback();
       return;
     }
-    await new Promise((arrived) => setTimeout(arrived, arrivesAfterMs));
+    const delayMs = served.has(index) ? arrivesAgainAfterMs : arrivesAfterMs;
+    served.add(index);
+    await new Promise((arrived) => setTimeout(arrived, delayMs));
     await route.fulfill({ contentType: "image/jpeg", body: jpeg });
   });
 }
@@ -344,6 +356,68 @@ async function recordUncoveredFrames(page: Page): Promise<void> {
   }, COVER_SAMPLES);
 }
 
+async function recordBarePages(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    window.omnileafBarePages = [];
+    window.omnileafRecording = true;
+    const isShowing = (element: Element | null | undefined): boolean =>
+      element?.textContent.trim().startsWith("Loading page") === true &&
+      element.checkVisibility({ visibilityProperty: true });
+    const record = (): void => {
+      if (window.omnileafRecording !== true) {
+        return;
+      }
+      const area = document
+        .querySelector("[data-shown-page]")
+        ?.getBoundingClientRect();
+      if (area !== undefined) {
+        const isOverlayLoading = isShowing(
+          document.querySelector('main [role="status"] p'),
+        );
+        const bare = [
+          ...document.querySelectorAll<HTMLElement>("main [data-turns]"),
+        ]
+          .filter((cell) => {
+            const box = cell.getBoundingClientRect();
+            return (
+              cell.checkVisibility({ visibilityProperty: true }) &&
+              box.right > area.left + 1 &&
+              box.left < area.right - 1
+            );
+          })
+          .flatMap((cell) => {
+            const isResting =
+              cell.dataset.turns === "0" && cell.style.translate === "";
+            return [
+              ...cell.querySelectorAll<HTMLImageElement>('img[alt^="Page "]'),
+            ]
+              .filter(
+                (image) =>
+                  !image.hasAttribute("data-decoded") &&
+                  !isShowing(
+                    image.parentElement?.querySelector("[data-page-loading]"),
+                  ) &&
+                  !(isResting && isOverlayLoading),
+              )
+              .map((image) => image.alt);
+          });
+        if (bare.length > 0) {
+          window.omnileafBarePages?.push(bare.join(", "));
+        }
+      }
+      requestAnimationFrame(record);
+    };
+    requestAnimationFrame(record);
+  });
+}
+
+async function stopRecordingBarePages(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    window.omnileafRecording = false;
+    return window.omnileafBarePages ?? [];
+  });
+}
+
 async function stopRecording(page: Page): Promise<number[]> {
   return page.evaluate(() => {
     window.omnileafRecording = false;
@@ -512,6 +586,90 @@ test(
 
     expect(gapped.length).toBeGreaterThan(0);
     expect(gapped.filter((gaps) => gaps > 0)).toEqual([]);
+  },
+);
+
+interface Burst {
+  readonly taps: number;
+  readonly gapMs: number;
+}
+
+async function barePagesTurningBack(
+  page: Page,
+  bursts: readonly Burst[],
+): Promise<string[]> {
+  await serveLargePages(page, { arrivesAgainAfterMs: PAGE_ARRIVAL_MS });
+  await openBookWith(page, { pageTurn: "slide" });
+  await expect(
+    page.getByRole("main").locator('img[alt="Page 17"]'),
+  ).not.toHaveClass(/invisible/, { timeout: 15_000 });
+  const session = await page.context().newCDPSession(page);
+  await session.send("Network.enable");
+  await session.send("Network.setCacheDisabled", { cacheDisabled: true });
+  const next = await centreOf(page.getByRole("button", { name: "Next page" }));
+  const previous = await centreOf(
+    page.getByRole("button", { name: "Previous page" }),
+  );
+  await tapEvery(session, next, {
+    taps: PAGES_READ_ON,
+    gapMs: EVEN_TAP_GAP_MS,
+  });
+  await expectOnPage(page, 14 + PAGES_READ_ON);
+  await expect.poll(() => slidesRunning(page)).toBe(0);
+  await expect.poll(() => pageDrawnAtRest(page)).toBe(14 + PAGES_READ_ON);
+  await session.send("Emulation.setCPUThrottlingRate", { rate: CPU_SLOWDOWN });
+  await recordBarePages(page);
+
+  let shown = 14 + PAGES_READ_ON;
+  for (const burst of bursts) {
+    await tapEvery(session, previous, burst);
+    shown -= burst.taps;
+    await expectOnPage(page, shown);
+    await expect.poll(() => slidesRunning(page)).toBe(0);
+    await waitFrames(page, FRAMES_TO_SETTLE);
+  }
+  const bare = await stopRecordingBarePages(page);
+  await session.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+  await expect.poll(() => pageDrawnAtRest(page)).toBe(shown);
+  return bare;
+}
+
+test(
+  "paints each page placed on screen or its loading state through taps back at an even pace",
+  { tag: "@native" },
+  async ({ page }) => {
+    const bursts = [{ taps: PAGES_READ_ON, gapMs: EVEN_TAP_GAP_MS }];
+
+    const bare = await barePagesTurningBack(page, bursts);
+
+    expect(bare).toEqual([]);
+  },
+);
+
+test(
+  "paints each page placed on screen or its loading state through a burst of taps back that cuts",
+  { tag: "@native" },
+  async ({ page }) => {
+    const bursts = [{ taps: PAGES_READ_ON, gapMs: TAP_BURST_GAP_MS }];
+
+    const bare = await barePagesTurningBack(page, bursts);
+
+    expect(bare).toEqual([]);
+  },
+);
+
+test(
+  "paints each page placed on screen or its loading state when a slide back is caught mid-way",
+  { tag: "@native" },
+  async ({ page }) => {
+    const bursts = Array.from({ length: MIDWAY_CATCHES }, () => ({
+      taps: 2,
+      gapMs: MIDWAY_TAP_GAP_MS,
+    }));
+
+    const bare = await barePagesTurningBack(page, bursts);
+
+    expect(bare).toEqual([]);
   },
 );
 

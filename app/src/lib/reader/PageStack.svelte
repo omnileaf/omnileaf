@@ -100,6 +100,8 @@
   let scroller: HTMLDivElement | undefined = $state();
 
   const decoded = new SvelteSet<number>();
+  const decodedInView = new SvelteSet<number>();
+  const imagesInView = new WeakSet<HTMLImageElement>();
   const failed = new SvelteSet<number>();
   const retries = new SvelteMap<number, number>();
   const croppedSizes = new SvelteMap<string, Size>();
@@ -186,13 +188,9 @@
   });
 
   onDestroy(stopFlying);
-  const isShownReady = $derived(
-    isBlank || decoded.has(shown) || failed.has(shown),
-  );
+  const isShownReady = $derived(isReady(shown));
   const isShownFailed = $derived(failed.has(shown));
-  const isSlidingOntoUnready = $derived(
-    flight?.isFlying === true && !isShownReady,
-  );
+  const isAtRest = $derived(flight === undefined && slide === 0);
   const isSpreadSettled = $derived(
     isBlank || spread.every((index) => decoded.has(index) || failed.has(index)),
   );
@@ -248,7 +246,7 @@
   }
 
   function isReady(index: number): boolean {
-    return isBlank || decoded.has(index) || failed.has(index);
+    return isBlank || decodedInView.has(index) || failed.has(index);
   }
 
   function keptAround(towards: Heading): PagesKept {
@@ -499,9 +497,34 @@
     try {
       await image.decode();
       decoded.add(index);
+      if (imagesInView.has(image)) {
+        decodedInView.add(index);
+      }
     } catch {
       failed.add(index);
     }
+  }
+
+  /** Decodes the page again each time it comes into view, as a browser may drop the pixels of an image it has not painted lately. */
+  function decodeOnEntry(
+    index: number,
+    isInView: boolean,
+  ): Attachment<HTMLImageElement> {
+    return (image) => {
+      untrack(() => {
+        decodedInView.delete(index);
+      });
+      if (!isInView) {
+        return;
+      }
+      imagesInView.add(image);
+      if (image.complete && image.naturalWidth > 0) {
+        void decode(image, index);
+      }
+      return () => {
+        imagesInView.delete(image);
+      };
+    };
   }
 
   $effect(() => {
@@ -540,6 +563,7 @@
     {#each cells as cell (cell.spread[0])}
       {@const isNeighbour = cell.offset !== 0}
       {@const isOnScreen = isPainted(cell.offset)}
+      {@const isInView = isOnScreen || !isNeighbour}
       <div
         aria-hidden={isNeighbour ? "true" : undefined}
         data-turns={isOnScreen ? cell.offset : undefined}
@@ -592,15 +616,29 @@
                   </span>
                 </div>
               {:else}
+                {#if isInView && !isReady(index) && !(isAtRest && isShown)}
+                  <div
+                    data-page-loading
+                    aria-hidden="true"
+                    class="absolute inset-none flex flex-col items-center justify-center gap-sm text-center"
+                  >
+                    <Spinner size={SPINNER_SIZE} class="text-muted" />
+                    <p class="text-small text-muted">
+                      {m.reader_page_loading({ page: index + 1 })}
+                    </p>
+                  </div>
+                {/if}
                 <img
                   {@attach freshImage(index)}
+                  {@attach decodeOnEntry(index, isInView)}
+                  data-decoded={decodedInView.has(index) ? "" : undefined}
                   src={sourceOf(page, index)}
                   alt={m.reader_page({ page: index + 1 })}
                   aria-hidden={isShown ? undefined : "true"}
                   decoding="async"
                   draggable="false"
                   class={[
-                    "object-contain select-none block-full inline-full",
+                    "relative object-contain select-none block-full inline-full",
                     !decoded.has(index) && "invisible",
                   ]}
                   onload={(event) => {
@@ -650,7 +688,7 @@
                 title: bookTitle,
               })}
             </EmptyDescription>
-          {:else if isSlow || isSlidingOntoUnready}
+          {:else if isSlow && isAtRest}
             <Spinner size={SPINNER_SIZE} class="text-muted" />
             <p class="text-small text-muted">
               {m.reader_page_loading({ page: shown + 1 })}
