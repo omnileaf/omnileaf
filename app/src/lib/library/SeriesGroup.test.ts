@@ -1,5 +1,5 @@
 import { tick } from "svelte";
-import { expect, test } from "vitest";
+import { expect, onTestFinished, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
 import { DEFAULT_LIBRARY_VIEW, type LibrarySeries } from "#lib/ipc/bindings.ts";
@@ -49,6 +49,43 @@ const COVERS = {
   view: DEFAULT_LIBRARY_VIEW,
   usesStandIns: false,
 };
+
+function placedFarBelowTheScreen(): HTMLDivElement {
+  const far = document.createElement("div");
+  far.style.marginBlockStart = "500vh";
+  document.body.append(far);
+  onTestFinished(() => {
+    far.remove();
+  });
+  return far;
+}
+
+test("reads a kept section again at once when it was near the screen as the Library was left", async () => {
+  let reads = 0;
+  const props = {
+    name: "Manga",
+    listSeries: () => {
+      reads += 1;
+      return Promise.resolve({
+        status: "ok" as const,
+        data: { series: [SERIES], next: null },
+      });
+    },
+    countSeries: () => Promise.resolve({ status: "ok" as const, data: 1 }),
+    listed: { listing: "all" },
+    libraryChanges: 0,
+    covers: COVERS,
+    kept: {
+      series: { items: [SERIES], next: null },
+      count: 1,
+      wasNear: true,
+    },
+  };
+
+  await render(SeriesGroup, props, { baseElement: placedFarBelowTheScreen() });
+
+  await expect.poll(() => reads).toBe(1);
+});
 
 test("keeps the count of the newest listing when an older count answers last", async () => {
   const answers = [waitingAnswer(), waitingAnswer(), waitingAnswer()];
