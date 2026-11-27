@@ -836,6 +836,7 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
         shows_continue_row: true,
         on_covers: OnCovers {
             shows_unread_count: false,
+            shows_volume_and_chapter_counts: true,
             shows_downloaded: false,
             shows_language: true,
             shows_reading_progress: false,

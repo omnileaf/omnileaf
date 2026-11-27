@@ -22,13 +22,16 @@ import { choose, openViewOptions } from "./view-options.ts";
 
 const SWITCHES = {
   showsUnreadCount: "Unread count",
+  showsVolumeAndChapterCounts: "Volumes and chapters",
   showsDownloaded: "Downloaded",
   showsLanguage: "Language",
   showsReadingProgress: "Reading progress",
   showsContinueButton: "Continue reading button",
 } as const satisfies Record<keyof OnCovers, string>;
 
-const SWITCH_NAMES = Object.keys(SWITCHES) as (keyof OnCovers)[];
+const SWITCH_NAMES = (Object.keys(SWITCHES) as (keyof OnCovers)[]).filter(
+  (name) => name !== "showsVolumeAndChapterCounts",
+);
 
 const SWITCH_ROW_HEIGHT = {
   phone: 56,
@@ -144,6 +147,23 @@ test.describe("show on covers", () => {
         checked: DEFAULT_LIBRARY_VIEW.onCovers[name],
       });
     }
+  });
+
+  test("leaves the volume and chapter counts out of the choices on a platform that draws no such counts", async ({
+    page,
+  }) => {
+    await openWith(page, {});
+
+    const options = await openViewOptions(page);
+
+    await expect(
+      options.getByRole("switch", { name: SWITCHES.showsUnreadCount }),
+    ).toBeVisible();
+    await expect(
+      options.getByRole("switch", {
+        name: SWITCHES.showsVolumeAndChapterCounts,
+      }),
+    ).toHaveCount(0);
   });
 
   test("gives each choice a row as tall as this size draws it", async ({

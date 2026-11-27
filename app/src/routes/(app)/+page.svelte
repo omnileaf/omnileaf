@@ -62,6 +62,7 @@
   import EmptyTab from "#lib/library/EmptyTab.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { defaultLibraryView, viewDrawn } from "#lib/library/library-view.ts";
+  import { showsCountUnderCover } from "#lib/library/series-count-line.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { FolderCardsPhone } from "#lib/library/folder-cards-phone.svelte.ts";
   import { FolderFinder } from "#lib/library/folder-finder.svelte.ts";
@@ -1103,7 +1104,13 @@
       {...props}
     />
   {:else if page.series.list.kind === "loading"}
-    <CoverSkeletons coversPerRow={props.view.coversPerRow} />
+    <CoverSkeletons
+      coversPerRow={props.view.coversPerRow}
+      showsCount={showsCountUnderCover(
+        data.appInfo.platform,
+        props.view.onCovers,
+      )}
+    />
   {/if}
 {/snippet}
 
@@ -1401,6 +1408,13 @@
           {...view.reading.kind === "read"
             ? { coversPerRow: view.reading.value.coversPerRow }
             : {}}
+          showsCount={showsCountUnderCover(
+            data.appInfo.platform,
+            (view.reading.kind === "read"
+              ? view.reading.value
+              : defaultLibraryView(data.appInfo.platform)
+            ).onCovers,
+          )}
         />
       </div>
     {:else if library.list.kind === "failed"}
