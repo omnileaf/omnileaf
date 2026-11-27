@@ -1,6 +1,7 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { ImageLoads } from "./image-loads.svelte";
+import { LONGEST_IMAGE_LOAD_MS } from "./page-requests";
 
 const PAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='3'/%3E";
@@ -8,6 +9,16 @@ const ANOTHER_PAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='3' height='2'/%3E";
 const MOST = 3;
 const NOT_AN_IMAGE = "data:text/plain,not an image";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+function neverLoading(): HTMLImageElement {
+  const image = new Image();
+  Object.defineProperty(image, "src", { set: () => undefined });
+  return image;
+}
 
 function settled(image: HTMLImageElement): Promise<void> {
   return new Promise((done) => {
@@ -68,4 +79,42 @@ test("asks again for an image only when its address changes", async () => {
   loads.load(image, ANOTHER_PAGE);
 
   expect([again, loads.room]).toEqual([MOST, MOST - 1]);
+});
+
+test("gives the room back from an image still loading after the time limit, and says it stalled", () => {
+  vi.useFakeTimers();
+  const loads = new ImageLoads(MOST);
+  const stalled: string[] = [];
+
+  loads.load(neverLoading(), PAGE, () => {
+    stalled.push(PAGE);
+  });
+  vi.advanceTimersByTime(LONGEST_IMAGE_LOAD_MS);
+
+  expect([loads.room, stalled]).toEqual([MOST, [PAGE]]);
+});
+
+test("waits out the whole time limit before giving up on an image", () => {
+  vi.useFakeTimers();
+  const loads = new ImageLoads(MOST);
+  const stalled: string[] = [];
+
+  loads.load(neverLoading(), PAGE, () => {
+    stalled.push(PAGE);
+  });
+  vi.advanceTimersByTime(LONGEST_IMAGE_LOAD_MS - 1);
+
+  expect([loads.room, stalled]).toEqual([MOST - 1, []]);
+});
+
+test("gives the room of a stalled image back only once when it arrives late", () => {
+  vi.useFakeTimers();
+  const loads = new ImageLoads(MOST);
+  const image = neverLoading();
+  loads.load(image, PAGE, () => undefined);
+  vi.advanceTimersByTime(LONGEST_IMAGE_LOAD_MS);
+
+  image.dispatchEvent(new Event("load"));
+
+  expect(loads.room).toBe(MOST);
 });
