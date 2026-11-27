@@ -9,9 +9,8 @@ export interface SpreadsInView {
   readonly at: number;
   readonly low: number;
   readonly high: number;
+  readonly reach: number;
 }
-
-const NEIGHBOUR_TURNS = 1;
 
 export function cellsAround(
   spreads: readonly Spread[],
@@ -19,8 +18,8 @@ export function cellsAround(
   kept: readonly number[],
 ): PageCell[] {
   const isKept = (spread: Spread, index: number): boolean =>
-    (index >= inView.low - NEIGHBOUR_TURNS &&
-      index <= inView.high + NEIGHBOUR_TURNS) ||
+    (index >= inView.low - inView.reach &&
+      index <= inView.high + inView.reach) ||
     spread.some((page) => kept.includes(page));
   return spreads
     .map((spread, index) => ({ spread, index }))

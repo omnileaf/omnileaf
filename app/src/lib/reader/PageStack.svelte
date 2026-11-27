@@ -35,6 +35,7 @@
   const PAGES_LEADING = 3;
   const PAGES_TRAILING = 1;
   const TURNS_TO_CHANGE_HEADING = 2;
+  const NEIGHBOUR_TURNS = 1;
   /** How long a page may take before a spinner says it's on its way, so a quick one never flashes one. */
   const SPINNER_DELAY_MS = 100;
   const SPINNER_SIZE = 20;
@@ -140,6 +141,7 @@
         at: position,
         low: position + onScreen.low,
         high: position + onScreen.high,
+        reach: flight?.kind === "cut" ? 0 : NEIGHBOUR_TURNS,
       },
       pagesAround(shown, pages.length, keptAround(heading)),
     ),
