@@ -138,6 +138,7 @@
         {shown}
         {isBlank}
         isReversed={direction === "rightToLeft"}
+        isSliderHeld={isDragged}
         onPick={onSeek}
       />
     </div>
@@ -147,6 +148,7 @@
       {shown}
       {isBlank}
       isReversed={direction === "rightToLeft"}
+      isSliderHeld={isDragged}
       onPick={onSeek}
     />
   {/if}

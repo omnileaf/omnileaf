@@ -1,23 +1,28 @@
-import type { Locator, Page, Request } from "@playwright/test";
+import type { CDPSession, Locator, Page } from "@playwright/test";
 
-import { PAGES_LOADING_AT_ONCE } from "../../src/lib/reader/page-requests.ts";
+import {
+  PAGES_LOADING_AT_ONCE,
+  THUMBNAILS_LOADING_AT_ONCE,
+} from "../../src/lib/reader/page-requests.ts";
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { type ReaderTraffic, servePagesSlowly } from "./page-traffic.ts";
 import {
   BOOK_ID,
   markStripSeen,
   NEXT_BOOK,
   NOT_STARTED,
   readerBook,
-  servePages,
   tallStripBook,
 } from "./reader-book.ts";
 
 const LONG_BOOK_PAGES = 200;
-const ANSWER_MS = 300;
 const STEPS_PER_SWEEP = 40;
 const SWEEPS_BACK_AND_FORTH = 10;
 const MOST_PAGES_ASKED = 12;
-const PAST_THE_TRACK_PX = 40;
+const MOST_THUMBNAILS_ASKED = 24;
+const INSIDE_THE_TRACK_PX = 1;
+const NEAR_THE_END = 0.95;
+const TRACK_MIDDLE = 0.5;
 
 interface Point {
   readonly x: number;
@@ -28,27 +33,6 @@ interface Track {
   readonly grip: Point;
   readonly start: Point;
   readonly end: Point;
-}
-
-interface PageTraffic {
-  readonly asked: readonly number[];
-  readonly mostInFlight: () => number;
-}
-
-async function servePagesSlowly(page: Page): Promise<PageTraffic> {
-  const inFlight = new Set<Request>();
-  let most = 0;
-  const settle = (request: Request): void => {
-    inFlight.delete(request);
-  };
-  page.on("requestfinished", settle);
-  page.on("requestfailed", settle);
-  const asked = await servePages(page, async (route) => {
-    inFlight.add(route.request());
-    most = Math.max(most, inFlight.size);
-    await new Promise((answered) => setTimeout(answered, ANSWER_MS));
-  });
-  return { asked, mostInFlight: () => most };
 }
 
 function slider(page: Page): Locator {
@@ -63,9 +47,9 @@ async function alongTrack(locator: Locator): Promise<Track> {
   const box = await boxOf(locator);
   const y = box.y + box.height / 2;
   return {
-    grip: { x: box.x + box.width / 2, y },
-    start: { x: box.x - PAST_THE_TRACK_PX, y },
-    end: { x: box.x + box.width + PAST_THE_TRACK_PX, y },
+    grip: { x: box.x + box.width * TRACK_MIDDLE, y },
+    start: { x: box.x + INSIDE_THE_TRACK_PX, y },
+    end: { x: box.x + box.width - INSIDE_THE_TRACK_PX, y },
   };
 }
 
@@ -73,19 +57,67 @@ async function downTrack(locator: Locator): Promise<Track> {
   const box = await boxOf(locator);
   const x = box.x + box.width / 2;
   return {
-    grip: { x, y: box.y + box.height / 2 },
-    start: { x, y: box.y - PAST_THE_TRACK_PX },
-    end: { x, y: box.y + box.height + PAST_THE_TRACK_PX },
+    grip: { x, y: box.y + box.height * TRACK_MIDDLE },
+    start: { x, y: box.y + INSIDE_THE_TRACK_PX },
+    end: { x, y: box.y + box.height - INSIDE_THE_TRACK_PX },
   };
 }
 
-async function scrubWithoutLettingGo(page: Page, track: Track): Promise<void> {
+function sweepsOf(track: Track): Point[] {
+  return Array.from({ length: SWEEPS_BACK_AND_FORTH + 1 }, (_, sweep) =>
+    sweep % 2 === 0 ? track.end : track.start,
+  );
+}
+
+async function scrubWithMouse(page: Page, track: Track): Promise<void> {
   await page.mouse.move(track.grip.x, track.grip.y);
   await page.mouse.down();
-  for (let sweep = 0; sweep <= SWEEPS_BACK_AND_FORTH; sweep += 1) {
-    const to = sweep % 2 === 0 ? track.end : track.start;
+  for (const to of sweepsOf(track)) {
     await page.mouse.move(to.x, to.y, { steps: STEPS_PER_SWEEP });
   }
+}
+
+async function touchAt(
+  session: CDPSession,
+  type: "touchStart" | "touchMove",
+  at: Point,
+): Promise<void> {
+  await session.send("Input.dispatchTouchEvent", {
+    type,
+    touchPoints: [at],
+  });
+}
+
+async function scrubWithFinger(
+  session: CDPSession,
+  track: Track,
+): Promise<void> {
+  await touchAt(session, "touchStart", track.grip);
+  let from = track.grip;
+  for (const to of sweepsOf(track)) {
+    for (let step = 1; step <= STEPS_PER_SWEEP; step += 1) {
+      const share = step / STEPS_PER_SWEEP;
+      await touchAt(session, "touchMove", {
+        x: from.x + (to.x - from.x) * share,
+        y: from.y + (to.y - from.y) * share,
+      });
+    }
+    from = to;
+  }
+}
+
+async function liftFinger(session: CDPSession): Promise<void> {
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+}
+
+async function pageUnderTheThumb(page: Page): Promise<number> {
+  const said = await slider(page).first().getAttribute("aria-valuetext");
+  const reached = Number(/Page (\d+) of/.exec(said ?? "")?.[1]);
+  expect(reached).toBeGreaterThan(LONG_BOOK_PAGES * NEAR_THE_END);
+  return reached;
 }
 
 async function expectPageShown(page: Page, number: number): Promise<void> {
@@ -111,6 +143,32 @@ async function expectPageArrived(page: Page, number: number): Promise<void> {
     .toBe(true);
 }
 
+function expectRequestsBounded(
+  traffic: ReaderTraffic,
+  before: { readonly pages: number; readonly thumbnails: number },
+): void {
+  expect(traffic.pages.most).toBeLessThanOrEqual(PAGES_LOADING_AT_ONCE);
+  expect(traffic.thumbnails.most).toBeLessThanOrEqual(
+    THUMBNAILS_LOADING_AT_ONCE,
+  );
+  expect(traffic.pages.asked.length - before.pages).toBeLessThanOrEqual(
+    MOST_PAGES_ASKED,
+  );
+  expect(
+    traffic.thumbnails.asked.length - before.thumbnails,
+  ).toBeLessThanOrEqual(MOST_THUMBNAILS_ASKED);
+}
+
+function askedSoFar(traffic: ReaderTraffic): {
+  pages: number;
+  thumbnails: number;
+} {
+  return {
+    pages: traffic.pages.asked.length,
+    thumbnails: traffic.thumbnails.asked.length,
+  };
+}
+
 test.describe("scrubbing a long book's page slider", { tag: "@native" }, () => {
   test.use({
     backend: {
@@ -119,31 +177,69 @@ test.describe("scrubbing a long book's page slider", { tag: "@native" }, () => {
     },
   });
 
-  async function openLongBook(page: Page): Promise<PageTraffic> {
+  async function openLongBook(page: Page): Promise<ReaderTraffic> {
     const traffic = await servePagesSlowly(page);
     await page.goto(`/read/${BOOK_ID}`);
     await expectPageShown(page, 1);
     return traffic;
   }
 
-  test("asks only for the page the thumb rests on, a few at a time, however long the slider is held", async ({
+  test("asks only for the page and previews the thumb rests on, a few at a time, however long the slider is held", async ({
     page,
   }) => {
     const traffic = await openLongBook(page);
-    const askedBefore = traffic.asked.length;
+    const before = askedSoFar(traffic);
 
-    await scrubWithoutLettingGo(page, await alongTrack(slider(page)));
+    await scrubWithMouse(page, await alongTrack(slider(page)));
 
-    await expect(slider(page)).toHaveAttribute(
-      "aria-valuetext",
-      `Page ${String(LONG_BOOK_PAGES)} of ${String(LONG_BOOK_PAGES)}`,
-    );
+    const reached = await pageUnderTheThumb(page);
     await page.mouse.up();
-    await expectPageShown(page, LONG_BOOK_PAGES);
-    expect(traffic.mostInFlight()).toBeLessThanOrEqual(PAGES_LOADING_AT_ONCE);
-    expect(traffic.asked.length - askedBefore).toBeLessThanOrEqual(
-      MOST_PAGES_ASKED,
+    await expectPageShown(page, reached);
+    expectRequestsBounded(traffic, before);
+  });
+
+  test("asks as few pages and previews when the slider is dragged by a finger", async ({
+    page,
+    browserName,
+    isMobile,
+  }) => {
+    test.skip(
+      browserName !== "chromium" || !isMobile,
+      "real touches go through Chromium's DevTools protocol on a touch screen",
     );
+    const traffic = await openLongBook(page);
+    const before = askedSoFar(traffic);
+    const session = await page.context().newCDPSession(page);
+
+    await scrubWithFinger(session, await alongTrack(slider(page)));
+
+    const reached = await pageUnderTheThumb(page);
+    await liftFinger(session);
+    await expectPageShown(page, reached);
+    expectRequestsBounded(traffic, before);
+  });
+
+  test("shows the page the thumb rests on while the slider is still held", async ({
+    page,
+  }) => {
+    const traffic = await openLongBook(page);
+    const track = await alongTrack(slider(page));
+    await page.mouse.move(track.grip.x, track.grip.y);
+    await page.mouse.down();
+    await page.mouse.move(track.end.x, track.end.y, {
+      steps: STEPS_PER_SWEEP,
+    });
+
+    await page.mouse.move(track.grip.x, track.grip.y, {
+      steps: STEPS_PER_SWEEP,
+    });
+
+    const resting = Number(await slider(page).inputValue());
+    await expectPageShown(page, resting);
+    await expect
+      .poll(() => traffic.thumbnails.asked.includes(resting - 1))
+      .toBe(true);
+    await page.mouse.up();
   });
 
   test("opens the next chapter on its first page straight after a scrub, still a few pages at a time", async ({
@@ -151,7 +247,7 @@ test.describe("scrubbing a long book's page slider", { tag: "@native" }, () => {
   }) => {
     const traffic = await openLongBook(page);
 
-    await scrubWithoutLettingGo(page, await alongTrack(slider(page)));
+    await scrubWithMouse(page, await alongTrack(slider(page)));
     await page.mouse.up();
     await page
       .getByRole("link", { name: `Next chapter: ${NEXT_BOOK.title}` })
@@ -159,7 +255,10 @@ test.describe("scrubbing a long book's page slider", { tag: "@native" }, () => {
 
     await expect(page).toHaveURL(new RegExp(`/read/${NEXT_BOOK.id}$`));
     await expectPageShown(page, 1);
-    expect(traffic.mostInFlight()).toBeLessThanOrEqual(PAGES_LOADING_AT_ONCE);
+    expect(traffic.pages.most).toBeLessThanOrEqual(PAGES_LOADING_AT_ONCE);
+    expect(traffic.thumbnails.most).toBeLessThanOrEqual(
+      THUMBNAILS_LOADING_AT_ONCE,
+    );
   });
 });
 
@@ -174,7 +273,7 @@ test.describe(
       },
     });
 
-    test("asks only for the pages the thumb rests on, a few at a time, however long the slider is held", async ({
+    test("asks only for the pages and previews the thumb rests on, a few at a time, however long the slider is held", async ({
       page,
       platform,
     }) => {
@@ -182,26 +281,18 @@ test.describe(
       const traffic = await servePagesSlowly(page);
       await page.goto(`/read/${BOOK_ID}`);
       await expectPageArrived(page, 1);
-      const askedBefore = traffic.asked.length;
+      const before = askedSoFar(traffic);
       const track =
         platform === "android"
           ? await downTrack(page.locator("[data-scrubber]"))
           : await alongTrack(slider(page));
 
-      await scrubWithoutLettingGo(page, track);
+      await scrubWithMouse(page, track);
+      const reached = await pageUnderTheThumb(page);
       await page.mouse.up();
 
-      await expectPageArrived(page, LONG_BOOK_PAGES);
-      await expect(
-        page.getByRole("slider", { name: "Page" }).first(),
-      ).toHaveAttribute(
-        "aria-valuetext",
-        `Page ${String(LONG_BOOK_PAGES)} of ${String(LONG_BOOK_PAGES)}`,
-      );
-      expect(traffic.mostInFlight()).toBeLessThanOrEqual(PAGES_LOADING_AT_ONCE);
-      expect(traffic.asked.length - askedBefore).toBeLessThanOrEqual(
-        MOST_PAGES_ASKED,
-      );
+      await expectPageArrived(page, reached);
+      expectRequestsBounded(traffic, before);
     });
   },
 );
