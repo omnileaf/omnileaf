@@ -11,7 +11,11 @@ import type { ResolvedPathname } from "$app/types";
 import { reportFailure } from "#lib/errors/report-failure.ts";
 
 import { resolvedPathOf } from "./app-path";
-import { navigateAcrossOverlays, navigateTo } from "./navigate-to";
+import {
+  navigateAcrossOverlays,
+  navigateTo,
+  navigationStartedTo,
+} from "./navigate-to";
 import { giveBackOverlayEntries, mustLeaveOverlays } from "./overlay-back";
 import { isInAppShell } from "./sections";
 import { type HistoryMove, moveTo } from "./up-history";
@@ -31,6 +35,7 @@ export interface BackGuardEnvironment {
     target: string,
     options?: { readonly replace?: boolean },
   ) => Promise<unknown>;
+  readonly isReplacing: (target: URL) => boolean;
   readonly stepBackBy: (steps: number) => void;
   readonly onStepBack: (run: () => void) => () => void;
   readonly historyState: () => string;
@@ -47,6 +52,8 @@ const BROWSER: BackGuardEnvironment = {
   onNavigate,
   goto: navigateTo,
   gotoAcrossOverlays: navigateAcrossOverlays,
+  isReplacing: (target) =>
+    navigationStartedTo(target)?.options?.replace === true,
   stepBackBy: (steps) => {
     history.go(-steps);
   },
@@ -83,7 +90,6 @@ export function makeBackGoUp(env: BackGuardEnvironment = BROWSER): BackGoesUp {
   let entries: readonly string[] = [];
   let isMoving = false;
   let isPassingThrough = false;
-  const replacing = new Set<string>();
   let settle: (() => void) | undefined;
   let followedWhileMoving: URL | undefined;
   let savedState = env.historyState();
@@ -98,7 +104,7 @@ export function makeBackGoUp(env: BackGuardEnvironment = BROWSER): BackGoesUp {
       entries = [pathname];
     } else if (navigation.type === "popstate" && navigation.delta < 0) {
       entries = entries.slice(0, navigation.delta);
-    } else if (replacing.has(pathname)) {
+    } else if (env.isReplacing(navigation.to.url)) {
       entries = [...entries.slice(0, -1), pathname];
     } else if (entries.at(-1) !== pathname) {
       entries = [...entries, pathname];
@@ -160,13 +166,7 @@ export function makeBackGoUp(env: BackGuardEnvironment = BROWSER): BackGoesUp {
     target: ResolvedPathname,
     go: BackGuardEnvironment["goto"] = env.goto,
   ): Promise<void> {
-    const { pathname } = new URL(target, env.browserAt());
-    replacing.add(pathname);
-    try {
-      await go(target, { replace: true });
-    } finally {
-      replacing.delete(pathname);
-    }
+    await go(target, { replace: true });
   }
 
   async function replace(
