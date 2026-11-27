@@ -14,6 +14,7 @@ import {
   readerBook,
   servePages,
 } from "./reader-book.ts";
+import { recordBarePages, stopRecordingBarePages } from "./reader-paint.ts";
 
 const LOOK_KEY = "omnileaf.readerSettings.all";
 const GUIDES_SEEN = [
@@ -38,11 +39,18 @@ const PAN_PAST_EDGE_PX = 3000;
 const DRAG_STEPS = 12;
 const CLOSE_PX = 4;
 const LONG_BOOK_PAGES = 200;
-const KEY_REPEAT_MS = 30;
+const KEY_REPEATS = 60;
+const FRAMES_PER_KEY_REPEAT = 2;
+const FRAMES_BETWEEN_BURST_TAPS = 2;
 const PAGE_ARRIVAL_MS = 300;
-const HELD_KEY_MS = 2000;
 const TAP_BURST = 12;
 const TAP_BURST_GAP_MS = 40;
+const PAGES_READ_ON = 12;
+const EVEN_TAP_GAP_MS = 160;
+const MIDWAY_TAP_GAP_MS = 120;
+const MIDWAY_CATCHES = 3;
+const ALTERNATING_TAPS = 8;
+const READ_AHEAD = [16, 17] as const;
 const MOST_CELLS_DRAWN = 3;
 const MOST_PAGES_HELD = 7;
 const WAIT_PAST_DOUBLE_TAP_MS = 600;
@@ -86,6 +94,7 @@ declare global {
     omnileafRecording?: boolean;
     omnileafControlsShown?: boolean;
     omnileafPagesHeld?: { mostDrawn: number; mostMounted: number };
+    omnileafHeldPages?: HTMLImageElement[];
   }
 }
 
@@ -131,18 +140,49 @@ async function largeNoisePage(page: Page): Promise<Buffer> {
 
 async function serveLargePages(
   page: Page,
-  { arrivesAfterMs }: { arrivesAfterMs: number } = { arrivesAfterMs: 0 },
+  {
+    arrivesAfterMs = 0,
+    arrivesAgainAfterMs = arrivesAfterMs,
+  }: { arrivesAfterMs?: number; arrivesAgainAfterMs?: number } = {},
 ): Promise<void> {
   const jpeg = await largeNoisePage(page);
+  const served = new Set<number>();
   await servePages(page);
   await page.route(fakeProtocolRoute("omni"), async (route) => {
-    if (pageIndexOf(route.request().url()) === undefined) {
+    const index = pageIndexOf(route.request().url());
+    if (index === undefined) {
       await route.fallback();
       return;
     }
-    await new Promise((arrived) => setTimeout(arrived, arrivesAfterMs));
+    const delayMs = served.has(index) ? arrivesAgainAfterMs : arrivesAfterMs;
+    served.add(index);
+    await new Promise((arrived) => setTimeout(arrived, delayMs));
     await route.fulfill({ contentType: "image/jpeg", body: jpeg });
   });
+}
+
+async function holdPages(
+  page: Page,
+  numbers: readonly number[],
+): Promise<void> {
+  await page.evaluate(
+    (alts) => {
+      window.omnileafHeldPages = alts.flatMap(
+        (alt) =>
+          document.querySelector<HTMLImageElement>(`main img[alt="${alt}"]`) ??
+          [],
+      );
+    },
+    numbers.map((number) => `Page ${String(number)}`),
+  );
+}
+
+async function pagesStillHeld(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    (window.omnileafHeldPages ?? [])
+      .filter((image) => image.isConnected)
+      .map((image) => image.alt),
+  );
 }
 
 async function openBookWith(page: Page, look: object): Promise<void> {
@@ -236,25 +276,30 @@ async function tapEvery(
 }
 
 async function holdKey(
+  page: Page,
   session: CDPSession,
   key: typeof ARROW_RIGHT,
-  forMs: number,
 ): Promise<void> {
-  const start = Date.now();
-  let presses = 0;
-  while (Date.now() - start < forMs) {
+  for (let press = 0; press < KEY_REPEATS; press += 1) {
     await session.send("Input.dispatchKeyEvent", {
       type: "keyDown",
       ...key,
-      autoRepeat: presses > 0,
+      autoRepeat: press > 0,
     });
-    presses += 1;
-    const due = start + presses * KEY_REPEAT_MS - Date.now();
-    if (due > 0) {
-      await new Promise((ready) => setTimeout(ready, due));
-    }
+    await waitFrames(page, FRAMES_PER_KEY_REPEAT);
   }
   await session.send("Input.dispatchKeyEvent", { type: "keyUp", ...key });
+}
+
+async function tapBurst(
+  page: Page,
+  session: CDPSession,
+  at: Point,
+): Promise<void> {
+  for (let taps = 0; taps < TAP_BURST; taps += 1) {
+    await tap(session, at);
+    await waitFrames(page, FRAMES_BETWEEN_BURST_TAPS);
+  }
 }
 
 async function fingerDown(session: CDPSession, at: Point): Promise<void> {
@@ -297,10 +342,15 @@ async function recordUncoveredFrames(page: Page): Promise<void> {
   await page.evaluate((samples) => {
     window.omnileafGappedFrames = [];
     window.omnileafRecording = true;
+    const isPageLoadingShown = (image: HTMLImageElement): boolean =>
+      image.parentElement
+        ?.querySelector("[data-page-loading]")
+        ?.checkVisibility({ visibilityProperty: true }) === true;
     const isDrawn = (image: HTMLImageElement): boolean =>
-      image.complete &&
-      image.naturalWidth > 0 &&
-      image.checkVisibility({ visibilityProperty: true });
+      (image.complete &&
+        image.naturalWidth > 0 &&
+        image.checkVisibility({ visibilityProperty: true })) ||
+      isPageLoadingShown(image);
     const record = (): void => {
       if (window.omnileafRecording !== true) {
         return;
@@ -512,6 +562,122 @@ test(
 
     expect(gapped.length).toBeGreaterThan(0);
     expect(gapped.filter((gaps) => gaps > 0)).toEqual([]);
+  },
+);
+
+interface Burst {
+  readonly taps: number;
+  readonly gapMs: number;
+}
+
+async function barePagesTurningBack(
+  page: Page,
+  bursts: readonly Burst[],
+): Promise<string[]> {
+  await serveLargePages(page, { arrivesAgainAfterMs: PAGE_ARRIVAL_MS });
+  await openBookWith(page, { pageTurn: "slide" });
+  await expect(
+    page.getByRole("main").locator('img[alt="Page 17"]'),
+  ).not.toHaveClass(/invisible/, { timeout: 15_000 });
+  const session = await page.context().newCDPSession(page);
+  await session.send("Network.enable");
+  await session.send("Network.setCacheDisabled", { cacheDisabled: true });
+  const next = await centreOf(page.getByRole("button", { name: "Next page" }));
+  const previous = await centreOf(
+    page.getByRole("button", { name: "Previous page" }),
+  );
+  await tapEvery(session, next, {
+    taps: PAGES_READ_ON,
+    gapMs: EVEN_TAP_GAP_MS,
+  });
+  await expectOnPage(page, 14 + PAGES_READ_ON);
+  await expect.poll(() => slidesRunning(page)).toBe(0);
+  await expect.poll(() => pageDrawnAtRest(page)).toBe(14 + PAGES_READ_ON);
+  await session.send("Emulation.setCPUThrottlingRate", { rate: CPU_SLOWDOWN });
+  await recordBarePages(page);
+
+  let shown = 14 + PAGES_READ_ON;
+  for (const burst of bursts) {
+    await tapEvery(session, previous, burst);
+    shown -= burst.taps;
+    await expectOnPage(page, shown);
+    await expect.poll(() => slidesRunning(page)).toBe(0);
+    await waitFrames(page, FRAMES_TO_SETTLE);
+  }
+  const bare = await stopRecordingBarePages(page);
+  await session.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+  await expect.poll(() => pageDrawnAtRest(page)).toBe(shown);
+  return bare;
+}
+
+test(
+  "paints each page placed on screen or its loading state through taps back at an even pace",
+  { tag: "@native" },
+  async ({ page }) => {
+    const bursts = [{ taps: PAGES_READ_ON, gapMs: EVEN_TAP_GAP_MS }];
+
+    const bare = await barePagesTurningBack(page, bursts);
+
+    expect(bare).toEqual([]);
+  },
+);
+
+test(
+  "paints each page placed on screen or its loading state through a burst of taps back that cuts",
+  { tag: "@native" },
+  async ({ page }) => {
+    const bursts = [{ taps: PAGES_READ_ON, gapMs: TAP_BURST_GAP_MS }];
+
+    const bare = await barePagesTurningBack(page, bursts);
+
+    expect(bare).toEqual([]);
+  },
+);
+
+test(
+  "paints each page placed on screen or its loading state when a slide back is caught mid-way",
+  { tag: "@native" },
+  async ({ page }) => {
+    const bursts = Array.from({ length: MIDWAY_CATCHES }, () => ({
+      taps: 2,
+      gapMs: MIDWAY_TAP_GAP_MS,
+    }));
+
+    const bare = await barePagesTurningBack(page, bursts);
+
+    expect(bare).toEqual([]);
+  },
+);
+
+test(
+  "keeps the pages read ahead through taps back and forth",
+  { tag: "@native" },
+  async ({ page }) => {
+    await serveLargePages(page);
+    await openBookWith(page, { pageTurn: "slide" });
+    await expect(
+      page.getByRole("main").locator('img[alt="Page 17"]'),
+    ).not.toHaveClass(/invisible/, { timeout: 15_000 });
+    const session = await page.context().newCDPSession(page);
+    const next = await centreOf(
+      page.getByRole("button", { name: "Next page" }),
+    );
+    const previous = await centreOf(
+      page.getByRole("button", { name: "Previous page" }),
+    );
+    await holdPages(page, READ_AHEAD);
+
+    for (let turn = 0; turn < ALTERNATING_TAPS; turn += 1) {
+      const isForward = turn % 2 === 0;
+      await tap(session, isForward ? next : previous);
+      await expectOnPage(page, isForward ? 15 : 14);
+      await expect.poll(() => slidesRunning(page)).toBe(0);
+      await waitFrames(page, FRAMES_TO_SETTLE);
+    }
+
+    expect(await pagesStillHeld(page)).toEqual(
+      READ_AHEAD.map((number) => `Page ${String(number)}`),
+    );
   },
 );
 
@@ -870,7 +1036,7 @@ test.describe("a long book", { tag: "@native" }, () => {
     page,
   }) => {
     await expectPagesKeptUp(page, (session) =>
-      holdKey(session, ARROW_RIGHT, HELD_KEY_MS),
+      holdKey(page, session, ARROW_RIGHT),
     );
   });
 
@@ -881,10 +1047,7 @@ test.describe("a long book", { tag: "@native" }, () => {
       const next = await centreOf(
         page.getByRole("button", { name: "Next page" }),
       );
-      await tapEvery(session, next, {
-        taps: TAP_BURST,
-        gapMs: TAP_BURST_GAP_MS,
-      });
+      await tapBurst(page, session, next);
     });
   });
 });

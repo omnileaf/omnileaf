@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
 
   import { assertNever } from "#lib/assert-never.ts";
 
@@ -13,6 +13,7 @@
   import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
   import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import { getLibraryReturn } from "#lib/library/library-return.ts";
   import {
     ALL_SERIES,
     forgetTabUsedLast,
@@ -46,8 +47,11 @@
   const android = androidListLook();
   const ios = new IosPhone();
 
+  const libraryReturn = getLibraryReturn();
   let keptTabs = $state<readonly LibraryTab[]>(NEW_LIBRARY_TABS);
   let categories = $state<readonly LibraryCategory[]>([]);
+  let hasReadTabs = $state(false);
+  let hasReadCategories = $state(false);
   let seriesCounts = $state<ReadonlyMap<string, number>>(new Map());
   let keepsLabels = $state(false);
   let isNaming = $state(false);
@@ -72,6 +76,15 @@
         : tab,
     ),
   );
+  $effect(() => {
+    if (hasReadTabs && hasReadCategories) {
+      const tabs = arrangedTabs(keptTabs, categories);
+      untrack(() => {
+        libraryReturn.forgetUnlessTabsAre(tabs);
+      });
+    }
+  });
+
   const opensOn = new LibraryOpensOn();
   const opensOnLabelId = $props.id();
   const openable = $derived(
@@ -211,6 +224,7 @@
     const kept = await commands.libraryTabs();
     if (kept.status === "ok") {
       keptTabs = kept.data;
+      hasReadTabs = true;
     }
   }
 
@@ -220,6 +234,7 @@
       return;
     }
     categories = kept.data;
+    hasReadCategories = true;
     const counted = await Promise.all(
       kept.data.map(async ({ id }) => {
         const count = await commands.categorySeriesCount(
