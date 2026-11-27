@@ -1098,9 +1098,11 @@
       event.currentTarget.blur();
     }
     const action = zoneAction(zone, viewportScale);
+    const wasSecondTapOfTheTurnIn = isSecondTapOfTheTurnIn;
+    isSecondTapOfTheTurnIn = false;
     if (
       !swipe.isClickASwipe() &&
-      !isSecondTapOfTheTurnIn &&
+      !wasSecondTapOfTheTurnIn &&
       action !== undefined
     ) {
       act(action);
@@ -1178,6 +1180,7 @@
     const stopWatchingPresses = on(element, "pointerdown", (event) => {
       isPressOnControl = isOnUpNextControl(event);
     });
+    const stopWatchingLifts = on(element, "pointerup", noteLift);
     const stopPassingTaps = on(element, "click", (event: MouseEvent) => {
       if (
         isPointerClick(event) &&
@@ -1189,6 +1192,7 @@
     });
     return () => {
       stopWatchingPresses();
+      stopWatchingLifts();
       stopPassingTaps();
     };
   };
@@ -1214,10 +1218,7 @@
     swipe.started(event);
     tappedWith = event.pointerType;
     dragFrom = 0;
-    const press = tapPointOf(event);
-    isSecondTapOfTheTurnIn =
-      isUntouchedSincePagedInto && tapWindow.isSecondTap(press);
-    isUntouchedSincePagedInto = false;
+    const press = notePress(event);
     isSecondTap =
       waitingTap !== undefined && !isOffPages && tapWindow.isSecondTap(press);
     if (isSecondTap) {
@@ -1227,6 +1228,18 @@
 
   function tapPointOf(event: PointerEvent): TapPoint {
     return { at: performance.now(), x: event.clientX, y: event.clientY };
+  }
+
+  function notePress(event: PointerEvent): TapPoint {
+    const press = tapPointOf(event);
+    isSecondTapOfTheTurnIn =
+      isUntouchedSincePagedInto && tapWindow.isSecondTap(press);
+    isUntouchedSincePagedInto = false;
+    return press;
+  }
+
+  function noteLift(event: PointerEvent): void {
+    tapWindow.lifted(tapPointOf(event));
   }
 
   function onSwipeMove(event: PointerEvent): void {
@@ -1246,7 +1259,7 @@
   }
 
   function onSwipeEnd(event: PointerEvent): void {
-    tapWindow.lifted(tapPointOf(event));
+    noteLift(event);
     const turn = swipe.ended(event);
     if (turn !== undefined && !isPagePanning) {
       turnBy(TURN_STEPS[inReadingOrder(turn, reading.direction)]);
@@ -1445,7 +1458,11 @@
     role="presentation"
     data-tap-zones
     class="absolute inset-none grid touch-pan-y touch-pinch-zoom grid-strip-zones"
-    onpointerdown={pauseOnTouch}
+    onpointerdown={(event) => {
+      notePress(event);
+      pauseOnTouch();
+    }}
+    onpointerup={noteLift}
   >
     <span id={pausesHintId} hidden>{m.reader_auto_scroll_zone_pauses()}</span>
     {#if look.tapToScroll === "topAndBottom"}
