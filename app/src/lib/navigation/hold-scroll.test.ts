@@ -149,3 +149,21 @@ test("goes back to the saved scroll position when no link shows the saved addres
 
   expect(screen.scrollTop).toBe(left.top);
 });
+
+test("brings back the link left, not the same link in an inert part of the screen nearer where it was", () => {
+  const { screen, lower } = screenShowingSeriesTwice();
+  screen.scrollTop = SHOWN_LOWER_LINK_AT;
+  const left = placeOf(screen, undefined);
+  const inert = document.createElement("div");
+  inert.inert = true;
+  inert.style.position = "absolute";
+  inert.style.top = `${String(LOWER_LINK_TOP + GAP_PX / 4)}px`;
+  inert.append(linkTo("beside"));
+  screen.style.position = "relative";
+  screen.append(inert);
+  screen.scrollTop = 0;
+
+  stops.push(holdScrollPlace(screen, { ...left, top: left.top + GAP_PX / 4 }));
+
+  expect(linkTopWithin(screen, lower)).toBe(left.anchor?.offset);
+});
