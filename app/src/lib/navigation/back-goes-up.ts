@@ -96,15 +96,16 @@ export function makeBackGoUp(env: BackGuardEnvironment = BROWSER): BackGoesUp {
   let didRecover = false;
 
   function record(navigation: AfterNavigate): void {
-    const pathname = navigation.to?.url.pathname;
-    if (pathname === undefined) {
+    const arrivedAt = navigation.to?.url;
+    if (arrivedAt === undefined) {
       return;
     }
+    const { pathname } = arrivedAt;
     if (navigation.type === "enter") {
       entries = [pathname];
     } else if (navigation.type === "popstate" && navigation.delta < 0) {
       entries = entries.slice(0, navigation.delta);
-    } else if (env.isReplacing(navigation.to.url)) {
+    } else if (env.isReplacing(arrivedAt)) {
       entries = [...entries.slice(0, -1), pathname];
     } else if (entries.at(-1) !== pathname) {
       entries = [...entries, pathname];
