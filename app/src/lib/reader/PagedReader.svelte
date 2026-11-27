@@ -452,11 +452,13 @@
         return undefined;
     }
   });
-  const headingTitle = $derived(
-    leaving === undefined
+  let isNextBookOpening = $state(false);
+  const headingTitle = $derived.by(() => {
+    const opening = leaving ?? (isNextBookOpening ? "next" : undefined);
+    return opening === undefined
       ? named.title
-      : (named[leaving]?.title ?? named.title),
-  );
+      : (named[opening]?.title ?? named.title);
+  });
   const isUpNextCurrent = $derived(
     turner.isPastEnd && leaving === undefined && !isStripShown,
   );
@@ -859,6 +861,7 @@
   }
 
   function startNextBook(): void {
+    isNextBookOpening = true;
     void (nextHref === undefined
       ? goto(seriesHref).catch(reportFailure)
       : moveWithinReader(nextHref, { readerPagedInto: true }));
