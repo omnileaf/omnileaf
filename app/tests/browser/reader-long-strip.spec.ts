@@ -6,6 +6,7 @@ import {
   BOOK_SERIES_ID,
   BOOK_ID,
   BOOK_TITLE,
+  NEXT_BOOK,
   NOT_STARTED,
   PAGE_COUNT,
   readerBackend,
@@ -226,5 +227,39 @@ test.describe("a long strip read before", () => {
     await expect
       .poll(async () => Math.abs((await scrollTopOf(page)) - pageHeight * 13))
       .toBeLessThan(CLOSE_PX);
+  });
+});
+
+test.describe("a long strip whose next book is slow to open", () => {
+  test.use({
+    backend: {
+      ...stripBackend(),
+      openBook: async (...opening) => {
+        if (opening[0] === NEXT_BOOK.id) {
+          await new Promise(() => undefined);
+        }
+        return stripBackend().openBook(...opening);
+      },
+    },
+  });
+
+  test("names the next book in the reader's heading while that book opens", async ({
+    page,
+  }) => {
+    await openStrip(page);
+    await strip(page).evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await expectOnPage(page, PAGE_COUNT);
+    await page.keyboard.press("ArrowDown");
+    await expect(
+      page.getByRole("heading", { level: 2, name: `${BOOK_TITLE} finished` }),
+    ).toBeVisible();
+
+    await page.keyboard.press("ArrowDown");
+
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      NEXT_BOOK.title,
+    );
   });
 });

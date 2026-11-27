@@ -63,7 +63,7 @@
 </script>
 
 {#if togglesFromSwitchAlone}
-  <div class={[ROW, className]}>
+  <div data-setting-row class={[ROW, className]}>
     <SettingWords {id} {label} {description} />
     <Switch
       bind:checked={() => isOn, onToggle}
@@ -77,6 +77,7 @@
   </div>
 {:else}
   <Switch
+    data-setting-row
     bind:checked={() => isOn, onToggle}
     {disabled}
     aria-labelledby="{id}-label"
