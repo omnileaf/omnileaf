@@ -7,6 +7,7 @@ import { nextPagesToAsk } from "./page-requests.ts";
 
 export class AskedImages {
   readonly #asked = new SvelteSet<number>();
+  #notStarted: readonly number[] = [];
   readonly #loads: ImageLoads;
 
   constructor(loads: ImageLoads) {
@@ -14,25 +15,37 @@ export class AskedImages {
   }
 
   askFor(byUrgency: readonly number[]): void {
-    for (const index of nextPagesToAsk(
-      byUrgency,
-      this.#asked,
-      this.#loads.room,
-    )) {
+    this.#dropUnstartedBesides(byUrgency);
+    const room = this.#loads.room - this.#notStarted.length;
+    for (const index of nextPagesToAsk(byUrgency, this.#asked, room)) {
       this.#asked.add(index);
+      this.#notStarted = [...this.#notStarted, index];
     }
   }
 
   askAgain(index: number): void {
     this.#asked.delete(index);
+    this.#started(index);
   }
 
   freshImage(index: number): Attachment<HTMLImageElement> {
     return () => {
       untrack(() => {
-        this.#asked.delete(index);
+        this.askAgain(index);
       });
     };
+  }
+
+  #started(index: number): void {
+    this.#notStarted = this.#notStarted.filter((waiting) => waiting !== index);
+  }
+
+  #dropUnstartedBesides(byUrgency: readonly number[]): void {
+    for (const index of this.#notStarted) {
+      if (!byUrgency.includes(index)) {
+        this.askAgain(index);
+      }
+    }
   }
 
   loadWhenAsked(
@@ -42,6 +55,7 @@ export class AskedImages {
   ): Attachment<HTMLImageElement> {
     return (image) => {
       if (this.#asked.has(index)) {
+        this.#started(index);
         this.#loads.load(image, url, onStalled);
       }
     };
