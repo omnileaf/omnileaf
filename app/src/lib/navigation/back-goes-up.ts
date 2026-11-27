@@ -17,6 +17,7 @@ type Replacing = Extract<HistoryMove, { kind: "replace" }>;
 
 export interface BackGoesUp {
   readonly isPassingThrough: boolean;
+  readonly isMoving: boolean;
   readonly entries: readonly string[];
   replaceWith(target: ResolvedPathname): Promise<void>;
   followLinkTo(target: ResolvedPathname): Promise<void>;
@@ -158,6 +159,9 @@ export function makeBackGoUp(): BackGoesUp {
   return {
     get isPassingThrough() {
       return isPassingThrough;
+    },
+    get isMoving() {
+      return isMoving;
     },
     get entries() {
       return entries;
