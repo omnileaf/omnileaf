@@ -5,6 +5,7 @@ use super::Writer;
 use crate::{
     Error,
     catalog::stored_id::stored_id,
+    library_tabs::forget_category_tab,
     store::key::{Key, LabelKey},
 };
 
@@ -13,11 +14,18 @@ const CATEGORY_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM category WHERE categ
 const TAG_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM label_tag WHERE tag_id = ?1)";
 const LAST_CATEGORY_POSITION: &str =
     "SELECT coalesce(max(position), 0) FROM category WHERE position < ?1";
+const CATEGORY_NAMES: &str = "SELECT category_id, name FROM category ORDER BY category_id";
 const TAG_NAMED: &str = "SELECT tag_id FROM label_tag WHERE norm_name = ?1 ORDER BY tag_id LIMIT 1";
 const SERIES_IN_CATEGORY: &str =
     "SELECT series_id FROM series_category WHERE category_id = ?1 ORDER BY series_id";
 const SERIES_WITH_TAG: &str =
     "SELECT series_id FROM series_label_tag WHERE tag_id = ?1 ORDER BY series_id";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CategoryRename {
+    Renamed,
+    NameTaken,
+}
 
 impl Writer<'_> {
     pub fn has_category(&self, category: CategoryId) -> Result<bool, Error> {
@@ -34,10 +42,10 @@ impl Writer<'_> {
 
     #[tracing::instrument(skip_all, fields(name))]
     pub fn create_category(&mut self, name: &str) -> Result<CategoryId, Error> {
-        let category = CategoryId::from_name(name)?;
-        if self.has_category(category)? {
+        if let Some(category) = self.category_named(name)? {
             return Ok(category);
         }
+        let category = self.free_category_id(name)?;
         let position = self.next_category_position()?;
         self.write_label(LabelKey::CategoryName(category), &Value::Text(name.into()))?;
         self.write_label(
@@ -71,7 +79,37 @@ impl Writer<'_> {
     pub fn delete_category(&mut self, category: CategoryId) -> Result<(), Error> {
         let members = self.members_of(SERIES_IN_CATEGORY, category.as_bytes())?;
         self.set_category_members(category, &members, false)?;
+        forget_category_tab(self.connection, &category.to_string())?;
         self.write_label(LabelKey::CategoryDeleted(category), &Value::Bool(true))
+    }
+
+    pub fn category_named(&self, name: &str) -> Result<Option<CategoryId>, Error> {
+        let wanted = norm(name);
+        let mut statement = self.connection.prepare(CATEGORY_NAMES)?;
+        let mut rows = statement.query([])?;
+        while let Some(row) = rows.next()? {
+            let stored: String = row.get("name")?;
+            if norm(&stored) == wanted {
+                return Ok(Some(stored_id(row, "category_id")?));
+            }
+        }
+        Ok(None)
+    }
+
+    #[tracing::instrument(skip_all, fields(%category, to))]
+    pub fn rename_category(
+        &mut self,
+        category: CategoryId,
+        to: &str,
+    ) -> Result<CategoryRename, Error> {
+        if self
+            .category_named(to)?
+            .is_some_and(|holder| holder != category)
+        {
+            return Ok(CategoryRename::NameTaken);
+        }
+        self.write_label(LabelKey::CategoryName(category), &Value::Text(to.into()))?;
+        Ok(CategoryRename::Renamed)
     }
 
     #[tracing::instrument(skip_all, fields(name))]
@@ -142,6 +180,15 @@ impl Writer<'_> {
         }
         let stamp = self.local.stamp(self.now_unix_ms)?;
         Ok(TagId::minted(name, stamp.node, stamp.hlc)?)
+    }
+
+    fn free_category_id(&mut self, name: &str) -> Result<CategoryId, Error> {
+        let derived = CategoryId::from_name(name)?;
+        if !self.has_category(derived)? {
+            return Ok(derived);
+        }
+        let stamp = self.local.stamp(self.now_unix_ms)?;
+        Ok(CategoryId::minted(name, stamp.node, stamp.hlc)?)
     }
 
     fn next_category_position(&self) -> Result<u64, Error> {

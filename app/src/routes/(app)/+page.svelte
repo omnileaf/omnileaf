@@ -61,6 +61,7 @@
   import EmptyTab from "#lib/library/EmptyTab.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { defaultLibraryView, viewDrawn } from "#lib/library/library-view.ts";
+  import { showsCountUnderCover } from "#lib/library/series-count-line.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { FolderCardsPhone } from "#lib/library/folder-cards-phone.svelte.ts";
   import { FolderFinder } from "#lib/library/folder-finder.svelte.ts";
@@ -124,6 +125,7 @@
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import type { ListState } from "#lib/paging/paged-list.svelte.ts";
   import { holdScrollTop } from "#lib/navigation/hold-scroll.ts";
+  import { sendingNewest } from "#lib/navigation/newest-call.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { isPhone, isPointer, phoneOf } from "#lib/page/platform.ts";
@@ -233,6 +235,7 @@
       : "none",
   );
   let writers = $state<readonly LibraryWriter[]>([]);
+  let libraryChanges = $state(0);
   const groups = $derived(groupsBy(groupBy));
   const tabsShown = $derived(
     groupBy === "none" &&
@@ -432,6 +435,9 @@
       : 0,
   );
   const isPaging = $derived(pagesBesideChosen > 0);
+  const opensOnPaddedGroupHead = $derived(
+    androidPhone.isOn && groups.length > 0,
+  );
   const isIosPhone = $derived(
     phoneOf(data.appInfo.platform, width.current) === "ios",
   );
@@ -763,20 +769,31 @@
             commands.folderSeriesCount(folder.id, listedBy().filter),
         }));
       case "category":
-        return categories.map((category) => ({
-          key: category.id,
-          name: category.name,
-          listSeries: (after) =>
-            commands.categorySeries(category.id, after, listedBy()),
-          countSeries: () =>
-            commands.categorySeriesCount(category.id, listedBy().filter),
-        }));
+        return categories.length === 0
+          ? []
+          : [...categories.map(categoryGroup), CATEGORYLESS_GROUP];
       case "creator":
         return [...writers.map(writerGroup), WRITERLESS_GROUP];
       default:
         return assertNever(grouping);
     }
   }
+
+  function categoryGroup({ id, name }: LibraryCategory): Group {
+    return {
+      key: id,
+      name,
+      listSeries: (after) => commands.categorySeries(id, after, listedBy()),
+      countSeries: () => commands.categorySeriesCount(id, listedBy().filter),
+    };
+  }
+
+  const CATEGORYLESS_GROUP: Group = {
+    key: "categoryless",
+    name: m.library_group_no_category(),
+    listSeries: (after) => commands.categorylessSeries(after, listedBy()),
+    countSeries: () => commands.categorylessSeriesCount(listedBy().filter),
+  };
 
   function writerGroup({ name }: LibraryWriter): Group {
     return {
@@ -809,6 +826,17 @@
     } while (after !== null);
     writers = found;
   }
+
+  async function reloadGroupNames(): Promise<void> {
+    if (groupBy === "folder") {
+      await loadFolders();
+    }
+    if (groupBy === "creator") {
+      await loadWriters();
+    }
+  }
+
+  const reloadGroupNamesSoon = sendingNewest<undefined>(reloadGroupNames);
 
   async function loadFolders(): Promise<void> {
     folders = (await readAllFolders(commands.libraryFolders)) ?? folders;
@@ -1047,8 +1075,10 @@
     void loadDetailEditSupport();
     void loadMissingFolders();
     const stopListening = listenForLibraryChanges(() => {
+      libraryChanges += 1;
       void loadMissingFolders();
       void loadCategories();
+      reloadGroupNamesSoon(undefined);
       void loadFilterChoices();
       if (chosenListing === undefined) {
         return;
@@ -1103,7 +1133,13 @@
       {...props}
     />
   {:else if page.series.list.kind === "loading"}
-    <CoverSkeletons coversPerRow={props.view.coversPerRow} />
+    <CoverSkeletons
+      coversPerRow={props.view.coversPerRow}
+      showsCount={showsCountUnderCover(
+        data.appInfo.platform,
+        props.view.onCovers,
+      )}
+    />
   {/if}
 {/snippet}
 
@@ -1401,6 +1437,13 @@
           {...view.reading.kind === "read"
             ? { coversPerRow: view.reading.value.coversPerRow }
             : {}}
+          showsCount={showsCountUnderCover(
+            data.appInfo.platform,
+            (view.reading.kind === "read"
+              ? view.reading.value
+              : defaultLibraryView(data.appInfo.platform)
+            ).onCovers,
+          )}
         />
       </div>
     {:else if library.list.kind === "failed"}
@@ -1466,7 +1509,10 @@
         <div
           class={[
             PAGE_BLEED,
-            !isPaging && emptyCause === undefined && COVERS_GAP,
+            !isPaging &&
+              emptyCause === undefined &&
+              !opensOnPaddedGroupHead &&
+              COVERS_GAP,
             "flex flex-1 flex-col overflow-x-clip",
           ]}
         >
@@ -1546,6 +1592,7 @@
                     listSeries={group.listSeries}
                     countSeries={group.countSeries}
                     {listed}
+                    {libraryChanges}
                     {covers}
                   />
                 {/each}

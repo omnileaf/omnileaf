@@ -50,6 +50,8 @@ export interface ParentPage {
   readonly title: string;
 }
 
+export type AndroidTitle = "large" | "in-bar";
+
 export interface SectionSummary {
   readonly text: string;
   readonly lang?: Locale;

@@ -136,7 +136,7 @@ pub use library_book::{
     BookCursor, BookFileState, BookId, BookReading, BooksShown, ReadMark, SeriesBook,
     SeriesBookListing, SeriesBookPage,
 };
-pub use library_category::{CategoryId, LibraryCategory};
+pub use library_category::{CategoryId, CategoryRename, LibraryCategory};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_chapter_search::{ChapterCursor, ChapterHit, ChapterHitPage, ChapterTitleSource};
 pub use library_folder::{

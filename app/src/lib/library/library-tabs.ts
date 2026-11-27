@@ -20,6 +20,10 @@ export interface ArrangedTab {
   readonly isHidden: boolean;
 }
 
+export interface CategoryTab extends ArrangedTab {
+  readonly id: Extract<LibraryTabId, { kind: "category" }>;
+}
+
 export function tabKey(id: LibraryTabId): string {
   switch (id.kind) {
     case "all":

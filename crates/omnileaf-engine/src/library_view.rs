@@ -47,6 +47,7 @@ pub enum LibraryGrouping {
 #[serde(rename_all = "camelCase")]
 pub struct OnCovers {
     pub shows_unread_count: bool,
+    pub shows_volume_and_chapter_counts: bool,
     pub shows_downloaded: bool,
     pub shows_language: bool,
     pub shows_reading_progress: bool,
@@ -180,6 +181,7 @@ impl Default for LibraryView {
             shows_continue_row: false,
             on_covers: OnCovers {
                 shows_unread_count: true,
+                shows_volume_and_chapter_counts: false,
                 shows_downloaded: true,
                 shows_language: false,
                 shows_reading_progress: true,
@@ -193,6 +195,7 @@ impl From<OnCovers> for StoredOnCovers {
     fn from(on_covers: OnCovers) -> Self {
         Self {
             shows_unread_count: on_covers.shows_unread_count,
+            shows_volume_and_chapter_counts: on_covers.shows_volume_and_chapter_counts,
             shows_downloaded: on_covers.shows_downloaded,
             shows_language: on_covers.shows_language,
             shows_reading_progress: on_covers.shows_reading_progress,
@@ -205,6 +208,7 @@ impl From<StoredOnCovers> for OnCovers {
     fn from(stored: StoredOnCovers) -> Self {
         Self {
             shows_unread_count: stored.shows_unread_count,
+            shows_volume_and_chapter_counts: stored.shows_volume_and_chapter_counts,
             shows_downloaded: stored.shows_downloaded,
             shows_language: stored.shows_language,
             shows_reading_progress: stored.shows_reading_progress,
@@ -300,12 +304,35 @@ mod tests {
             view.on_covers,
             OnCovers {
                 shows_unread_count: true,
+                shows_volume_and_chapter_counts: false,
                 shows_downloaded: true,
                 shows_language: false,
                 shows_reading_progress: true,
                 shows_continue_button: false,
             }
         );
+    }
+
+    #[test]
+    fn leaves_the_volume_and_chapter_counts_off_covers_of_a_new_library() {
+        let view = LibraryView::default();
+
+        assert!(!view.on_covers.shows_volume_and_chapter_counts);
+    }
+
+    #[test]
+    fn stores_the_volume_and_chapter_counts_on_covers_and_reads_them_back() {
+        let view = LibraryView {
+            on_covers: OnCovers {
+                shows_volume_and_chapter_counts: true,
+                ..LibraryView::default().on_covers
+            },
+            ..LibraryView::default()
+        };
+
+        let read = LibraryView::try_from(StoredLibraryView::from(view));
+
+        assert_eq!(read, Ok(view));
     }
 
     #[test]
@@ -386,6 +413,7 @@ mod tests {
                 "showsContinueRow": false,
                 "onCovers": {
                     "showsUnreadCount": true,
+                    "showsVolumeAndChapterCounts": false,
                     "showsDownloaded": true,
                     "showsLanguage": false,
                     "showsReadingProgress": true,
@@ -487,6 +515,7 @@ mod tests {
             shows_continue_row: true,
             on_covers: OnCovers {
                 shows_unread_count: false,
+                shows_volume_and_chapter_counts: true,
                 shows_downloaded: true,
                 shows_language: true,
                 shows_reading_progress: false,

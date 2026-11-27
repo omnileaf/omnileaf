@@ -65,7 +65,8 @@ test("sizes a page turned one at a time by its own image once another page takes
     pages: [pageAt(croppedImage("turned"))],
     crop: "borders",
     shown: 0,
-    spread: [0],
+    spreads: [[0]],
+    isPastEnd: false,
     fit: "screen",
     zoom: 1,
     isReversed: false,
@@ -77,6 +78,7 @@ test("sizes a page turned one at a time by its own image once another page takes
     startAt: undefined,
     onNextPage: () => {},
     onShownReady: () => {},
+    onSettled: () => {},
   };
   const screen = await render(PageStack, props);
   await hasLoaded();

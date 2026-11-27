@@ -1,5 +1,8 @@
 import { expect, test } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
+
+import "../../app.css";
 
 import { followCorePlatform } from "#lib/page/platform.ts";
 
@@ -13,6 +16,8 @@ const SECTIONS: readonly Section[] = [
   "settings",
 ];
 const SIZE = 24;
+const PHONE_WIDTH = 390;
+const PHONE_HEIGHT = 844;
 
 function filledShapes(container: Element): number {
   return Array.from(container.querySelectorAll("svg *")).filter(
@@ -78,8 +83,27 @@ test("keeps the clock's circular arrow drawn when the history icon is filled", a
   expect(drawnAsLines.length).toBeGreaterThanOrEqual(2);
 });
 
+interface Glyph {
+  readonly isFilled: boolean;
+  readonly opacity: string;
+}
+
+function glyphsOf(container: Element): Glyph[] {
+  return Array.from(container.querySelectorAll("[data-icon]")).map((glyph) => ({
+    isFilled: glyph.hasAttribute("data-filled"),
+    opacity: getComputedStyle(glyph).opacity,
+  }));
+}
+
+const ANDROID_MOVES: Record<Section, string> = {
+  library: "book-pop",
+  browse: "needle-sway",
+  history: "clock-rewind",
+  settings: "gear-turn",
+};
+
 test.each(SECTIONS)(
-  "renders native Icon component for %s on Android",
+  "stacks an outlined and a filled %s glyph on Android, showing the outlined one when it isn't selected",
   async (section) => {
     followCorePlatform("android");
     const screen = await render(NavigationIcon, {
@@ -89,13 +113,15 @@ test.each(SECTIONS)(
       size: SIZE,
     });
 
-    const icon = screen.container.querySelector("[data-icon]");
-    expect(icon).not.toBeNull();
+    expect(glyphsOf(screen.container)).toEqual([
+      { isFilled: false, opacity: "1" },
+      { isFilled: true, opacity: "0" },
+    ]);
   },
 );
 
 test.each(SECTIONS)(
-  "renders filled native Icon component for selected %s on Android",
+  "stacks an outlined and a filled %s glyph on Android, showing the filled one when it is selected",
   async (section) => {
     followCorePlatform("android");
     const screen = await render(NavigationIcon, {
@@ -105,7 +131,29 @@ test.each(SECTIONS)(
       size: SIZE,
     });
 
-    const icon = screen.container.querySelector("[data-icon][data-filled]");
-    expect(icon).not.toBeNull();
+    expect(glyphsOf(screen.container)).toEqual([
+      { isFilled: false, opacity: "0" },
+      { isFilled: true, opacity: "1" },
+    ]);
+  },
+);
+
+test.each(SECTIONS)(
+  "moves both %s glyphs together on Android while the tab arrives",
+  async (section) => {
+    followCorePlatform("android");
+    await page.viewport(PHONE_WIDTH, PHONE_HEIGHT);
+    const screen = await render(NavigationIcon, {
+      section,
+      isSelected: true,
+      isArriving: true,
+      size: SIZE,
+    });
+
+    const box = screen.container.querySelector('[data-slot="navigation-icon"]');
+
+    expect(box === null ? undefined : getComputedStyle(box).animationName).toBe(
+      ANDROID_MOVES[section],
+    );
   },
 );

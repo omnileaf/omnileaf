@@ -35,7 +35,10 @@ class FakeBrowser {
   readonly gone: string[] = [];
   readonly acrossOverlays: string[] = [];
   readonly cancelled: string[] = [];
+  #replacing = new Set<string>();
+  #heldBack: { target: string; replace: boolean } | undefined;
   ignoredLandings = 0;
+  cancelsNextGoto = false;
   slowNavigations = false;
   losesStepsBack = false;
   readonly overlays: Overlays = {
@@ -55,6 +58,7 @@ class FakeBrowser {
     }) as BackGuardEnvironment["onNavigate"],
     goto: (target, options) => this.#goto(target, options, false),
     gotoAcrossOverlays: (target, options) => this.#goto(target, options, true),
+    isReplacing: (target) => this.#replacing.has(target.pathname),
     stepBackBy: (steps) => {
       this.#stepBack(steps);
     },
@@ -83,8 +87,10 @@ class FakeBrowser {
     return this.#timers.filter((timer) => !timer.isCancelled).length;
   }
 
-  enter(): void {
-    this.#notify("enter", "/");
+  enter(path = "/"): void {
+    this.#entries = [{ path, state: "s0" }];
+    this.#shown = path;
+    this.#notify("enter", path);
   }
 
   open(path: string): void {
@@ -126,6 +132,15 @@ class FakeBrowser {
     }
   }
 
+  reissueCancelledGoto(): Promise<void> {
+    const held = this.#heldBack;
+    this.#heldBack = undefined;
+    if (held === undefined) {
+      return Promise.resolve();
+    }
+    return this.#goto(held.target, { replace: held.replace }, false);
+  }
+
   pass(ms: number): void {
     this.#now += ms;
     for (const timer of this.#timers) {
@@ -144,8 +159,18 @@ class FakeBrowser {
     if (isAcrossOverlays) {
       this.acrossOverlays.push(target);
     }
+    if (this.cancelsNextGoto) {
+      this.cancelsNextGoto = false;
+      this.#heldBack = { target, replace: options?.replace === true };
+      return Promise.resolve();
+    }
     this.gone.push(`${options?.replace === true ? "replace " : ""}${target}`);
-    this.#arrive(target, options?.replace === true ? "replace" : "push");
+    const how = options?.replace === true ? "replace" : "push";
+    if (how === "replace") {
+      this.#replacing.add(target);
+    }
+    this.#arrive(target, how);
+    this.#replacing.delete(target);
     return Promise.resolve();
   }
 
@@ -227,10 +252,10 @@ async function ticks(count = 40): Promise<void> {
   }
 }
 
-function guarded() {
+function guarded(firstPath = "/") {
   const browser = new FakeBrowser();
   const guard = makeBackGoUp(browser.environment);
-  browser.enter();
+  browser.enter(firstPath);
   return { browser, guard };
 }
 
@@ -385,4 +410,28 @@ test("shows the page the browser is on without being held up by an overlay that 
   await ticks();
 
   expect(browser.acrossOverlays).toEqual(["/history"]);
+});
+
+test("leads a page that replaced itself with its series up to the library by replacing it, not stepping out", async () => {
+  const { browser, guard } = guarded("/series/1/volume/2");
+
+  await guard.followLinkTo("/series/1");
+  browser.click("/");
+  await ticks();
+
+  expect(browser.gone).toEqual(["replace /series/1", "replace /"]);
+  expect(guard.entries).toEqual(["/"]);
+});
+
+test("still records a replace as one when an overlay held it back and it was issued again", async () => {
+  const { browser, guard } = guarded("/series/1/volume/2");
+  browser.cancelsNextGoto = true;
+
+  await guard.followLinkTo("/series/1");
+  await browser.reissueCancelledGoto();
+  browser.click("/");
+  await ticks();
+
+  expect(browser.gone).toEqual(["replace /series/1", "replace /"]);
+  expect(guard.entries).toEqual(["/"]);
 });

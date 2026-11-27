@@ -10,7 +10,10 @@
 mod store_support;
 mod support;
 
-use omnileaf_db::store::{Changed, Key, LabelKey, Store};
+use omnileaf_db::{
+    library_tabs::{StoredTab, TabPlace, library_tabs, set_library_tabs},
+    store::{CategoryRename, Changed, Key, LabelKey, Store},
+};
 use omnileaf_sync_proto::{CategoryId, ProfileId, SeriesId, TagId, Value};
 use proptest::{collection::vec, prelude::*, sample::select};
 use store_support::{FakeClock, NOW_UNIX_MS, open_store};
@@ -225,6 +228,191 @@ async fn clears_the_memberships_of_a_deleted_category_and_starts_it_empty_when_m
     let rebuilt = labels(&store).await;
     assert_eq!(rebuilt.categories.len(), 1);
     assert_eq!(rebuilt.in_category, []);
+}
+
+async fn rename_category(store: &Store, category: CategoryId, to: &'static str) -> CategoryRename {
+    store
+        .write(move |writer| writer.rename_category(category, to))
+        .await
+        .unwrap()
+}
+
+async fn category_named(store: &Store, name: &'static str) -> Option<CategoryId> {
+    store
+        .write(move |writer| writer.category_named(name))
+        .await
+        .unwrap()
+}
+
+fn category_tab(category: CategoryId) -> TabPlace {
+    TabPlace {
+        tab: StoredTab::Category(category.to_string()),
+        is_hidden: false,
+    }
+}
+
+#[tokio::test]
+async fn renames_a_category_under_the_same_id_keeping_its_series_and_its_place() {
+    let folder = ScratchFolder::new("labels-rename-category");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    let shelf = create_category(&store, "Sample Shelf").await;
+    let other = create_category(&store, "Other Name").await;
+    put_in_category(&store, shelf, vec![series(1), series(2)], true).await;
+    let tabs = vec![category_tab(other), category_tab(shelf)];
+    let kept_tabs = tabs.clone();
+    store
+        .database()
+        .write(move |transaction| set_library_tabs(transaction, &kept_tabs))
+        .await
+        .unwrap();
+    let before = labels(&store).await;
+
+    let renamed = rename_category(&store, shelf, "Plan to read").await;
+
+    let after = labels(&store).await;
+    let position = |kept: &Labels, id| kept.categories.iter().find(|row| row.0 == id).unwrap().2;
+    assert_eq!(renamed, CategoryRename::Renamed);
+    assert_eq!(
+        after
+            .categories
+            .iter()
+            .find(|row| row.0 == shelf)
+            .unwrap()
+            .1,
+        "Plan to read"
+    );
+    assert_eq!(position(&after, shelf), position(&before, shelf));
+    assert_eq!(after.in_category, before.in_category);
+    assert_eq!(store.database().read(library_tabs).await.unwrap(), tabs);
+}
+
+#[tokio::test]
+async fn keeps_a_category_renamed_when_its_projection_is_rebuilt() {
+    let folder = ScratchFolder::new("labels-rename-category-rebuilt");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    let shelf = create_category(&store, "Sample Shelf").await;
+    put_in_category(&store, shelf, vec![series(1)], true).await;
+    rename_category(&store, shelf, "Plan to read").await;
+    let renamed = labels(&store).await;
+
+    forget_labels(&store).await;
+    store.rebuild_projections().await.unwrap();
+
+    assert_eq!(labels(&store).await, renamed);
+}
+
+#[tokio::test]
+async fn refuses_a_name_another_category_has_whatever_its_case_and_spacing() {
+    let folder = ScratchFolder::new("labels-rename-category-taken");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    let shelf = create_category(&store, "Sample Shelf").await;
+    create_category(&store, "Other Name").await;
+    put_in_category(&store, shelf, vec![series(1)], true).await;
+    let before = labels(&store).await;
+
+    let refused = rename_category(&store, shelf, "  other   NAME ").await;
+
+    assert_eq!(refused, CategoryRename::NameTaken);
+    assert_eq!(labels(&store).await, before);
+}
+
+#[tokio::test]
+async fn renames_a_category_to_another_case_of_its_own_name() {
+    let folder = ScratchFolder::new("labels-rename-category-case");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    let shelf = create_category(&store, "sample shelf").await;
+
+    let renamed = rename_category(&store, shelf, "Sample Shelf").await;
+
+    assert_eq!(renamed, CategoryRename::Renamed);
+    assert_eq!(
+        labels(&store).await.categories,
+        [(shelf, "Sample Shelf".to_owned(), 1000)]
+    );
+}
+
+#[tokio::test]
+async fn finds_a_renamed_category_by_its_new_name_and_makes_a_new_one_for_its_old_name() {
+    let folder = ScratchFolder::new("labels-rename-category-away");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    let shelf = create_category(&store, "Sample Shelf").await;
+    put_in_category(&store, shelf, vec![series(1)], true).await;
+    rename_category(&store, shelf, "Other Name").await;
+
+    let by_new_name = create_category(&store, "other  name").await;
+    let found_by_old_name = category_named(&store, "Sample Shelf").await;
+    let fresh = create_category(&store, "Sample Shelf").await;
+
+    let kept = labels(&store).await;
+    assert_eq!(by_new_name, shelf);
+    assert_eq!(found_by_old_name, None);
+    assert_ne!(fresh, shelf);
+    assert_eq!(kept.categories.len(), 2);
+    assert_eq!(kept.in_category, [(series(1), shelf)]);
+}
+
+#[tokio::test]
+async fn deletes_only_the_category_and_its_memberships() {
+    let folder = ScratchFolder::new("labels-delete-category-only");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    let shelf = create_category(&store, "Sample Shelf").await;
+    let other = create_category(&store, "Other Name").await;
+    let sample = create_tag(&store, "Sample Tag").await;
+    put_in_category(&store, shelf, vec![series(1), series(2)], true).await;
+    put_in_category(&store, other, vec![series(2), series(3)], true).await;
+    put_with_tag(&store, sample, vec![series(1)], true).await;
+    let before = labels(&store).await;
+
+    store
+        .write(move |writer| writer.delete_category(shelf))
+        .await
+        .unwrap();
+
+    let after = labels(&store).await;
+    assert_eq!(
+        after.categories,
+        before
+            .categories
+            .into_iter()
+            .filter(|row| row.0 != shelf)
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(
+        after.in_category,
+        ids(vec![(series(2), other), (series(3), other)])
+    );
+    assert_eq!(after.tags, before.tags);
+    assert_eq!(after.with_tag, before.with_tag);
+}
+
+#[tokio::test]
+async fn forgets_a_deleted_category_s_place_and_hiding_so_it_comes_back_as_a_new_tab() {
+    let folder = ScratchFolder::new("labels-delete-category-tab");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    let shelf = create_category(&store, "Sample Shelf").await;
+    let other = create_category(&store, "Other Name").await;
+    let hidden_first = TabPlace {
+        is_hidden: true,
+        ..category_tab(shelf)
+    };
+    let kept = vec![hidden_first, category_tab(other)];
+    store
+        .database()
+        .write(move |transaction| set_library_tabs(transaction, &kept))
+        .await
+        .unwrap();
+
+    store
+        .write(move |writer| writer.delete_category(shelf))
+        .await
+        .unwrap();
+    let again = create_category(&store, "Sample Shelf").await;
+
+    assert_eq!(again, shelf);
+    assert_eq!(
+        store.database().read(library_tabs).await.unwrap(),
+        [category_tab(other)]
+    );
 }
 
 #[tokio::test]

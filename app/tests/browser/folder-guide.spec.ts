@@ -91,16 +91,29 @@ test("indents each name by how deep it sits in the folder", async ({
   expect(chapter).toBeGreaterThan(volume);
 });
 
-test("lists the naming rules in plain words", async ({ page }) => {
+test("lists the naming rules under Folders and Files, each with its example names and a short sentence", async ({
+  page,
+}) => {
   await openGuide(page);
+  const folders = page.getByRole("list", { name: "Folders", exact: true });
+  const files = page.getByRole("list", { name: "Files", exact: true });
 
-  const rules = page
-    .getByRole("list", { name: "What the names mean" })
-    .getByRole("listitem");
-  await expect(rules).toHaveCount(7);
-  await expect(rules.last()).toHaveText(
-    "Details inside a file (its ComicInfo.xml) come before any name.",
+  await expect(
+    page.getByRole("heading", { name: "What the names mean" }),
+  ).toBeVisible();
+  await expect(folders.getByRole("listitem")).toHaveCount(4);
+  await expect(files.getByRole("listitem")).toHaveCount(5);
+  await expect(folders.getByRole("listitem").first()).toHaveText(
+    /^\s*Series\s+Sample Series 04 \(2019\)\s+Named after the folder; a year in brackets is its year\.\s*$/,
   );
+  await expect(files.getByRole("listitem").last()).toHaveText(
+    /^\s*Details inside a file\s+ComicInfo\.xml\s+Come before any name\.\s*$/,
+  );
+  await expect(files.getByRole("listitem").first().locator("code")).toHaveText([
+    "Volume 1",
+    "Vol. 01",
+    "v01",
+  ]);
 });
 
 test("keeps the guide inside a small phone at the largest text", async ({

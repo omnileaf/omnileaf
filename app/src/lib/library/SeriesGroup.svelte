@@ -7,6 +7,8 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { ROW_SUBTITLE_MUTED_TYPE } from "#lib/components/ui/item/looks.ts";
   import type { IpcError } from "#lib/ipc/bindings.ts";
+  import { sendingNewest } from "#lib/navigation/newest-call.ts";
+  import { whileNear } from "#lib/paging/in-view.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { AndroidPhone } from "./android-phone.svelte";
@@ -25,6 +27,7 @@
     listSeries,
     countSeries,
     listed,
+    libraryChanges,
     covers,
   }: {
     name: string;
@@ -33,6 +36,7 @@
     listSeries: ListSeries;
     countSeries: () => Promise<CountResult>;
     listed: unknown;
+    libraryChanges: number;
     covers: Omit<
       ComponentProps<typeof SeriesCovers>,
       "series" | "isComplete" | "onNearEnd"
@@ -52,21 +56,78 @@
   let count: number | undefined = $state();
   const headingId = $props.id();
 
+  let changesRead = untrack(() => libraryChanges);
+  let countsAsked = 0;
+  let isNear = false;
+  let isStale = false;
+  const isShown = $derived(
+    list.list.kind === "loaded" && list.list.items.length > 0,
+  );
+
+  function isSettledEmpty(): boolean {
+    return list.list.kind !== "loading" && !isShown;
+  }
+
+  async function recount(): Promise<void> {
+    countsAsked += 1;
+    const asked = countsAsked;
+    const result = await countSeries();
+    if (asked === countsAsked) {
+      count = result.status === "ok" ? result.data : undefined;
+    }
+  }
+
+  const reloadSoon = sendingNewest<undefined>(async () => {
+    await Promise.all([list.load(), recount()]);
+  });
+
+  function followNearness(isNowNear: boolean): void {
+    isNear = isNowNear;
+    if (isNear && isStale) {
+      isStale = false;
+      reloadSoon(undefined);
+    }
+  }
+
   $effect(() => {
     if (listed === undefined) {
       return;
     }
     untrack(() => {
+      isStale = false;
       void list.start();
-      void countSeries().then((result) => {
-        count = result.status === "ok" ? result.data : undefined;
-      });
+      void recount();
+    });
+  });
+
+  $effect(() => {
+    if (libraryChanges === changesRead) {
+      return;
+    }
+    changesRead = libraryChanges;
+    untrack(() => {
+      if (isNear || isSettledEmpty()) {
+        reloadSoon(undefined);
+      } else {
+        isStale = true;
+      }
+    });
+  });
+
+  $effect(() => {
+    if (!isSettledEmpty() || !isStale) {
+      return;
+    }
+    isStale = false;
+    untrack(() => {
+      reloadSoon(undefined);
     });
   });
 </script>
 
-{#if list.list.kind === "loaded" && list.list.items.length > 0}
+{#if list.list.kind === "loaded" && isShown}
   <section
+    {@attach whileNear(followNearness)}
     aria-labelledby={headingId}
     class={["flex flex-col", !android.isOn && "gap-md"]}
   >

@@ -106,6 +106,8 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0070_read_again_the_books_whose_comic_info_volume_is_a_year"),
     migration!("0071_remember_where_each_emptied_series_was"),
     migration!("0072_count_the_volumes_and_chapters_of_each_series"),
+    migration!("0073_show_the_volume_and_chapter_counts_on_covers_in_the_library_view"),
+    migration!("0074_count_the_categories_of_each_series"),
 ];
 
 pub(crate) fn pending(
@@ -1467,6 +1469,7 @@ mod tests {
                 shows_continue_row: true,
                 on_covers: OnCovers {
                     shows_unread_count: true,
+                    shows_volume_and_chapter_counts: false,
                     shows_downloaded: false,
                     shows_language: true,
                     shows_reading_progress: false,
@@ -1561,6 +1564,53 @@ mod tests {
                 shows_continue_row: false,
                 on_covers: OnCovers {
                     shows_unread_count: false,
+                    shows_volume_and_chapter_counts: false,
+                    shows_downloaded: true,
+                    shows_language: false,
+                    shows_reading_progress: true,
+                    shows_continue_button: false,
+                },
+            }
+        );
+    }
+
+    #[test]
+    fn keeps_the_view_stored_before_covers_could_show_volume_and_chapter_counts_and_hides_them() {
+        let scratch = ScratchLibrary::new("library-view-cover-counts-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..72]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO library_view (
+                    id, display, phone_covers_per_row, tablet_covers_per_row,
+                    desktop_covers_per_row, shows_item_counts, shows_unread_count,
+                    shows_downloaded, shows_language, shows_reading_progress,
+                    shows_continue_button, shows_continue_row, fits_covers_to_width,
+                    shows_category_tabs, group_by, stacks_series_covers
+                 )
+                 VALUES (1, 'grid', 3, 5, 6, 1, 1, 1, 0, 1, 0, 0, 1, 1, 'none', 0);",
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let view = library_view(&connection).unwrap().unwrap();
+        assert_eq!(
+            view,
+            StoredLibraryView {
+                display: LibraryDisplay::Grid,
+                group_by: LibraryGrouping::None,
+                shows_category_tabs: true,
+                phone_covers_per_row: 3,
+                tablet_covers_per_row: 5,
+                desktop_covers_per_row: 6,
+                fits_covers_to_width: true,
+                stacks_series_covers: false,
+                shows_item_counts: true,
+                shows_continue_row: false,
+                on_covers: OnCovers {
+                    shows_unread_count: true,
+                    shows_volume_and_chapter_counts: false,
                     shows_downloaded: true,
                     shows_language: false,
                     shows_reading_progress: true,

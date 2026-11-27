@@ -5,6 +5,7 @@ mod book_details;
 mod book_files_to_remove;
 mod book_to_read;
 mod category_series;
+mod categoryless_series;
 mod chapter_positions;
 mod chapter_search;
 mod chapter_volumes;
@@ -67,6 +68,7 @@ pub use book_details::{AgeRating, BookDetails, BookPerson, PersonRole, ReadingDi
 pub use book_files_to_remove::{BookFileToRemove, files_of_books};
 pub use book_to_read::{BookToRead, book_to_read};
 pub use category_series::{category_series_count, category_series_page};
+pub use categoryless_series::{categoryless_series_count, categoryless_series_page};
 pub use chapter_search::{
     CHAPTER_CANDIDATES_PER_CALL, ChapterHit, ChapterTitleSource, search_chapters,
     search_chapters_count,

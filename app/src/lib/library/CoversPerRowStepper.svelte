@@ -57,7 +57,12 @@
 </script>
 
 <div class={["flex-col", className]}>
-  <div class="flex items-center gap-md large:gap-label">
+  <div
+    class={[
+      "flex items-center",
+      android.isOn ? "gap-lg" : "gap-md large:gap-label",
+    ]}
+  >
     <div class="flex-1">
       <p class="text-small text-muted">
         {RANGE_LABELS[size]({

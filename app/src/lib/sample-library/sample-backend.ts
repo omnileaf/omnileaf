@@ -28,6 +28,7 @@ import { NEW_APP_LOCK } from "#lib/app-lock/app-lock.ts";
 import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 import { defaultLibraryView } from "#lib/library/library-view.ts";
+import { categoryNameProblem } from "#lib/library/category-name.ts";
 import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
 import { phrasesOf } from "./chapter-phrases.ts";
 import { closestTitle, isTooShortToSuggest } from "./closest-words.ts";
@@ -687,6 +688,8 @@ export function sampleBackend(
 
   const categoriesCreated: { readonly id: string; readonly name: string }[] =
     [];
+  const categoriesRenamed = new Map<string, string>();
+  const categoriesDeleted = new Set<string>();
   const categoryChanges = new Map<
     string,
     { readonly added: Set<number>; readonly removed: Set<number> }
@@ -734,7 +737,14 @@ export function sampleBackend(
     return [
       ...SAMPLE_CATEGORIES.map(({ id, name }) => ({ id, name })),
       ...categoriesCreated,
-    ];
+    ]
+      .filter(({ id }) => !categoriesDeleted.has(id))
+      .map(({ id, name }) => ({ id, name: categoriesRenamed.get(id) ?? name }));
+  }
+
+  function inNoCategory(): (series: SampleSeries) => boolean {
+    const holders = everyCategory().map(({ id }) => categoryHolds(id));
+    return (series) => !holders.some((holds) => holds(series));
   }
 
   function categoryHolds(category: string): (series: SampleSeries) => boolean {
@@ -1597,6 +1607,35 @@ export function sampleBackend(
       events.emit("library-changed", null);
       return null;
     },
+    renameLibraryCategory: async (category, to) => {
+      await libraryReady();
+      const kept = everyCategory();
+      const others = kept
+        .filter(({ id }) => id !== category)
+        .map(({ name }) => name);
+      const problem = categoryNameProblem(to, others);
+      if (problem === "empty") {
+        return { kind: "nameEmpty" };
+      }
+      if (!kept.some(({ id }) => id === category)) {
+        return { kind: "gone" };
+      }
+      switch (problem) {
+        case "taken":
+          return { kind: "nameTaken" };
+        case undefined:
+          categoriesRenamed.set(category, to.trim());
+          events.emit("library-changed", null);
+          return { kind: "renamed" };
+      }
+    },
+    removeLibraryCategory: async (category) => {
+      await libraryReady();
+      categoriesDeleted.add(category);
+      categoryChanges.delete(category);
+      events.emit("library-changed", null);
+      return null;
+    },
     libraryTabs: () => [...libraryTabs],
     setLibraryTabs: (tabs) => {
       libraryTabs = tabs;
@@ -1673,6 +1712,18 @@ export function sampleBackend(
       const holds = categoryHolds(category);
       return library.filter(
         (series) => passes(series, filter, facts) && holds(series),
+      ).length;
+    },
+    categorylessSeries: async (after, chosen) => {
+      await libraryReady();
+      const page = pageOf(sorted(chosen).filter(inNoCategory()), after);
+      return { series: page.items.map(wireSeries), next: page.next };
+    },
+    categorylessSeriesCount: async (filter) => {
+      await libraryReady();
+      const isInNone = inNoCategory();
+      return library.filter(
+        (series) => passes(series, filter, facts) && isInNone(series),
       ).length;
     },
     folderSeries: async (folder, after, chosen) => {

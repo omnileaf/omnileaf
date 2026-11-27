@@ -28,6 +28,7 @@ const LIST_OF_FOUR: StoredLibraryView = StoredLibraryView {
     shows_continue_row: true,
     on_covers: OnCovers {
         shows_unread_count: true,
+        shows_volume_and_chapter_counts: true,
         shows_downloaded: false,
         shows_language: true,
         shows_reading_progress: false,
@@ -48,6 +49,7 @@ const COMPACT_OF_TWO: StoredLibraryView = StoredLibraryView {
     shows_continue_row: false,
     on_covers: OnCovers {
         shows_unread_count: false,
+        shows_volume_and_chapter_counts: false,
         shows_downloaded: true,
         shows_language: false,
         shows_reading_progress: true,
@@ -132,6 +134,24 @@ async fn remembers_unstacked_series_covers() {
 }
 
 #[tokio::test]
+async fn remembers_the_volume_and_chapter_counts_on_covers() {
+    let folder = ScratchFolder::new("library-view-cover-counts");
+    let database = Database::open(&library_config(&folder)).unwrap();
+    let counted = StoredLibraryView {
+        on_covers: OnCovers {
+            shows_volume_and_chapter_counts: true,
+            ..COMPACT_OF_TWO.on_covers
+        },
+        ..COMPACT_OF_TWO
+    };
+
+    set(&database, counted).await.unwrap();
+
+    let reopened = Database::open(&library_config(&folder)).unwrap();
+    assert_eq!(stored(&reopened).await, Some(counted));
+}
+
+#[tokio::test]
 async fn keeps_only_the_view_set_last() {
     let folder = ScratchFolder::new("library-view-again");
     let database = Database::open(&library_config(&folder)).unwrap();
@@ -170,15 +190,17 @@ fn any_display() -> impl Strategy<Value = LibraryDisplay> {
 }
 
 fn any_on_covers() -> impl Strategy<Value = OnCovers> {
-    any::<[bool; 5]>().prop_map(
+    any::<[bool; 6]>().prop_map(
         |[
             shows_unread_count,
+            shows_volume_and_chapter_counts,
             shows_downloaded,
             shows_language,
             shows_reading_progress,
             shows_continue_button,
         ]| OnCovers {
             shows_unread_count,
+            shows_volume_and_chapter_counts,
             shows_downloaded,
             shows_language,
             shows_reading_progress,

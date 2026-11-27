@@ -13,6 +13,7 @@
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import { cn } from "#lib/components/cn.ts";
   import { reportFailure } from "#lib/errors/report-failure.ts";
   import {
@@ -79,6 +80,10 @@
   import JumpToBook from "#lib/reader/JumpToBook.svelte";
   import KeyboardShortcuts from "#lib/reader/KeyboardShortcuts.svelte";
   import { fitPinch } from "#lib/reader/pinch-zoom.ts";
+  import {
+    DoubleTapWindow,
+    type TapPoint,
+  } from "#lib/reader/double-tap-window.ts";
   import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
   import { readerHints } from "#lib/reader/reader-hints.svelte.ts";
   import ReadingSettings from "#lib/reader/ReadingSettings.svelte";
@@ -120,6 +125,10 @@
   const MOUSE_BACK_BUTTON = 3;
   /** How near the window's top or bottom the pointer brings hidden controls back. */
   const REVEAL_EDGE_PX = 48;
+  /** Android took a second tap 308 ms after the first lift as a double tap and refused one at 385 ms, so the reader's window reaches just past the first. */
+  const DOUBLE_TAP_WINDOW_MS = 310;
+  /** Android's double-tap slop, how far apart two taps may land and still make one double tap. */
+  const DOUBLE_TAP_SLOP_PX = 100;
   const TURN_STEPS = { next: 1, previous: -1 } as const satisfies Record<
     PageTurn,
     number
@@ -155,6 +164,7 @@
 
   const screenshotMode = getScreenshotMode();
   const smartFeatures = getSmartFeatures();
+  const animations = getAnimationsSetting();
   const named = $derived(screenshotMode.isOn ? standInOpenedBook(book) : book);
 
   const turner = untrack(
@@ -172,6 +182,7 @@
   );
   const swipe = new Swipe(SWIPE_MIN_PX);
   let slide = $state(0);
+  let dragFrom = 0;
   let isSettling = $state(false);
   const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
   let hasOpened = false;
@@ -269,7 +280,13 @@
         scrubTo: (along: number) => void;
       }
     | undefined = $state();
-  let paged: { place: () => SpreadPlace | undefined } | undefined = $state();
+  let paged:
+    | {
+        place: () => SpreadPlace | undefined;
+        shiftInFlight: () => number;
+        holdPoint: (point: { x: number; y: number }) => void;
+      }
+    | undefined = $state();
   let autoScroll: "off" | "running" | "paused" = $state("off");
   let autoScrollBar: { focusReadout: () => void } | undefined = $state();
   let isSpeedOpen = $state(false);
@@ -332,12 +349,9 @@
     return reading.direction === "rightToLeft" ? "left" : "right";
   });
 
-  const spreads = $derived(
-    spreadsOf(
-      book.pages.map((page) => page.size),
-      !isStrip && look.layout === "two",
-    ),
-  );
+  const pageSizes = $derived(book.pages.map((page) => page.size));
+  const isTwoUp = $derived(!isStrip && look.layout === "two");
+  const spreads = $derived(spreadsOf(pageSizes, isTwoUp));
   const spreadIndex = $derived(spreadAt(spreads, turner.shown));
   const spread = $derived(spreads[spreadIndex] ?? [turner.shown]);
   const bookmarks = untrack(() =>
@@ -596,6 +610,7 @@
   });
 
   function turnBy(step: number): void {
+    dropWaitingTap();
     if (isStrip && !turner.isPastEnd) {
       scrollBy(step);
       return;
@@ -605,6 +620,7 @@
       return;
     }
     const target = spreads[spreadIndex + step];
+    const from = { shown: turner.shown, isPastEnd: turner.isPastEnd };
     if (turner.isPastEnd) {
       turner.turn(step);
     } else if (target !== undefined) {
@@ -614,6 +630,9 @@
       turner.turn(1);
     }
     zoom = 1;
+    if (turner.shown !== from.shown || turner.isPastEnd !== from.isPastEnd) {
+      isSettling = slidesPages();
+    }
     controls.hide();
     if (turner.isPastEnd && skipUpNext.isOn) {
       goStraightOn();
@@ -715,6 +734,7 @@
   }
 
   function zoomTo(scale: number): void {
+    dropWaitingTap();
     zoom = Math.min(ZOOM_MOST, Math.max(1, scale));
     controls.hide();
   }
@@ -734,9 +754,15 @@
     );
 
   function turnTo(index: number): void {
-    turner.goTo(index);
+    jumpTo(index);
     zoom = 1;
     controls.hide();
+  }
+
+  function jumpTo(index: number): void {
+    dropWaitingTap();
+    isSettling = false;
+    turner.goTo(index);
   }
 
   /** Shows the controls for a focused control, holding them up only while it was focused from the keyboard, and never for the heading focused as the book opens. */
@@ -841,6 +867,13 @@
   }
 
   let lastPointer = { x: Number.NaN, y: Number.NaN };
+  let waitingTap: ReturnType<typeof setTimeout> | undefined;
+  let tappedWith = "";
+  let isSecondTap = false;
+  const tapWindow = new DoubleTapWindow(
+    DOUBLE_TAP_WINDOW_MS,
+    DOUBLE_TAP_SLOP_PX,
+  );
 
   /** WebKit sends a pointermove whenever the page scrolls under a pointer that hasn't moved, so only a change of position counts. */
   function hasPointerMoved(event: PointerEvent): boolean {
@@ -861,6 +894,48 @@
     }
   }
 
+  function onMiddleTap(event: MouseEvent): void {
+    if (!isPointerClick(event) || tappedWith === "mouse") {
+      onZone(event, "toggleControls");
+      return;
+    }
+    if (event.currentTarget instanceof HTMLElement) {
+      event.currentTarget.blur();
+    }
+    dropWaitingTap();
+    const isZoomTap = isSecondTap;
+    isSecondTap = false;
+    if (swipe.isClickASwipe()) {
+      return;
+    }
+    if (isZoomTap) {
+      zoomOnDoubleTap(event);
+      return;
+    }
+    waitingTap = setTimeout(() => {
+      waitingTap = undefined;
+      act("toggleControls");
+    }, tapWindow.leftAfter(performance.now()));
+  }
+
+  function dropWaitingTap(): void {
+    clearTimeout(waitingTap);
+    waitingTap = undefined;
+  }
+
+  function zoomOnDoubleTap(event: MouseEvent): void {
+    if (isZoomedIn(viewportScale)) {
+      fitPinch();
+      return;
+    }
+    if (zoom > 1) {
+      zoomTo(1);
+      return;
+    }
+    paged?.holdPoint({ x: event.clientX, y: event.clientY });
+    zoomTo(ZOOM_DOUBLE);
+  }
+
   function isPointerClick(event: MouseEvent): boolean {
     return event.detail > 0;
   }
@@ -878,39 +953,53 @@
     },
   };
 
-  function onSwipeMove(event: PointerEvent): void {
-    if (look.pageTurn === "slide" && !isZoomedIn(viewportScale)) {
-      isSettling = false;
-      slide = swipe.moved(event) ?? 0;
+  function slidesPages(): boolean {
+    return look.pageTurn === "slide" && animations.moves("reader");
+  }
+
+  function onSwipeStart(event: PointerEvent): void {
+    swipe.started(event);
+    tappedWith = event.pointerType;
+    dragFrom = 0;
+    isSecondTap =
+      waitingTap !== undefined && tapWindow.isSecondTap(tapPointOf(event));
+    if (isSecondTap) {
+      dropWaitingTap();
     }
   }
 
-  function onSwipeEnd(
-    event: PointerEvent & { currentTarget: HTMLElement },
-  ): void {
+  function tapPointOf(event: PointerEvent): TapPoint {
+    return { at: performance.now(), x: event.clientX, y: event.clientY };
+  }
+
+  function onSwipeMove(event: PointerEvent): void {
+    const across = swipe.moved(event);
+    if (across === undefined) {
+      return;
+    }
+    dropWaitingTap();
+    if (look.pageTurn !== "slide" || isPagePanning) {
+      return;
+    }
+    if (isSettling) {
+      dragFrom = paged?.shiftInFlight() ?? 0;
+      isSettling = false;
+    }
+    slide = dragFrom + across;
+  }
+
+  function onSwipeEnd(event: PointerEvent): void {
+    tapWindow.lifted(tapPointOf(event));
     const turn = swipe.ended(event);
-    const before = turner.shown;
-    if (turn !== undefined && !isZoomedIn(viewportScale)) {
+    if (turn !== undefined && !isPagePanning) {
       turnBy(TURN_STEPS[inReadingOrder(turn, reading.direction)]);
     }
-    if (turner.shown === before || slide === 0) {
-      settleSlide();
-    } else {
-      slideIn(event.currentTarget.clientWidth);
-    }
+    settleSlide();
   }
 
   function settleSlide(): void {
-    isSettling = slide !== 0;
+    isSettling ||= slide !== 0 && animations.moves("reader");
     slide = 0;
-  }
-
-  function slideIn(width: number): void {
-    isSettling = false;
-    slide = slide < 0 ? slide + width : slide - width;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(settleSlide);
-    });
   }
 
   $effect(() => {
@@ -972,6 +1061,7 @@
     heading?.focus();
     return () => {
       controls.stop();
+      dropWaitingTap();
     };
   });
 
@@ -1043,7 +1133,7 @@
       void markRead();
     }}
     onStartOver={() => {
-      turner.goTo(0);
+      jumpTo(0);
     }}
     onShowFile={libraryBookFileShower(book, notices)}
     onOpenChange={holdControls}
@@ -1104,13 +1194,9 @@
     class={[
       "absolute inset-none",
       look.tapZones === "lShape" ? "grid grid-l-zones" : "flex",
-      isZoomedIn(viewportScale)
-        ? "touch-manipulation"
-        : "touch-pan-y touch-pinch-zoom",
+      isPagePanning ? "touch-manipulation" : "touch-pan-y touch-pinch-zoom",
     ]}
-    onpointerdown={(event) => {
-      swipe.started(event);
-    }}
+    onpointerdown={onSwipeStart}
     onpointermove={onSwipeMove}
     onpointerup={onSwipeEnd}
     onpointercancel={() => {
@@ -1138,14 +1224,10 @@
             ? m.reader_hide_controls()
             : m.reader_show_controls()}
           class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
-          onclick={(event) => {
-            onZone(event, "toggleControls");
-          }}
-          ondblclick={() => {
-            if (isZoomedIn(viewportScale)) {
-              fitPinch();
-            } else {
-              zoomTo(zoom > 1 ? 1 : ZOOM_DOUBLE);
+          onclick={onMiddleTap}
+          ondblclick={(event) => {
+            if (tappedWith === "mouse") {
+              zoomOnDoubleTap(event);
             }
           }}
         ></button>
@@ -1211,7 +1293,8 @@
               pages={cropped.pages}
               crop={cropped.crop}
               shown={turner.shown}
-              {spread}
+              {spreads}
+              isPastEnd={turner.isPastEnd}
               fit={look.fit}
               {zoom}
               isReversed={reading.direction === "rightToLeft"}
@@ -1224,6 +1307,9 @@
               startAt={startAt?.kind === "spread" ? startAt : undefined}
               onNextPage={() => {
                 act("next");
+              }}
+              onSettled={() => {
+                isSettling = false;
               }}
               onShownReady={() => {
                 startAt = undefined;
@@ -1412,7 +1498,7 @@
             ? undefined
             : (pageCount - turner.shown) * book.secondsPerPage}
           onSeek={(index: number) => {
-            turner.goTo(index);
+            jumpTo(index);
           }}
         />
       </div>

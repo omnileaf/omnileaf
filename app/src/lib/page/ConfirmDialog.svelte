@@ -5,9 +5,11 @@
   import { cn } from "#lib/components/cn.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import {
+    ACCENT_CONFIRM_FILL,
     type AlertAction,
     alertLook,
     type AlertTone,
+    type AndroidPhoneConfirmLook,
     CONTENT_DIALOG_PANEL,
     type ConfirmPhoneLook,
     type IosPhoneConfirmLook,
@@ -31,8 +33,7 @@
   } as const satisfies Record<AlertTone, string>;
   const CONFIRM_FILLS = {
     danger: "",
-    accent:
-      "bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed",
+    accent: ACCENT_CONFIRM_FILL,
   } as const satisfies Record<AlertTone, string>;
 
   let {
@@ -46,8 +47,10 @@
     phoneLook = "sheet",
     iosPhoneLook,
     macLook,
+    androidPhoneLook,
     tone = "danger",
     isBusy = false,
+    onCloseAutoFocus = () => undefined,
     children,
   }: {
     isOpen: boolean;
@@ -60,8 +63,10 @@
     phoneLook?: ConfirmPhoneLook;
     iosPhoneLook?: IosPhoneConfirmLook | undefined;
     macLook?: MacConfirmLook | undefined;
+    androidPhoneLook?: AndroidPhoneConfirmLook | undefined;
     tone?: AlertTone;
     isBusy?: boolean;
+    onCloseAutoFocus?: (event: Event) => void;
     children: Snippet;
   } = $props();
 
@@ -69,13 +74,14 @@
   const sheetLook = $derived(
     iosPhone.isOn && tone === "danger" ? iosPhoneLook : undefined,
   );
-  const isAlert = $derived(
-    opensAsAlert(currentPlatform(), phoneLook, sheetLook, macLook),
-  );
+  const looks = $derived({
+    iosPhone: sheetLook,
+    mac: macLook,
+    androidPhone: androidPhoneLook,
+  });
+  const isAlert = $derived(opensAsAlert(currentPlatform(), phoneLook, looks));
   const alert = $derived(
-    isAlert
-      ? alertLook(currentPlatform(), sheetLook, macLook)
-      : TODAYS_ALERT_LOOK,
+    isAlert ? alertLook(currentPlatform(), looks) : TODAYS_ALERT_LOOK,
   );
 
   const buttons: Record<AlertAction, HTMLButtonElement | null> = $state({
@@ -115,6 +121,7 @@
     wideOverlayClass={alert.scrim}
     onDismiss={onCancel}
     onOpenAutoFocus={focusDefaultButton}
+    {onCloseAutoFocus}
   >
     <div class={cn("flex items-center gap-md", alert.header)}>
       {#if alert.showsAppIcon}

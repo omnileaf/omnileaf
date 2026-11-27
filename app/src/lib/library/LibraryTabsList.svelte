@@ -7,7 +7,9 @@
     EyeOff,
     GripVertical,
     Menu,
+    Pencil,
     Plus,
+    Trash,
   } from "@lucide/svelte";
   import { tick } from "svelte";
 
@@ -32,7 +34,7 @@
   import { TINTED } from "#lib/settings/setting-row-look.ts";
 
   import { androidListLook } from "#lib/settings/android-list-look.svelte.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { currentPlatform, isPointer } from "#lib/page/platform.ts";
 
   import { IosPhone } from "./ios-phone.svelte.ts";
   import { type ArrangedTab, tabKey } from "./library-tabs.ts";
@@ -64,17 +66,24 @@
     detailOf,
     onArrange,
     onNewCategory,
+    onRename,
+    onDelete,
+    said,
   }: {
     tabs: readonly ArrangedTab[];
     detailOf: (tab: ArrangedTab) => string;
     onArrange: (tabs: readonly ArrangedTab[]) => void;
     onNewCategory?: (() => void) | undefined;
+    onRename?: ((tab: ArrangedTab) => void) | undefined;
+    onDelete?: ((tab: ArrangedTab) => void) | undefined;
+    said?: { readonly text: string } | undefined;
   } = $props();
 
   const android = androidListLook();
   const ios = new IosPhone();
   const isDesktopLook = $derived(!android.isOn && !ios.isOn);
   const isMac = currentPlatform() === "macos";
+  const asksFirst = isPointer(currentPlatform());
   const rowLook = $derived(
     android.isOn
       ? "gap-xs ps-xs pe-md min-block-native-row-two"
@@ -108,6 +117,12 @@
       announcement = "";
     }, NOTICE_WINDOW_MS);
   }
+
+  $effect(() => {
+    if (said !== undefined) {
+      announce(said.text);
+    }
+  });
 
   function announceMove(tab: ArrangedTab, from: number, to: number): void {
     const place = { tab: tab.name, position: to + 1, count: tabs.length };
@@ -406,6 +421,7 @@
                 {#snippet child({ props })}
                   <Button
                     {...props}
+                    data-tab-more
                     look="icon"
                     class={[
                       android.isOn &&
@@ -460,6 +476,30 @@
                   <EyeOff size={ICON_SIZE} aria-hidden="true" />
                   {isMac ? m.library_tabs_hide_mac() : m.library_tabs_hide()}
                 {/if}
+              </DropdownMenuItem>
+            {/if}
+            {#if tab.id.kind === "category" && onRename !== undefined && onDelete !== undefined}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => {
+                  onRename(tab);
+                }}
+              >
+                <Pencil size={ICON_SIZE} aria-hidden="true" />
+                {asksFirst
+                  ? m.library_tabs_rename_ask()
+                  : m.library_tabs_rename()}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                tone="danger"
+                onSelect={() => {
+                  onDelete(tab);
+                }}
+              >
+                <Trash size={ICON_SIZE} aria-hidden="true" />
+                {asksFirst
+                  ? m.library_tabs_delete_ask()
+                  : m.library_tabs_delete()}
               </DropdownMenuItem>
             {/if}
           </DropdownMenuContent>
