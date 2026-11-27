@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 
 import {
   type AfterDelay,
+  closesOnBackIn,
   GIVE_BACK_SETTLES_MS,
   mustLeaveOverlaysBefore,
   optionsToCarry,
@@ -498,6 +499,121 @@ test("must leave a closed overlay's entry before a navigation, and gives it back
   await Promise.resolve();
   page.goBack();
   await giving;
+
+  expect(mustLeave).toBe(true);
+  expect(page.entries.steps).toEqual([1]);
+});
+
+async function settle(): Promise<void> {
+  for (let tick = 0; tick < 10; tick += 1) {
+    await Promise.resolve();
+  }
+}
+
+function openedOverlay() {
+  const { overlays, page } = overlayBack();
+  const element = document.createElement("div");
+  element.dataset["state"] = "open";
+  element.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      element.dataset["state"] = "closed";
+    }
+  });
+  const detach = closesOnBackIn(overlays)(element);
+  return {
+    overlays,
+    page,
+    element,
+    detach: () => {
+      detach?.();
+    },
+    startClosing: () => {
+      element.dataset["state"] = "closed";
+    },
+    reopen: () => {
+      element.dataset["state"] = "open";
+    },
+  };
+}
+
+test("gives an overlay's entry back as its closing starts, before it unmounts", async () => {
+  const { page, startClosing } = openedOverlay();
+
+  startClosing();
+  await settle();
+
+  expect(page.entries.steps).toEqual([1]);
+});
+
+test("gives nothing more back when an overlay that started closing unmounts", async () => {
+  const { page, startClosing, detach } = openedOverlay();
+
+  startClosing();
+  await settle();
+  detach();
+  await settle();
+
+  expect(page.entries.steps).toEqual([1]);
+});
+
+test("gives an overlay's entry back when it unmounts without having closed", async () => {
+  const { page, detach } = openedOverlay();
+
+  detach();
+  await settle();
+
+  expect(page.entries.steps).toEqual([1]);
+});
+
+test("gives no entry back when the page going back is what closes an overlay", async () => {
+  const { page } = openedOverlay();
+
+  page.goBack();
+  await settle();
+
+  expect(page.entries.steps).toEqual([]);
+});
+
+test("takes a new entry for an overlay reopened while it was still closing, once the old one is given back", async () => {
+  const { overlays, page, startClosing, reopen } = openedOverlay();
+
+  startClosing();
+  await settle();
+  reopen();
+  await settle();
+  const pushedBeforeStepLanded = page.entries.pushed;
+  page.goBack();
+  await settle();
+
+  expect([pushedBeforeStepLanded, page.entries.pushed]).toEqual([1, 2]);
+  expect(overlays.willTakeBack()).toBe(true);
+});
+
+test("gives the entry of an overlay reopened while it was closing back again when it closes again", async () => {
+  const { page, startClosing, reopen } = openedOverlay();
+
+  startClosing();
+  await settle();
+  reopen();
+  page.goBack();
+  await settle();
+  startClosing();
+  await settle();
+
+  expect(page.entries.steps).toEqual([1, 1]);
+});
+
+test("must leave before a navigation the moment an overlay starts closing, and steps back once", async () => {
+  const { overlays, page, startClosing } = openedOverlay();
+
+  startClosing();
+  await settle();
+  const mustLeave = mustLeaveOverlaysBefore(
+    navigation("goto", "/series/1"),
+    overlays,
+  );
+  page.goBack();
+  await settle();
 
   expect(mustLeave).toBe(true);
   expect(page.entries.steps).toEqual([1]);

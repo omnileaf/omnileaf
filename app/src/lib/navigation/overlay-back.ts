@@ -338,7 +338,41 @@ export function holdBack(close: () => void): () => void {
   return overlays.hold(close);
 }
 
-export const closesOnBack: Attachment<HTMLElement> = (element) =>
-  holdBack(() => {
-    closeLikeEscape(element);
-  });
+const OPEN_STATE_ATTRIBUTE = "data-state";
+
+/** The UI library keeps an overlay mounted through its exit animation and flips `data-state` to `closed` when the closing starts. */
+const isClosing = (element: HTMLElement): boolean =>
+  element.getAttribute(OPEN_STATE_ATTRIBUTE) === "closed";
+
+export function closesOnBackIn(overlays: OverlayBack): Attachment<HTMLElement> {
+  return (element) => {
+    let release: (() => void) | undefined;
+    const holdWhileOpen = (): void => {
+      release = overlays.hold(() => {
+        closeLikeEscape(element);
+      });
+    };
+    const followOpenState = (): void => {
+      if (isClosing(element)) {
+        release?.();
+        release = undefined;
+      } else if (release === undefined) {
+        holdWhileOpen();
+      }
+    };
+    if (!isClosing(element)) {
+      holdWhileOpen();
+    }
+    const watching = new MutationObserver(followOpenState);
+    watching.observe(element, {
+      attributes: true,
+      attributeFilter: [OPEN_STATE_ATTRIBUTE],
+    });
+    return () => {
+      watching.disconnect();
+      release?.();
+    };
+  };
+}
+
+export const closesOnBack = closesOnBackIn(overlays);
