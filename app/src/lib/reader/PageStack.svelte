@@ -34,7 +34,7 @@
     pagesAround,
   } from "#lib/reader/page-window.ts";
   import PageLoading from "#lib/reader/PageLoading.svelte";
-  import { pageLoads } from "#lib/reader/page-loads.svelte.ts";
+  import { pageLoads } from "#lib/reader/image-loads.svelte.ts";
   import { nextPagesToAsk, pagesByUrgency } from "#lib/reader/page-requests.ts";
   import { ThumbRest } from "#lib/reader/thumb-rest.svelte.ts";
 

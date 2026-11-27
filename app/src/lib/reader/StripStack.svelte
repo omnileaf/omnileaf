@@ -10,7 +10,7 @@
 
   import { sizeOfPage, type StripPlace } from "#lib/reader/cropped-pages.ts";
   import type { Size } from "#lib/reader/page-fit.ts";
-  import { pageLoads } from "#lib/reader/page-loads.svelte.ts";
+  import { pageLoads } from "#lib/reader/image-loads.svelte.ts";
   import { nextPagesToAsk, pagesByUrgency } from "#lib/reader/page-requests.ts";
   import { pagesAround } from "#lib/reader/page-window.ts";
   import { ThumbRest } from "#lib/reader/thumb-rest.svelte.ts";

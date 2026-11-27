@@ -1,10 +1,15 @@
 import { PAGES_LOADING_AT_ONCE } from "./page-requests.ts";
 
-export class PageLoads {
+export class ImageLoads {
+  readonly #most: number;
   #loading = $state(0);
 
+  constructor(most: number) {
+    this.#most = most;
+  }
+
   get room(): number {
-    return PAGES_LOADING_AT_ONCE - this.#loading;
+    return this.#most - this.#loading;
   }
 
   /** Counts the image as loading until it loads or fails, even once it leaves the page, as neither Chromium nor WebKit drops an image's request when its element is removed. */
@@ -24,4 +29,4 @@ export class PageLoads {
   }
 }
 
-export const pageLoads = new PageLoads();
+export const pageLoads = new ImageLoads(PAGES_LOADING_AT_ONCE);
