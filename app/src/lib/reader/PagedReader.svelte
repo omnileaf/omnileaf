@@ -137,8 +137,27 @@
     number
   >;
   const PREVIOUS_BOOK_AT = -1;
-  const UP_NEXT_CONTROLS =
-    "a[href], button, input, label, select, textarea, [role='switch']";
+  const UP_NEXT_CONTROLS = [
+    "a[href]",
+    "button",
+    "input",
+    "label",
+    "select",
+    "summary",
+    "textarea",
+    "[contenteditable]",
+    "[role=button]",
+    "[role=checkbox]",
+    "[role=link]",
+    "[role=menuitem]",
+    "[role=option]",
+    "[role=radio]",
+    "[role=slider]",
+    "[role=switch]",
+    "[role=tab]",
+    '[tabindex]:not([tabindex="-1"])',
+    "[data-setting-row]",
+  ].join(", ");
   const TURN_LABELS = {
     next: m.reader_next_page,
     previous: m.reader_previous_page,
@@ -1137,7 +1156,7 @@
     return event.detail > 0;
   }
 
-  function isOnUpNextControl(event: MouseEvent): boolean {
+  function isOnUpNextControl(event: Event): boolean {
     return (
       event.target instanceof Element &&
       event.target.closest(UP_NEXT_CONTROLS) !== null
@@ -1154,12 +1173,25 @@
       );
   }
 
-  const passesTapsToZones: Attachment<HTMLElement> = (element) =>
-    on(element, "click", (event: MouseEvent) => {
-      if (isPointerClick(event) && !isOnUpNextControl(event)) {
+  const passesTapsToZones: Attachment<HTMLElement> = (element) => {
+    let isPressOnControl = false;
+    const stopWatchingPresses = on(element, "pointerdown", (event) => {
+      isPressOnControl = isOnUpNextControl(event);
+    });
+    const stopPassingTaps = on(element, "click", (event: MouseEvent) => {
+      if (
+        isPointerClick(event) &&
+        !isPressOnControl &&
+        !isOnUpNextControl(event)
+      ) {
         zoneUnder(event)?.dispatchEvent(new MouseEvent("click", event));
       }
     });
+    return () => {
+      stopWatchingPresses();
+      stopPassingTaps();
+    };
+  };
 
   const controlEvents = {
     onpointerenter: () => {
