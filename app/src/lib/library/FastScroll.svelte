@@ -73,27 +73,49 @@
     if (grabbedAt === undefined) {
       fraction = range <= 0 ? 0 : scroller.scrollTop / range;
     }
-    frame = {
+    const measured = {
       top: top + aboveTrack,
       height: scroller.clientHeight - aboveTrack,
       end: isPage ? 0 : document.documentElement.clientWidth - box.right,
     };
+    if (frame === undefined || !isSameFrame(frame, measured)) {
+      frame = measured;
+    }
+  }
+
+  function isSameFrame(shown: Frame, measured: Frame): boolean {
+    return (
+      shown.top === measured.top &&
+      shown.height === measured.height &&
+      shown.end === measured.end
+    );
   }
 
   function isAroundTrack(moved: EventTarget | null): boolean {
     return moved instanceof Node && anchor !== null && moved.contains(anchor);
   }
 
-  function followPlacementAround(track: Element): MutationObserver {
-    const placement = new MutationObserver(follow);
+  function followPlacementAround(shownAnchor: Element): () => void {
+    let nextFrame: number | undefined;
+    const placement = new MutationObserver(() => {
+      nextFrame ??= requestAnimationFrame(() => {
+        nextFrame = undefined;
+        follow();
+      });
+    });
     for (
-      let around = track.parentElement;
+      let around = shownAnchor.parentElement;
       around !== null;
       around = around.parentElement
     ) {
       placement.observe(around, { attributeFilter: ["style"] });
     }
-    return placement;
+    return () => {
+      placement.disconnect();
+      if (nextFrame !== undefined) {
+        cancelAnimationFrame(nextFrame);
+      }
+    };
   }
 
   function grab(event: PointerEvent): void {
@@ -149,9 +171,9 @@
         { capture: true },
       ),
     );
-    const placement = followPlacementAround(anchor);
+    const stopFollowingPlacement = followPlacementAround(anchor);
     return () => {
-      placement.disconnect();
+      stopFollowingPlacement();
       target.removeEventListener("scroll", follow);
       window.removeEventListener("resize", follow);
       for (const stop of stopFollowingMoves) {
