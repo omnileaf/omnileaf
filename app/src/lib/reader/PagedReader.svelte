@@ -137,6 +137,8 @@
     number
   >;
   const PREVIOUS_BOOK_AT = -1;
+  const UP_NEXT_CONTROLS =
+    "a[href], button, input, label, select, textarea, [role='switch']";
   const TURN_LABELS = {
     next: m.reader_next_page,
     previous: m.reader_previous_page,
@@ -1055,6 +1057,8 @@
   let waitingTap: ReturnType<typeof setTimeout> | undefined;
   let tappedWith = "";
   let isSecondTap = false;
+  let isUntouchedSincePagedInto = untrack(() => isPagedInto);
+  let isSecondTapOfTheTurnIn = false;
 
   /** WebKit sends a pointermove whenever the page scrolls under a pointer that hasn't moved, so only a change of position counts. */
   function hasPointerMoved(event: PointerEvent): boolean {
@@ -1070,7 +1074,11 @@
       event.currentTarget.blur();
     }
     const action = zoneAction(zone, viewportScale);
-    if (!swipe.isClickASwipe() && action !== undefined) {
+    if (
+      !swipe.isClickASwipe() &&
+      !isSecondTapOfTheTurnIn &&
+      action !== undefined
+    ) {
       act(action);
     }
   }
@@ -1124,6 +1132,30 @@
     return event.detail > 0;
   }
 
+  function isOnUpNextControl(event: MouseEvent): boolean {
+    return (
+      event.target instanceof Element &&
+      event.target.closest(UP_NEXT_CONTROLS) !== null
+    );
+  }
+
+  function zoneUnder(event: MouseEvent): HTMLButtonElement | undefined {
+    return document
+      .elementsFromPoint(event.clientX, event.clientY)
+      .find(
+        (element): element is HTMLButtonElement =>
+          element instanceof HTMLButtonElement &&
+          element.parentElement?.hasAttribute("data-tap-zones") === true,
+      );
+  }
+
+  const passesTapsToZones: Attachment<HTMLElement> = (element) =>
+    on(element, "click", (event: MouseEvent) => {
+      if (isPointerClick(event) && !isOnUpNextControl(event)) {
+        zoneUnder(event)?.dispatchEvent(new MouseEvent("click", event));
+      }
+    });
+
   const controlEvents = {
     onpointerenter: () => {
       controls.pointerEntered();
@@ -1145,10 +1177,12 @@
     swipe.started(event);
     tappedWith = event.pointerType;
     dragFrom = 0;
+    const press = tapPointOf(event);
+    isSecondTapOfTheTurnIn =
+      isUntouchedSincePagedInto && tapWindow.isSecondTap(press);
+    isUntouchedSincePagedInto = false;
     isSecondTap =
-      waitingTap !== undefined &&
-      !isOffPages &&
-      tapWindow.isSecondTap(tapPointOf(event));
+      waitingTap !== undefined && !isOffPages && tapWindow.isSecondTap(press);
     if (isSecondTap) {
       dropWaitingTap();
     }
@@ -1472,21 +1506,23 @@
 {/snippet}
 
 {#snippet upNext(isShown: boolean)}
-  <UpNext
-    book={book.id}
-    title={named.title}
-    seriesTitle={named.seriesTitle}
-    {seriesHref}
-    backHref={wayBack.href}
-    backLabel={wayBack.label}
-    onBack={() => {
-      void leaveReader();
-    }}
-    next={named.next}
-    {nextHref}
-    direction={reading.direction}
-    {isShown}
-  />
+  <div {@attach passesTapsToZones} class="contents">
+    <UpNext
+      book={book.id}
+      title={named.title}
+      seriesTitle={named.seriesTitle}
+      {seriesHref}
+      backHref={wayBack.href}
+      backLabel={wayBack.label}
+      onBack={() => {
+        void leaveReader();
+      }}
+      next={named.next}
+      {nextHref}
+      direction={reading.direction}
+      {isShown}
+    />
+  </div>
 {/snippet}
 
 {#snippet upNextPage({ isCurrent }: EdgeView)}

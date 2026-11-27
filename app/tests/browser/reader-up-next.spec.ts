@@ -29,6 +29,7 @@ import {
   readerBook,
   servePages,
 } from "./reader-book.ts";
+import { overTheZone } from "./reader-zone-point.ts";
 
 const READ_SECONDS = 72 * 60;
 const SECONDS_A_PAGE = 23;
@@ -269,6 +270,16 @@ const TURNS_AGAIN = [
       page
         .getByRole("button", { name: "Next page" })
         .click({ position: { x: 8, y: 8 } }),
+  },
+  {
+    way: "a click on its card over the next page's zone",
+    turn: async (page: Page) => {
+      const { x, y } = await overTheZone(
+        page.locator("[data-up-next] [data-slot=card-header]"),
+        "next",
+      );
+      await page.mouse.click(x, y);
+    },
   },
   {
     way: "a swipe",
