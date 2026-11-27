@@ -23,6 +23,8 @@ const MOST_THUMBNAILS_ASKED = 24;
 const INSIDE_THE_TRACK_PX = 1;
 const NEAR_THE_END = 0.95;
 const TRACK_MIDDLE = 0.5;
+const NUDGE_PX = 24;
+const NUDGE_STEPS = 4;
 
 interface Point {
   readonly x: number;
@@ -239,6 +241,38 @@ test.describe("scrubbing a long book's page slider", { tag: "@native" }, () => {
     await expect
       .poll(() => traffic.thumbnails.asked.includes(resting - 1))
       .toBe(true);
+    await page.mouse.up();
+  });
+
+  test("asks only for the previews shown at this width where the thumb rests", async ({
+    page,
+  }) => {
+    const traffic = await openLongBook(page);
+    const track = await alongTrack(slider(page));
+    await page.mouse.move(track.grip.x, track.grip.y);
+    await page.mouse.down();
+    const before = traffic.thumbnails.asked.length;
+
+    await page.mouse.move(track.grip.x + NUDGE_PX, track.grip.y, {
+      steps: NUDGE_STEPS,
+    });
+
+    const shown = (
+      await page
+        .getByRole("list", { name: "Nearby pages" })
+        .getByRole("listitem")
+        .filter({ visible: true })
+        .allTextContents()
+    ).map((number) => Number(number.trim()) - 1);
+    await expect
+      .poll(() =>
+        shown.every((index) =>
+          traffic.thumbnails.asked.slice(before).includes(index),
+        ),
+      )
+      .toBe(true);
+    const asked = traffic.thumbnails.asked.slice(before);
+    expect(asked.toSorted((one, other) => one - other)).toEqual(shown);
     await page.mouse.up();
   });
 

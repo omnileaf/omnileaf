@@ -47,6 +47,7 @@
   );
   const wide = $derived(previewWindow(shown, pages.length, WIDE_REACH));
   const phone = $derived(previewWindow(shown, pages.length, PHONE_REACH));
+  const shownAtThisWidth = $derived(chrome.width === "expanded" ? wide : phone);
   const near = $derived(
     Array.from(
       { length: wide.last - wide.first + 1 },
@@ -63,7 +64,12 @@
       return [];
     }
     return pagesByUrgency(
-      near.map(({ index }) => ({ spread: [index], offset: index - shown })),
+      near
+        .filter(
+          ({ index }) =>
+            index >= shownAtThisWidth.first && index <= shownAtThisWidth.last,
+        )
+        .map(({ index }) => ({ spread: [index], offset: index - shown })),
       "forward",
     );
   }
