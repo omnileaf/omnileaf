@@ -1199,6 +1199,7 @@ test.describe("turning between books", () => {
   const BOOK_LOADING = "[data-book-loading]";
   const LOADING_A_PAGE = /^Loading page \d+$/;
   const LOADING_THE_NEXT_BOOKS_PAGE = /^Loading page 1$/;
+  const LOADING_THE_FIRST_PAGE = /^Loading page 1$/;
   const LONGER_THAN_THE_SPINNER_WAITS_MS = 400;
   const NEXT_PAGE_COUNT = 184;
   const BLANK_INSET_PX = 8;
@@ -1208,9 +1209,11 @@ test.describe("turning between books", () => {
   const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
   const PREVIOUS_BOOK_PAGE = new RegExp(`/read/${PREVIOUS_BOOK.id}$`);
   let nextBookOpened: Promise<void> = Promise.resolve();
+  let previousBookOpened: Promise<void> = Promise.resolve();
 
   test.afterEach(() => {
     nextBookOpened = Promise.resolve();
+    previousBookOpened = Promise.resolve();
   });
 
   test.use({
@@ -1219,6 +1222,9 @@ test.describe("turning between books", () => {
       openBook: async (id) => {
         if (id === NEXT_BOOK.id) {
           await nextBookOpened;
+        }
+        if (id === PREVIOUS_BOOK.id) {
+          await previousBookOpened;
         }
         return {
           ...readerBook(id === NEXT_BOOK.id ? NOT_STARTED : OPENING),
@@ -1559,6 +1565,19 @@ test.describe("turning between books", () => {
         .getByText(LOADING_A_PAGE)
         .filter({ hasNotText: LOADING_THE_NEXT_BOOKS_PAGE }),
     ).toHaveCount(0);
+  });
+
+  test("stops naming the first page as loading while the book before opens", async ({
+    page,
+  }) => {
+    previousBookOpened = new Promise(() => undefined);
+    await onTheFirstPage(page, {});
+
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.locator(BOOK_LOADING)).toBeVisible();
+    await page.waitForTimeout(LONGER_THAN_THE_SPINNER_WAITS_MS);
+
+    await expect(page.getByText(LOADING_THE_FIRST_PAGE)).toHaveCount(0);
   });
 
   test("shows the next book's loading page, with no bars, until the book opens", async ({
