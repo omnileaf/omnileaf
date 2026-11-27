@@ -84,6 +84,18 @@
     return moved instanceof Node && anchor !== null && moved.contains(anchor);
   }
 
+  function followPlacementAround(track: Element): MutationObserver {
+    const placement = new MutationObserver(follow);
+    for (
+      let around = track.parentElement;
+      around !== null;
+      around = around.parentElement
+    ) {
+      placement.observe(around, { attributeFilter: ["style"] });
+    }
+    return placement;
+  }
+
   function grab(event: PointerEvent): void {
     if (event.button !== 0 || handle === null) {
       return;
@@ -137,7 +149,9 @@
         { capture: true },
       ),
     );
+    const placement = followPlacementAround(anchor);
     return () => {
+      placement.disconnect();
       target.removeEventListener("scroll", follow);
       window.removeEventListener("resize", follow);
       for (const stop of stopFollowingMoves) {

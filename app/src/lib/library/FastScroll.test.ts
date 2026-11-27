@@ -46,3 +46,19 @@ for (const ending of ["transitionend", "transitioncancel"]) {
       .toBe(screen.getBoundingClientRect().right - HANDLE_GAP_PX);
   });
 }
+
+test("puts its handle beside the screen once the screen is put back in place without a transition", async () => {
+  const screen = screenDrawnMoving();
+  await render(
+    FastScroll,
+    { total: 100, letterAt: () => "A" },
+    { baseElement: screen },
+  );
+  await expect.poll(() => handleIn(screen)).not.toBeNull();
+
+  screen.style.transform = "none";
+
+  await expect
+    .poll(() => handleIn(screen)?.getBoundingClientRect().right)
+    .toBe(screen.getBoundingClientRect().right - HANDLE_GAP_PX);
+});
