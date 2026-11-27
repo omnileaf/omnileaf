@@ -216,6 +216,7 @@
   const isShownReady = $derived(isReady(shown));
   const isShownFailed = $derived(failed.has(shown));
   const isAtRest = $derived(flight === undefined && slide === 0);
+  const isOnAPage = $derived(position >= 0 && position < spreads.length);
   const isSpreadSettled = $derived(
     isBlank || spread.every((index) => decoded.has(index) || failed.has(index)),
   );
@@ -737,7 +738,7 @@
                 title: bookTitle,
               })}
             </EmptyDescription>
-          {:else if isSlow && isAtRest}
+          {:else if isSlow && isAtRest && isOnAPage}
             <PageLoading label={m.reader_page_loading({ page: shown + 1 })} />
           {/if}
         </div>

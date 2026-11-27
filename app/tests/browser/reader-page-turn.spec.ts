@@ -1197,6 +1197,9 @@ test.describe("turning between books", () => {
   const LAST_PAGE = `main img[alt="Page ${String(PAGE_COUNT)}"]`;
   const FIRST_PAGE = 'main img[alt="Page 1"]';
   const BOOK_LOADING = "[data-book-loading]";
+  const LOADING_A_PAGE = /^Loading page \d+$/;
+  const LOADING_THE_NEXT_BOOKS_PAGE = /^Loading page 1$/;
+  const LONGER_THAN_THE_SPINNER_WAITS_MS = 400;
   const NEXT_PAGE_COUNT = 184;
   const BLANK_INSET_PX = 8;
   const READ_NEXT_BOOK = { ...NEXT_BOOK, reading: { state: "read" } } as const;
@@ -1531,6 +1534,31 @@ test.describe("turning between books", () => {
     expectNear(frames[0]?.[1]?.x, area.x + area.width);
     expectNear(frames.at(-1)?.[1]?.x, area.x);
     await expectBarsHidden(page);
+  });
+
+  test("says no page is loading while resting on Up next", async ({ page }) => {
+    await onUpNext(page, {});
+
+    await page.waitForTimeout(LONGER_THAN_THE_SPINNER_WAITS_MS);
+
+    await expect(page.getByText(LOADING_A_PAGE)).toHaveCount(0);
+  });
+
+  test("names only the next book's page as loading while that book opens", async ({
+    page,
+  }) => {
+    nextBookOpened = new Promise(() => undefined);
+    await onUpNext(page, {});
+
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator(BOOK_LOADING)).toBeVisible();
+    await page.waitForTimeout(LONGER_THAN_THE_SPINNER_WAITS_MS);
+
+    await expect(
+      page
+        .getByText(LOADING_A_PAGE)
+        .filter({ hasNotText: LOADING_THE_NEXT_BOOKS_PAGE }),
+    ).toHaveCount(0);
   });
 
   test("shows the next book's loading page, with no bars, until the book opens", async ({
