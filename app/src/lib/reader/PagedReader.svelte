@@ -84,9 +84,9 @@
   import JumpToBook from "#lib/reader/JumpToBook.svelte";
   import KeyboardShortcuts from "#lib/reader/KeyboardShortcuts.svelte";
   import { fitPinch } from "#lib/reader/pinch-zoom.ts";
-  import {
+  import type {
     DoubleTapWindow,
-    type TapPoint,
+    TapPoint,
   } from "#lib/reader/double-tap-window.ts";
   import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
   import { readerHints } from "#lib/reader/reader-hints.svelte.ts";
@@ -132,10 +132,6 @@
   const MOUSE_BACK_BUTTON = 3;
   /** How near the window's top or bottom the pointer brings hidden controls back. */
   const REVEAL_EDGE_PX = 48;
-  /** Android took a second tap 308 ms after the first lift as a double tap and refused one at 385 ms, so the reader's window reaches just past the first. */
-  const DOUBLE_TAP_WINDOW_MS = 310;
-  /** Android's double-tap slop, how far apart two taps may land and still make one double tap. */
-  const DOUBLE_TAP_SLOP_PX = 100;
   const TURN_STEPS = { next: 1, previous: -1 } as const satisfies Record<
     PageTurn,
     number
@@ -161,6 +157,7 @@
     hasJumped,
     isPagedInto,
     wayBack,
+    tapWindow,
     leaveReader,
   }: {
     book: OpenedBook;
@@ -169,6 +166,7 @@
     hasJumped: boolean;
     isPagedInto: boolean;
     wayBack: ReaderWayBack;
+    tapWindow: DoubleTapWindow;
     leaveReader: () => Promise<void>;
   } = $props();
 
@@ -1057,10 +1055,6 @@
   let waitingTap: ReturnType<typeof setTimeout> | undefined;
   let tappedWith = "";
   let isSecondTap = false;
-  const tapWindow = new DoubleTapWindow(
-    DOUBLE_TAP_WINDOW_MS,
-    DOUBLE_TAP_SLOP_PX,
-  );
 
   /** WebKit sends a pointermove whenever the page scrolls under a pointer that hasn't moved, so only a change of position counts. */
   function hasPointerMoved(event: PointerEvent): boolean {
