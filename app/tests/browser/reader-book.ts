@@ -154,8 +154,11 @@ export const readerBackend = (
 
 const TALL_PAGE = { width: 800, height: 2400 } as const;
 
-export const tallStripBook = (secondsPerPage: number | null = null) => {
-  const book = readerBook(NOT_STARTED);
+export const tallStripBook = (
+  secondsPerPage: number | null = null,
+  pageCount = PAGE_COUNT,
+) => {
+  const book = readerBook(NOT_STARTED, pageCount);
   return {
     ...book,
     secondsPerPage,
@@ -175,6 +178,16 @@ export async function openLongStrip(
   page: Page,
   stored: Record<string, string> = {},
 ): Promise<void> {
+  await markStripSeen(page, stored);
+  await servePages(page);
+  await page.goto(`/read/${BOOK_ID}`);
+  await expect(page.locator("[data-strip]")).toBeVisible();
+}
+
+export async function markStripSeen(
+  page: Page,
+  stored: Record<string, string> = {},
+): Promise<void> {
   await page.addInitScript(
     ({ series, entries }) => {
       localStorage.setItem(`omnileaf.stripFound.${series}`, "seen");
@@ -185,9 +198,6 @@ export async function openLongStrip(
     },
     { series: BOOK_SERIES_ID, entries: stored },
   );
-  await servePages(page);
-  await page.goto(`/read/${BOOK_ID}`);
-  await expect(page.locator("[data-strip]")).toBeVisible();
 }
 
 export async function pinchTo(page: Page, scale: number): Promise<void> {
