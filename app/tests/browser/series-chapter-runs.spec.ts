@@ -163,6 +163,7 @@ test.describe(
       await sort(page).click();
       await page.getByRole("menuitemradio", { name: "In order" }).click();
       await expect(sort(page)).toHaveAccessibleName("Sort: In order");
+      await expect(page.getByRole("menu")).toBeHidden();
 
       await page.goto("/");
       await openSeries(page);
