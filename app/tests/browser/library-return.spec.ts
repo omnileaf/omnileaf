@@ -300,6 +300,7 @@ test.describe(
       for (const { way, comeBack } of [
         { way: "the Back button", comeBack: tapBack },
         { way: "a history back", comeBack: goBackInHistory },
+        { way: "tapping the open Library tab", comeBack: tapLibrary },
       ]) {
         test(`draws every frame from a series opened in a scrolled Library as it was left, coming back by ${way}`, async ({
           page,
