@@ -43,6 +43,6 @@ test("explains that the page couldn't be opened, without blaming the address", a
     .toBeVisible();
   await expect.element(screen.getByText(ADDRESS)).not.toBeInTheDocument();
   await expect
-    .element(screen.getByRole("link", { name: "Go to Library" }))
+    .element(screen.getByRole("link", { name: "Go to the library" }))
     .toBeVisible();
 });

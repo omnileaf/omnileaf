@@ -273,7 +273,7 @@ test("lets an emptied title fall back to the file's, greyed in the field", async
 
   await expect(title).toHaveAttribute("placeholder", FILE_TITLE);
   await expect(title).toHaveAccessibleDescription(
-    `Left empty, so the file’s title shows: “${FILE_TITLE}”. Type to set your own.`,
+    `Left empty, the file’s title shows: “${FILE_TITLE}”.`,
   );
   await expect(shown.getByText("Edited")).toHaveCount(0);
   await save(shown);
@@ -476,7 +476,7 @@ test.describe("a file rated 18+", () => {
       await expect(mark).not.toBeChecked();
       await expect(mark).toBeEnabled();
       await expect(mark).toHaveAccessibleDescription(
-        "The file rates it Adults Only 18+, but Use age ratings from book details is off in Settings › Library, so only this switch counts.",
+        "The file rates it 18+, but age ratings are off in Settings › Library › 18+ content, so only this switch counts.",
       );
       await mark.click();
       await save(shown);

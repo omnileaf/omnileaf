@@ -284,7 +284,7 @@ test.describe(
       await page.goto(`/series/${SERIES_ID}`);
 
       await expect(partlyCard(page)).toContainText(
-        `${PARTLY.titleOf(2)} and ${PARTLY.titleOf(3)} are on a drive that is not there. The other 2 open as usual. Your reading progress is safe.`,
+        `${PARTLY.titleOf(2)} and ${PARTLY.titleOf(3)} are on a drive that isn’t connected. The other 2 open as usual. Your reading progress is safe.`,
       );
       await expect(partlyCard(page).getByRole("button")).toHaveText([
         "Find the folder",

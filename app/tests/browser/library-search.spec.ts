@@ -118,7 +118,7 @@ function isDesktop(page: Page): boolean {
 function searchField(page: Page): Locator {
   return page
     .getByRole("main")
-    .getByRole("combobox", { name: "Search your library" });
+    .getByRole("combobox", { name: "Search the library" });
 }
 
 function results(page: Page): Locator {

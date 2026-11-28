@@ -255,9 +255,7 @@ test.describe("in Settings > Reader", () => {
     await page.goto("/settings/reading");
 
     await expect(
-      page.getByText(
-        "Used for every series, unless you change it for a series in the reader.",
-      ),
+      page.getByText("For every series, unless changed in the reader."),
     ).toBeVisible();
   });
 

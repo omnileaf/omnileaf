@@ -86,7 +86,7 @@ async function search(page: Page): Promise<void> {
   await page.goto("/search");
   await page
     .getByRole("main")
-    .getByRole("combobox", { name: "Search your library" })
+    .getByRole("combobox", { name: "Search the library" })
     .fill("harbour");
   await expect(page.getByRole("option")).toHaveCount(CATALOG.length);
 }

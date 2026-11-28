@@ -15,7 +15,7 @@
     icon: Glyph;
     iconName: IconName;
     label: string;
-    hint: string;
+    hint?: string | undefined;
     look: AboutLook;
   } = $props();
 </script>

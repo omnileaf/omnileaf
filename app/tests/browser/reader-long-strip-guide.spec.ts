@@ -43,7 +43,7 @@ test("says a series of tall pages opened as a long strip, then shows how to scro
   await openStrip(page);
 
   await expect(stripFound(page)).toContainText(
-    "Its pages are tall and never form spreads, so it reads best scrolling down. You can change it for this series.",
+    "Its pages are tall, so it reads best scrolling down.",
   );
   await expect(guide(page)).toHaveCount(0);
   await stripFound(page).getByRole("button", { name: "Got it" }).click();

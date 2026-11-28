@@ -306,6 +306,20 @@ test("turns a single Android switch off when it is pressed", async () => {
 
   await expect.element(toggle).not.toBeChecked();
   await expect
-    .element(screen.getByRole("switch", { name: /^Choose the reading mode/ }))
+    .element(screen.getByRole("switch", { name: /^Pick paged or long strip/ }))
     .toBeChecked();
+});
+
+test("gives Auto scroll at my pace no second line while reading speed is learned", async () => {
+  const screen = await render(SmartFeaturesSection, {
+    heading: "h2",
+    size: "regular",
+  });
+
+  const pace = screen.getByRole("switch", { name: /^Auto scroll at my pace/ });
+
+  await expect
+    .element(screen.getByRole("switch", { name: "Learn my reading speed" }))
+    .toBeChecked();
+  await expect.element(pace).toHaveAccessibleDescription("");
 });

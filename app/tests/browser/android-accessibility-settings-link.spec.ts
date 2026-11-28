@@ -63,7 +63,7 @@ test.describe(
       await expect(link).toHaveCSS("outline-offset", "-2px");
     });
 
-    test("says Android's settings didn't open", async ({ page }) => {
+    test("says Android's settings couldn't be opened", async ({ page }) => {
       opensSettings = false;
       await openAccessibility(page);
 
@@ -72,7 +72,9 @@ test.describe(
         .click();
 
       await expect(
-        page.getByText("Android’s accessibility settings didn’t open"),
+        page.getByText(
+          "Couldn’t open Android’s accessibility settings. Try again.",
+        ),
       ).toBeVisible();
     });
   },

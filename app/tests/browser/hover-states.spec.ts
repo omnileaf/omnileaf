@@ -136,7 +136,7 @@ test.describe("with a pointer", () => {
   test("keeps an outlined control's card under its tint", async ({ page }) => {
     await page.goto("/settings/advanced");
     const control = page.getByRole("switch", {
-      name: "Check folders for new books while Omnileaf is open",
+      name: "Check folders for new books",
     });
     const card = await backgroundColorOf(control);
 

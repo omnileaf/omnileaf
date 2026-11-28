@@ -99,8 +99,11 @@ test.describe("the accent colour on Windows", () => {
 
     await expect.poll(() => primary(page)).toBe(BLUE_LIGHT);
     await expect(
-      page.getByText("Follows the accent colour you picked in Windows."),
+      page.getByText("Covers and pages keep their own colours.", {
+        exact: true,
+      }),
     ).toBeVisible();
+    await expect(page.getByText(/^Follows the accent colour/)).toHaveCount(0);
   });
 
   test("uses the lighter shade of the accent in dark mode", async ({

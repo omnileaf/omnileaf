@@ -61,15 +61,25 @@ test("opens the licences from About", async ({ page }) => {
   ).toBeFocused();
 });
 
+test("shows the licences row on About with no second line", async ({
+  page,
+}) => {
+  await page.goto("/settings/about");
+
+  await expect(
+    page.getByRole("link", { name: /^Open-source licences/ }),
+  ).toHaveText("Open-source licences");
+});
+
 test("says what the list is made from, 8px above the first group", async ({
   page,
 }) => {
   await openLicences(page);
 
   const intro = await boxOf(
-    page.getByText(
-      "Made from the packages this build of Omnileaf uses. Each opens its licence text.",
-    ),
+    page.getByText("The packages this build of Omnileaf uses.", {
+      exact: true,
+    }),
   );
   const firstGroup = await boxOf(groupSection(page, MOST_USED.name));
 

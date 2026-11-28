@@ -28,7 +28,7 @@ test("names the volumes that aren't connected when all of them are loaded", () =
 
   expect(wording).toEqual({
     title: "2 of 8 books aren’t connected",
-    body: "Volumes 7 and 8 are on a drive that is not there. The other 6 open as usual. Your reading progress is safe.",
+    body: "Volumes 7 and 8 are on a drive that isn’t connected. The other 6 open as usual. Your reading progress is safe.",
   });
 });
 
@@ -41,7 +41,7 @@ test("names one book that isn't connected by its own words", () => {
 
   expect(wording).toEqual({
     title: "1 of 3 books isn’t connected",
-    body: "Chapter 12 is on a drive that is not there. The other 2 open as usual. Your reading progress is safe.",
+    body: "Chapter 12 is on a drive that isn’t connected. The other 2 open as usual. Your reading progress is safe.",
   });
 });
 
@@ -53,7 +53,7 @@ test("names a mix of books that aren't connected by their own words", () => {
   });
 
   expect(wording.body).toBe(
-    "Volume 1 and Chapter 12 are on a drive that is not there. The other book opens as usual. Your reading progress is safe.",
+    "Volume 1 and Chapter 12 are on a drive that isn’t connected. The other book opens as usual. Your reading progress is safe.",
   );
 });
 
@@ -65,7 +65,7 @@ test("names none when more than three books aren't connected", () => {
   });
 
   expect(wording.body).toBe(
-    "They’re on a drive that is not there. The other 4 open as usual. Your reading progress is safe.",
+    "They’re on a drive that isn’t connected. The other 4 open as usual. Your reading progress is safe.",
   );
 });
 
@@ -77,6 +77,6 @@ test("names none while some books that aren't connected aren't loaded", () => {
   });
 
   expect(wording.body).toBe(
-    "They’re on a drive that is not there. The other 6 open as usual. Your reading progress is safe.",
+    "They’re on a drive that isn’t connected. The other 6 open as usual. Your reading progress is safe.",
   );
 });

@@ -15,7 +15,6 @@ const SUMMARIES = [
   { section: "General", summary: "English · opens to Library" },
   { section: "Library", summary: "2 folders · 128 series" },
   { section: "Storage", summary: "1.4 GB used" },
-  { section: "Advanced", summary: "Animations · Undo" },
   { section: "About", summary: `Version ${FAKE_APP_VERSION}` },
 ] as const;
 
@@ -53,6 +52,20 @@ test("summarises each section from what the app stores", async ({ page }) => {
       main.getByRole("link", { name: new RegExp(`^${section}`) }),
     ).toContainText(summary);
   }
+});
+
+test("shows Advanced with no second line", async ({ page }) => {
+  test.skip(
+    viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+    "settings opens its first section beside the list",
+  );
+  await page.goto("/settings");
+
+  const advanced = page
+    .getByRole("main")
+    .getByRole("link", { name: /^Advanced/ });
+
+  await expect(advanced).toHaveText("Advanced");
 });
 
 test("follows the light or dark choice in Appearance's summary", async ({

@@ -277,9 +277,7 @@ test("sets a trailing note under the rows while Ready to clean up is not offered
 
   const last = await boxOf(inspector.getByRole("switch").last());
   const note = await boxOf(
-    inspector.getByText(
-      "Ready to clean up (downloaded and finished) appears once you have downloads.",
-    ),
+    inspector.getByText("Ready to clean up appears once you have downloads."),
   );
   expect(note.y).toBeGreaterThan(last.y + last.height);
 });

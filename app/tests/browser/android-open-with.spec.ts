@@ -130,7 +130,7 @@ test.describe(
       await expect(dialog).toBeVisible();
       await expect(
         dialog.getByText(
-          "This file type isn't supported. Omnileaf opens CBZ and CB7 files.",
+          "Omnileaf opens CBZ and CB7 files. The file stays where it is.",
         ),
       ).toBeVisible();
       await expect(page).not.toHaveURL(/\/read\//);

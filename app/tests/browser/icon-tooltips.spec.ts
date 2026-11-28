@@ -235,7 +235,7 @@ const ICON_ACTIONS: readonly IconAction[] = [
       await page.goto("/search");
       await page
         .getByRole("main")
-        .getByRole("combobox", { name: "Search your library" })
+        .getByRole("combobox", { name: "Search the library" })
         .pressSequentially("unread market");
       return page.getByRole("button", { name: "Remove the Unread filter" });
     },

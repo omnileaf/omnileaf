@@ -117,7 +117,7 @@ function showsSummaries(page: Page, platform: Platform): boolean {
   return viewportOf(page).width < besideFrom;
 }
 
-function advancedSummaryRow(page: Page): Locator {
+function advancedRow(page: Page): Locator {
   return page.getByRole("main").getByRole("link", { name: /^Advanced/ });
 }
 
@@ -175,16 +175,16 @@ for (const platform of ["android", "ios", "linux"] as const) {
       expect(names[advanced + 1]).toMatch(/^About/);
     });
 
-    test("summarises Advanced by what it holds", async ({ page }) => {
+    test("gives Advanced no summary", async ({ page }) => {
       test.skip(
         !showsSummaries(page, platform),
         "settings opens its first section beside the list",
       );
       await page.goto("/settings");
 
-      const advanced = advancedSummaryRow(page);
+      const advanced = advancedRow(page);
 
-      await expect(advanced).toContainText("Animations");
+      await expect(advanced).toHaveText("Advanced");
     });
 
     test("heads the page Advanced, under a note that it never ships", async ({
@@ -427,16 +427,16 @@ for (const platform of ["android", "ios", "linux"] as const) {
       expect(names[advanced + 1]).toMatch(/^About/);
     });
 
-    test("summarises Advanced by what it holds", async ({ page }) => {
+    test("gives Advanced no summary", async ({ page }) => {
       test.skip(
         !showsSummaries(page, platform),
         "settings opens its first section beside the list",
       );
       await page.goto("/settings");
 
-      const advanced = advancedSummaryRow(page);
+      const advanced = advancedRow(page);
 
-      await expect(advanced).toContainText("Animations");
+      await expect(advanced).toHaveText("Advanced");
     });
 
     test("opens Advanced without the development build note or the crash tests", async ({

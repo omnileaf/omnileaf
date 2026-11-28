@@ -15,7 +15,7 @@ const SECOND = FOUND[1];
 async function searchForSeries(page: Page) {
   await page.goto("/search");
   await page
-    .getByRole("combobox", { name: "Search your library" })
+    .getByRole("combobox", { name: "Search the library" })
     .fill("series");
   return page.getByRole("listbox", { name: "Series found" });
 }

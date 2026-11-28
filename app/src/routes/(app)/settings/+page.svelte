@@ -128,7 +128,6 @@
         }),
       },
     }),
-    "/(app)/settings/advanced": { text: m.settings_summary_advanced() },
     "/(app)/settings/about": {
       text: m.app_version({ version: data.appInfo.version }),
     },

@@ -58,8 +58,7 @@ export const CONTROLS: readonly Control[] = [
   {
     name: "a switch row",
     path: "/settings/privacy/screenshot-mode",
-    find: (page) =>
-      page.getByRole("switch", { name: "Show the Screenshot mode label" }),
+    find: (page) => page.getByRole("switch", { name: "Screenshot mode label" }),
   },
   {
     name: "a switch on a card",

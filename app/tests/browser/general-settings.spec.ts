@@ -38,7 +38,7 @@ test("opens on the library until another place is chosen, and keeps the place ch
   await expect(
     opensOn(page).getByRole("radio", { name: "Last book", exact: true }),
   ).toHaveAccessibleDescription(
-    "The reader, where you left it; the library when there's none.",
+    "Where you left off, or the library if there’s none.",
   );
 });
 

@@ -1,8 +1,7 @@
 import { mainNavigationLink, openLibraryPage } from "./app-session.ts";
 import { type Locator, type Session, xpath } from "./webdriver.ts";
 
-const SCHEDULED_CHECKS_LABEL =
-  "Check folders for new books while Omnileaf is open";
+const SCHEDULED_CHECKS_LABEL = "Check folders for new books";
 const SCHEDULED_CHECKS_SWITCH = `//main//button[@role='switch'][.//*[normalize-space()="${SCHEDULED_CHECKS_LABEL}"]]`;
 const ADVANCED_SETTINGS_ROW = xpath(
   "//main//a[starts-with(normalize-space(), 'Advanced')]",

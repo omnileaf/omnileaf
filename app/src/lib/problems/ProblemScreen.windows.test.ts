@@ -12,7 +12,7 @@ import { drawnContrast } from "../../../tests/components/contrast-ratio";
 import ProblemScreen from "./ProblemScreen.svelte";
 
 const NEXT_STEP = createRawSnippet(() => ({
-  render: () => `<a href="/">Go to Library</a>`,
+  render: () => `<a href="/">Go to the library</a>`,
 }));
 
 const PROBLEM = {

@@ -6,7 +6,7 @@ import { render } from "vitest-browser-svelte";
 import ProblemScreen from "./ProblemScreen.svelte";
 
 const NEXT_STEP = createRawSnippet(() => ({
-  render: () => `<a href="/">Go to Library</a>`,
+  render: () => `<a href="/">Go to the library</a>`,
 }));
 
 const PROBLEM = {
@@ -35,7 +35,7 @@ test("explains the problem and offers the next step", async () => {
     .element(screen.getByText("Nothing in your library has changed."))
     .toBeVisible();
   await expect
-    .element(screen.getByRole("link", { name: "Go to Library" }))
+    .element(screen.getByRole("link", { name: "Go to the library" }))
     .toBeVisible();
 });
 

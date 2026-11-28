@@ -10,7 +10,7 @@ import {
   testOnlyInItsWebview,
 } from "./fixtures.ts";
 
-const SWITCH_NAME = "Check folders for new books while Omnileaf is open";
+const SWITCH_NAME = "Check folders for new books";
 
 const RESCANS_ON_RETURN = {
   android: true,

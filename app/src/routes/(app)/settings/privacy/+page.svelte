@@ -51,6 +51,7 @@
   const screenshotMode = getScreenshotMode();
   const timeFormat = getTimeFormatSetting();
   const sendsReportsOnItsOwn = $derived(crashReports.choice === "always");
+  const asksEachTime = $derived(crashReports.choice === "ask");
   const checksForUpdates = $derived(offersUpdateCheck(data.appInfo));
 
   const headingId = $props.id();
@@ -157,18 +158,20 @@
     >
       {m.privacy_crash_reports()}
     </h2>
-    <p
-      id={hintId}
-      class="text-footnote text-muted touch:medium:order-last desktop:order-last"
-    >
-      {m.privacy_crash_reports_hint()}
-    </p>
+    {#if asksEachTime}
+      <p
+        id={hintId}
+        class="text-footnote text-muted touch:medium:order-last desktop:order-last"
+      >
+        {m.privacy_crash_reports_hint()}
+      </p>
+    {/if}
     <SegmentedControl
       options={CRASH_REPORT_CHOICES}
       labels={CHOICE_LABELS}
       chosen={crashReports.choice}
       labelledBy={headingId}
-      describedBy={hintId}
+      describedBy={asksEachTime ? hintId : undefined}
       onChoose={(choice: CrashReportChoice) => {
         crashReports.choose(choice);
       }}

@@ -96,8 +96,7 @@ const DESKTOP_CHANGE_HEIGHT = 38;
 const TOAST_GONE_MS = 7_000;
 const DESKTOP_HOME_LEAD =
   "Omnileaf keeps its own data in one home folder. You can move it later.";
-const DESKTOP_HOME_NOTE =
-  "Change picks another folder; Documents is the usual place.";
+const DESKTOP_HOME_NOTE = "Documents is the usual place.";
 
 class HomeFolderChanges {
   chosen: (ChosenHomeFolder | null)[] = [];
@@ -1585,9 +1584,7 @@ test.describe("once folders are linked", () => {
       .getByRole("listitem");
 
     await expect(
-      page.getByText(
-        "Your library is ready. Add or remove folders any time in Settings › Library.",
-      ),
+      page.getByText("Add or remove folders any time in Settings › Library."),
     ).toBeVisible();
     await expect(rows.nth(0)).toContainText("3 series · 7 books");
     await expect(rows.nth(1)).toContainText("32 series · 38 books");
@@ -1606,7 +1603,7 @@ test.describe("once folders are linked", () => {
       SAMPLE_COMICS,
       { ...MANGA, isAvailable: false },
     ];
-    await goTo(page, "Manga couldn't be read");
+    await goTo(page, "Manga couldn’t be read");
 
     await expect(
       page.getByText(
@@ -1779,7 +1776,7 @@ test.describe("while a folder is still being scanned", () => {
   }) => {
     await goOnWhileScanning(page);
 
-    await expect(heading(page, "You're all set")).toBeVisible();
+    await expect(heading(page, "You’re all set")).toBeVisible();
     await expect(
       page.getByText(
         "Omnileaf is still finding books. You can open your library now; scanning carries on.",
@@ -1791,7 +1788,7 @@ test.describe("while a folder is still being scanned", () => {
 
   test("says what it found once the scan ends", async ({ page }) => {
     await goOnWhileScanning(page);
-    await expect(heading(page, "You're all set")).toBeVisible();
+    await expect(heading(page, "You’re all set")).toBeVisible();
 
     endScan();
 
@@ -1804,7 +1801,7 @@ test.describe("while a folder is still being scanned", () => {
     }) => {
       await page.emulateMedia({ colorScheme });
       await goOnWhileScanning(page);
-      await expect(heading(page, "You're all set")).toBeVisible();
+      await expect(heading(page, "You’re all set")).toBeVisible();
 
       expect(await accessibilityViolations(page)).toEqual([]);
     });
@@ -1949,7 +1946,7 @@ test("stays on the last step and says so when finishing fails", async ({
   await page.getByRole("button", { name: "Open my library" }).click();
 
   await expect(page.getByRole("main").getByRole("alert")).toHaveText(
-    "Couldn't finish setting up. Try again.",
+    "Couldn’t finish setting up. Try again.",
   );
   await expect(page).toHaveURL("/first-launch");
 });

@@ -23,11 +23,10 @@
 
   const id = $props.id();
 
-  const range = $derived({
+  const range = {
     slowest: SCREENS_PER_MINUTE.slowest,
     fastest: SCREENS_PER_MINUTE.fastest,
-    default: settings.defaultSpeed,
-  });
+  };
 </script>
 
 <div

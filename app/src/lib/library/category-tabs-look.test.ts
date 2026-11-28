@@ -16,7 +16,6 @@ test("keeps every class of every look through the class merge", () => {
     ...Object.values(tabs).filter((value) => typeof value === "string"),
     sheet.header,
     sheet.title,
-    sheet.description,
     sheet.list,
     sheet.option,
     sheet.foot,

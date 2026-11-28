@@ -15,8 +15,7 @@ import {
 const LANGUAGE_PAGE = "/settings/general/language";
 const LANGUAGE_KEY = "omnileaf.language";
 const SYSTEM_OPTION = "Use the system language";
-const INTRO =
-  "Each language is shown in its own name. It changes straight away.";
+const INTRO = "Changes straight away.";
 const INTRO_GAP = 8;
 const FOOTNOTE = "More languages arrive as people translate Omnileaf.";
 const POINTER_ROW_HEIGHT = 44;

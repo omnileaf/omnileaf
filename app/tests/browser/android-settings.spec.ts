@@ -5,7 +5,6 @@ import {
   expect,
   test,
   tokenColour,
-  viewportOf,
 } from "./fixtures.ts";
 
 test.use({ backend: { ...DEFAULT_BACKEND } });
@@ -97,7 +96,7 @@ test.describe(
       await expect(group.getByRole("radio")).toHaveCount(3);
       await expect(ask).toBeChecked();
       await expect(ask).toHaveAccessibleDescription(
-        "You see a report before it's sent.",
+        "You see a report before it’s sent.",
       );
       await expect(group).toHaveCSS("border-top-width", "1px");
       expect((await boxOf(ask)).height).toBeGreaterThanOrEqual(ROW_MIN);
@@ -241,7 +240,7 @@ test.describe("General on an Android phone", { tag: "@native" }, () => {
     await page.goto("/settings/general");
 
     await expect(
-      page.getByText("The reader, where you left it", { exact: false }),
+      page.getByText("Where you left off", { exact: false }),
     ).toHaveCount(0);
   });
 });
@@ -281,37 +280,18 @@ test.describe(
       expect((await boxOf(label)).x - (await boxOf(row)).x).toBeCloseTo(16, 0);
     });
 
-    test("ends the page with a footnote saying when the choice applies", async ({
+    test("ends the page at the age ratings switch, with no footnote under it", async ({
       page,
     }) => {
       await page.goto("/settings/library/adult-content");
-      const note = page.getByText(
-        "First launch offers the same choice. It applies straight away.",
-      );
+      const group = page.locator("[data-settings-group]").last();
 
-      await expect(note).toBeVisible();
-      await expect(note).toHaveCSS("font-size", "14px");
-      await expect(note).toHaveCSS("line-height", "20px");
-    });
-
-    test("runs the footnote across the screen, its words 16px in and 8px under the age ratings", async ({
-      page,
-    }) => {
-      await page.goto("/settings/library/adult-content");
-      const note = page.getByText(
-        "First launch offers the same choice. It applies straight away.",
-      );
-      const row = await boxOf(
-        page.getByRole("switch", { name: "Use age ratings from book details" }),
-      );
-
-      const noteBox = await boxOf(note);
-
-      expect(noteBox.x).toBeCloseTo(0, 0);
-      expect(noteBox.width).toBeCloseTo(viewportOf(page).width, 0);
-      expect(noteBox.y - (row.y + row.height)).toBeCloseTo(0, 0);
-      await expect(note).toHaveCSS("padding-inline-start", "16px");
-      await expect(note).toHaveCSS("padding-block-start", "8px");
+      await expect(
+        group.getByRole("switch", {
+          name: "Use age ratings from book details",
+        }),
+      ).toBeVisible();
+      await expect(page.getByText(/^First launch offers/)).toHaveCount(0);
     });
   },
 );
@@ -420,8 +400,8 @@ test.describe("Permissions on an Android phone", { tag: "@native" }, () => {
   }) => {
     const intros = [
       ["/settings/privacy/permissions", /^Omnileaf asks for each one/],
-      ["/settings/general/language", /^Each language is shown/],
-      ["/settings/about/licences", /^Made from the packages/],
+      ["/settings/general/language", /^Changes straight away/],
+      ["/settings/about/licences", /^The packages this build/],
     ] as const;
 
     for (const [route, text] of intros) {

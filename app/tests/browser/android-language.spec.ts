@@ -1,7 +1,6 @@
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
-const SYSTEM_OFFERS =
-  "Your phone's settings, under Apps, Omnileaf, Language, can also change this.";
+const SYSTEM_OFFERS = "Also in Android settings › Apps › Omnileaf › Language.";
 
 test.use({
   backend: {
@@ -61,7 +60,7 @@ test.describe(
     }) => {
       await page.goto("/settings/general/language");
 
-      await expect(page.getByText(/Each language is shown/)).toBeVisible();
+      await expect(page.getByText(/^Changes straight away/)).toBeVisible();
       await expect(page.getByText(SYSTEM_OFFERS)).toHaveCount(0);
     });
   },

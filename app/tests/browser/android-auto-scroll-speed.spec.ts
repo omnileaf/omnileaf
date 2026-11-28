@@ -82,7 +82,7 @@ test.describe(
         speed.getByRole("radio", { name: "This series" }),
       ).toHaveAttribute("aria-checked", "true");
       await expect(speed).toContainText(
-        `Saved for ${BOOK_SERIES_TITLE} only. From 1 to 12 screens a minute; the default is 3.`,
+        `Saved for ${BOOK_SERIES_TITLE} only. 1 to 12 screens a minute.`,
       );
       await speed.getByRole("slider", { name: "Screens a minute" }).focus();
       await page.keyboard.press("ArrowRight");
@@ -100,7 +100,7 @@ test.describe(
       await speed.getByRole("radio", { name: "All series" }).click();
 
       await expect(speed).toContainText(
-        "Saved for every series. From 1 to 12 screens a minute; the default is 5.",
+        "Saved for every series. 1 to 12 screens a minute.",
       );
       expect(await storedSpeeds(page)).toEqual({
         shared: 5,

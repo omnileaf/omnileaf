@@ -146,9 +146,7 @@ test.describe("on a computer", () => {
 
     await expect(
       page.getByRole("region", { name: "Turn it on quickly" }),
-    ).toContainText(
-      /Tray\s*The Omnileaf icon there has Screenshot mode, with its state\./,
-    );
+    ).toContainText(/Tray\s*In the Omnileaf icon’s menu/);
   });
 });
 

@@ -15,8 +15,6 @@ const SYSTEM_BARS_PX = 24;
 const BACK_ARROW_SIZE = 24;
 const BOARD = {
   back: { x: 8, y: 36, width: 40, height: 40 },
-  headingTop: 174,
-  seriesEndHeadingTop: 246,
   blockGap: 24,
   cardInset: 20,
   buttonIcon: 20,
@@ -82,6 +80,30 @@ function cardHolding(element: Element): Element {
   return card;
 }
 
+function sectionOf(element: Element): Element {
+  const section = element.closest("section");
+  if (section === null) {
+    throw new Error("the element sits in no section");
+  }
+  return section;
+}
+
+function expectCentredInItsColumn(section: Element): void {
+  const column = section.parentElement;
+  if (column === null) {
+    throw new Error("the section has no column");
+  }
+  const style = getComputedStyle(column);
+  const above =
+    boxOf(section).top -
+    (boxOf(column).top + Number.parseFloat(style.paddingTop));
+  const below =
+    boxOf(column).bottom -
+    Number.parseFloat(style.paddingBottom) -
+    boxOf(section).bottom;
+  expectNear(above, below);
+}
+
 function channels(colour: string): number[] {
   return [...colour.matchAll(/\d+/g)].slice(0, 3).map(Number);
 }
@@ -126,14 +148,14 @@ test("puts the way back where the board's top bar does, as a 40px button", async
   ]);
 });
 
-test("centres the page between the top bar and the bottom inset where the board does", async () => {
+test("centres the page in its column", async () => {
   const screen = await onAndroidPhone();
 
-  const heading = boxOf(
-    screen.getByRole("heading", { name: "Volume 3 finished" }).element(),
-  );
+  const heading = screen
+    .getByRole("heading", { name: "Volume 3 finished" })
+    .element();
 
-  expectNear(heading.y, BOARD.headingTop);
+  expectCentredInItsColumn(sectionOf(heading));
 });
 
 test("leaves the board's gap between the heading, the card, Skip this screen and the hint", async () => {
@@ -256,23 +278,21 @@ test("keeps the Read button's words whole at the largest text", async () => {
   expect(boxOf(read).right).toBeLessThanOrEqual(PHONE.width);
 });
 
-test("centres the end of the series where the board does, its title 16px over its words", async () => {
+test("centres the end of the series in its column, its title 16px over its words", async () => {
   const screen = await onAndroidPhone({ isSeriesEnd: true });
 
-  const heading = boxOf(
-    screen.getByRole("heading", { name: "Volume 3 finished" }).element(),
-  );
+  const heading = screen
+    .getByRole("heading", { name: "Volume 3 finished" })
+    .element();
   const title = boxOf(
     screen
       .getByRole("heading", { name: "You've read every book in this series" })
       .element(),
   );
   const body = boxOf(
-    screen
-      .getByText("When a new book lands in its folder, it shows up here.")
-      .element(),
+    screen.getByText("New books in its folder show up here.").element(),
   );
 
-  expectNear(heading.y, BOARD.seriesEndHeadingTop);
+  expectCentredInItsColumn(sectionOf(heading));
   expect(body.y - title.bottom).toBe(BOARD.cardTitleGap);
 });

@@ -121,13 +121,13 @@ test.describe("when the settings can't be opened", () => {
     },
   });
 
-  test("says the settings didn't open", async ({ page }) => {
+  test("says the settings couldn't be opened", async ({ page }) => {
     await openPermissions(page);
 
     await page.getByRole("button", { name: /^Open Windows Settings/ }).click();
 
     await expect(
-      page.getByText("The system’s settings didn’t open"),
+      page.getByText("Couldn’t open the system’s settings. Try again."),
     ).toBeVisible();
   });
 });

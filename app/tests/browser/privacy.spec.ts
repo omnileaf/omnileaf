@@ -30,8 +30,19 @@ test("asks about each crash report until told otherwise", async ({ page }) => {
     crashReports(page).getByRole("radio", { name: "Ask each time" }),
   ).toBeChecked();
   await expect(crashReports(page)).toHaveAccessibleDescription(
-    "You see a report before it's sent.",
+    "You see a report before it’s sent.",
   );
+});
+
+test("drops the note about seeing a report once Always send is chosen", async ({
+  page,
+}) => {
+  await openPrivacy(page);
+
+  await crashReports(page).getByRole("radio", { name: "Always send" }).click();
+
+  await expect(crashReports(page)).toHaveAccessibleDescription("");
+  await expect(page.getByText(/^You see a report before/)).toHaveCount(0);
 });
 
 test("keeps the crash report choice after the app reopens", async ({

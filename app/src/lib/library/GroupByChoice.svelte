@@ -41,6 +41,7 @@
   const labelId = `${id}-label`;
   const hintId = `${id}-hint`;
   const android = new AndroidPhone();
+  const explainsCreator = $derived(chosen === "creator");
   const hintClass = $derived(
     footnoteClass === undefined
       ? "mbs-xs text-small text-muted large:text-caption"
@@ -57,7 +58,7 @@
   >
     {m.library_group_by()}
   </p>
-  {#if android.isOn}
+  {#if android.isOn && explainsCreator}
     {@render hint()}
   {/if}
   <SegmentedControl
@@ -65,7 +66,7 @@
     labels={LABELS}
     {chosen}
     labelledBy={labelId}
-    describedBy={hintId}
+    describedBy={explainsCreator ? hintId : undefined}
     size="small"
     hasWindowsLook
     hasEqualColumns
@@ -73,7 +74,7 @@
     isFullWidth={android.isOn}
     class={android.isOn ? "mbs-md" : "mbs-sm large:mbs-icon-gap"}
   />
-  {#if !android.isOn}
+  {#if !android.isOn && explainsCreator}
     {@render hint()}
   {/if}
 </div>

@@ -93,7 +93,7 @@ test.describe("a book of tall pages", () => {
     ).toHaveText("Automatic (long strip)");
   });
 
-  test("pages through it once Choose the reading mode for each series is off", async ({
+  test("pages through it once Pick paged or long strip for each series is off", async ({
     page,
   }) => {
     await openBook(page, {
@@ -138,17 +138,15 @@ test.describe("Settings > Reader", () => {
     ).toHaveAccessibleDescription("Go straight to the next book.");
   });
 
-  test("offers Choose the reading mode for each series among the smart features", async ({
+  test("offers Pick paged or long strip for each series among the smart features", async ({
     page,
   }) => {
     await page.goto("/settings/reading");
 
     await expect(
       page.getByRole("region", { name: "Smart features" }).getByRole("switch", {
-        name: "Choose the reading mode for each series",
+        name: "Pick paged or long strip for each series",
       }),
-    ).toHaveAccessibleDescription(
-      "Reads a series’ details and its pages to pick paged or long strip.",
-    );
+    ).toHaveAccessibleDescription("From its details and pages.");
   });
 });

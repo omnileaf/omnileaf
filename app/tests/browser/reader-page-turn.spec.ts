@@ -2,12 +2,14 @@ import type { Locator, Page } from "@playwright/test";
 
 import {
   DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
   expect,
   pixelAt,
   pixelOf,
   screenshotPixels,
   settle,
   test,
+  viewportOf,
 } from "./fixtures.ts";
 import {
   BOOK_ID,
@@ -1154,7 +1156,9 @@ test("keeps sliding when a scrollbar takes room from the page area", async ({
   expect(moving).toBeGreaterThan(0);
 });
 
-test("chooses Slide under Pages in Reading settings", async ({ page }) => {
+test("chooses Slide under Pages in Reading settings, saying it follows your finger", async ({
+  page,
+}) => {
   await openBookWith(page, {});
   await page
     .getByRole("button", { name: "Reading settings", exact: true })
@@ -1167,13 +1171,14 @@ test("chooses Slide under Pages in Reading settings", async ({ page }) => {
 
   const pages = page.getByRole("region", { name: "Pages" });
   await expect(pages.getByRole("group", { name: "Tap zones" })).toBeVisible();
+  const pageTurn = pages.getByRole("group", { name: "Page turn" });
+  await expect(pages.getByText(/follows your finger/i)).toHaveCount(0);
+  await expect(pageTurn).toHaveAccessibleDescription("");
+  await pageTurn.getByRole("radio", { name: "Slide" }).click();
   await expect(
-    pages.getByText("Slide follows your finger.", { exact: false }),
+    pages.getByText("Follows your finger.", { exact: true }),
   ).toBeVisible();
-  await pages
-    .getByRole("group", { name: "Page turn" })
-    .getByRole("radio", { name: "Slide" })
-    .click();
+  await expect(pageTurn).toHaveAccessibleDescription("Follows your finger.");
 
   await expect
     .poll(
@@ -1802,4 +1807,30 @@ test.describe("turning between books", () => {
       );
     });
   });
+});
+
+test("names the series under Apply to only while This series is chosen", async ({
+  page,
+}) => {
+  test.skip(
+    viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+    "the panel beside the book shows no line under Apply to",
+  );
+  await openBookWith(page, {});
+  await page
+    .getByRole("button", { name: "Reading settings", exact: true })
+    .click();
+  const settings = page.getByRole("dialog", { name: "Reading settings" });
+  await expect(settings).toBeVisible();
+  await settle(settings);
+  const applyTo = settings.getByRole("group", { name: "Apply to" });
+
+  await applyTo.getByRole("radio", { name: "This series" }).click();
+  await expect(settings.getByText(/^For .+ only\.$/)).toBeVisible();
+  await expect(applyTo).toHaveAccessibleDescription(/^For .+ only\.$/);
+  await applyTo.getByRole("radio", { name: "All series" }).click();
+
+  await expect(settings.getByText(/^For .+ only\.$/)).toHaveCount(0);
+  await expect(applyTo).toHaveAccessibleDescription("");
+  await expect(settings.getByText(/^Changes here apply/)).toHaveCount(0);
 });

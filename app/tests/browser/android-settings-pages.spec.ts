@@ -27,8 +27,7 @@ const PAGE_STARTS: readonly PageStart[] = [
   },
   {
     route: "/settings/privacy/app-lock",
-    first: (page) =>
-      page.getByText(/^Omnileaf asks for your fingerprint/).locator(".."),
+    first: (page) => page.getByText(/^Asks for your fingerprint/).locator(".."),
   },
   {
     route: "/settings/advanced",
@@ -36,15 +35,15 @@ const PAGE_STARTS: readonly PageStart[] = [
   },
   {
     route: "/settings/reading",
-    first: (page) => page.getByText(/Used for every series/),
+    first: (page) => page.getByText(/^For every series, unless changed/),
   },
   {
     route: "/settings/general/language",
-    first: (page) => page.getByText(/Each language is shown/),
+    first: (page) => page.getByText(/^Changes straight away/),
   },
   {
     route: "/settings/about/licences",
-    first: (page) => page.getByText(/Made from the packages/),
+    first: (page) => page.getByText(/The packages this build/),
   },
   {
     route: "/settings/library/tabs",
@@ -186,12 +185,14 @@ test.describe(
       expect(list.y - (intro.y + intro.height)).toBeCloseTo(0, 0);
     });
 
-    test("says About's report is built on this phone", async ({ page }) => {
+    test("says on About's report row that nothing is sent until you choose", async ({
+      page,
+    }) => {
       await page.goto("/settings/about");
 
-      await expect(page.getByText(/^Builds a report on this/)).toHaveText(
-        "Builds a report on this phone; you choose where it goes",
-      );
+      await expect(
+        page.getByRole("link", { name: /^Report a problem/ }),
+      ).toContainText("Nothing is sent until you choose");
     });
   },
 );

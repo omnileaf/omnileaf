@@ -143,7 +143,7 @@
       feature: "autoScrollsAtMyPace",
       label: m.reader_auto_scroll_pace(),
       description: features.learnsReadingSpeed
-        ? m.reader_auto_scroll_pace_help()
+        ? undefined
         : m.reader_needs_learn_speed(),
       isOn: features.autoScrollsAtMyPace,
       isDisabled: !features.learnsReadingSpeed,

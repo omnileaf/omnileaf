@@ -303,7 +303,7 @@ test.describe("with a folder found empty", () => {
     await rescanSampleComics(page);
 
     const row = sampleComicsRow(page);
-    await expect(row.getByText("No books found")).toBeVisible();
+    await expect(row.getByText(/^Looks empty\b/)).toBeVisible();
     await expect(
       row
         .getByRole("status")
@@ -318,7 +318,7 @@ test.describe("with a folder found empty", () => {
     await rescanSampleComics(page);
 
     await expect(
-      sampleComicsRow(page).getByText("No books found · /media/Sample Comics"),
+      sampleComicsRow(page).getByText("Looks empty · /media/Sample Comics"),
     ).toBeVisible();
   });
 

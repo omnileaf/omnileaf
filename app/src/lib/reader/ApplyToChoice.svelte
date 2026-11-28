@@ -31,10 +31,8 @@
   onChoose={(scope: SettingsScope) => {
     settings.applyTo(scope);
   }}
->
-  <p class="text-caption text-muted expanded:hidden">
-    {settings.scope === "series"
-      ? m.reader_applies_to_series({ series: seriesTitle })
-      : m.reader_applies_to_all()}
-  </p>
-</SettingChoice>
+  note={settings.scope === "series"
+    ? m.reader_applies_to_series({ series: seriesTitle })
+    : undefined}
+  noteClass="text-caption text-muted expanded:hidden"
+/>

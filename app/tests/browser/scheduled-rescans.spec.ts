@@ -10,9 +10,8 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 
-const SWITCH_NAME = "Check folders for new books while Omnileaf is open";
-const SWITCH_HELP =
-  "New books show up without a rescan. Turn off to save battery.";
+const SWITCH_NAME = "Check folders for new books";
+const SWITCH_HELP = "While Omnileaf is open. Off saves battery.";
 const TOUCH_TARGET = 44;
 const PHONE_MAX_WIDTH = 599;
 

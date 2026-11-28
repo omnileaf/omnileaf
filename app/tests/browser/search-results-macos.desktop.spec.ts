@@ -56,7 +56,7 @@ function seriesAt(index: number): { id: string } {
 
 async function searchFor(page: Page, text: string): Promise<Locator> {
   await page.goto("/search");
-  const field = page.getByRole("combobox", { name: "Search your library" });
+  const field = page.getByRole("combobox", { name: "Search the library" });
   await field.fill(text);
   return field;
 }
@@ -205,7 +205,7 @@ test("sets the no-results title in the Mac's large title type over a muted line"
 }) => {
   await page.goto("/search");
   await page
-    .getByRole("combobox", { name: "Search your library" })
+    .getByRole("combobox", { name: "Search the library" })
     .fill(SPELLING_ONLY);
 
   const title = page.getByRole("heading", { name: /^Nothing matches/ });

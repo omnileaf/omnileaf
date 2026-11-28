@@ -114,9 +114,7 @@
       <ViewSwitchRow
         {usesItemRow}
         label={isMac ? m.library_category_sidebar() : m.library_category_tabs()}
-        description={isMac
-          ? m.library_category_sidebar_hint()
-          : m.library_category_tabs_hint()}
+        description={isMac ? undefined : m.library_category_tabs_hint()}
         isOn={view.showsCategoryTabs}
         onToggle={(isShown: boolean) => {
           onChoose(withCategoryTabs(view, isShown));
@@ -127,7 +125,6 @@
       <ViewSwitchRow
         {usesItemRow}
         label={m.library_stack_covers()}
-        description={m.library_stack_covers_hint()}
         isOn={view.stacksSeriesCovers}
         onToggle={(stacks: boolean) => {
           onChoose(withStackedCovers(view, stacks));

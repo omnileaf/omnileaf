@@ -290,7 +290,6 @@
           <SheetBar
             title={m.library_categories()}
             {titleId}
-            description={m.library_categories_every_description()}
             closeLabel={m.library_close()}
             actionLabel={m.library_categories_edit_short()}
             onClose={() => {
@@ -308,14 +307,9 @@
                 <LibraryGlyph size={SHEET_ICON_SIZE} />
               </span>
             {/if}
-            <div class="flex flex-col">
-              <DialogTitle id={titleId} class={look.sheet.title}>
-                {m.library_categories()}
-              </DialogTitle>
-              <Dialog.Description class={look.sheet.description}>
-                {m.library_categories_every_description()}
-              </Dialog.Description>
-            </div>
+            <DialogTitle id={titleId} class={look.sheet.title}>
+              {m.library_categories()}
+            </DialogTitle>
           </div>
         {/if}
         <div

@@ -285,12 +285,10 @@ test("shows no line under the General page's radio buttons yet keeps it for assi
 }) => {
   await page.goto("/settings/general");
   const radio = page.getByRole("radio", { name: "Last book" });
-  const hint = page.getByText("The reader, where you left it");
+  const hint = page.getByText("Where you left off");
 
   await expect(group(page, "Omnileaf opens on")).toBeVisible();
-  await expect(radio).toHaveAccessibleDescription(
-    /The reader, where you left it/,
-  );
+  await expect(radio).toHaveAccessibleDescription(/Where you left off/);
   const box = await boxOf(hint);
   expect(box.width).toBeLessThanOrEqual(1);
   expect(box.height).toBeLessThanOrEqual(1);
@@ -316,9 +314,6 @@ test.describe("the 18+ content page's lead line", () => {
 });
 
 test.describe("the 18+ content page's age ratings switch", () => {
-  const FOOTER =
-    "First launch offers the same choice. It applies straight away.";
-
   test.beforeEach(async ({ page }) => {
     await page.goto("/settings/library/adult-content");
     await expect(
@@ -342,16 +337,8 @@ test.describe("the 18+ content page's age ratings switch", () => {
     await expect(row).toHaveCSS("padding-left", PLATE_INSET);
   });
 
-  test("ends with a footer in 11px muted type", async ({ page }) => {
-    const footer = page.getByText(FOOTER);
-
-    await expect(footer).toBeVisible();
-    await expect(footer).toHaveCSS("font-size", SUB_TYPE.fontSize);
-    await expect(footer).toHaveCSS("line-height", SUB_TYPE.lineHeight);
-    await expect(footer).toHaveCSS(
-      "color",
-      await tokenColour(page, "--color-muted"),
-    );
+  test("ends with the switch, with no footer under it", async ({ page }) => {
+    await expect(page.getByText(/^First launch offers/)).toHaveCount(0);
   });
 });
 
@@ -432,9 +419,7 @@ for (const [name, platform, viewport] of [
       ).toHaveCSS("border-top-width", "1px");
       await expect(plate).toHaveCSS("border-radius", "0px");
       await expect(plate).toHaveCSS("padding-left", "0px");
-      await expect(
-        page.getByText("The reader, where you left it"),
-      ).toBeVisible();
+      await expect(page.getByText("Where you left off")).toBeVisible();
     });
   });
 }
