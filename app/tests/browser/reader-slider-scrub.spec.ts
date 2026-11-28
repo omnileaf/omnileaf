@@ -4,7 +4,13 @@ import {
   PAGES_LOADING_AT_ONCE,
   THUMBNAILS_LOADING_AT_ONCE,
 } from "../../src/lib/reader/page-requests.ts";
-import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  framesPassed,
+  test,
+} from "./fixtures.ts";
 import { type ReaderTraffic, servePagesSlowly } from "./page-traffic.ts";
 import {
   BOOK_ID,
@@ -73,6 +79,11 @@ function sweepsOf(track: Track, sweeps: number): Point[] {
   );
 }
 
+async function letThePageClockRun(page: Page): Promise<void> {
+  await page.clock.resume();
+  await framesPassed(page);
+}
+
 async function holdThePageClock(page: Page): Promise<void> {
   await page.clock.install();
   await page.clock.pauseAt(
@@ -87,7 +98,7 @@ async function scrubWithMouse(page: Page, track: Track): Promise<void> {
   for (const to of sweepsOf(track, SCRUB_SWEEPS_BACK_AND_FORTH)) {
     await page.mouse.move(to.x, to.y, { steps: SCRUB_STEPS_PER_SWEEP });
   }
-  await page.clock.resume();
+  await letThePageClockRun(page);
 }
 
 async function touchAt(
@@ -119,7 +130,7 @@ async function scrubWithFinger(
     }
     from = to;
   }
-  await page.clock.resume();
+  await letThePageClockRun(page);
 }
 
 async function liftFinger(session: CDPSession): Promise<void> {
