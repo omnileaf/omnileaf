@@ -284,21 +284,62 @@ async function holdPointerOn(page: Page, control: Locator): Promise<void> {
   await page.mouse.down();
 }
 
+async function sampleHeldAndReleased(
+  page: Page,
+  control: Locator,
+  measure: Measure,
+): Promise<{ pressing: Frame[]; releasing: Frame[] }> {
+  await startSampling(control, measure);
+  await holdPointerOn(page, control);
+  const pressing = await sampledFrames(control);
+  await startSampling(control, measure);
+  await page.mouse.up();
+  const releasing = await sampledFrames(control);
+  return { pressing, releasing };
+}
+
 async function expectMorphUnderHeldPointer(
   page: Page,
   control: Locator,
   { corner, resting, held }: { corner: Corner; resting: number; held: number },
 ): Promise<void> {
   await keepFromActing(control);
-  await startSampling(control, corner);
-  await holdPointerOn(page, control);
-  const pressing = await sampledFrames(control);
-  await startSampling(control, corner);
-  await page.mouse.up();
-  const releasing = await sampledFrames(control);
+
+  const { pressing, releasing } = await sampleHeldAndReleased(
+    page,
+    control,
+    corner,
+  );
 
   expectMorph(pressing, resting, held);
   expectMorph(releasing, held, resting);
+}
+
+async function expectThumbUnderHeldPointer(
+  page: Page,
+  control: Locator,
+  { resting, held }: { resting: number; held: number },
+): Promise<void> {
+  await keepFromActing(control);
+  const restingOffset = await control.evaluate((element) => {
+    const thumb = element.querySelector("[data-switch-thumb]");
+    const track = thumb?.parentElement;
+    if (thumb === null || track === null || track === undefined) {
+      throw new Error("the switch has no thumb");
+    }
+    return (
+      thumb.getBoundingClientRect().left - track.getBoundingClientRect().left
+    );
+  });
+  const heldOffset = restingOffset - (held - resting) / 2;
+
+  const size = await sampleHeldAndReleased(page, control, "thumbSize");
+  const offset = await sampleHeldAndReleased(page, control, "thumbOffset");
+
+  expectMorph(size.pressing, resting, held);
+  expectMorph(size.releasing, held, resting);
+  expectMorph(offset.pressing, restingOffset, heldOffset);
+  expectMorph(offset.releasing, heldOffset, restingOffset);
 }
 
 function readStateRadios(sheet: Locator): Locator {
@@ -602,6 +643,29 @@ test.describe("Android's controls", { tag: "@native" }, () => {
       resting: 20,
       held: 8,
     });
+  });
+
+  test("grows a held switched-off switch's thumb smoothly from 16 to 28 about its centre and back, frame by frame", async ({
+    page,
+  }) => {
+    const sheet = await openLibrarySheet(page, "View options");
+    const language = sheet.getByRole("switch", { name: "Language" });
+    await expect(language).not.toBeChecked();
+
+    await expectThumbUnderHeldPointer(page, language, {
+      resting: 16,
+      held: 28,
+    });
+  });
+
+  test("grows a held switched-on switch's thumb smoothly from 24 to 28 about its centre and back, frame by frame", async ({
+    page,
+  }) => {
+    const sheet = await openLibrarySheet(page, "View options");
+    const stacks = sheet.getByRole("switch", { name: /^Stack series covers/ });
+    await expect(stacks).toBeChecked();
+
+    await expectThumbUnderHeldPointer(page, stacks, { resting: 24, held: 28 });
   });
 
   test("morphs a held chosen middle segment's corners smoothly from 20 to 8 and back, frame by frame", async ({
