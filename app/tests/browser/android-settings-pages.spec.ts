@@ -43,7 +43,7 @@ const PAGE_STARTS: readonly PageStart[] = [
   },
   {
     route: "/settings/about/licences",
-    first: (page) => page.getByText(/Made from the packages/),
+    first: (page) => page.getByText(/The packages this build/),
   },
   {
     route: "/settings/library/tabs",

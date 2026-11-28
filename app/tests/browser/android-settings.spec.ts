@@ -401,7 +401,7 @@ test.describe("Permissions on an Android phone", { tag: "@native" }, () => {
     const intros = [
       ["/settings/privacy/permissions", /^Omnileaf asks for each one/],
       ["/settings/general/language", /^Changes straight away/],
-      ["/settings/about/licences", /^Made from the packages/],
+      ["/settings/about/licences", /^The packages this build/],
     ] as const;
 
     for (const [route, text] of intros) {

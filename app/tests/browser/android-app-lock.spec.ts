@@ -164,9 +164,7 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     const toggle = await boxOf(lockSwitch(page));
     const width = page.viewportSize()?.width ?? 0;
 
-    await expect(note(page)).toContainText(
-      "Downloads and sync carry on while it’s locked",
-    );
+    await expect(note(page)).toContainText("Downloads and sync carry on");
     expect(words.y + words.height).toBeLessThanOrEqual(toggle.y);
     expect(art.y + art.height).toBeLessThanOrEqual(words.y);
     expect(art.x + art.width / 2).toBeCloseTo(width / 2, 0);

@@ -90,9 +90,7 @@ test("opens App lock with only the note and the switch while the lock is off", a
   const note = await appSession().waitFor(APP_LOCK_NOTE);
   await appSession().waitFor(LOCK_SWITCH);
 
-  expect(await note.text()).toContain(
-    "Downloads and sync carry on while it’s locked",
-  );
+  expect(await note.text()).toContain("Downloads and sync carry on");
   expect(await appSession().run(COUNT_TIMES)).toBe(0);
   expect(await appSession().run(READ_LOCK_AFTER)).toBe("fiveMinutes");
 });

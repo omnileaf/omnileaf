@@ -36,7 +36,7 @@ const CATEGORIES = [
 ] as LibraryCategory[];
 const CATEGORY_TABS_HINT = "Above the library";
 const FIT_WIDTH_NOTE = /^Fits as many as the width allows/;
-const GROUP_BY_NOTE = /^Creator puts each series/;
+const GROUP_BY_NOTE = /^A series with two writers/;
 
 function backendOn(platform: Platform) {
   return {
@@ -172,6 +172,9 @@ test.describe("The iPad's View options controls", () => {
     page,
   }) => {
     const popover = await openViewOptions(page);
+    await control(popover, "Group by")
+      .getByRole("radio", { name: "Creator" })
+      .click();
     const hint = popover.getByText(GROUP_BY_NOTE);
 
     await expect(hint).toHaveCSS("font-size", FOOTNOTE_SIZE);
