@@ -7,6 +7,7 @@ import {
 export class ImageLoads {
   readonly #most: number;
   #loading = $state(0);
+  readonly #latestAsk = new WeakMap<HTMLImageElement, string>();
 
   constructor(most: number) {
     this.#most = most;
@@ -26,6 +27,7 @@ export class ImageLoads {
       return;
     }
     this.#loading += 1;
+    this.#latestAsk.set(image, url);
     const settle = (): void => {
       clearTimeout(stalling);
       image.removeEventListener("load", settle);
@@ -34,11 +36,17 @@ export class ImageLoads {
     };
     const stalling = setTimeout(() => {
       settle();
-      onStalled();
+      if (this.#isStillAsked(image, url)) {
+        onStalled();
+      }
     }, LONGEST_IMAGE_LOAD_MS);
     image.addEventListener("load", settle);
     image.addEventListener("error", settle);
     image.src = url;
+  }
+
+  #isStillAsked(image: HTMLImageElement, url: string): boolean {
+    return image.isConnected && this.#latestAsk.get(image) === url;
   }
 }
 

@@ -12,11 +12,18 @@ const NOT_AN_IMAGE = "data:text/plain,not an image";
 
 afterEach(() => {
   vi.useRealTimers();
+  document.body.replaceChildren();
 });
 
 function neverLoading(): HTMLImageElement {
   const image = new Image();
   Object.defineProperty(image, "src", { set: () => undefined });
+  return image;
+}
+
+function neverLoadingOnThePage(): HTMLImageElement {
+  const image = neverLoading();
+  document.body.append(image);
   return image;
 }
 
@@ -86,7 +93,7 @@ test("gives the room back from an image still loading after the time limit, and 
   const loads = new ImageLoads(MOST);
   const stalled: string[] = [];
 
-  loads.load(neverLoading(), PAGE, () => {
+  loads.load(neverLoadingOnThePage(), PAGE, () => {
     stalled.push(PAGE);
   });
   vi.advanceTimersByTime(LONGEST_IMAGE_LOAD_MS);
@@ -94,12 +101,45 @@ test("gives the room back from an image still loading after the time limit, and 
   expect([loads.room, stalled]).toEqual([MOST, [PAGE]]);
 });
 
+test("gives the room back but says nothing of a stall once the image has left the page", () => {
+  vi.useFakeTimers();
+  const loads = new ImageLoads(MOST);
+  const stalled: string[] = [];
+  const image = neverLoadingOnThePage();
+  loads.load(image, PAGE, () => {
+    stalled.push(PAGE);
+  });
+
+  image.remove();
+  vi.advanceTimersByTime(LONGEST_IMAGE_LOAD_MS);
+
+  expect([loads.room, stalled]).toEqual([MOST, []]);
+});
+
+test("says nothing of a stall of an address the image has since been asked to replace", () => {
+  vi.useFakeTimers();
+  const loads = new ImageLoads(MOST);
+  const stalled: string[] = [];
+  const image = neverLoadingOnThePage();
+  loads.load(image, PAGE, () => {
+    stalled.push(PAGE);
+  });
+  vi.advanceTimersByTime(LONGEST_IMAGE_LOAD_MS / 2);
+
+  loads.load(image, ANOTHER_PAGE, () => {
+    stalled.push(ANOTHER_PAGE);
+  });
+  vi.advanceTimersByTime(LONGEST_IMAGE_LOAD_MS / 2);
+
+  expect(stalled).toEqual([]);
+});
+
 test("waits out the whole time limit before giving up on an image", () => {
   vi.useFakeTimers();
   const loads = new ImageLoads(MOST);
   const stalled: string[] = [];
 
-  loads.load(neverLoading(), PAGE, () => {
+  loads.load(neverLoadingOnThePage(), PAGE, () => {
     stalled.push(PAGE);
   });
   vi.advanceTimersByTime(LONGEST_IMAGE_LOAD_MS - 1);
