@@ -11,6 +11,7 @@
   import { realLook } from "#lib/library/series-look.ts";
   import { resolvedPathOf } from "#lib/navigation/app-path.ts";
   import { getBackGoesUp } from "#lib/navigation/back-goes-up.ts";
+  import { guardLeaving } from "#lib/navigation/leave-guard.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { getNotices, type UndoOffer } from "#lib/notices/notices.ts";
@@ -55,6 +56,8 @@
   const changed = $derived(
     editing === undefined ? [] : changesBetween(editing.opened, editing.draft),
   );
+
+  $effect(() => guardLeaving(() => changed.length > 0));
 
   afterNavigate(({ from }) => {
     hasPageBehind = from !== null;

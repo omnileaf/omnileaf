@@ -1,6 +1,10 @@
 import type { Locator, Page } from "@playwright/test";
 
 import english from "../../messages/en.json" with { type: "json" };
+import {
+  DEFAULT_LIBRARY_VIEW,
+  type LibraryView,
+} from "../../src/lib/ipc/bindings.ts";
 import { expect, settle } from "./fixtures.ts";
 import { type Messages, pressViewOptions } from "./library-controls.ts";
 
@@ -30,3 +34,13 @@ export async function choose(options: Locator, label: string): Promise<void> {
     .filter({ hasText: label })
     .click();
 }
+
+export function withCountsUnderCovers(view: LibraryView): LibraryView {
+  return {
+    ...view,
+    onCovers: { ...view.onCovers, showsVolumeAndChapterCounts: true },
+  };
+}
+
+export const VIEW_WITH_COUNTS_UNDER_COVERS: LibraryView =
+  withCountsUnderCovers(DEFAULT_LIBRARY_VIEW);

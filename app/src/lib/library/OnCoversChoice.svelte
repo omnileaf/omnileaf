@@ -1,18 +1,26 @@
 <script lang="ts">
-  import type { OnCovers } from "#lib/ipc/bindings.ts";
+  import type { OnCovers, Platform } from "#lib/ipc/bindings.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { ANDROID_FILTER_HEADING } from "./filter-sheet-look";
   import { type GroupLook, PLAIN_GROUP_LOOK } from "./group-look";
+  import { countsVolumesAndChapters } from "./series-count-line";
   import ViewSwitchRow from "./ViewSwitchRow.svelte";
 
   interface Choice {
     readonly name: keyof OnCovers;
     readonly label: () => string;
+    readonly isOfferedOn?: (platform: Platform) => boolean;
   }
 
   const CHOICES: readonly Choice[] = [
     { name: "showsUnreadCount", label: m.library_on_covers_unread_count },
+    {
+      name: "showsVolumeAndChapterCounts",
+      label: m.library_on_covers_volume_and_chapter_counts,
+      isOfferedOn: countsVolumesAndChapters,
+    },
     { name: "showsLanguage", label: m.library_on_covers_language },
     {
       name: "showsReadingProgress",
@@ -37,6 +45,10 @@
     isMaterial?: boolean;
   } = $props();
 
+  const platform = currentPlatform();
+  const choices = CHOICES.filter(
+    ({ isOfferedOn }) => isOfferedOn?.(platform) ?? true,
+  );
   const headingId = $props.id();
   const usesItemRow = $derived(isMaterial || look.itemRows);
 </script>
@@ -55,7 +67,7 @@
     {m.library_on_covers()}
   </h3>
   <div class={isMaterial ? "flex flex-col" : look.group}>
-    {#each CHOICES as choice (choice.name)}
+    {#each choices as choice (choice.name)}
       <ViewSwitchRow
         {usesItemRow}
         label={choice.label()}

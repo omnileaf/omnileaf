@@ -16,6 +16,11 @@
   const NEXT = bookIdIn("0190a3e4-0000-8000-8000-0000000000b7");
   const SERIES = "0190a3e4-0000-8000-8000-0000000000a4";
 
+  let {
+    nextTitle = "Volume 4",
+    isSeriesEnd = false,
+  }: { nextTitle?: string; isSeriesEnd?: boolean } = $props();
+
   function nothing(): void {}
 
   setSmartFeatures(new SmartFeatures(undefined));
@@ -34,13 +39,16 @@
   backHref={resolve("/(app)/series/[id]", { id: SERIES })}
   backLabel="Back to Sample Series 04"
   onBack={nothing}
-  next={{
-    id: NEXT,
-    title: "Volume 4",
-    cover: null,
-    pageCount: 184,
-    reading: { state: "notStarted" },
-  }}
-  nextHref={resolve("/read/[book]", { book: NEXT })}
+  next={isSeriesEnd
+    ? null
+    : {
+        id: NEXT,
+        title: nextTitle,
+        cover: null,
+        pageCount: 184,
+        reading: { state: "notStarted" },
+      }}
+  nextHref={isSeriesEnd ? undefined : resolve("/read/[book]", { book: NEXT })}
   direction="leftToRight"
+  isShown
 />

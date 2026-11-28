@@ -36,7 +36,7 @@ const SEARCH = "/search?q=Sample";
 const LIBRARY = "/";
 const CREDITED_SERIES = `/series/${sampleSeriesId(4)}`;
 const SERIES_DOWN = 250;
-const LIBRARY_DOWN = 1200;
+const LIBRARY_DOWN = 900;
 const SCROLL_SLACK_PX = 2;
 const LONG_LIBRARY = sampleSeries(400);
 

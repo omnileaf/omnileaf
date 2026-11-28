@@ -3,7 +3,7 @@
   import { tick } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
-  import { goto } from "$app/navigation";
+
   import { resolve } from "$app/paths";
   import { Badge } from "#lib/components/ui/badge/index.ts";
   import {
@@ -61,6 +61,7 @@
     ABOUT_TAG,
     ABOUT_TITLE,
   } from "./series-about-layout.ts";
+  import { navigateTo } from "#lib/navigation/navigate-to.ts";
 
   const ICON_SIZE = 16;
 
@@ -194,7 +195,9 @@
             href={resolve("/(app)")}
             onclick={(event) => {
               event.preventDefault();
-              void goto(resolve("/(app)"), { state: { libraryTag: tag } });
+              void navigateTo(resolve("/(app)"), {
+                state: { libraryTag: tag },
+              });
             }}
             class="rounded-full focus-visible:focus-ring"
           >

@@ -185,3 +185,92 @@ test("keeps a view chosen while the stored one was still being read", async () =
 
   expect(setting.reading).toEqual({ kind: "read", value: COMPACT });
 });
+
+test("draws the view kept from before at once", () => {
+  const setting = new StoredChoice<LibraryView>(
+    {
+      read: reading({ status: "ok", data: STORED }),
+      store: storing(),
+      fallback: DEFAULT_LIBRARY_VIEW,
+    },
+    vi.fn(),
+    COMPACT,
+  );
+
+  expect(setting.reading).toEqual({ kind: "read", value: COMPACT });
+});
+
+test("draws the stored view in place of the kept one once read, when they differ", async () => {
+  const setting = new StoredChoice<LibraryView>(
+    {
+      read: reading({ status: "ok", data: STORED }),
+      store: storing(),
+      fallback: DEFAULT_LIBRARY_VIEW,
+    },
+    vi.fn(),
+    COMPACT,
+  );
+
+  await setting.load();
+
+  expect(setting.reading).toEqual({ kind: "read", value: STORED });
+});
+
+test("goes on drawing the kept view itself when the stored one is the same", async () => {
+  const kept = { ...STORED };
+  const setting = new StoredChoice<LibraryView>(
+    {
+      read: reading({ status: "ok", data: STORED }),
+      store: storing(),
+      fallback: DEFAULT_LIBRARY_VIEW,
+    },
+    vi.fn(),
+    kept,
+  );
+  const keptReading = setting.reading;
+
+  await setting.load();
+
+  expect(setting.reading).toBe(keptReading);
+});
+
+test("keeps the kept view and reports why when the stored one can't be read", async () => {
+  const onFailure = vi.fn();
+  const setting = new StoredChoice<LibraryView>(
+    {
+      read: reading({ status: "error", error: FAILURE }),
+      store: storing(),
+      fallback: DEFAULT_LIBRARY_VIEW,
+    },
+    onFailure,
+    COMPACT,
+  );
+
+  await setting.load();
+
+  expect(setting.reading).toEqual({ kind: "read", value: COMPACT });
+  expect(onFailure).toHaveBeenCalledWith(FAILURE);
+});
+
+test("keeps a view chosen over the kept one while the stored one was being read", async () => {
+  let answer: (result: ReadResult) => void = () => undefined;
+  const setting = new StoredChoice<LibraryView>(
+    {
+      read: () =>
+        new Promise((resolve) => {
+          answer = resolve;
+        }),
+      store: storing(),
+      fallback: DEFAULT_LIBRARY_VIEW,
+    },
+    vi.fn(),
+    COMPACT,
+  );
+  const loading = setting.load();
+
+  setting.choose(GRID);
+  answer({ status: "ok", data: STORED });
+  await loading;
+
+  expect(setting.reading).toEqual({ kind: "read", value: GRID });
+});

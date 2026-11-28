@@ -8,6 +8,8 @@ const STORED_TABS: &str = "SELECT tab, is_hidden FROM library_tab ORDER BY posit
 
 const FORGET_TABS: &str = "DELETE FROM library_tab";
 
+const FORGET_TAB: &str = "DELETE FROM library_tab WHERE tab = ?1";
+
 const PLACE_TAB: &str = "INSERT INTO library_tab (position, tab, is_hidden) VALUES (?1, ?2, ?3)";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -38,6 +40,14 @@ pub fn set_library_tabs(transaction: &Transaction<'_>, tabs: &[TabPlace]) -> Res
     for (position, tab) in (0_i64..).zip(tabs) {
         place.execute((position, tab.tab.as_stored(), tab.is_hidden))?;
     }
+    Ok(())
+}
+
+pub(crate) fn forget_category_tab(connection: &Connection, category: &str) -> Result<(), Error> {
+    connection.execute(
+        FORGET_TAB,
+        [StoredTab::Category(category.to_owned()).as_stored()],
+    )?;
     Ok(())
 }
 

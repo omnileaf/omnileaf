@@ -3,7 +3,7 @@ import {
   type ReadingDirection,
   type ReadingMode,
 } from "#lib/reader/reading-direction.svelte.ts";
-import type { Platform } from "#lib/ipc/bindings.ts";
+import type { KeyPress, Platform } from "#lib/ipc/bindings.ts";
 import { usesCommandKey } from "#lib/page/platform.ts";
 import type { Shortcut } from "#lib/shortcut.ts";
 
@@ -68,7 +68,7 @@ function backKey(platform: Platform): ReaderKey {
 }
 
 export function readerShortcuts(
-  act: (action: ReaderAction) => void,
+  act: (action: ReaderAction, press: KeyPress) => void,
   direction: () => ReadingDirection,
   platform: Platform,
   mode: ReadingMode,
@@ -82,15 +82,17 @@ export function readerShortcuts(
   ].map(({ action, isCommand = false, ...keys }) => ({
     ...keys,
     ...(isCommand ? { command: platform } : {}),
-    run: () => {
+    run: (event: KeyboardEvent) => {
+      const press = event.repeat ? "held" : "pressed";
       if (isAutoScrolling && keys.key === " " && keys.shift === false) {
-        act("toggleAutoScroll");
+        act("toggleAutoScroll", press);
         return;
       }
       act(
         !isStrip && ARROWS.has(keys.key) && isPageTurn(action)
           ? inReadingOrder(action, direction())
           : action,
+        press,
       );
     },
   }));

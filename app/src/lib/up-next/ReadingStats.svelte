@@ -1,9 +1,15 @@
 <script lang="ts">
+  import { cn } from "#lib/components/cn.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+
+  import { ANDROID_FILLED_CARD } from "./up-next-look.ts";
+
+  const PHONE_GRID = "grid grid-cols-stats justify-between gap-x-lg";
 
   let {
     title,
@@ -19,6 +25,9 @@
     isOnPhone: boolean;
   } = $props();
 
+  const isOnAndroidPhone = $derived(
+    isOnPhone && currentPlatform() === "android",
+  );
   const pages = $derived(new Intl.NumberFormat(getLocale()).format(pageCount));
   const stats = $derived([
     { value: readingTime(readSeconds), label: m.reader_stat_reading() },
@@ -33,12 +42,14 @@
 <Card
   role="group"
   aria-label={m.reader_stats_label({ title })}
-  class={[
-    isOnPhone
-      ? "grid grid-cols-stats justify-between gap-x-lg p-lg"
-      : "grid grid-cols-3 gap-sm p-lg expanded:px-xl",
+  class={cn(
+    isOnAndroidPhone
+      ? [PHONE_GRID, "px-series-card py-lg", ANDROID_FILLED_CARD]
+      : isOnPhone
+        ? [PHONE_GRID, "p-lg"]
+        : "grid grid-cols-3 gap-sm p-lg expanded:px-xl",
     WINDOWS_CARD_PLATE,
-  ]}
+  )}
 >
   {#each stats as { value, label } (label)}
     <div class="flex flex-col min-inline-none">

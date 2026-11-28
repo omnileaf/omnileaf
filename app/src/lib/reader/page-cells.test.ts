@@ -1,0 +1,134 @@
+import { expect, test } from "vitest";
+
+import { cellsAround, edgesAround, type SpreadsInView } from "./page-cells";
+
+const SINGLES = [[0], [1], [2], [3], [4], [5], [6]];
+const PAIRS = [[0], [1, 2], [3, 4], [5, 6], [7, 8]];
+
+const SLIDING = 1;
+const CUTTING = 0;
+
+function resting(at: number): SpreadsInView {
+  return { at, low: at, high: at, reach: SLIDING };
+}
+
+test("places each kept page's spread by how many turns away it is", () => {
+  const cells = cellsAround(SINGLES, resting(2), [1, 2, 3, 4]);
+
+  expect(cells).toEqual([
+    { spread: [1], offset: -1 },
+    { spread: [2], offset: 0 },
+    { spread: [3], offset: 1 },
+    { spread: [4], offset: 2 },
+  ]);
+});
+
+test("keeps the whole spread on either side, even past the kept pages", () => {
+  const cells = cellsAround(PAIRS, resting(2), [2, 3, 4]);
+
+  expect(cells).toEqual([
+    { spread: [1, 2], offset: -1 },
+    { spread: [3, 4], offset: 0 },
+    { spread: [5, 6], offset: 1 },
+  ]);
+});
+
+test("keeps every spread a run of turns passed through until it settles", () => {
+  const cells = cellsAround(
+    SINGLES,
+    { at: 4, low: 2, high: 4, reach: SLIDING },
+    [3, 4, 5],
+  );
+
+  expect(cells).toEqual([
+    { spread: [1], offset: -3 },
+    { spread: [2], offset: -2 },
+    { spread: [3], offset: -1 },
+    { spread: [4], offset: 0 },
+    { spread: [5], offset: 1 },
+  ]);
+});
+
+test("puts the last spread one turn back from past the end", () => {
+  const cells = cellsAround(SINGLES, resting(SINGLES.length), [5, 6]);
+
+  expect(cells).toEqual([
+    { spread: [5], offset: -2 },
+    { spread: [6], offset: -1 },
+  ]);
+});
+
+test("has nothing before the first spread", () => {
+  const cells = cellsAround(
+    SINGLES,
+    { at: 0, low: -1, high: 0, reach: SLIDING },
+    [0, 1],
+  );
+
+  expect(cells).toEqual([
+    { spread: [0], offset: 0 },
+    { spread: [1], offset: 1 },
+  ]);
+});
+
+test("keeps no spread beside the one a cut holds on screen", () => {
+  const cells = cellsAround(
+    SINGLES,
+    { at: 5, low: 1, high: 1, reach: CUTTING },
+    [4, 5, 6],
+  );
+
+  expect(cells).toEqual([
+    { spread: [1], offset: -4 },
+    { spread: [4], offset: -1 },
+    { spread: [5], offset: 0 },
+    { spread: [6], offset: 1 },
+  ]);
+});
+
+test("keeps a page past either end only while it is on screen or a turn away", () => {
+  const edges = edgesAround([-1, SINGLES.length, SINGLES.length + 1], {
+    at: SINGLES.length - 1,
+    low: SINGLES.length - 1,
+    high: SINGLES.length - 1,
+    reach: SLIDING,
+  });
+
+  expect(edges).toEqual([{ at: SINGLES.length, offset: 1 }]);
+});
+
+test("keeps the pages past the end a run of turns passed through", () => {
+  const edges = edgesAround([-1, SINGLES.length, SINGLES.length + 1], {
+    at: SINGLES.length + 1,
+    low: SINGLES.length - 1,
+    high: SINGLES.length + 1,
+    reach: SLIDING,
+  });
+
+  expect(edges).toEqual([
+    { at: SINGLES.length, offset: -1 },
+    { at: SINGLES.length + 1, offset: 0 },
+  ]);
+});
+
+test("places the page before the first spread one turn back", () => {
+  const edges = edgesAround([-1, SINGLES.length], {
+    at: 0,
+    low: -1,
+    high: 0,
+    reach: SLIDING,
+  });
+
+  expect(edges).toEqual([{ at: -1, offset: -1 }]);
+});
+
+test("keeps no page past the end beside the spread a cut holds on screen", () => {
+  const edges = edgesAround([SINGLES.length], {
+    at: SINGLES.length - 1,
+    low: SINGLES.length - 1,
+    high: SINGLES.length - 1,
+    reach: CUTTING,
+  });
+
+  expect(edges).toEqual([]);
+});

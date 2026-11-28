@@ -1,9 +1,15 @@
 <script lang="ts">
+  import { onDestroy, untrack } from "svelte";
+
   import type { BookPage } from "#lib/ipc/bindings.ts";
   import { omniUrl } from "#lib/omni/omni-url.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { AskedImages } from "./asked-images.svelte.ts";
+  import { thumbnailLoads } from "./image-loads.svelte.ts";
+  import { pagesByUrgency } from "./page-requests.ts";
   import { previewWindow } from "./preview-window.ts";
+  import { ThumbRest } from "./thumb-rest.svelte.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import {
     WINDOWS_CURRENT_PAGE_INK,
@@ -19,12 +25,14 @@
     shown,
     isBlank,
     isReversed,
+    isSliderHeld,
     onPick,
   }: {
     pages: readonly BookPage[];
     shown: number;
     isBlank: boolean;
     isReversed: boolean;
+    isSliderHeld: boolean;
     onPick: (index: number) => void;
   } = $props();
 
@@ -39,12 +47,47 @@
   );
   const wide = $derived(previewWindow(shown, pages.length, WIDE_REACH));
   const phone = $derived(previewWindow(shown, pages.length, PHONE_REACH));
+  const shownAtThisWidth = $derived(chrome.width === "expanded" ? wide : phone);
   const near = $derived(
     Array.from(
       { length: wide.last - wide.first + 1 },
       (_, offset) => wide.first + offset,
     ).map((index) => ({ index, page: pages[index] })),
   );
+
+  const asked = new AskedImages(thumbnailLoads);
+  const thumb = new ThumbRest();
+  const wanted = $derived(thumbnailsWanted());
+
+  function thumbnailsWanted(): readonly number[] {
+    if (isSliderHeld && thumb.restingOn !== shown) {
+      return [];
+    }
+    return pagesByUrgency(
+      near
+        .filter(
+          ({ index }) =>
+            index >= shownAtThisWidth.first && index <= shownAtThisWidth.last,
+        )
+        .map(({ index }) => ({ spread: [index], offset: index - shown })),
+      "forward",
+    );
+  }
+
+  $effect(() => {
+    const heldOn = isSliderHeld ? shown : undefined;
+    untrack(() => {
+      thumb.heldOn(heldOn);
+    });
+  });
+
+  $effect(() => {
+    asked.askFor(wanted);
+  });
+
+  onDestroy(() => {
+    thumb.letGo();
+  });
 
   function ratioOf(page: BookPage | undefined): string {
     return page?.size == null
@@ -89,7 +132,8 @@
           ></span>
         {:else if page !== undefined}
           <img
-            src={omniUrl(page.thumbnail)}
+            {@attach asked.freshImage(index)}
+            {@attach asked.loadWhenAsked(index, omniUrl(page.thumbnail))}
             alt=""
             decoding="async"
             draggable="false"

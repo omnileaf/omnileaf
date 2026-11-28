@@ -13,12 +13,15 @@
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import { cn } from "#lib/components/cn.ts";
   import { reportFailure } from "#lib/errors/report-failure.ts";
   import {
     commands,
+    type KeyPress,
     type OpenedBook,
     type Platform,
+    type SeriesNeighbour,
     type SwipeEdge,
   } from "#lib/ipc/bindings.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
@@ -39,6 +42,8 @@
   import DirectionMenu from "#lib/reader/DirectionMenu.svelte";
   import OpenedOutsideLibrary from "#lib/reader/OpenedOutsideLibrary.svelte";
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
+  import PageLoading from "#lib/reader/PageLoading.svelte";
+  import type { EdgePage, EdgeView } from "#lib/reader/page-cells.ts";
   import PageStack from "#lib/reader/PageStack.svelte";
   import {
     type CroppedPages,
@@ -79,6 +84,10 @@
   import JumpToBook from "#lib/reader/JumpToBook.svelte";
   import KeyboardShortcuts from "#lib/reader/KeyboardShortcuts.svelte";
   import { fitPinch } from "#lib/reader/pinch-zoom.ts";
+  import type {
+    DoubleTapWindow,
+    TapPoint,
+  } from "#lib/reader/double-tap-window.ts";
   import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
   import { readerHints } from "#lib/reader/reader-hints.svelte.ts";
   import ReadingSettings from "#lib/reader/ReadingSettings.svelte";
@@ -105,7 +114,10 @@
   import { Swipe } from "#lib/reader/swipe.ts";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
   import { followVolumeKeys, hasVolumeKeys } from "#lib/reader/volume-keys.ts";
-  import { moveWithinReader } from "#lib/reader/reader-origin.ts";
+  import {
+    forgetPagedInto,
+    moveWithinReader,
+  } from "#lib/reader/reader-origin.ts";
   import type { ReaderWayBack } from "#lib/reader/reader-way-back.ts";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
   import UpNext from "#lib/up-next/UpNext.svelte";
@@ -124,6 +136,28 @@
     PageTurn,
     number
   >;
+  const PREVIOUS_BOOK_AT = -1;
+  const UP_NEXT_CONTROLS = [
+    "a[href]",
+    "button",
+    "input",
+    "label",
+    "select",
+    "summary",
+    "textarea",
+    "[contenteditable]",
+    "[role=button]",
+    "[role=checkbox]",
+    "[role=link]",
+    "[role=menuitem]",
+    "[role=option]",
+    "[role=radio]",
+    "[role=slider]",
+    "[role=switch]",
+    "[role=tab]",
+    '[tabindex]:not([tabindex="-1"])',
+    "[data-setting-row]",
+  ].join(", ");
   const TURN_LABELS = {
     next: m.reader_next_page,
     previous: m.reader_previous_page,
@@ -142,19 +176,24 @@
     platform,
     opensAtEnd,
     hasJumped,
+    isPagedInto,
     wayBack,
+    tapWindow,
     leaveReader,
   }: {
     book: OpenedBook;
     platform: Platform;
     opensAtEnd: boolean;
     hasJumped: boolean;
+    isPagedInto: boolean;
     wayBack: ReaderWayBack;
+    tapWindow: DoubleTapWindow;
     leaveReader: () => Promise<void>;
   } = $props();
 
   const screenshotMode = getScreenshotMode();
   const smartFeatures = getSmartFeatures();
+  const animations = getAnimationsSetting();
   const named = $derived(screenshotMode.isOn ? standInOpenedBook(book) : book);
 
   const turner = untrack(
@@ -172,7 +211,13 @@
   );
   const swipe = new Swipe(SWIPE_MIN_PX);
   let slide = $state(0);
+  let dragFrom = 0;
   let isSettling = $state(false);
+  let isSliderHeld = $state(false);
+  let leaving: "previous" | "next" | undefined = $state();
+  let hasLeft = false;
+  let hasShownUpNext = $state(false);
+  let isHoldFromAnotherBook = untrack(() => isPagedInto);
   const controls = new ReaderControls(CONTROLS_HIDE_AFTER_MS);
   let hasOpened = false;
   const skipUpNext = getSkipUpNextSetting();
@@ -269,7 +314,13 @@
         scrubTo: (along: number) => void;
       }
     | undefined = $state();
-  let paged: { place: () => SpreadPlace | undefined } | undefined = $state();
+  let paged:
+    | {
+        place: () => SpreadPlace | undefined;
+        shiftInFlight: () => number;
+        holdPoint: (point: { x: number; y: number }) => void;
+      }
+    | undefined = $state();
   let autoScroll: "off" | "running" | "paused" = $state("off");
   let autoScrollBar: { focusReadout: () => void } | undefined = $state();
   let isSpeedOpen = $state(false);
@@ -332,12 +383,9 @@
     return reading.direction === "rightToLeft" ? "left" : "right";
   });
 
-  const spreads = $derived(
-    spreadsOf(
-      book.pages.map((page) => page.size),
-      !isStrip && look.layout === "two",
-    ),
-  );
+  const pageSizes = $derived(book.pages.map((page) => page.size));
+  const isTwoUp = $derived(!isStrip && look.layout === "two");
+  const spreads = $derived(spreadsOf(pageSizes, isTwoUp));
   const spreadIndex = $derived(spreadAt(spreads, turner.shown));
   const spread = $derived(spreads[spreadIndex] ?? [turner.shown]);
   const bookmarks = untrack(() =>
@@ -364,6 +412,107 @@
       ? undefined
       : resolve("/read/[book]", { book: book.next.id }),
   );
+  const previousHref = $derived(
+    book.previous === null
+      ? undefined
+      : resolve("/read/[book]", { book: book.previous.id }),
+  );
+  const skipsUpNext = $derived(
+    skipUpNext.isOn && nextHref !== undefined && !hasShownUpNext,
+  );
+  const upNextAt = $derived(spreads.length);
+  const nextBookAt = $derived(
+    skipsUpNext ? spreads.length : spreads.length + 1,
+  );
+  const stripAt = $derived.by(() => {
+    switch (leaving) {
+      case "previous":
+        return PREVIOUS_BOOK_AT;
+      case "next":
+        return nextBookAt;
+      case undefined:
+        return turner.isPastEnd ? upNextAt : spreadIndex;
+    }
+  });
+  const isOffPages = $derived(turner.isPastEnd || leaving !== undefined);
+  const previousOpensOn = $derived(book.previous?.pageCount ?? undefined);
+  const nextOpensOn = $derived(
+    book.next === null ? undefined : pageOpenedOn(book.next),
+  );
+  const previousLoading = $derived(
+    loadingLabel(previousOpensOn, named.previous),
+  );
+  const nextLoading = $derived(loadingLabel(nextOpensOn, named.next));
+  const leavingLabel = $derived.by(() => {
+    switch (leaving) {
+      case "previous":
+        return previousLoading;
+      case "next":
+        return nextLoading;
+      case undefined:
+        return undefined;
+    }
+  });
+  let isNextBookOpening = $state(false);
+  const headingTitle = $derived.by(() => {
+    const opening = leaving ?? (isNextBookOpening ? "next" : undefined);
+    return opening === undefined
+      ? named.title
+      : (named[opening]?.title ?? named.title);
+  });
+  const isUpNextCurrent = $derived(
+    turner.isPastEnd && leaving === undefined && !isStripShown,
+  );
+  const restingCount = $derived.by(() => {
+    switch (leaving) {
+      case "previous":
+        return countOn(previousOpensOn, book.previous);
+      case "next":
+        return countOn(nextOpensOn, book.next);
+      case undefined:
+        return turner.isPastEnd ? undefined : spreadPosition(spread, pageCount);
+    }
+  });
+  const edges: EdgePage[] = $derived([
+    ...(previousHref === undefined
+      ? []
+      : [{ at: PREVIOUS_BOOK_AT, page: previousBookLoading }]),
+    ...(skipsUpNext ? [] : [{ at: upNextAt, page: upNextPage }]),
+    ...(nextHref === undefined
+      ? []
+      : [{ at: nextBookAt, page: nextBookLoading }]),
+  ]);
+
+  function pageOpenedOn(neighbour: SeriesNeighbour): number | undefined {
+    const { reading } = neighbour;
+    switch (reading.state) {
+      case "notStarted":
+        return 1;
+      case "started":
+        return reading.page ?? undefined;
+      case "read":
+        return undefined;
+    }
+  }
+
+  function loadingLabel(
+    page: number | undefined,
+    neighbour: SeriesNeighbour | null,
+  ): string {
+    return page === undefined
+      ? (neighbour?.title ?? "")
+      : m.reader_page_loading({ page });
+  }
+
+  function countOn(
+    page: number | undefined,
+    neighbour: SeriesNeighbour | null,
+  ): string | undefined {
+    const count = neighbour?.pageCount ?? null;
+    return page === undefined || count === null
+      ? undefined
+      : m.reader_position({ page, count });
+  }
   let announced = $state(
     untrack(() => (saysWhereABookOpened(platform) ? pageLine : "")),
   );
@@ -415,7 +564,7 @@
   }
 
   $effect(() => {
-    const line = pageLine;
+    const line = leavingLabel ?? pageLine;
     const waiting = setTimeout(() => {
       if (!isSliderFocused()) {
         announced = line;
@@ -526,16 +675,19 @@
     };
   });
 
-  function act(action: ReaderAction): void {
+  function act(action: ReaderAction, press: KeyPress = "pressed"): void {
+    if (press === "pressed") {
+      isHoldFromAnotherBook = false;
+    }
     switch (action) {
       case "toggleAutoScroll":
         toggleAutoScroll();
         return;
       case "next":
-        turnBy(1);
+        turnUnlessHeldPast(1, press);
         return;
       case "previous":
-        turnBy(-1);
+        turnUnlessHeldPast(-1, press);
         return;
       case "first":
         turnTo(0);
@@ -595,16 +747,52 @@
     return takeBackWithinScreen(closeOpenPanel);
   });
 
+  function turnUnlessHeldPast(step: number, press: KeyPress): void {
+    const isHeldPastTheBook =
+      isHoldFromAnotherBook ||
+      leaving !== undefined ||
+      (step > 0 && turner.isPastEnd) ||
+      (step < 0 && isOnFirstSpread());
+    if (press === "held" && isHeldPastTheBook) {
+      return;
+    }
+    turnBy(step);
+  }
+
+  function isOnFirstSpread(): boolean {
+    return !isStrip && !turner.isPastEnd && spreadIndex === 0;
+  }
+
   function turnBy(step: number): void {
+    dropWaitingTap();
     if (isStrip && !turner.isPastEnd) {
       scrollBy(step);
       return;
     }
+    if (leaving !== undefined) {
+      turnWhileLeaving(step);
+      return;
+    }
     if (step > 0 && turner.isPastEnd) {
-      startNextBook();
+      if (isStrip || nextHref === undefined) {
+        startNextBook();
+      } else {
+        leaveFor("next");
+      }
       return;
     }
     const target = spreads[spreadIndex + step];
+    if (target === undefined && !turner.isPastEnd && !isStrip) {
+      if (step < 0 && previousHref !== undefined) {
+        leaveFor("previous");
+        return;
+      }
+      if (step > 0 && skipsUpNext) {
+        leaveFor("next");
+        return;
+      }
+    }
+    const from = { shown: turner.shown, isPastEnd: turner.isPastEnd };
     if (turner.isPastEnd) {
       turner.turn(step);
     } else if (target !== undefined) {
@@ -614,8 +802,49 @@
       turner.turn(1);
     }
     zoom = 1;
+    if (turner.shown !== from.shown || turner.isPastEnd !== from.isPastEnd) {
+      isSettling = slidesPages();
+    }
     controls.hide();
-    if (turner.isPastEnd && skipUpNext.isOn) {
+    hasShownUpNext ||= turner.isPastEnd;
+  }
+
+  function leaveFor(way: "previous" | "next"): void {
+    leaving = way;
+    zoom = 1;
+    controls.hide();
+    isSettling = slidesPages();
+    if (!isSettling) {
+      openBookLeftFor();
+    }
+  }
+
+  function turnWhileLeaving(step: number): void {
+    const isTurnBack = leaving === "next" ? step < 0 : step > 0;
+    if (hasLeft || !isTurnBack) {
+      return;
+    }
+    leaving = undefined;
+    isSettling = slidesPages();
+  }
+
+  function openBookLeftFor(): void {
+    if (hasLeft || leaving === undefined) {
+      return;
+    }
+    hasLeft = true;
+    if (leaving === "previous") {
+      if (previousHref !== undefined) {
+        void moveWithinReader(previousHref, {
+          readerOpensAtEnd: true,
+          readerPagedInto: true,
+        });
+      }
+      return;
+    }
+    if (turner.isPastEnd) {
+      startNextBook();
+    } else {
       goStraightOn();
     }
   }
@@ -633,9 +862,10 @@
   }
 
   function startNextBook(): void {
+    isNextBookOpening = true;
     void (nextHref === undefined
       ? goto(seriesHref).catch(reportFailure)
-      : moveWithinReader(nextHref));
+      : moveWithinReader(nextHref, { readerPagedInto: true }));
   }
 
   function goStraightOn(): void {
@@ -715,6 +945,7 @@
   }
 
   function zoomTo(scale: number): void {
+    dropWaitingTap();
     zoom = Math.min(ZOOM_MOST, Math.max(1, scale));
     controls.hide();
   }
@@ -734,9 +965,19 @@
     );
 
   function turnTo(index: number): void {
-    turner.goTo(index);
+    jumpTo(index);
     zoom = 1;
     controls.hide();
+  }
+
+  function jumpTo(index: number): void {
+    if (hasLeft) {
+      return;
+    }
+    dropWaitingTap();
+    isSettling = false;
+    leaving = undefined;
+    turner.goTo(index);
   }
 
   /** Shows the controls for a focused control, holding them up only while it was focused from the keyboard, and never for the heading focused as the book opens. */
@@ -841,6 +1082,11 @@
   }
 
   let lastPointer = { x: Number.NaN, y: Number.NaN };
+  let waitingTap: ReturnType<typeof setTimeout> | undefined;
+  let tappedWith = "";
+  let isSecondTap = false;
+  let isUntouchedSincePagedInto = untrack(() => isPagedInto);
+  let isSecondTapOfTheTurnIn = false;
 
   /** WebKit sends a pointermove whenever the page scrolls under a pointer that hasn't moved, so only a change of position counts. */
   function hasPointerMoved(event: PointerEvent): boolean {
@@ -856,14 +1102,104 @@
       event.currentTarget.blur();
     }
     const action = zoneAction(zone, viewportScale);
-    if (!swipe.isClickASwipe() && action !== undefined) {
+    const wasSecondTapOfTheTurnIn = isSecondTapOfTheTurnIn;
+    isSecondTapOfTheTurnIn = false;
+    if (
+      !swipe.isClickASwipe() &&
+      !wasSecondTapOfTheTurnIn &&
+      action !== undefined
+    ) {
       act(action);
     }
+  }
+
+  function onMiddleTap(event: MouseEvent): void {
+    if (!isPointerClick(event) || tappedWith === "mouse") {
+      onZone(event, "toggleControls");
+      return;
+    }
+    if (event.currentTarget instanceof HTMLElement) {
+      event.currentTarget.blur();
+    }
+    dropWaitingTap();
+    const isZoomTap = isSecondTap;
+    isSecondTap = false;
+    if (swipe.isClickASwipe()) {
+      return;
+    }
+    if (isZoomTap) {
+      zoomOnDoubleTap(event);
+      return;
+    }
+    waitingTap = setTimeout(() => {
+      waitingTap = undefined;
+      act("toggleControls");
+    }, tapWindow.leftAfter(performance.now()));
+  }
+
+  function dropWaitingTap(): void {
+    clearTimeout(waitingTap);
+    waitingTap = undefined;
+  }
+
+  function zoomOnDoubleTap(event: MouseEvent): void {
+    if (isOffPages) {
+      return;
+    }
+    if (isZoomedIn(viewportScale)) {
+      fitPinch();
+      return;
+    }
+    if (zoom > 1) {
+      zoomTo(1);
+      return;
+    }
+    paged?.holdPoint({ x: event.clientX, y: event.clientY });
+    zoomTo(ZOOM_DOUBLE);
   }
 
   function isPointerClick(event: MouseEvent): boolean {
     return event.detail > 0;
   }
+
+  function isOnUpNextControl(event: Event): boolean {
+    return (
+      event.target instanceof Element &&
+      event.target.closest(UP_NEXT_CONTROLS) !== null
+    );
+  }
+
+  function zoneUnder(event: MouseEvent): HTMLButtonElement | undefined {
+    return document
+      .elementsFromPoint(event.clientX, event.clientY)
+      .find(
+        (element): element is HTMLButtonElement =>
+          element instanceof HTMLButtonElement &&
+          element.parentElement?.hasAttribute("data-tap-zones") === true,
+      );
+  }
+
+  const passesTapsToZones: Attachment<HTMLElement> = (element) => {
+    let isPressOnControl = false;
+    const stopWatchingPresses = on(element, "pointerdown", (event) => {
+      isPressOnControl = isOnUpNextControl(event);
+    });
+    const stopWatchingLifts = on(element, "pointerup", noteLift);
+    const stopPassingTaps = on(element, "click", (event: MouseEvent) => {
+      if (
+        isPointerClick(event) &&
+        !isPressOnControl &&
+        !isOnUpNextControl(event)
+      ) {
+        zoneUnder(event)?.dispatchEvent(new MouseEvent("click", event));
+      }
+    });
+    return () => {
+      stopWatchingPresses();
+      stopWatchingLifts();
+      stopPassingTaps();
+    };
+  };
 
   const controlEvents = {
     onpointerenter: () => {
@@ -878,39 +1214,84 @@
     },
   };
 
-  function onSwipeMove(event: PointerEvent): void {
-    if (look.pageTurn === "slide" && !isZoomedIn(viewportScale)) {
-      isSettling = false;
-      slide = swipe.moved(event) ?? 0;
+  function slidesPages(): boolean {
+    return look.pageTurn === "slide" && animations.moves("reader");
+  }
+
+  function onSwipeStart(event: PointerEvent): void {
+    swipe.started(event);
+    tappedWith = event.pointerType;
+    dragFrom = 0;
+    const press = notePress(event);
+    isSecondTap =
+      waitingTap !== undefined && !isOffPages && tapWindow.isSecondTap(press);
+    if (isSecondTap) {
+      dropWaitingTap();
     }
   }
 
-  function onSwipeEnd(
-    event: PointerEvent & { currentTarget: HTMLElement },
-  ): void {
+  function tapPointOf(event: PointerEvent): TapPoint {
+    return { at: performance.now(), x: event.clientX, y: event.clientY };
+  }
+
+  function notePress(event: PointerEvent): TapPoint {
+    const press = tapPointOf(event);
+    isSecondTapOfTheTurnIn =
+      isUntouchedSincePagedInto && tapWindow.isSecondTap(press);
+    isUntouchedSincePagedInto = false;
+    return press;
+  }
+
+  function noteLift(event: PointerEvent): void {
+    tapWindow.lifted(tapPointOf(event));
+  }
+
+  function onSwipeMove(event: PointerEvent): void {
+    const across = swipe.moved(event);
+    if (across === undefined || hasLeft) {
+      return;
+    }
+    dropWaitingTap();
+    if (look.pageTurn !== "slide" || isPagePanning) {
+      return;
+    }
+    if (isSettling) {
+      dragFrom = paged?.shiftInFlight() ?? 0;
+      isSettling = false;
+    }
+    slide = dragFrom + across;
+  }
+
+  function onSwipeEnd(event: PointerEvent): void {
+    noteLift(event);
     const turn = swipe.ended(event);
-    const before = turner.shown;
-    if (turn !== undefined && !isZoomedIn(viewportScale)) {
+    if (turn !== undefined && !isPagePanning) {
       turnBy(TURN_STEPS[inReadingOrder(turn, reading.direction)]);
     }
-    if (turner.shown === before || slide === 0) {
-      settleSlide();
-    } else {
-      slideIn(event.currentTarget.clientWidth);
+    settleSlide();
+  }
+
+  function swallowClickOfASwipe(event: MouseEvent): void {
+    if (swipe.isClickASwipe()) {
+      event.preventDefault();
+      event.stopPropagation();
     }
   }
 
-  function settleSlide(): void {
-    isSettling = slide !== 0;
-    slide = 0;
-  }
+  const swipeEvents = {
+    onclickcapture: swallowClickOfASwipe,
+    onpointerdown: onSwipeStart,
+    onpointermove: onSwipeMove,
+    onpointerup: onSwipeEnd,
+    onpointercancel: () => {
+      swipe.cancelled();
+      settleSlide();
+    },
+  };
 
-  function slideIn(width: number): void {
-    isSettling = false;
-    slide = slide < 0 ? slide + width : slide - width;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(settleSlide);
-    });
+  function settleSlide(): void {
+    isSettling ||= slide !== 0 && animations.moves("reader");
+    slide = 0;
   }
 
   $effect(() => {
@@ -957,11 +1338,36 @@
   );
 
   $effect(() =>
-    turnsPagesWithVolumeKeys ? followVolumeKeys(act, reportFailure) : undefined,
+    turnsPagesWithVolumeKeys
+      ? followVolumeKeys(({ turn, press }) => {
+          act(turn, press);
+        }, reportFailure)
+      : undefined,
   );
 
+  let wasUpNextCurrent = false;
+
+  $effect(() => {
+    const isCurrent = isUpNextCurrent;
+    untrack(() => {
+      if (wasUpNextCurrent && !isCurrent && isFocusLeftBehind()) {
+        heading?.focus({ preventScroll: true });
+      }
+      wasUpNextCurrent = isCurrent;
+    });
+  });
+
+  function isFocusLeftBehind(): boolean {
+    const focused = document.activeElement;
+    return (
+      focused === null ||
+      focused === document.body ||
+      focused.closest("[data-up-next]") !== null
+    );
+  }
+
   onMount(() => {
-    if (isGuideDue) {
+    if (isGuideDue || isPagedInto) {
       controls.hide();
     }
     sayWhereItOpened();
@@ -972,6 +1378,7 @@
     heading?.focus();
     return () => {
       controls.stop();
+      dropWaitingTap();
     };
   });
 
@@ -1043,7 +1450,7 @@
       void markRead();
     }}
     onStartOver={() => {
-      turner.goTo(0);
+      jumpTo(0);
     }}
     onShowFile={libraryBookFileShower(book, notices)}
     onOpenChange={holdControls}
@@ -1055,7 +1462,11 @@
     role="presentation"
     data-tap-zones
     class="absolute inset-none grid touch-pan-y touch-pinch-zoom grid-strip-zones"
-    onpointerdown={pauseOnTouch}
+    onpointerdown={(event) => {
+      notePress(event);
+      pauseOnTouch();
+    }}
+    onpointerup={noteLift}
   >
     <span id={pausesHintId} hidden>{m.reader_auto_scroll_zone_pauses()}</span>
     {#if look.tapToScroll === "topAndBottom"}
@@ -1104,19 +1515,8 @@
     class={[
       "absolute inset-none",
       look.tapZones === "lShape" ? "grid grid-l-zones" : "flex",
-      isZoomedIn(viewportScale)
-        ? "touch-manipulation"
-        : "touch-pan-y touch-pinch-zoom",
+      isPagePanning ? "touch-manipulation" : "touch-pan-y touch-pinch-zoom",
     ]}
-    onpointerdown={(event) => {
-      swipe.started(event);
-    }}
-    onpointermove={onSwipeMove}
-    onpointerup={onSwipeEnd}
-    onpointercancel={() => {
-      swipe.cancelled();
-      settleSlide();
-    }}
   >
     {#each zoneLayout as zone, index (index)}
       {#if zone.kind === "turn"}
@@ -1138,20 +1538,73 @@
             ? m.reader_hide_controls()
             : m.reader_show_controls()}
           class="flex-1 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
-          onclick={(event) => {
-            onZone(event, "toggleControls");
-          }}
-          ondblclick={() => {
-            if (isZoomedIn(viewportScale)) {
-              fitPinch();
-            } else {
-              zoomTo(zoom > 1 ? 1 : ZOOM_DOUBLE);
+          onclick={onMiddleTap}
+          ondblclick={(event) => {
+            if (tappedWith === "mouse") {
+              zoomOnDoubleTap(event);
             }
           }}
         ></button>
       {/if}
     {/each}
   </div>
+{/snippet}
+
+{#snippet light()}
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-none bg-reader-black"
+    style:opacity={((100 - look.light.brightness) / 100) * DIMMEST}
+  ></div>
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-none bg-reader-warmth mix-blend-multiply"
+    style:opacity={(look.light.warmth / 100) * WARMEST}
+  ></div>
+{/snippet}
+
+{#snippet upNext(isShown: boolean)}
+  <div {@attach passesTapsToZones} class="contents">
+    <UpNext
+      book={book.id}
+      title={named.title}
+      seriesTitle={named.seriesTitle}
+      {seriesHref}
+      backHref={wayBack.href}
+      backLabel={wayBack.label}
+      onBack={() => {
+        void leaveReader();
+      }}
+      next={named.next}
+      {nextHref}
+      direction={reading.direction}
+      {isShown}
+    />
+  </div>
+{/snippet}
+
+{#snippet upNextPage({ isCurrent }: EdgeView)}
+  {@render upNext(isCurrent)}
+{/snippet}
+
+{#snippet bookLoading(view: EdgeView, label: string)}
+  <div
+    data-book-loading
+    aria-hidden="true"
+    class="flex flex-col items-center justify-center gap-sm px-xl text-center block-full inline-full"
+  >
+    {#if view.isOnScreen}
+      <PageLoading {label} />
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet previousBookLoading(view: EdgeView)}
+  {@render bookLoading(view, previousLoading)}
+{/snippet}
+
+{#snippet nextBookLoading(view: EdgeView)}
+  {@render bookLoading(view, nextLoading)}
 {/snippet}
 
 <ReaderBackSwipe
@@ -1179,6 +1632,7 @@
     <div
       inert={coversPage}
       class={["absolute inset-none", isPanelOpen && panelRoom]}
+      {...isStripShown ? {} : swipeEvents}
     >
       {#if cropped !== undefined}
         {#key cropped.crop}
@@ -1193,6 +1647,7 @@
               marks={bookmarks === null ? [] : [...bookmarks]}
               overlay={stripZones}
               startAt={startAt?.kind === "strip" ? startAt : undefined}
+              {isSliderHeld}
               bind:progress={stripProgress}
               onShown={(index: number) => {
                 turner.goTo(index);
@@ -1202,6 +1657,7 @@
                 if (!hasOpened) {
                   hasOpened = true;
                   controls.bookOpened();
+                  forgetPagedInto();
                 }
               }}
             />
@@ -1211,11 +1667,17 @@
               pages={cropped.pages}
               crop={cropped.crop}
               shown={turner.shown}
-              {spread}
+              {spreads}
+              {stripAt}
+              {edges}
+              showsLoadingAtOnce={isPagedInto}
+              {isSliderHeld}
               fit={look.fit}
               {zoom}
               isReversed={reading.direction === "rightToLeft"}
               overlay={turnZones}
+              ground={BACKGROUNDS[look.background]}
+              pageLight={look.light.isOn ? light : undefined}
               bookTitle={named.title}
               isBlank={screenshotMode.isOn &&
                 screenshotMode.options.blankReaderPages}
@@ -1225,47 +1687,32 @@
               onNextPage={() => {
                 act("next");
               }}
+              onSettled={() => {
+                isSettling = false;
+                if (slide === 0) {
+                  openBookLeftFor();
+                }
+              }}
               onShownReady={() => {
                 startAt = undefined;
                 if (!hasOpened) {
                   hasOpened = true;
                   controls.bookOpened();
+                  forgetPagedInto();
                 }
               }}
             />
           {/if}
         {/key}
       {/if}
-      {#if look.light.isOn}
-        <div
-          aria-hidden="true"
-          class="pointer-events-none absolute inset-none bg-reader-black"
-          style:opacity={((100 - look.light.brightness) / 100) * DIMMEST}
-        ></div>
-        <div
-          aria-hidden="true"
-          class="pointer-events-none absolute inset-none bg-reader-warmth mix-blend-multiply"
-          style:opacity={(look.light.warmth / 100) * WARMEST}
-        ></div>
+      {#if look.light.isOn && isStripShown}
+        {@render light()}
       {/if}
     </div>
-    <h1 bind:this={heading} tabindex="-1" class="sr-only">{named.title}</h1>
-    {#if turner.isPastEnd}
-      <UpNext
-        book={book.id}
-        title={named.title}
-        seriesTitle={named.seriesTitle}
-        {seriesHref}
-        backHref={wayBack.href}
-        backLabel={wayBack.label}
-        onBack={() => {
-          void leaveReader();
-        }}
-        next={named.next}
-        {nextHref}
-        direction={reading.direction}
-      />
-    {:else}
+    <h1 bind:this={heading} tabindex="-1" class="sr-only">{headingTitle}</h1>
+    {#if isStripShown && turner.isPastEnd}
+      {@render upNext(true)}
+    {:else if !isOffPages}
       <header
         class={[
           "absolute transition-all motion-reader:duration-fade motion-reader:ease-out",
@@ -1369,6 +1816,9 @@
             onSeek={(index: number) => {
               turner.goTo(index);
             }}
+            onSliderHeld={(isHeld: boolean) => {
+              isSliderHeld = isHeld;
+            }}
           />
         </div>
       {/if}
@@ -1412,28 +1862,31 @@
             ? undefined
             : (pageCount - turner.shown) * book.secondsPerPage}
           onSeek={(index: number) => {
-            turner.goTo(index);
+            jumpTo(index);
+          }}
+          onSliderHeld={(isHeld: boolean) => {
+            isSliderHeld = isHeld;
           }}
         />
       </div>
-      {#if !controls.isShown && autoScroll === "off"}
-        <div
-          aria-hidden="true"
-          class="pointer-events-none absolute inset-x-none inset-be-reader-bar-bottom flex justify-center"
+    {/if}
+    {#if restingCount !== undefined && !controls.isShown && autoScroll === "off"}
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-x-none inset-be-reader-bar-bottom flex justify-center"
+      >
+        <span
+          data-reader-resting-count
+          class={cn(
+            "rounded-full px-sm py-2xs text-caption font-semibold tabular-nums",
+            chrome.floats
+              ? [READER_CAPSULE, "px-md"]
+              : "bg-reader-glass text-reader-muted",
+          )}
         >
-          <span
-            data-reader-resting-count
-            class={cn(
-              "rounded-full px-sm py-2xs text-caption font-semibold tabular-nums",
-              chrome.floats
-                ? [READER_CAPSULE, "px-md"]
-                : "bg-reader-glass text-reader-muted",
-            )}
-          >
-            {spreadPosition(spread, pageCount)}
-          </span>
-        </div>
-      {/if}
+          {restingCount}
+        </span>
+      </div>
     {/if}
     {#if isPagePanning}
       <div
@@ -1476,7 +1929,7 @@
         openShortcuts(false);
       }}
     />
-    {#if reading.isStripDetected && !isStripFoundSeen && !turner.isPastEnd}
+    {#if reading.isStripDetected && !isStripFoundSeen && !isOffPages}
       <StripFoundCard
         onChange={() => {
           seeStripFound();
@@ -1487,7 +1940,7 @@
         }}
         onDone={seeStripFound}
       />
-    {:else if isGuideDue && !turner.isPastEnd}
+    {:else if isGuideDue && !isOffPages}
       <ReaderGuide
         {isStrip}
         direction={reading.direction}

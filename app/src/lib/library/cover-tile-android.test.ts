@@ -10,6 +10,7 @@ import {
   DEFAULT_LIBRARY_VIEW,
   type LibraryDisplay,
   type LibrarySeries,
+  type OnCovers,
 } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 import { Selection } from "#lib/page/selection.svelte.ts";
@@ -50,7 +51,15 @@ async function twoSeries(): Promise<readonly LibrarySeries[]> {
   return listed.data.series;
 }
 
-async function choosing(display: LibraryDisplay): Promise<HTMLElement> {
+const WITH_COUNTS = {
+  ...DEFAULT_LIBRARY_VIEW.onCovers,
+  showsVolumeAndChapterCounts: true,
+};
+
+async function choosing(
+  display: LibraryDisplay,
+  onCovers: OnCovers = DEFAULT_LIBRARY_VIEW.onCovers,
+): Promise<HTMLElement> {
   const series = await twoSeries();
   const [chosen] = series;
   const selection = new Selection<SeriesId>();
@@ -60,7 +69,7 @@ async function choosing(display: LibraryDisplay): Promise<HTMLElement> {
     series,
     isComplete: true,
     coverUrl: (path: CoverPath) => `omni://localhost/${path}`,
-    view: { ...DEFAULT_LIBRARY_VIEW, display },
+    view: { ...DEFAULT_LIBRARY_VIEW, display, onCovers },
     usesStandIns: false,
   });
   await vi.waitFor(() => {
@@ -131,7 +140,7 @@ test("dims a chosen Android cover to 76% over the accent", async () => {
 });
 
 test("sets a chosen Android tile's title and book count on the accent's text colour", async () => {
-  const tile = tileOf(await choosing("grid"), "true");
+  const tile = tileOf(await choosing("grid", WITH_COUNTS), "true");
   const [title, books] = tile.querySelectorAll("p");
 
   expect([

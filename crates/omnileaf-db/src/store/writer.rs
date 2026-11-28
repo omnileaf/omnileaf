@@ -21,6 +21,7 @@ use crate::{
     },
 };
 
+pub use labels::CategoryRename;
 pub use removals::RemovedFromLibrary;
 
 macro_rules! is_started {

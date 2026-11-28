@@ -15,16 +15,20 @@
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import { LIST_PLATE } from "#lib/settings/grouped-rows-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import { getLibraryReturn } from "#lib/library/library-return.ts";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
+  const libraryReturn = getLibraryReturn();
   const content = new StoredChoice<AdultContent>(
     {
       read: () => commands.libraryAdultContent(),
-      store: (chosen: AdultContent) => commands.setLibraryAdultContent(chosen),
+      store: libraryReturn.forgetting((chosen: AdultContent) =>
+        commands.setLibraryAdultContent(chosen),
+      ),
       fallback: NEW_ADULT_CONTENT,
     },
     (error) => {

@@ -7,6 +7,8 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  framesPassed,
+  setTextScale,
   settle,
   test,
   tokenColour,
@@ -62,6 +64,25 @@ const ROW_TITLE_SIZE = "16px";
 const ROW_TITLE_LINE = "24px";
 const REMOVE_ICON_SIZE = 18;
 const CHIPS_ROW_START = 16;
+const ROW_SETTINGS = ["Display", "Covers per row"] as const;
+const SETTING_BLOCK_PADDING = "8px";
+const SETTING_COLUMN_GAP = "16px";
+const SETTING_ROW_GAP = 8;
+const STEPPER_GAP = "16px";
+const SIDE_BY_SIDE = [
+  { width: 360, names: ROW_SETTINGS },
+  { width: 320, names: ["Covers per row"] },
+] as const;
+const SQUEEZED_WIDTH = 200;
+const UNDER_ITS_NAME = [
+  { textSize: "system", width: 320 },
+  { textSize: "larger", width: 320 },
+] as const;
+const LARGE_TEXT = [
+  { scale: 1.3, width: 390 },
+  { scale: 1.3, width: 360 },
+  { scale: 2, width: 390 },
+] as const;
 const FILTERED_LISTING = {
   ...NEW_LIBRARY_LISTING,
   filter: {
@@ -583,7 +604,7 @@ test.describe(
         }
       });
 
-      test("sets Group by on its own line, Creator's hint under it and its four choices across the sheet, Creator last", async ({
+      test("sets Group by on its own line, Creator's hint under it and its four choices across the row, Creator last", async ({
         page,
       }) => {
         const sheet = await openView(page);
@@ -606,7 +627,7 @@ test.describe(
         expect(groupBox.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
         expect(
           sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
-        ).toBeCloseTo(SETTING_START, 0);
+        ).toBeCloseTo(SETTING_END, 0);
         await expect(label).toHaveCSS("font-weight", HEADING_WEIGHT);
         await expect(group.getByRole("radio")).toHaveCount(4);
         await expect(group.getByRole("radio").last()).toHaveAccessibleName(
@@ -675,6 +696,179 @@ test.describe(
         ).toBeCloseTo(SETTING_END, 0);
         expect(group.y).toBeLessThan(words.y + words.height);
       });
+
+      async function rowSetting(sheet: Locator, name: string) {
+        const label = sheet.getByText(name, { exact: true });
+        const group = sheet.getByRole("radiogroup", { name, exact: true });
+        return {
+          label,
+          group,
+          row: label.locator("xpath=.."),
+          sheetBox: await boxOf(sheet),
+          words: await boxOf(label),
+          groupBox: await boxOf(group),
+        };
+      }
+
+      async function expectAtRowEnd(sheet: Locator, name: string) {
+        const { group, sheetBox, words, groupBox } = await rowSetting(
+          sheet,
+          name,
+        );
+        const tops = await group
+          .getByRole("radio")
+          .evaluateAll((radios) =>
+            radios.map((radio) => radio.getBoundingClientRect().top),
+          );
+
+        expect(words.x - sheetBox.x, name).toBeCloseTo(SETTING_START, 0);
+        expect(
+          sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
+          name,
+        ).toBeCloseTo(SETTING_END, 0);
+        expect(groupBox.y, name).toBeLessThan(words.y + words.height);
+        expect(new Set(tops).size, name).toBe(1);
+      }
+
+      for (const { width, names } of SIDE_BY_SIDE) {
+        test(`keeps ${names.join(" and ")} side by side at the row's end, ${String(width)}px wide`, async ({
+          page,
+        }) => {
+          await page.setViewportSize({ width, height: 844 });
+
+          const sheet = await openView(page);
+
+          for (const name of names) {
+            await expectAtRowEnd(sheet, name);
+          }
+        });
+      }
+
+      for (const { textSize, width } of UNDER_ITS_NAME) {
+        test(`sets Display's choices under its name across the row when they cannot share its line, ${String(width)}px wide at the ${textSize} text size`, async ({
+          page,
+        }) => {
+          await page.addInitScript((size) => {
+            window.localStorage.setItem("omnileaf.textSize", size);
+          }, textSize);
+          await page.setViewportSize({ width, height: 844 });
+
+          const sheet = await openView(page);
+          const { row, words, groupBox } = await rowSetting(sheet, "Display");
+          const rowBox = await boxOf(row);
+
+          expect(groupBox.y).toBeGreaterThanOrEqual(words.y + words.height);
+          expect(groupBox.x - rowBox.x).toBeCloseTo(SETTING_START, 0);
+          expect(
+            rowBox.x + rowBox.width - (groupBox.x + groupBox.width),
+          ).toBeCloseTo(SETTING_END, 0);
+        });
+      }
+
+      test("puts Display's and Covers per row's choices back side by side once the sheet has room again", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+        const { width, height } = page.viewportSize() ?? {
+          width: 0,
+          height: 0,
+        };
+        await page.setViewportSize({ width: SQUEEZED_WIDTH, height });
+        await framesPassed(page);
+
+        await page.setViewportSize({ width, height });
+        await framesPassed(page);
+
+        for (const name of ROW_SETTINGS) {
+          await expectAtRowEnd(sheet, name);
+        }
+      });
+
+      test("pads each row setting 8px above and below, 16px between its name and its choices", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+
+        for (const name of ROW_SETTINGS) {
+          const { row } = await rowSetting(sheet, name);
+          await expect(row).toHaveCSS("padding-top", SETTING_BLOCK_PADDING);
+          await expect(row).toHaveCSS("padding-bottom", SETTING_BLOCK_PADDING);
+          await expect(row).toHaveCSS("column-gap", SETTING_COLUMN_GAP);
+        }
+      });
+
+      test("sets Covers per row's helper line 8px under its choices, at the row's start", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+        const { sheetBox, groupBox } = await rowSetting(
+          sheet,
+          "Covers per row",
+        );
+
+        const helper = await boxOf(
+          sheet.getByText(/^Fits as many as the width allows/),
+        );
+
+        expect(helper.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
+        expect(helper.y - (groupBox.y + groupBox.height)).toBeCloseTo(
+          SETTING_ROW_GAP,
+          0,
+        );
+      });
+
+      test("sets the stepper's range 8px under Covers per row's choices, 16px clear of the stepper", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+        await sheet.getByRole("radio", { name: "Choose" }).click();
+        const { sheetBox, groupBox } = await rowSetting(
+          sheet,
+          "Covers per row",
+        );
+        const range = sheet.getByText(/on this phone$/);
+        const stepperRow = range.locator("xpath=../..");
+
+        const rangeBox = await boxOf(range);
+        const stepperRowBox = await boxOf(stepperRow);
+
+        expect(rangeBox.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
+        expect(stepperRowBox.y - (groupBox.y + groupBox.height)).toBeCloseTo(
+          SETTING_ROW_GAP,
+          0,
+        );
+        await expect(stepperRow).toHaveCSS("column-gap", STEPPER_GAP);
+      });
+
+      for (const { scale, width } of LARGE_TEXT) {
+        test(`moves Display's and Covers per row's choices under their names, across the row, at ${String(scale)}x text and ${String(width)}px`, async ({
+          page,
+        }) => {
+          await setTextScale(page, scale);
+          await page.setViewportSize({ width, height: 844 });
+
+          const sheet = await openView(page);
+
+          for (const name of ROW_SETTINGS) {
+            const { sheetBox, words, groupBox } = await rowSetting(sheet, name);
+            expect(groupBox.y, name).toBeGreaterThanOrEqual(
+              words.y + words.height,
+            );
+            expect(groupBox.x - sheetBox.x, name).toBeCloseTo(SETTING_START, 0);
+            expect(
+              sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
+              name,
+            ).toBeCloseTo(SETTING_END, 0);
+          }
+          const choices = await sheet
+            .getByRole("radiogroup", { name: "Covers per row" })
+            .getByRole("radio")
+            .evaluateAll((radios) =>
+              radios.map((radio) => radio.getBoundingClientRect().top),
+            );
+          expect(new Set(choices).size).toBe(1);
+        });
+      }
 
       test("draws the Covers per row stepper as two 40px soft-accent circles round a 16px count, at the end of its row", async ({
         page,

@@ -18,7 +18,12 @@ export class LibrarySeriesCount {
   constructor(
     private readonly countSeries: CountSeries,
     private readonly onFailure: (error: IpcError) => void,
-  ) {}
+    kept?: number,
+  ) {
+    if (kept !== undefined) {
+      this.#reading = { kind: "counted", count: kept };
+    }
+  }
 
   get reading(): TabCount {
     return this.#reading;

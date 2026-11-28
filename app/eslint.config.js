@@ -12,6 +12,12 @@ export const REPORT_ERROR_ONLY_CALLED = {
     "Call reportError where the error is handled, or pass reportFailure. Handed on as a value, Chromium web views call it with the wrong this and throw Illegal invocation.",
 };
 
+export const GOTO_OPTIONS_THROUGH_NAVIGATE_TO = {
+  selector: "CallExpression[callee.name='goto'][arguments.length>1]",
+  message:
+    "Pass goto's options through navigateTo, so a navigation held back by an overlay keeps them.",
+};
+
 export default defineConfig(
   {
     ignores: [
@@ -46,6 +52,16 @@ export default defineConfig(
         "error",
         { ignorePattern: "@ts-expect-error|prettier-ignore" },
       ],
+      "no-restricted-syntax": [
+        "error",
+        REPORT_ERROR_ONLY_CALLED,
+        GOTO_OPTIONS_THROUGH_NAVIGATE_TO,
+      ],
+    },
+  },
+  {
+    files: ["src/lib/navigation/navigate-to.ts"],
+    rules: {
       "no-restricted-syntax": ["error", REPORT_ERROR_ONLY_CALLED],
     },
   },

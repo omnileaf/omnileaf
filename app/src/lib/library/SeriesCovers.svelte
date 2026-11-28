@@ -70,7 +70,7 @@
   import SeriesLink from "./SeriesLink.svelte";
   import { coverLook } from "./cover-look";
   import { coverTileLook } from "./cover-tile";
-  import { seriesCountLine } from "./series-count-line";
+  import { seriesCountLine, showsCountUnderCover } from "./series-count-line";
   import { SCREEN_SIZES, viewDrawn } from "./library-view";
   import type { CoverUrl } from "./cover-url";
   import { realLook, standInLook } from "./series-look";
@@ -473,16 +473,18 @@
             >
               {shown.title}
             </p>
-            <p
-              class={[
-                "truncate text-caption medium:mbs-2xs",
-                (away && tile.notConnected?.books) || "text-muted",
-                look.bookCount,
-                tile.meta,
-              ]}
-            >
-              {seriesCountLine(one, platform)}
-            </p>
+            {#if showsCountUnderCover(platform, view.onCovers)}
+              <p
+                class={[
+                  "truncate text-caption medium:mbs-2xs",
+                  (away && tile.notConnected?.books) || "text-muted",
+                  look.bookCount,
+                  tile.meta,
+                ]}
+              >
+                {seriesCountLine(one, platform)}
+              </p>
+            {/if}
           </div>
         </SeriesLink>
       {/snippet}
