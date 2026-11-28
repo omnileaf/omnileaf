@@ -268,9 +268,7 @@ test("centres the end of the series where the board does, its title 16px over it
       .element(),
   );
   const body = boxOf(
-    screen
-      .getByText("When a new book lands in its folder, it shows up here.")
-      .element(),
+    screen.getByText("New books in its folder show up here.").element(),
   );
 
   expectNear(heading.y, BOARD.seriesEndHeadingTop);
