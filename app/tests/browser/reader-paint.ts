@@ -91,10 +91,6 @@ export async function recordBarePages(page: Page): Promise<void> {
         .querySelector("[data-shown-page]")
         ?.getBoundingClientRect();
       if (area !== undefined) {
-        const overlay = document.querySelector('main [role="status"] p');
-        const overlayLoading = isVisible(overlay)
-          ? overlay?.textContent.trim()
-          : undefined;
         const bare = [
           ...document.querySelectorAll<HTMLElement>("main [data-turns]"),
         ]
@@ -106,25 +102,17 @@ export async function recordBarePages(page: Page): Promise<void> {
               box.left < area.right - 1
             );
           })
-          .flatMap((cell) => {
-            const isResting =
-              cell.dataset.turns === "0" && cell.style.translate === "";
-            return [
-              ...cell.querySelectorAll<HTMLImageElement>('img[alt^="Page "]'),
-            ]
-              .filter(
-                (image) =>
-                  !isPainted(image) &&
-                  !isVisible(
-                    image.parentElement?.querySelector("[data-page-loading]"),
-                  ) &&
-                  !(
-                    isResting &&
-                    overlayLoading === `Loading ${image.alt.toLowerCase()}`
-                  ),
-              )
-              .map((image) => image.alt);
-          });
+          .flatMap((cell) => [
+            ...cell.querySelectorAll<HTMLImageElement>('img[alt^="Page "]'),
+          ])
+          .filter(
+            (image) =>
+              !isPainted(image) &&
+              !isVisible(
+                image.parentElement?.querySelector("[data-page-loading]"),
+              ),
+          )
+          .map((image) => image.alt);
         if (bare.length > 0) {
           window.omnileafBarePages?.push(bare.join(", "));
         }

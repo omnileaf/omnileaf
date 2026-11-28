@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 import {
   DEFAULT_BACKEND,
   expect,
+  framesPassed,
   pixelAt,
   pixelOf,
   screenshotPixels,
@@ -927,6 +928,60 @@ test("brings a page dragged into view in on its fill with no spinner when it dec
   await page.mouse.up();
   expect(spinning).toBe(0);
 });
+
+const BURSTS_ONTO_PAGES_ON_THEIR_WAY = [
+  {
+    way: "back",
+    keys: ["ArrowLeft", "ArrowLeft", "ArrowLeft"],
+    restsOn: 11,
+  },
+  {
+    way: "forward",
+    keys: ["ArrowRight", "ArrowRight", "ArrowRight"],
+    restsOn: 17,
+  },
+  {
+    way: "back and forth",
+    keys: ["ArrowRight", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight"],
+    restsOn: 15,
+  },
+] as const;
+
+for (const { way, keys, restsOn } of BURSTS_ONTO_PAGES_ON_THEIR_WAY) {
+  test(`covers each page on screen with the page or its loading fill through a burst of turns ${way} onto a page still on its way`, async ({
+    page,
+  }) => {
+    const neverArriving = new Set<number>(
+      BURSTS_ONTO_PAGES_ON_THEIR_WAY.map((burst) => burst.restsOn),
+    );
+    await openBookWith(
+      page,
+      { pageTurn: "slide" },
+      {
+        pageArrives: (index) =>
+          neverArriving.has(index + 1)
+            ? new Promise<void>(() => undefined)
+            : Promise.resolve(),
+      },
+    );
+    await recordBarePages(page);
+
+    for (const key of keys) {
+      await page.keyboard.press(key);
+    }
+    await expectOnPage(page, restsOn);
+    await expect(
+      page
+        .getByRole("main")
+        .getByRole("status")
+        .filter({ hasText: `Loading page ${String(restsOn)}` }),
+    ).toBeVisible();
+    await framesPassed(page);
+
+    const bare = await stopRecordingBarePages(page);
+    expect(bare).toEqual([]);
+  });
+}
 
 test("turns to a page that never arrives, showing it loading, and on past it", async ({
   page,

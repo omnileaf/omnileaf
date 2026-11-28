@@ -305,6 +305,10 @@
     return isBlank || decodedInView.has(index) || failed.has(index);
   }
 
+  function isLoadingSaidAtRest(index: number): boolean {
+    return isAtRest && index === shown;
+  }
+
   function showWhenSlow(content: HTMLElement): () => void {
     content.hidden = true;
     const waiting = setTimeout(() => {
@@ -701,20 +705,22 @@
                   </span>
                 </div>
               {:else}
-                {#if isInView && !isReady(index) && !(isAtRest && index === shown)}
+                {#if isInView && !isReady(index)}
                   <div
                     data-page-loading
                     aria-hidden="true"
                     class="absolute inset-none bg-reader-page"
                   >
-                    <div
-                      {@attach showWhenSlow}
-                      class="absolute inset-none flex flex-col items-center justify-center gap-sm text-center"
-                    >
-                      <PageLoading
-                        label={m.reader_page_loading({ page: index + 1 })}
-                      />
-                    </div>
+                    {#if !isLoadingSaidAtRest(index)}
+                      <div
+                        {@attach showWhenSlow}
+                        class="absolute inset-none flex flex-col items-center justify-center gap-sm text-center"
+                      >
+                        <PageLoading
+                          label={m.reader_page_loading({ page: index + 1 })}
+                        />
+                      </div>
+                    {/if}
                   </div>
                 {/if}
                 <img
