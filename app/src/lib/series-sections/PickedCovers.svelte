@@ -76,14 +76,11 @@
   let topBar: HTMLElement | undefined = $state();
   let pickedCount = $state<HTMLElement | null>(null);
   let isPickingAll = $state(false);
-  let lastPickedCount = 0;
 
   $effect(() => {
-    const count = selection.count;
-    if (isAndroidPhonePicking && count === 0 && lastPickedCount > 0) {
+    if (isAndroidPhonePicking && selection.count === 0 && !isPickingAll) {
       void end();
     }
-    lastPickedCount = count;
   });
 
   $effect(() => {
@@ -144,11 +141,11 @@
     isPickingAll = true;
     try {
       await onLoadAll();
+      await tick();
+      selection.pickAll(pickKeysOf(tiles));
     } finally {
       isPickingAll = false;
     }
-    await tick();
-    selection.pickAll(pickKeysOf(tiles));
     await tick();
     if (!isAndroidPhonePicking) {
       outcome = { kind: "pickedAll", count: pickedBooks.length };

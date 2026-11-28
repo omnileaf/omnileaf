@@ -9,10 +9,12 @@ import {
   tokenColour,
 } from "./fixtures.ts";
 import { touch } from "./library-frames.ts";
-import { SectionShelf, volumes } from "./series-sections-shelf.ts";
+import { chapters, SectionShelf, volumes } from "./series-sections-shelf.ts";
 import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const PICKED_COVER_OPACITY = "0.76";
+const PHONE = { width: 390, height: 844 };
+const TABLET = { width: 820, height: 1180 };
 const FINGER_ID = 1;
 const LONGEST_PRESS_MS = 800;
 
@@ -320,6 +322,21 @@ test.describe(
 
       await expect(contextualBar(page)).toHaveCount(0);
       await expect(coverLink(page, 1)).toBeFocused();
+    });
+
+    test("ends picking once the last cover is unticked at a wider width and the phone is narrow again", async ({
+      page,
+    }) => {
+      shelf = new SectionShelf([...volumes(1, 2, 3), ...chapters(1, 2)]);
+      await holdFirstCover(page);
+      await page.setViewportSize(TABLET);
+      await pickBox(page, "Volume 1").click();
+
+      await page.setViewportSize(PHONE);
+
+      await expect(contextualBar(page)).toHaveCount(0);
+      await expect(pickBox(page, "Volume 1")).toHaveCount(0);
+      await expect(navigation(page)).toBeVisible();
     });
 
     test("marks the picked books read from the docked toolbar and ends picking", async ({
