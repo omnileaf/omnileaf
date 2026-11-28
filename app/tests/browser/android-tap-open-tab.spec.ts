@@ -8,6 +8,7 @@ import { sampleLibraryOn } from "./screens.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 import {
   type HistoryPlace,
+  historyMovesDuring,
   historyPlaceOf,
   libraryShown,
   mainOf,
@@ -84,15 +85,21 @@ test.describe(
       });
 
       await expect(choice).toBeChecked();
-      await expect(page.getByText(english.tap_open_tab_on_note)).toBeVisible();
+      await expect(choice).toHaveAccessibleDescription(
+        english.tap_open_tab_on_note,
+      );
     });
 
     test("says a tap does nothing once turned off", async ({ page }) => {
       await page.goto("/settings/advanced");
 
-      await page.getByRole("switch", { name: english.tap_open_tab }).click();
+      const choice = page.getByRole("switch", { name: english.tap_open_tab });
 
-      await expect(page.getByText(english.tap_open_tab_off_note)).toBeVisible();
+      await choice.click();
+
+      await expect(choice).toHaveAccessibleDescription(
+        english.tap_open_tab_off_note,
+      );
     });
 
     test("stays off for an install that turned it off before", async ({
@@ -102,10 +109,11 @@ test.describe(
 
       await page.goto("/settings/advanced");
 
-      await expect(
-        page.getByRole("switch", { name: english.tap_open_tab }),
-      ).not.toBeChecked();
-      await expect(page.getByText(english.tap_open_tab_off_note)).toBeVisible();
+      const choice = page.getByRole("switch", { name: english.tap_open_tab });
+      await expect(choice).not.toBeChecked();
+      await expect(choice).toHaveAccessibleDescription(
+        english.tap_open_tab_off_note,
+      );
     });
 
     test("leaves Navigation out of the Settings list", async ({ page }) => {
@@ -156,7 +164,7 @@ test.describe(
       );
     });
 
-    test("goes to the Library from a series opened from History, leaving no entry behind it", async ({
+    test("goes to the Library from a series opened from History, onto the Library's own entry", async ({
       page,
     }) => {
       await page.goto("/");
@@ -398,9 +406,11 @@ test.describe(
       await libraryShown(page);
       const before = await historyPlaceOf(page);
 
-      await tapTab(page, "Library");
-      await settle(page.getByRole("navigation", { name: "Main" }));
+      const moves = await historyMovesDuring(page, () =>
+        tapTab(page, "Library"),
+      );
 
+      expect(moves).toEqual([]);
       expect(await historyPlaceOf(page)).toEqual(before);
       expect(await mainOf(page).evaluate((main) => main.scrollTop)).toBe(0);
     });
@@ -453,9 +463,11 @@ test.describe(
       const series = await historyPlaceOf(page);
       const path = pathOf(page);
 
-      await tapTab(page, "Library");
-      await settle(page.getByRole("navigation", { name: "Main" }));
+      const moves = await historyMovesDuring(page, () =>
+        tapTab(page, "Library"),
+      );
 
+      expect(moves).toEqual([]);
       expect(pathOf(page)).toBe(path);
       expect(await historyPlaceOf(page)).toEqual(series);
     });
@@ -466,9 +478,11 @@ test.describe(
       await scrollLibraryDown(page);
       const scrolled = await mainOf(page).evaluate((main) => main.scrollTop);
 
-      await tapTab(page, "Library");
-      await settle(page.getByRole("navigation", { name: "Main" }));
+      const moves = await historyMovesDuring(page, () =>
+        tapTab(page, "Library"),
+      );
 
+      expect(moves).toEqual([]);
       expect(await mainOf(page).evaluate((main) => main.scrollTop)).toBe(
         scrolled,
       );
