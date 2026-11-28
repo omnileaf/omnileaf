@@ -11,7 +11,6 @@
 <SettingSwitch
   bleeds
   label={m.tap_open_tab()}
-  description={m.tap_open_tab_help()}
   isOn={tapOpenTab.isOn}
   onToggle={() => {
     tapOpenTab.turn(!tapOpenTab.isOn);
