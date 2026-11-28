@@ -995,6 +995,36 @@ for (const { way, keys, restsOn } of BURSTS_ONTO_PAGES_ON_THEIR_WAY) {
   });
 }
 
+test("shows one spinner and one label for a pair still on its way at rest", async ({
+  page,
+}) => {
+  const pair = new Set([16, 17]);
+  await openBookWith(
+    page,
+    { pageTurn: "slide", layout: "two" },
+    {
+      pageArrives: (index) =>
+        pair.has(index + 1)
+          ? new Promise<void>(() => undefined)
+          : Promise.resolve(),
+    },
+  );
+  await expect(shownPage(page, 15)).toBeVisible();
+
+  await page.keyboard.press("ArrowRight");
+
+  await expectOnPage(page, 16);
+  await expect(
+    page
+      .getByRole("main")
+      .getByRole("status")
+      .filter({ hasText: "Loading page 16" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("main").locator("[data-page-loading] > *"),
+  ).toHaveCount(0);
+});
+
 async function expectDrawnAtRest(page: Page, number: number): Promise<void> {
   await expectOnPage(page, number);
   await expect.poll(() => pageDrawnAtRest(page)).toBe(number);

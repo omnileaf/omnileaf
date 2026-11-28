@@ -306,7 +306,7 @@
   }
 
   function isLoadingSaidAtRest(index: number): boolean {
-    return isAtRest && index === shown;
+    return isAtRest && spread.includes(index);
   }
 
   function showWhenSlow(content: HTMLElement): () => void {
