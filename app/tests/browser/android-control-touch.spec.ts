@@ -4,7 +4,9 @@ import {
   boxOf,
   expect,
   fakeAppInfo,
+  LARGEST_TEXT_SCALE,
   onPlatform,
+  setTextScale,
   settle,
   test,
 } from "./fixtures.ts";
@@ -87,6 +89,18 @@ function shapeOf(control: Locator): Promise<Shape> {
       startEnd: style.borderStartEndRadius,
       layer: style.backgroundImage,
     };
+  });
+}
+
+function cornersOf(control: Locator): Promise<string[]> {
+  return control.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return [
+      style.borderStartStartRadius,
+      style.borderStartEndRadius,
+      style.borderEndStartRadius,
+      style.borderEndEndRadius,
+    ];
   });
 }
 
@@ -646,6 +660,44 @@ test.describe("Android's controls", { tag: "@native" }, () => {
           layer: layerOf("rgba(88, 97, 90, 0.1)"),
         });
       await page.mouse.up();
+    });
+
+    test.describe("at the largest text on a narrower phone", () => {
+      test.use({ viewport: { width: 390, height: 844 } });
+
+      test("presses every wrapped Show pill to 8 on all its corners", async ({
+        page,
+      }) => {
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await setTextScale(page, LARGEST_TEXT_SCALE);
+        await page.goto(`/series/${SERIES_ID}`);
+        const show = page.getByRole("radiogroup", { name: "Show" });
+        const pills = ["All", "Unread", "Bookmarked"].map((name) =>
+          show.getByRole("radio", { name }),
+        );
+        await expect
+          .poll(async () => {
+            const [first, last] = await Promise.all([
+              boxOf(show.getByRole("radio", { name: "All" })),
+              boxOf(show.getByRole("radio", { name: "Bookmarked" })),
+            ]);
+            return last.y > first.y;
+          })
+          .toBe(true);
+
+        const pressed: string[][] = [];
+        for (const pill of pills) {
+          await keepFromActing(pill);
+          await pill.scrollIntoViewIfNeeded();
+          await holdPointerOn(page, pill);
+          pressed.push(await cornersOf(pill));
+          await page.mouse.up();
+        }
+
+        expect(pressed).toEqual(
+          pills.map(() => [PRESSED, PRESSED, PRESSED, PRESSED]),
+        );
+      });
     });
 
     test("marks the series read with a tap on its outlined button, which then rests", async ({

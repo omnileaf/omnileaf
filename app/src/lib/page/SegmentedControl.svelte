@@ -78,6 +78,7 @@
     motion: "transition-shape",
     pressed:
       "active:rounded-android-sm first-of-type:active:rounded-s-native-segment-end last-of-type:active:rounded-e-native-segment-end",
+    pillPressed: "active:rounded-android-sm",
     focus:
       "focus-visible:outline-(length:--focus-ring-width) focus-visible:outline-(color:--focus-ring-color) focus-visible:outline-offset-(--focus-ring-offset)",
     disabled:
@@ -290,7 +291,10 @@
         "relative flex items-center justify-center data-disabled:pointer-events-none",
         segmentLook.motion,
         segmentLook.disabled,
-        isAndroid && [ANDROID_SEGMENT.pressed, ANDROID_SEGMENT.focus],
+        isAndroid && [
+          isPillRows ? ANDROID_SEGMENT.pillPressed : ANDROID_SEGMENT.pressed,
+          ANDROID_SEGMENT.focus,
+        ],
         isNative
           ? "native-target"
           : "before:absolute before:inset-x-none before:-inset-y-xs",
