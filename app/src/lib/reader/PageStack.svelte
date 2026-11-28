@@ -613,7 +613,6 @@
     return !isOvertaken(image, source) && decodes(image);
   }
 
-  /** Marks the page ready once its pixels are decoded, and failed once the image it still shows refuses to decode twice. */
   async function decode(image: HTMLImageElement, index: number): Promise<void> {
     const source = image.getAttribute("src");
     const isDecoded = await decodesWithinTwoTries(image, source);
