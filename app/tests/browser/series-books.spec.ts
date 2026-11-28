@@ -9,6 +9,7 @@ import {
   expect,
   LARGEST_TEXT_SCALE,
   setTextScale,
+  settle,
   test,
   tokenColour,
 } from "./fixtures.ts";
@@ -496,6 +497,7 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
       0,
     );
     expect(bookmarked.y - (all.y + all.height)).toBeCloseTo(WRAPPED_GAP, 0);
+    await settle(showChoices(page));
     for (const name of ["All", "Unread", "Bookmarked"]) {
       const corners = await showChoices(page)
         .getByRole("radio", { name })
