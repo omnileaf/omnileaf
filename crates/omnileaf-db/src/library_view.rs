@@ -1,4 +1,4 @@
-use rusqlite::{Connection, OptionalExtension, Row, Transaction};
+use rusqlite::{Connection, OptionalExtension, Row, Transaction, params};
 
 use crate::Error;
 
@@ -8,7 +8,8 @@ const STORED_VIEW: &str = "SELECT display,
         phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row,
         shows_item_counts, shows_unread_count, shows_downloaded, shows_language,
         shows_reading_progress, shows_continue_button, shows_continue_row,
-        fits_covers_to_width, shows_category_tabs, group_by, stacks_series_covers
+        fits_covers_to_width, shows_category_tabs, group_by, stacks_series_covers,
+        shows_volume_and_chapter_counts
     FROM library_view
     WHERE id = ?1";
 
@@ -17,9 +18,10 @@ const SET_VIEW: &str = "INSERT INTO library_view (
         phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row,
         shows_item_counts, shows_unread_count, shows_downloaded, shows_language,
         shows_reading_progress, shows_continue_button, shows_continue_row,
-        fits_covers_to_width, shows_category_tabs, group_by, stacks_series_covers
+        fits_covers_to_width, shows_category_tabs, group_by, stacks_series_covers,
+        shows_volume_and_chapter_counts
     )
-    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)
     ON CONFLICT (id) DO UPDATE SET
         display = excluded.display,
         phone_covers_per_row = excluded.phone_covers_per_row,
@@ -35,7 +37,8 @@ const SET_VIEW: &str = "INSERT INTO library_view (
         fits_covers_to_width = excluded.fits_covers_to_width,
         shows_category_tabs = excluded.shows_category_tabs,
         group_by = excluded.group_by,
-        stacks_series_covers = excluded.stacks_series_covers";
+        stacks_series_covers = excluded.stacks_series_covers,
+        shows_volume_and_chapter_counts = excluded.shows_volume_and_chapter_counts";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LibraryDisplay {
@@ -79,6 +82,7 @@ pub struct StoredLibraryView {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct OnCovers {
     pub shows_unread_count: bool,
+    pub shows_volume_and_chapter_counts: bool,
     pub shows_downloaded: bool,
     pub shows_language: bool,
     pub shows_reading_progress: bool,
@@ -97,7 +101,7 @@ pub fn set_library_view(
     transaction: &Transaction<'_>,
     view: &StoredLibraryView,
 ) -> Result<(), Error> {
-    transaction.prepare(SET_VIEW)?.execute((
+    transaction.prepare(SET_VIEW)?.execute(params![
         THE_VIEW,
         view.display.as_stored(),
         view.phone_covers_per_row,
@@ -114,7 +118,8 @@ pub fn set_library_view(
         view.shows_category_tabs,
         view.group_by.as_stored(),
         view.stacks_series_covers,
-    ))?;
+        view.on_covers.shows_volume_and_chapter_counts,
+    ])?;
     Ok(())
 }
 
@@ -151,6 +156,7 @@ impl ViewRow {
             stacks_series_covers: row.get(14)?,
             on_covers: OnCovers {
                 shows_unread_count: row.get(5)?,
+                shows_volume_and_chapter_counts: row.get(15)?,
                 shows_downloaded: row.get(6)?,
                 shows_language: row.get(7)?,
                 shows_reading_progress: row.get(8)?,

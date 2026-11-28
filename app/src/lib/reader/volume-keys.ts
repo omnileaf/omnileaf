@@ -1,9 +1,13 @@
 import { Channel } from "@tauri-apps/api/core";
 
-import { commands, type PageTurn, type Platform } from "#lib/ipc/bindings.ts";
+import {
+  commands,
+  type Platform,
+  type VolumeKeyTurn,
+} from "#lib/ipc/bindings.ts";
 
 type CommandResult = Awaited<ReturnType<typeof commands.releaseVolumeKeys>>;
-type FollowTurns = (turn: PageTurn) => void;
+type FollowTurns = (turn: VolumeKeyTurn) => void;
 type ReportFailure = (error: unknown) => void;
 
 export interface VolumeKeyCommands {

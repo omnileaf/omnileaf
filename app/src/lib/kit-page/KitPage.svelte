@@ -66,6 +66,7 @@
     onCovers: {
       ...DEFAULT_LIBRARY_VIEW.onCovers,
       showsUnreadCount: true,
+      showsVolumeAndChapterCounts: true,
       showsDownloaded: true,
       showsLanguage: true,
     },

@@ -9,6 +9,8 @@ import SegmentedControl from "./SegmentedControl.svelte";
 
 const ANDROID_PHONE = { width: 390, height: 844 };
 const SPARE = 1;
+const SUBPIXEL_SHORTFALL = 0.25;
+const ROOM_BESIDE_NAME = 20;
 
 const OPTIONS = ["all", "unread", "bookmarked"] as const;
 type Option = (typeof OPTIONS)[number];
@@ -40,6 +42,33 @@ async function renderShowChoice(): Promise<HTMLElement> {
     onChoose: () => undefined,
   });
   return screen.container;
+}
+
+async function renderAtRowEnd(): Promise<HTMLElement> {
+  followCorePlatform("android");
+  await page.viewport(ANDROID_PHONE.width, ANDROID_PHONE.height);
+  const row = document.createElement("div");
+  row.style.display = "flex";
+  row.style.flexWrap = "wrap";
+  const heading = document.createElement("h2");
+  heading.id = "show-heading";
+  heading.textContent = "Show";
+  row.append(heading);
+  document.body.append(row);
+  await render(SegmentedControl<Option>, {
+    target: row,
+    props: {
+      options: OPTIONS,
+      labels: LABELS,
+      chosen: "all",
+      labelledBy: "show-heading",
+      size: "small",
+      isAtRowEnd: true,
+      class: "max-inline-full",
+      onChoose: () => undefined,
+    },
+  });
+  return row;
 }
 
 function asElement(node: Node): HTMLElement {
@@ -125,5 +154,89 @@ test("rounds Android's wrapped segments to half their height, so a press can tig
 
   expect(getComputedStyle(all).borderTopLeftRadius).toBe(
     `${String(all.getBoundingClientRect().height / 2)}px`,
+  );
+});
+
+test("puts a group at its row's end back on one row once the row has room again", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+  row.style.inlineSize = `${String(Math.max(...widths))}px`;
+  await expect.poll(() => rows().length).toBe(NAMES.length);
+
+  row.style.inlineSize = `${String(roomFor(widths))}px`;
+
+  await expect.poll(rows).toEqual([NAMES]);
+});
+
+test("gives a group at its row's end a line of its own across the row once it no longer fits on one row", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+
+  row.style.inlineSize = `${String(roomFor(widths) - SPARE * 2)}px`;
+
+  await expect.poll(() => rows().length).toBeGreaterThan(1);
+  expect(track().getBoundingClientRect().width).toBeCloseTo(
+    row.getBoundingClientRect().width,
+    0,
+  );
+  expect(track().getBoundingClientRect().top).toBeGreaterThanOrEqual(
+    asElement(row.firstElementChild ?? row).getBoundingClientRect().bottom,
+  );
+});
+
+test("keeps a group at its row's end on one row when the row has not a pixel to spare", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+  row.style.inlineSize = `${String(Math.max(...widths))}px`;
+  await expect.poll(() => rows().length).toBe(NAMES.length);
+
+  row.style.inlineSize = `${String(roomFor(widths) - SPARE)}px`;
+
+  await expect.poll(rows).toEqual([NAMES]);
+});
+
+test("gives a group at its row's end a line of its own when the row is a quarter pixel short", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+
+  row.style.inlineSize = `${String(roomFor(widths) - SPARE - SUBPIXEL_SHORTFALL)}px`;
+
+  await expect.poll(() => rows().length).toBeGreaterThan(1);
+  expect(track().getBoundingClientRect().width).toBeCloseTo(
+    row.getBoundingClientRect().width,
+    0,
+  );
+});
+
+test("gives a group at its row's end the whole line once it wraps under its name, though it still fits one row", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+
+  row.style.inlineSize = `${String(roomFor(widths) + ROOM_BESIDE_NAME)}px`;
+
+  await expect
+    .poll(() => track().getBoundingClientRect().width)
+    .toBeCloseTo(row.getBoundingClientRect().width, 0);
+  expect(rows()).toEqual([NAMES]);
+  expect(track().getBoundingClientRect().top).toBeGreaterThanOrEqual(
+    asElement(row.firstElementChild ?? row).getBoundingClientRect().bottom,
+  );
+});
+
+test("hands the whole line back once a wrapped group at its row's end fits beside its name again", async () => {
+  const row = await renderAtRowEnd();
+  const widths = NAMES.map(ownWidth);
+  row.style.inlineSize = `${String(roomFor(widths) + ROOM_BESIDE_NAME)}px`;
+  await expect
+    .poll(() => track().getBoundingClientRect().width)
+    .toBeCloseTo(row.getBoundingClientRect().width, 0);
+
+  row.style.inlineSize = `${String(roomFor(widths) * 2)}px`;
+
+  await expect
+    .poll(() => track().getBoundingClientRect().width)
+    .toBeCloseTo(roomFor(widths) - SPARE, 0);
+  expect(track().getBoundingClientRect().top).toBeLessThan(
+    asElement(row.firstElementChild ?? row).getBoundingClientRect().bottom,
   );
 });

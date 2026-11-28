@@ -12,6 +12,7 @@
 
   import { NoticeRegion } from "./notice-region.svelte";
   import type { Notices } from "./notices";
+  import { DOCKED_BAR_TOAST_ROOM } from "./toast-room";
   import { setUndoShortcut, undoShortcutOn } from "./undo-shortcut";
   import WindowsInfoBars from "./WindowsInfoBars.svelte";
 
@@ -45,7 +46,8 @@
     right: 0,
     top:
       top ?? "calc(var(--spacing-safe-top) + var(--native-spacing-notice-top))",
-    bottom: bottom ?? "var(--spacing-md)",
+    bottom:
+      bottom ?? `calc(var(${DOCKED_BAR_TOAST_ROOM}, 0px) + var(--spacing-md))`,
   });
   const cornerOffset = $derived({
     left: "var(--spacing-notice-end)",

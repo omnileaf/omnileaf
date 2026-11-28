@@ -10,6 +10,15 @@ pub struct LibraryCategory {
     pub name: String,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum CategoryRename {
+    Renamed,
+    NameEmpty,
+    NameTaken,
+    Gone,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct CategoryId(String);

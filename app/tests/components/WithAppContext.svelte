@@ -13,6 +13,10 @@
   } from "#lib/crash-report/crash-reporting.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import {
+    LibraryReturn,
+    setLibraryReturn,
+  } from "#lib/library/library-return.ts";
+  import {
     setSidebarSetting,
     SidebarSetting,
   } from "#lib/navigation/sidebar.svelte.ts";
@@ -55,6 +59,7 @@
   setSidebarSetting(new SidebarSetting(undefined));
   setAnimationsSetting(new AnimationsSetting(undefined));
   setScheduledRescansSetting(new ScheduledRescansSetting(undefined));
+  setLibraryReturn(new LibraryReturn());
 
   const Page = $derived(page);
 </script>

@@ -59,6 +59,7 @@
     isMaterial ? ANDROID_FILTER_HEADING : look.heading,
   );
   const choicesClass = $derived(isMaterial ? "flex flex-col" : look.choices);
+  const rowChoiceClass = $derived(isMaterial ? undefined : look.choice);
 
   const layoutId = $props.id();
   const pageId = `${layoutId}-page`;
@@ -73,7 +74,7 @@
     {m.library_view_layout()}
   </h3>
   <div class={choicesClass}>
-    <div class={look.choice}>
+    <div class={rowChoiceClass}>
       <DisplayChoice
         labelClass={look.itemLabel}
         chosen={drawn.display}
@@ -83,7 +84,7 @@
       />
     </div>
     {#if drawn.display !== "list"}
-      <div class={look.choice}>
+      <div class={rowChoiceClass}>
         <CoversPerRowChoice
           {view}
           labelClass={look.itemLabel}

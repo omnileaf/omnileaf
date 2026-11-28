@@ -1,15 +1,11 @@
-import {
-  afterNavigate,
-  beforeNavigate,
-  goto,
-  onNavigate,
-} from "$app/navigation";
+import { afterNavigate, beforeNavigate, onNavigate } from "$app/navigation";
 import type { ResolvedPathname } from "$app/types";
 import { reportFailure } from "#lib/errors/report-failure.ts";
 
 import { NOTHING_BENEATH_MS } from "./nothing-beneath";
 import { READER_ROUTE_ID } from "./reader-route";
 import type { ReaderWayBack } from "./reader-way-back";
+import { navigateTo } from "#lib/navigation/navigate-to.ts";
 
 type Outcome = "arrived" | "failed" | "nothingBeneath";
 
@@ -85,7 +81,7 @@ export function readerLeaving(
   }
 
   function replaceWith(href: ResolvedPathname): Promise<Outcome> {
-    return goto(href, { replace: true }).then(
+    return navigateTo(href, { replace: true }).then(
       (): Outcome => "arrived",
       (error: unknown): Outcome => {
         reportFailure(error);

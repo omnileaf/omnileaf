@@ -89,6 +89,7 @@
       onPlay={canPlay ? nothing : undefined}
       {hidesSlider}
       onSeek={nothing}
+      onSliderHeld={nothing}
     />
   </div>
 </main>

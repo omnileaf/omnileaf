@@ -16,8 +16,8 @@ use omnileaf_db::{
     adult_content::AdultHiding,
     catalog::{
         Cursor, Inclusion, PageRequest, PageSize, SeriesFilter, SeriesListing, SeriesOrder,
-        SeriesSort, category_series_count, category_series_page, library_categories, library_tags,
-        series_labels,
+        SeriesSort, category_series_count, category_series_page, categoryless_series_count,
+        categoryless_series_page, library_categories, library_tags, series_labels,
     },
     store::Store,
 };
@@ -89,6 +89,27 @@ impl Library {
         self.store
             .database()
             .read(move |connection| category_series_count(connection, category, &filter))
+            .await
+            .unwrap()
+    }
+
+    async fn series_in_no_category(&self, filter: SeriesFilter) -> (Vec<String>, u32) {
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(10).unwrap(),
+        };
+        let listing = SeriesListing {
+            filter: filter.clone(),
+            ..A_TO_Z
+        };
+        self.store
+            .database()
+            .read(move |connection| {
+                let page = categoryless_series_page(connection, &listing, &request)?;
+                let count = categoryless_series_count(connection, &filter)?;
+                let titles = page.items.into_iter().map(|series| series.title).collect();
+                Ok((titles, count))
+            })
             .await
             .unwrap()
     }
@@ -258,6 +279,54 @@ async fn lists_nothing_for_a_category_that_does_not_exist() {
     let (titles, next) = library.titles(unknown, None, 10).await;
 
     assert_eq!((titles, next.is_none()), (vec![], true));
+}
+
+#[tokio::test]
+async fn lists_and_counts_only_the_series_in_no_category() {
+    let library = Library::with_series("categoryless-series").await;
+    library
+        .category_of("Sample Shelf", &[TITLES[0], TITLES[2]])
+        .await;
+    library.category_of("Other Name", &[TITLES[2]]).await;
+
+    let in_none = library.series_in_no_category(SeriesFilter::NONE).await;
+
+    assert_eq!(in_none, (owned(&[TITLES[1], TITLES[3]]), 2));
+}
+
+#[tokio::test]
+async fn lists_a_series_added_to_a_deleted_category_as_in_no_category() {
+    let library = Library::with_series("categoryless-orphan").await;
+    let shelf = library
+        .category_of("Sample Shelf", &[TITLES[0], TITLES[1]])
+        .await;
+    library.category_of("Other Name", &[TITLES[2]]).await;
+    library
+        .store
+        .write(move |writer| writer.delete_category(shelf))
+        .await
+        .unwrap();
+    library
+        .store
+        .write(move |writer| writer.set_category_members(shelf, &[series(TITLES[0])], true))
+        .await
+        .unwrap();
+
+    let in_none = library.series_in_no_category(SeriesFilter::NONE).await;
+
+    assert_eq!(in_none, (owned(&[TITLES[0], TITLES[1], TITLES[3]]), 3));
+}
+
+#[tokio::test]
+async fn lists_and_counts_only_the_series_in_no_category_that_meet_a_filter() {
+    let library = Library::with_series("categoryless-filter").await;
+    library.category_of("Sample Shelf", &[TITLES[0]]).await;
+
+    let in_none = library
+        .series_in_no_category(SeriesFilter::NONE.with_unread(Inclusion::Hide))
+        .await;
+
+    assert_eq!(in_none, (vec![], 0));
 }
 
 #[tokio::test]

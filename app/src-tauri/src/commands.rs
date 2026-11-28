@@ -5,16 +5,16 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AdultContent, AppInfo, AppLanguage, BookCursor, BookFile, BookId, BookNumber, BookPlace,
-    BookSessions, BooksRemoval, CategoryId, ChapterCursor, ChapterHitPage, ChapterVolume, Core,
-    CoversPerRow, CreatorSeries, DetailEdits, DropMode, DropOutcome, DropSummary, FileFate,
-    FileToRead, FileType, FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage,
-    FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark,
-    HistoryOf, HistoryPage, HistorySeries, HomeArrival, InterfaceError, LabelChanges, LastSeen,
-    Library, LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing,
-    LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook,
-    PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary,
-    ReadingWeek, ReleaseNotes, RemovalPreview, RemovalReport, RemovalTarget, ReportCode,
-    ResourceRouter, RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing,
+    BookSessions, BooksRemoval, CategoryId, CategoryRename, ChapterCursor, ChapterHitPage,
+    ChapterVolume, Core, CoversPerRow, CreatorSeries, DetailEdits, DropMode, DropOutcome,
+    DropSummary, FileFate, FileToRead, FileType, FolderCursor, FolderGroupCursor, FolderGroupId,
+    FolderGroupPage, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor,
+    HistoryMark, HistoryOf, HistoryPage, HistorySeries, HomeArrival, InterfaceError, LabelChanges,
+    LastSeen, Library, LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices,
+    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
+    OpenedBook, PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark,
+    ReadingSummary, ReadingWeek, ReleaseNotes, RemovalPreview, RemovalReport, RemovalTarget,
+    ReportCode, ResourceRouter, RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing,
     SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
     SeriesPage, SeriesShown, SeriesVolume, ShownOnDisk, SpellingSuggestion, StorageUse, UtcOffset,
     WhatsNew, WhatsNewNotice, WriterCursor, WriterPage,
@@ -61,7 +61,7 @@ use crate::{
     tray::{TrayItemChosen, TrayMenu},
     update_notices::{self, UpdateNoticeTurning, UpdateNoticeWords, UpdateNotices},
     version_details,
-    volume_keys::{self, PageTurn},
+    volume_keys::{self, VolumeKeyTurn},
     wallpaper_colours::{self, AccentColours, WallpaperColours},
 };
 
@@ -120,8 +120,12 @@ macro_rules! app_commands {
             library_tags,
             rename_library_tag,
             remove_library_tag,
+            rename_library_category,
+            remove_library_category,
             category_series,
             category_series_count,
+            categoryless_series,
+            categoryless_series_count,
             folder_series,
             folder_series_count,
             folder_groups,
@@ -690,7 +694,10 @@ fn accent_colours() -> Option<AccentColours> {
 
 #[tauri::command]
 #[specta::specta]
-async fn capture_volume_keys(app: AppHandle, on_turn: Channel<PageTurn>) -> Result<(), IpcError> {
+async fn capture_volume_keys(
+    app: AppHandle,
+    on_turn: Channel<VolumeKeyTurn>,
+) -> Result<(), IpcError> {
     volume_keys::capture(&app, on_turn).await
 }
 
@@ -809,6 +816,25 @@ async fn remove_library_tag(
 
 #[tauri::command]
 #[specta::specta]
+async fn rename_library_category(
+    library: State<'_, Library>,
+    category: CategoryId,
+    to: String,
+) -> Result<CategoryRename, IpcError> {
+    Ok(library.rename_library_category(category, to).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn remove_library_category(
+    library: State<'_, Library>,
+    category: CategoryId,
+) -> Result<(), IpcError> {
+    Ok(library.remove_library_category(category).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn library_filter_choices(
     library: State<'_, Library>,
 ) -> Result<LibraryFilterChoices, IpcError> {
@@ -834,6 +860,25 @@ async fn category_series_count(
     filter: LibraryFilter,
 ) -> Result<u32, IpcError> {
     Ok(library.category_series_count(category, filter).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn categoryless_series(
+    library: State<'_, Library>,
+    after: Option<SeriesCursor>,
+    listing: LibraryListing,
+) -> Result<SeriesPage, IpcError> {
+    Ok(library.categoryless_series(listing, after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn categoryless_series_count(
+    library: State<'_, Library>,
+    filter: LibraryFilter,
+) -> Result<u32, IpcError> {
+    Ok(library.categoryless_series_count(filter).await?)
 }
 
 #[tauri::command]

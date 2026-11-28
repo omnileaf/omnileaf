@@ -9,7 +9,7 @@
   } from "#lib/components/ui/radio-group/index.ts";
 
   import { currentPlatform, hasNativeLook } from "./platform";
-  import { followFittingColumns } from "./segment-columns";
+  import { followFittingColumns, followLineOfItsOwn } from "./segment-columns";
   import SegmentFace from "./SegmentFace.svelte";
 
   type Size = "small" | "regular";
@@ -25,6 +25,7 @@
     readonly size?: Size;
     readonly isFullWidth?: boolean;
     readonly hugsLabels?: boolean;
+    readonly isAtRowEnd?: boolean;
     readonly isSetupRow?: boolean;
     readonly hasWindowsLook?: boolean;
     readonly hasEqualColumns?: boolean;
@@ -143,6 +144,7 @@
     size = "regular",
     isFullWidth = false,
     hugsLabels = false,
+    isAtRowEnd = false,
     isSetupRow = false,
     hasWindowsLook = false,
     hasEqualColumns = false,
@@ -220,8 +222,20 @@
       {
         fitsOneRowByWidest: hasEqualMacosColumns || fitsOneRowByWidest,
         spansLastRow,
+        room: isAtRowEnd ? (track.parentElement ?? undefined) : undefined,
       },
     );
+  });
+
+  let hasLineOfItsOwn = $state(false);
+
+  $effect(() => {
+    if (!isAtRowEnd || track === null) {
+      return;
+    }
+    return followLineOfItsOwn(track, (isOwnLine) => {
+      hasLineOfItsOwn = isOwnLine;
+    });
   });
 
   $effect(() => {
@@ -257,6 +271,11 @@
         : ["bg-chip", look.track],
     !isFullWidth && look.capped,
     hugsLabels && HUGGING.track,
+    isAtRowEnd && [
+      "shrink-0",
+      hasLineOfItsOwn && "grow",
+      !isOneRow && "basis-full",
+    ],
     className,
   ]}
 >

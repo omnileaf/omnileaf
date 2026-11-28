@@ -8,7 +8,8 @@
 
   import { cn } from "#lib/components/cn.ts";
   import { resolveFirstStyle } from "#lib/components/resolve-first-style.ts";
-  import { closesOnBack } from "#lib/navigation/overlay-back.ts";
+  import { closesOnBackFollowedBy } from "#lib/navigation/overlay-back.ts";
+  import { SheetBackPreview } from "#lib/navigation/sheet-back-preview.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
   import {
@@ -43,6 +44,16 @@
   const drag = new SheetDrag(() => {
     onDismiss();
   });
+  const back = new SheetBackPreview(() => ref);
+
+  const style = $derived(
+    [
+      drag.isDragging ? `translate: 0 ${String(drag.offset)}px` : undefined,
+      back.style,
+    ]
+      .filter((part) => part !== undefined)
+      .join("; ") || undefined,
+  );
 
   function sheetOf(event: PointerEvent): HTMLElement | undefined {
     return event.currentTarget instanceof HTMLElement
@@ -81,7 +92,8 @@
     bind:ref
     data-ground={ground === "grouped" ? "grouped" : undefined}
     {@attach resolveFirstStyle}
-    {@attach closesOnBack}
+    {@attach closesOnBackFollowedBy(back)}
+    data-back={back.phase}
     class={cn(
       "fixed inset-none z-dialog mbs-auto flex touch-none flex-col overflow-hidden rounded-ss-bottom-sheet rounded-se-bottom-sheet bg-bottom-sheet text-foreground block-fit inline-full max-block-full desktop:border-bs desktop:border-border motion-sheets:data-starting-style:translate-y-full motion-sheets:starting:translate-y-full motion-sheets:closed:translate-y-full",
       look.surface,
@@ -91,9 +103,7 @@
         "motion-sheets:transition-transform motion-sheets:duration-sheet-in motion-sheets:ease-sheet-in motion-sheets:closed:duration-sheet-out motion-sheets:closed:ease-sheet-out",
       className,
     )}
-    style={drag.isDragging
-      ? `translate: 0 ${String(drag.offset)}px`
-      : undefined}
+    {style}
     onpointerdown={press}
     onpointermove={move}
     onpointerup={() => {

@@ -75,6 +75,11 @@
     }
   }
 }
+@custom-variant naming-rules-beside {
+  @container (width >= 36em) {
+    @slot;
+  }
+}
 @custom-variant heading-crowded (&:where([data-crowded] *));
 @custom-variant more-contrast (&:where([data-contrast="more"] *));
 @custom-variant picked (&:where([data-picked] *));
@@ -369,6 +374,7 @@
   --spacing-folder-depth-2: 2.5rem;
   --spacing-folder-depth-3: 3.75rem;
   --spacing-folder-row: 0.375rem;
+  --spacing-folder-rule-gap: 0.625rem;
   --spacing-cover-stack-room: 0.625rem;
   --spacing-cover-sheet: 1.5rem;
   --spacing-cover-sheet-far: 0.875rem;
@@ -885,6 +891,10 @@
   --animate-hands-sweep: hands-sweep var(--transition-duration-move)
     var(--ease-out);
   --animate-gear-turn: gear-turn var(--transition-duration-move) var(--ease-out);
+  --animate-clock-rewind: clock-rewind var(--transition-duration-move)
+    ease-in-out;
+  --animate-book-pop: book-pop var(--transition-duration-move) var(--ease-out);
+  --animate-needle-sway: needle-sway var(--transition-duration-move) ease-in-out;
   --animate-spin: spin var(--transition-duration-spin) linear infinite;
   --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animate-ready-grow: ready-grow var(--transition-duration-grow)
@@ -938,6 +948,39 @@
   @keyframes gear-turn {
     to {
       rotate: 60deg;
+    }
+  }
+
+  @keyframes clock-rewind {
+    0%,
+    100% {
+      rotate: 0deg;
+    }
+    50% {
+      rotate: -50deg;
+    }
+  }
+
+  @keyframes book-pop {
+    0%,
+    100% {
+      scale: 1;
+    }
+    40% {
+      scale: 1.12;
+    }
+  }
+
+  @keyframes needle-sway {
+    0%,
+    100% {
+      rotate: 0deg;
+    }
+    40% {
+      rotate: 30deg;
+    }
+    90% {
+      rotate: -8deg;
     }
   }
 

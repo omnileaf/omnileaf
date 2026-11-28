@@ -1,13 +1,11 @@
 <script lang="ts">
   import { BookmarkPlus, Eye, EyeOff, Trash, X } from "@lucide/svelte";
-  import { Portal } from "bits-ui";
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { beforeNavigate } from "$app/navigation";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
-  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type {
     BookSection,
@@ -23,12 +21,6 @@
   import { getNotices } from "#lib/notices/notices.ts";
   import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
   import { type PhonePlatform, phoneOf } from "#lib/page/platform.ts";
-  import {
-    DOCKED_BAR,
-    DOCKED_ROW,
-    FLOATING_BAR,
-  } from "#lib/navigation/tab-bar.ts";
-  import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import {
@@ -50,59 +42,17 @@
   import { Selection } from "#lib/page/selection.svelte.ts";
   import { endsOnBack } from "#lib/page/selection-back.svelte.ts";
   import BarControls from "./BarControls.svelte";
+  import { type BarControl, PHONE_PICKING } from "./phone-picking";
+  import PickingToolbar from "./PickingToolbar.svelte";
+  import PickingTopBar from "./PickingTopBar.svelte";
   import SelectionBar from "./SelectionBar.svelte";
   import WindowsSelectionBar from "./WindowsSelectionBar.svelte";
 
   type BookId = SeriesBook["id"];
 
-  type BarControl = "close" | "done" | "selectAll";
-
   const PHONE_SEARCH_PLACES: Readonly<Record<PhonePlatform, SearchPlace>> = {
     ios: "besideShown",
     android: "inPlaceOfShown",
-  };
-
-  interface PhonePicking {
-    readonly leading: readonly BarControl[];
-    readonly trailing: readonly BarControl[];
-    readonly endsWhenNonePicked: boolean;
-    readonly hasDeselectAll: boolean;
-    readonly title: string;
-    readonly toolbar: string;
-    readonly toolbarRow: string;
-    readonly action: string;
-    readonly isIconOnly: boolean;
-    readonly isDocked: boolean;
-    readonly overTopBar: string | undefined;
-  }
-
-  const PHONE_PICKING: Readonly<Record<PhonePlatform, PhonePicking>> = {
-    ios: {
-      leading: ["selectAll"],
-      trailing: ["done"],
-      endsWhenNonePicked: false,
-      hasDeselectAll: true,
-      title: "text-center",
-      toolbar: FLOATING_BAR,
-      toolbarRow: "flex items-center gap-2xs max-inline-full",
-      action: "disabled:text-faint",
-      isIconOnly: true,
-      isDocked: false,
-      overTopBar: undefined,
-    },
-    android: {
-      leading: ["close"],
-      trailing: ["selectAll"],
-      endsWhenNonePicked: true,
-      hasDeselectAll: false,
-      title: "",
-      toolbar: `fixed inset-x-none inset-be-none z-tab-bar ps-safe-start pbe-safe-bottom ${DOCKED_BAR}`,
-      toolbarRow: `flex ${DOCKED_ROW}`,
-      action: "flex-1 flex-col gap-2xs min-inline-none disabled:text-faint",
-      isIconOnly: false,
-      isDocked: true,
-      overTopBar: `fixed inset-bs-none inset-x-none z-series-bar flex flex-wrap items-center gap-sm ps-series-bar-start pe-series-bar-end pbs-series-bar-top pbe-sm ${NATIVE_TOP_BAR.scrolled}`,
-    },
   };
 
   const ICON_SIZE = 18;
@@ -112,13 +62,8 @@
     "text-small text-muted android:max-medium:tracking-native-row-subtitle";
   const ACTION_ICON_SIZE = 20;
   const MARKS = [
-    { mark: "read", icon: Eye, glyph: "eye", label: m.series_mark_read },
-    {
-      mark: "unread",
-      icon: EyeOff,
-      glyph: "eye-off",
-      label: m.series_mark_unread,
-    },
+    { mark: "read", icon: Eye, label: m.series_mark_read },
+    { mark: "unread", icon: EyeOff, label: m.series_mark_unread },
   ] as const;
 
   let {
@@ -198,7 +143,6 @@
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_PICKING[phonePlatform],
   );
-  let toolbarHeight = $state(0);
   const isPhonePicking = $derived(phone !== undefined && selection.isSelecting);
   const overTopBar = $derived(isPhonePicking ? phone?.overTopBar : undefined);
   const isPickingInFlow = $derived(
@@ -594,22 +538,20 @@
       {/if}
     </div>
   {/if}
-  {#if overTopBar !== undefined}
-    <Portal to="main">
-      <div bind:this={topBar} data-picking-bar class={overTopBar}>
-        {@render barControls(phone?.leading ?? [])}
-        <h2
-          bind:this={topBarCount}
-          id={topBarCountId}
-          tabindex="-1"
-          aria-live="polite"
-          class="flex-1 wrap-break-word min-inline-none {NATIVE_TOP_BAR.barTitle}"
-        >
-          {m.series_selected_count({ count: selection.count })}
-        </h2>
-        {@render barControls(phone?.trailing ?? [])}
-      </div>
-    </Portal>
+  {#if overTopBar !== undefined && phone !== undefined}
+    <PickingTopBar
+      bind:element={topBar}
+      bind:countElement={topBarCount}
+      picking={phone}
+      look={overTopBar}
+      count={selection.count}
+      countId={topBarCountId}
+      {isPickingAll}
+      {isAllPicked}
+      onEnd={endPicking}
+      onPickAll={pickAllShown}
+      onPickNone={pickNone}
+    />
   {/if}
   {#if platform === "windows" && selection.count > 0}
     <WindowsSelectionBar
@@ -754,59 +696,15 @@
       {onFindFolder}
     />
     {#if isPhonePicking && phone !== undefined}
-      <Portal>
-        <div
-          bind:this={toolbar}
-          role="group"
-          aria-label={m.series_selection_toolbar()}
-          bind:offsetHeight={toolbarHeight}
-          class={phone.toolbar}
-        >
-          <div class={phone.toolbarRow}>
-            {#each MARKS as { mark: read, glyph, label } (read)}
-              <Button
-                type="button"
-                variant="plain"
-                {...phone.isIconOnly ? { iconOnly: true, label: label() } : {}}
-                disabled={selection.count === 0}
-                class={phone.action}
-                onclick={() => {
-                  void mark(read);
-                }}
-              >
-                <Icon name={glyph} />
-                {#if !phone.isIconOnly}
-                  {label()}
-                {/if}
-              </Button>
-            {/each}
-            <Button
-              type="button"
-              variant="plain"
-              {...phone.isIconOnly
-                ? { iconOnly: true, label: m.library_delete() }
-                : {}}
-              disabled={selection.count === 0}
-              class={phone.action}
-              onclick={askToRemove}
-            >
-              <Icon name="trash" />
-              {#if !phone.isIconOnly}
-                {m.library_delete()}
-              {/if}
-            </Button>
-          </div>
-        </div>
-      </Portal>
-      {#if phone.isDocked}
-        <Portal to="main">
-          <div
-            aria-hidden="true"
-            class="shrink-0"
-            style:block-size="{toolbarHeight}px"
-          ></div>
-        </Portal>
-      {/if}
+      <PickingToolbar
+        bind:element={toolbar}
+        picking={phone}
+        count={selection.count}
+        onMark={(read: ReadMark) => {
+          void mark(read);
+        }}
+        onDelete={askToRemove}
+      />
     {:else if selection.isSelecting && selection.count > 0}
       <Card
         role="group"

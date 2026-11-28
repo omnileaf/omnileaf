@@ -111,10 +111,12 @@ export function pageIndexOf(url: string): number | undefined {
 }
 
 const IMMUTABLE = { "cache-control": "public, max-age=31536000, immutable" };
+export const AS_ANDROID_SERVES = { "cache-control": "no-store" };
 
 export async function servePages(
   page: Page,
   before: (route: Route, index: number) => Promise<void> = async () => {},
+  headers: Record<string, string> = IMMUTABLE,
 ): Promise<number[]> {
   const asked: number[] = [];
   await page.route(fakeProtocolRoute("omni"), async (route) => {
@@ -123,7 +125,7 @@ export async function servePages(
     if (thumbnailOf !== undefined) {
       await route.fulfill({
         contentType: "image/svg+xml",
-        headers: IMMUTABLE,
+        headers,
         body: pageImage(Number(thumbnailOf)),
       });
       return;
@@ -137,7 +139,7 @@ export async function servePages(
     await before(route, index);
     await route.fulfill({
       contentType: "image/svg+xml",
-      headers: IMMUTABLE,
+      headers,
       body: pageImage(index, cropOf(PAGE_PATH.exec(url)?.[2])),
     });
   });
@@ -154,8 +156,11 @@ export const readerBackend = (
 
 const TALL_PAGE = { width: 800, height: 2400 } as const;
 
-export const tallStripBook = (secondsPerPage: number | null = null) => {
-  const book = readerBook(NOT_STARTED);
+export const tallStripBook = (
+  secondsPerPage: number | null = null,
+  pageCount = PAGE_COUNT,
+) => {
+  const book = readerBook(NOT_STARTED, pageCount);
   return {
     ...book,
     secondsPerPage,
@@ -175,6 +180,16 @@ export async function openLongStrip(
   page: Page,
   stored: Record<string, string> = {},
 ): Promise<void> {
+  await markStripSeen(page, stored);
+  await servePages(page);
+  await page.goto(`/read/${BOOK_ID}`);
+  await expect(page.locator("[data-strip]")).toBeVisible();
+}
+
+export async function markStripSeen(
+  page: Page,
+  stored: Record<string, string> = {},
+): Promise<void> {
   await page.addInitScript(
     ({ series, entries }) => {
       localStorage.setItem(`omnileaf.stripFound.${series}`, "seen");
@@ -185,9 +200,6 @@ export async function openLongStrip(
     },
     { series: BOOK_SERIES_ID, entries: stored },
   );
-  await servePages(page);
-  await page.goto(`/read/${BOOK_ID}`);
-  await expect(page.locator("[data-strip]")).toBeVisible();
 }
 
 export async function pinchTo(page: Page, scale: number): Promise<void> {
@@ -202,4 +214,27 @@ export async function pinchTo(page: Page, scale: number): Promise<void> {
     });
     viewport.dispatchEvent(new Event("resize"));
   }, scale);
+}
+
+export function pageDrawnAtRest(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const area = document
+      .querySelector("[data-shown-page]")
+      ?.getBoundingClientRect();
+    if (area === undefined) {
+      return Number.NaN;
+    }
+    const centre = area.left + area.width / 2;
+    const drawn = [
+      ...document.querySelectorAll<HTMLImageElement>('main img[alt^="Page "]'),
+    ].find((image) => {
+      const box = image.getBoundingClientRect();
+      return (
+        image.checkVisibility({ visibilityProperty: true }) &&
+        box.left <= centre &&
+        centre <= box.right
+      );
+    });
+    return Number(/Page (\d+)/.exec(drawn?.alt ?? "")?.[1]);
+  });
 }

@@ -465,7 +465,14 @@ test("sets Android's count pill in 11px type with 4px sides and the cover title 
   followCorePlatform("android");
   document.documentElement.dataset.theme = "light";
   const series = await oneSeries();
-  await render(SeriesCovers, coversOf(series, "grid"));
+  const { view, ...covers } = coversOf(series, "grid");
+  await render(SeriesCovers, {
+    ...covers,
+    view: {
+      ...view,
+      onCovers: { ...view.onCovers, showsVolumeAndChapterCounts: true },
+    },
+  });
   const cell = document.querySelector("[data-series-id]");
   const unread = styleOf(cell?.querySelector('[role="img"]'));
   const [title, count] = [...(cell?.querySelectorAll("p") ?? [])].map(styleOf);

@@ -196,7 +196,12 @@ test("keeps Settings at the far end of the rail and the sidebar", async ({
 
 for (const { platform, rowHeight, iconSize, icon: iconSelector } of [
   { platform: "linux", rowHeight: 32, iconSize: 16, icon: "svg" },
-  { platform: "android", rowHeight: 48, iconSize: 24, icon: "[data-icon]" },
+  {
+    platform: "android",
+    rowHeight: 48,
+    iconSize: 24,
+    icon: '[data-slot="navigation-icon"]',
+  },
 ] as const) {
   test.describe(`on ${platform}`, () => {
     testOnlyInItsWebview(platform);

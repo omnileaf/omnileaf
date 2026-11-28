@@ -56,12 +56,30 @@ function fitsWithLastSpanning(
   );
 }
 
+export interface FittingLayout extends Pick<
+  SegmentRoom,
+  "fitsOneRowByWidest" | "spansLastRow"
+> {
+  readonly room?: HTMLElement | undefined;
+}
+
+function contentWidth(element: HTMLElement): number {
+  const style = getComputedStyle(element);
+  return (
+    element.getBoundingClientRect().width -
+    Number.parseFloat(style.paddingInlineStart) -
+    Number.parseFloat(style.paddingInlineEnd) -
+    Number.parseFloat(style.borderInlineStartWidth) -
+    Number.parseFloat(style.borderInlineEndWidth)
+  );
+}
+
 /** Refits a frame after a resize, since a layout change inside the observer's callback is a resize loop the browser reports as an error. */
 export function followFittingColumns(
   track: HTMLElement,
   ruler: HTMLElement,
   onFit: (columns: number) => void,
-  layout: Pick<SegmentRoom, "fitsOneRowByWidest" | "spansLastRow"> = {},
+  { room, ...layout }: FittingLayout = {},
 ): () => void {
   const fit = (): void => {
     const rulerWidth = ruler.getBoundingClientRect().width;
@@ -70,7 +88,7 @@ export function followFittingColumns(
     }
     const style = getComputedStyle(track);
     const space =
-      rulerWidth -
+      (room === undefined ? rulerWidth : contentWidth(room)) -
       Number.parseFloat(style.paddingInlineStart) -
       Number.parseFloat(style.paddingInlineEnd);
     const widths = [...ruler.children].map(
@@ -96,12 +114,40 @@ export function followFittingColumns(
   if (dialog !== null) {
     opening.observe(dialog, { attributeFilter: ["open"] });
   }
-  for (const element of [ruler, ...ruler.children]) {
+  for (const element of [ruler, ...ruler.children, ...(room ? [room] : [])]) {
     resizes.observe(element);
   }
   return () => {
     resizes.disconnect();
     opening.disconnect();
+    cancelAnimationFrame(frame);
+  };
+}
+
+export function followLineOfItsOwn(
+  track: HTMLElement,
+  onLine: (hasLineOfItsOwn: boolean) => void,
+): () => void {
+  const name = track.previousElementSibling;
+  const row = track.parentElement;
+  if (name === null || row === null) {
+    return () => undefined;
+  }
+  const check = (): void => {
+    onLine(
+      track.getBoundingClientRect().top >= name.getBoundingClientRect().bottom,
+    );
+  };
+  let frame = 0;
+  const resizes = new ResizeObserver(() => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(check);
+  });
+  for (const element of [track, name, row]) {
+    resizes.observe(element);
+  }
+  return () => {
+    resizes.disconnect();
     cancelAnimationFrame(frame);
   };
 }

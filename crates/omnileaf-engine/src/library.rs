@@ -17,8 +17,8 @@ use omnileaf_db::{
         LibraryRoot, NewRoot, PageDimensions, PageRequest, PageSize, PlaceInSeries,
         RelatedSeriesWanted, RootId, RootKind, RootLocator, SeriesOverview as StoredOverview,
         TreeUri, add_root, book_bookmarks, book_to_read, bookmarked_roots, category_series_count,
-        category_series_page, cover_file, emptied_series_place,
-        filter_choices as stored_filter_choices, folder_group_series_count,
+        category_series_page, categoryless_series_count, categoryless_series_page, cover_file,
+        emptied_series_place, filter_choices as stored_filter_choices, folder_group_series_count,
         folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
         mark_root_unavailable, missing_root_of_book, missing_root_of_series, missing_roots,
@@ -774,6 +774,52 @@ impl Library {
             })
             .await?;
         Ok(SeriesPage::new(page.0, page.1.setting()))
+    }
+
+    pub async fn categoryless_series(
+        &self,
+        listing: LibraryListing,
+        after: Option<SeriesCursor>,
+    ) -> Result<SeriesPage, LibraryError> {
+        let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(SERIES_PER_PAGE)?,
+        };
+        let now_ms = self.now_ms();
+        let page = self
+            .store
+            .database()
+            .read(move |connection| {
+                let adult = adult_seen.view(connection)?;
+                let seconds_per_page = pace_seen.needed_by(connection, &listing.filter.smart)?;
+                let listing = listing.at(now_ms, adult, seconds_per_page);
+                Ok((
+                    categoryless_series_page(connection, &listing, &request)?,
+                    adult,
+                ))
+            })
+            .await?;
+        Ok(SeriesPage::new(page.0, page.1.setting()))
+    }
+
+    pub async fn categoryless_series_count(
+        &self,
+        filter: LibraryFilter,
+    ) -> Result<u32, LibraryError> {
+        let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
+        let now_ms = self.now_ms();
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| {
+                let seconds_per_page = pace_seen.needed_by(connection, &filter.smart)?;
+                let filter = filter.at(now_ms, adult_seen.view(connection)?, seconds_per_page);
+                categoryless_series_count(connection, &filter)
+            })
+            .await?)
     }
 
     pub async fn category_series_count(

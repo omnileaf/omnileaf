@@ -1,6 +1,12 @@
 import { expect, test } from "vitest";
 
-import { seriesCountLine } from "./series-count-line";
+import { DEFAULT_LIBRARY_VIEW, type OnCovers } from "#lib/ipc/bindings.ts";
+
+import {
+  countsVolumesAndChapters,
+  seriesCountLine,
+  showsCountUnderCover,
+} from "./series-count-line";
 
 function counted(bookCount: number, volumeCount: number, chapterCount: number) {
   return { bookCount, volumeCount, chapterCount };
@@ -52,4 +58,36 @@ test("keeps counting books on every other platform", () => {
   );
 
   expect(lines).toEqual(["18 books", "18 books", "18 books", "18 books"]);
+});
+
+function withCounts(showsVolumeAndChapterCounts: boolean): OnCovers {
+  return { ...DEFAULT_LIBRARY_VIEW.onCovers, showsVolumeAndChapterCounts };
+}
+
+test("counts volumes and chapters only on android", () => {
+  const platforms = ["android", "ios", "macos", "windows", "linux"] as const;
+
+  const counting = platforms.filter(countsVolumesAndChapters);
+
+  expect(counting).toEqual(["android"]);
+});
+
+test("draws no count under a cover on android until the volume and chapter counts are on", () => {
+  const drawn = [false, true].map((isOn) =>
+    showsCountUnderCover("android", withCounts(isOn)),
+  );
+
+  expect(drawn).toEqual([false, true]);
+});
+
+test("keeps drawing the book count under a cover on every other platform whatever the option says", () => {
+  const platforms = ["ios", "macos", "windows", "linux"] as const;
+
+  const drawn = platforms.flatMap((platform) =>
+    [false, true].map((isOn) =>
+      showsCountUnderCover(platform, withCounts(isOn)),
+    ),
+  );
+
+  expect(drawn).toEqual(Array.from({ length: 8 }, () => true));
 });

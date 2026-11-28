@@ -2,7 +2,9 @@
   import type { Snippet } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
+  import { afterNavigate, beforeNavigate } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { navigating } from "$app/state";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { paneFoldQuery } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -17,20 +19,30 @@
   import PaneToggle from "./PaneToggle.svelte";
   import { type Section, SECTION_ROUTE_IDS } from "./sections";
   import { getSidebarSetting } from "./sidebar.svelte.ts";
+  import type { BackGoesUp } from "./back-goes-up";
+  import { TabPress } from "./tab-press.svelte.ts";
   import { COLLAPSED_TAB_BAR_LOOK, tabBarLook } from "./tab-bar.ts";
 
   const ICON_SIZE = 22;
+
+  type HistoryMoves = Pick<BackGoesUp, "isPassingThrough" | "isMoving">;
+  const STILL_HISTORY: HistoryMoves = {
+    isPassingThrough: false,
+    isMoving: false,
+  };
 
   let {
     current,
     attention,
     isCollapsed = false,
     onOpenTabTap,
+    historyMoves = STILL_HISTORY,
   }: {
     current: Section;
     attention?: Snippet<[{ isFolded: boolean }]> | undefined;
     isCollapsed?: boolean;
     onOpenTabTap?: ((event: MouseEvent) => void) | undefined;
+    historyMoves?: HistoryMoves;
   } = $props();
 
   const platform = currentPlatform();
@@ -46,13 +58,51 @@
 
   let navigation: HTMLElement | undefined = $state();
   let arriving: Section | undefined = $state();
+  let shownSection: Section | undefined = $state();
+  const shown = $derived(shownSection ?? current);
+  const waitsForThePagesFirstPaint = platform === "android";
   let previous: Section | undefined;
+  let settling: number | undefined;
+  const press = new TabPress(
+    {
+      request: (callback) => requestAnimationFrame(callback),
+      cancel: (handle) => {
+        cancelAnimationFrame(handle);
+      },
+    },
+    {
+      start: (ms, callback) => window.setTimeout(callback, ms),
+      stop: (handle) => {
+        clearTimeout(handle);
+      },
+    },
+  );
 
   $effect(() => {
-    if (previous !== undefined && previous !== current) {
-      arriving = current;
+    const next = current;
+    const leaving = previous;
+    previous = next;
+    if (leaving === undefined) {
+      shownSection = next;
+      return;
     }
-    previous = current;
+    if (leaving === next || historyMoves.isPassingThrough) {
+      return;
+    }
+    if (!waitsForThePagesFirstPaint) {
+      shownSection = next;
+      arriving = next;
+      return;
+    }
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        shownSection = next;
+        arriving = next;
+      });
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
   });
 
   $effect(() => {
@@ -65,15 +115,66 @@
     };
   });
 
+  $effect(() => () => {
+    press.stop();
+    if (settling !== undefined) {
+      cancelAnimationFrame(settling);
+    }
+  });
+
+  beforeNavigate(({ complete }) => {
+    complete.catch(() => {
+      settling = requestAnimationFrame(settleUnlessStillMoving);
+    });
+  });
+
+  afterNavigate(() => {
+    if (!historyMoves.isPassingThrough) {
+      press.settled(current);
+    }
+  });
+
+  function settleUnlessStillMoving(): void {
+    settling = undefined;
+    const isHistoryMoving =
+      historyMoves.isMoving || historyMoves.isPassingThrough;
+    if (navigating.to === null && !isHistoryMoving) {
+      press.settled(current);
+    }
+  }
+
   function endArrivalOnceStill(): void {
     const isMoving = navigation
       ?.getAnimations({ subtree: true })
       .some((motion) => motion instanceof CSSAnimation);
-    if (isMoving !== true) {
-      arriving = undefined;
+    if (isMoving === true) {
+      return;
     }
+    if (arriving !== undefined) {
+      press.arrived(arriving);
+    }
+    arriving = undefined;
+  }
+
+  function tabUnder(target: EventTarget | null): Section | undefined {
+    const tab = target instanceof Element ? target.closest("[data-tab]") : null;
+    if (tab === null || navigation?.contains(tab) !== true) {
+      return undefined;
+    }
+    return DESTINATIONS.find(
+      ({ section }) => section === tab.getAttribute("data-tab"),
+    )?.section;
   }
 </script>
+
+<svelte:window
+  onpointerdown={(event: PointerEvent) => {
+    press.pointerWentDown(tabUnder(event.target));
+  }}
+  onclick={(event: MouseEvent) => {
+    press.clicked(tabUnder(event.target), event.defaultPrevented, current);
+  }}
+/>
 
 <nav
   data-app-navigation
@@ -119,6 +220,7 @@
     ></li>
     {#each DESTINATIONS as destination (destination.section)}
       {@const isSelected = destination.section === current}
+      {@const isShown = destination.section === shown}
       {@const isWayBack = isCollapsed && isSelected}
       {@const isArriving = destination.section === arriving}
       {@const isAtSideEnd = destination.section === SIDE_END_SECTION}
@@ -141,6 +243,16 @@
         <Tooltip
           label={isFolded ? destination.label() : undefined}
           side={document.documentElement.dir === "rtl" ? "left" : "right"}
+          onclick={isSelected && !isWayBack ? onOpenTabTap : undefined}
+          onpointerup={(event: PointerEvent) => {
+            press.lifted(destination.section, event.button, current);
+          }}
+          onpointercancel={() => {
+            press.longPressed();
+          }}
+          oncontextmenu={() => {
+            press.longPressed();
+          }}
         >
           {#snippet child({ props })}
             <a
@@ -149,14 +261,14 @@
               aria-current={isSelected && !isWayBack ? "page" : undefined}
               aria-label={isWayBack ? m.search_back() : undefined}
               data-back-link={isWayBack || undefined}
-              onclick={isSelected && !isWayBack ? onOpenTabTap : undefined}
+              data-tab={destination.section}
               class={[
                 "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label windows:focus-visible:ring-1 windows:focus-visible:ring-native-focus-ring-inner windows:focus-visible:focus-ring desktop-shell:flex-row desktop-shell:gap-sm desktop-shell:rounded-sidebar-row desktop-shell:px-sm desktop-shell:py-none desktop-shell:block-sidebar-row desktop-shell:min-block-sidebar-row sidebar-hidden:justify-center sidebar-hidden:px-none",
                 look.tab,
-                isSelected
+                isShown
                   ? "font-bold text-accent expanded:bg-accent-soft windows:before:absolute windows:before:inset-y-none windows:before:inset-s-none windows:before:my-auto windows:before:rounded-full windows:before:bg-native-nav-indicator windows:before:block-windows-indicator-length windows:before:inline-windows-indicator desktop-shell:bg-sidebar-selection desktop-shell:font-medium desktop-shell:text-on-sidebar-selection"
                   : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed desktop-shell:font-regular desktop-shell:hover:bg-sidebar-accent desktop-shell:hover:text-on-sidebar-accent windows:desktop-shell:active:bg-native-nav-item-pressed windows:desktop-shell:active:text-on-sidebar-accent",
-                isSelected ? look.currentTab : look.otherTab,
+                isShown ? look.currentTab : look.otherTab,
               ]}
             >
               <span
@@ -165,7 +277,10 @@
                   look.iconHolder,
                   !isSelected &&
                     "max-expanded:group-hover:tint-hover max-expanded:group-active:tint-pressed",
+                  "android:max-expanded:motion-navigation:data-held-press:tint-pressed",
                 ]}
+                data-held-press={press.held === destination.section ||
+                  undefined}
               >
                 <span
                   data-slot="navigation-pill"
@@ -173,19 +288,19 @@
                     "absolute inset-none rounded-full bg-accent-soft transition-opacity expanded:hidden desktop-shell:hidden motion-navigation:duration-fade motion-navigation:ease-out",
                     "android:motion-navigation:duration-grow android:motion-navigation:ease-emphasized",
                     look.tone,
-                    !isSelected && "opacity-0",
+                    !isShown && "opacity-0",
                     isArriving && "android:motion-navigation:animate-pill-grow",
                   ]}
                 ></span>
                 <NavigationIcon
                   section={destination.section}
-                  {isSelected}
+                  isSelected={isShown}
                   {isArriving}
                   size={ICON_SIZE}
                   class={[
                     "relative macos:inactive:text-muted desktop-shell:block-sidebar-icon desktop-shell:inline-sidebar-icon",
                     look.icon,
-                    isSelected && look.currentIcon,
+                    isShown && look.currentIcon,
                     isArriving &&
                       "ios:max-medium:motion-navigation:animate-nav-pop",
                   ]}
