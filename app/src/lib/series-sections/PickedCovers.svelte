@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { TriangleAlert } from "@lucide/svelte";
   import { tick } from "svelte";
   import { on } from "svelte/events";
 
@@ -7,6 +8,7 @@
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import DragBox from "#lib/library/DragBox.svelte";
   import { DragSelect } from "#lib/library/drag-select.svelte.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { Selection } from "#lib/page/selection.svelte.ts";
@@ -76,6 +78,7 @@
   let topBar: HTMLElement | undefined = $state();
   let pickedCount = $state<HTMLElement | null>(null);
   let isPickingAll = $state(false);
+  const notices = getNotices();
 
   $effect(() => {
     if (isAndroidPhonePicking && selection.count === 0 && !isPickingAll) {
@@ -182,13 +185,25 @@
       await tick();
     }
     const picked = pickedBooks;
-    const isMarked = await onMark(picked, read);
-    outcome = isMarked
-      ? { kind: "marked", mark: read, count: picked.length }
-      : { kind: "failed" };
-    if (isMarked) {
-      await end();
+    if (!(await onMark(picked, read))) {
+      sayMarkFailed();
+      return;
     }
+    outcome = { kind: "marked", mark: read, count: picked.length };
+    await end();
+  }
+
+  function sayMarkFailed(): void {
+    if (!isAndroidPhonePicking) {
+      outcome = { kind: "failed" };
+      return;
+    }
+    outcome = { kind: "none" };
+    notices.show({
+      tone: "warning",
+      icon: TriangleAlert,
+      title: m.series_mark_failed(),
+    });
   }
 
   function announced(shown: Outcome): string {

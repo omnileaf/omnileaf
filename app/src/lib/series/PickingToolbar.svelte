@@ -4,6 +4,10 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { ReadMark } from "#lib/ipc/bindings.ts";
+  import {
+    DOCKED_BAR_TOAST_ROOM,
+    makesToastRoom,
+  } from "#lib/notices/toast-room.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { PhonePicking } from "./phone-picking";
@@ -39,6 +43,7 @@
     aria-label={m.series_selection_toolbar()}
     bind:offsetHeight={toolbarHeight}
     class={picking.toolbar}
+    {@attach picking.isDocked && makesToastRoom(DOCKED_BAR_TOAST_ROOM)}
   >
     <div class={picking.toolbarRow}>
       {#each MARKS as { mark, glyph, label } (mark)}
