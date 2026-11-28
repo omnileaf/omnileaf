@@ -4,4 +4,4 @@ area: reader
 credit: [kaiserbh]
 ---
 
-Tapping quickly through pages no longer flashes black where a page is still loading.
+A page that is still loading no longer shows the reader's background while you turn pages quickly.

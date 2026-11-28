@@ -580,17 +580,26 @@
     }
   }
 
-  /** Marks the page ready only once its pixels are decoded, so turning to it never waits on a decode. */
+  function isLoaded(image: HTMLImageElement): boolean {
+    return image.complete && image.naturalWidth > 0;
+  }
+
+  /** Marks the page ready once its pixels are decoded, and also when the browser refuses `decode()` on an image that has loaded, which it still paints. */
   async function decode(image: HTMLImageElement, index: number): Promise<void> {
     try {
       await image.decode();
-      decoded.add(index);
-      failed.delete(index);
-      if (imagesInView.has(image)) {
-        decodedInView.add(index);
-      }
     } catch {
-      failed.add(index);
+      if (!isLoaded(image)) {
+        return;
+      }
+    }
+    if (!image.isConnected) {
+      return;
+    }
+    decoded.add(index);
+    failed.delete(index);
+    if (imagesInView.has(image)) {
+      decodedInView.add(index);
     }
   }
 
@@ -607,7 +616,7 @@
         return;
       }
       imagesInView.add(image);
-      if (image.complete && image.naturalWidth > 0) {
+      if (isLoaded(image)) {
         void decode(image, index);
       }
       return () => {
@@ -685,7 +694,7 @@
                 isReversed
                   ? "first:me-auto last:ms-auto"
                   : "first:ms-auto last:me-auto",
-                decoded.has(index) && "bg-reader-page",
+                "bg-reader-page",
               ]}
               style:--page-inline="{size.width}px"
               style:--page-block="{size.height}px"
@@ -747,8 +756,10 @@
                       void decode(event.currentTarget, index);
                     }
                   }}
-                  onerror={() => {
-                    onFailure(index);
+                  onerror={(event) => {
+                    if (event.currentTarget.isConnected) {
+                      onFailure(index);
+                    }
                   }}
                 />
               {/if}

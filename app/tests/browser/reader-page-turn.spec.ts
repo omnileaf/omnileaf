@@ -20,12 +20,14 @@ import {
   PAGE_HEIGHT,
   PAGE_WIDTH,
   pageDrawnAtRest,
+  pageIndexOf,
   pinchTo,
   PREVIOUS_BOOK,
   readerBackend,
   readerBook,
   servePages,
 } from "./reader-book.ts";
+import { fakeProtocolRoute } from "./fake-backend.ts";
 import {
   decodedAt,
   decodeLate,
@@ -34,6 +36,7 @@ import {
   recordBarePages,
   recordFirstMotion,
   recordSpinners,
+  refuseDecodes,
   stopRecordingBarePages,
   stopRecordingSpinners,
 } from "./reader-paint.ts";
@@ -81,12 +84,13 @@ test.use({ backend: readerBackend(DEFAULT_BACKEND, OPENING) });
 interface Opening {
   readonly stored?: Record<string, string>;
   readonly pageArrives?: (index: number) => Promise<void>;
+  readonly pageFails?: (index: number) => boolean;
 }
 
 async function openBookWith(
   page: Page,
   look: object,
-  { stored = {}, pageArrives }: Opening = {},
+  { stored = {}, pageArrives, pageFails }: Opening = {},
 ): Promise<void> {
   await page.addInitScript(
     ({ key, value, guides, entries }) => {
@@ -109,6 +113,14 @@ async function openBookWith(
     page,
     pageArrives === undefined ? undefined : (_, index) => pageArrives(index),
   );
+  if (pageFails !== undefined) {
+    await page.route(fakeProtocolRoute("omni"), async (route) => {
+      const index = pageIndexOf(route.request().url());
+      await (index !== undefined && pageFails(index)
+        ? route.abort()
+        : route.fallback());
+    });
+  }
   await page.goto(`/read/${BOOK_ID}`);
   await expect(
     page.getByRole("heading", { level: 1, name: BOOK_TITLE }),
@@ -982,6 +994,89 @@ for (const { way, keys, restsOn } of BURSTS_ONTO_PAGES_ON_THEIR_WAY) {
     expect(bare).toEqual([]);
   });
 }
+
+async function expectDrawnAtRest(page: Page, number: number): Promise<void> {
+  await expectOnPage(page, number);
+  await expect.poll(() => pageDrawnAtRest(page)).toBe(number);
+}
+
+test("covers pages whose decode is refused and then draws them, through a burst of turns back", async ({
+  page,
+}) => {
+  await letDecodesRunLate(page);
+  await refuseDecodes(page, [13, 12, 11]);
+  await openBookWith(page, { pageTurn: "slide" });
+  await recordBarePages(page);
+
+  for (const key of ["ArrowLeft", "ArrowLeft", "ArrowLeft"]) {
+    await page.keyboard.press(key);
+  }
+  await expectOnPage(page, 11);
+  await framesPassed(page);
+
+  const bare = await stopRecordingBarePages(page);
+  expect(bare).toEqual([]);
+  await expectDrawnAtRest(page, 11);
+});
+
+test("covers pages whose decode is refused and then draws them, through a slide caught mid-way", async ({
+  page,
+}) => {
+  await letDecodesRunLate(page);
+  await refuseDecodes(page, [15, 16]);
+  await openBookWith(page, { pageTurn: "slide" });
+  await recordBarePages(page);
+
+  await page.keyboard.press("ArrowRight");
+  await framesPassed(page);
+  await page.keyboard.press("ArrowRight");
+  await expectOnPage(page, 16);
+  await framesPassed(page);
+
+  const bare = await stopRecordingBarePages(page);
+  expect(bare).toEqual([]);
+  await expectDrawnAtRest(page, 16);
+});
+
+test.describe("two pages at a time", () => {
+  test("covers a pair whose decode is refused and then draws both pages", async ({
+    page,
+  }) => {
+    await letDecodesRunLate(page);
+    await refuseDecodes(page, [16, 17]);
+    await openBookWith(page, { pageTurn: "slide", layout: "two" });
+    await expect(shownPage(page, 15)).toBeVisible();
+    await recordBarePages(page);
+
+    await page.keyboard.press("ArrowRight");
+    await expectOnPage(page, 16);
+    await framesPassed(page);
+
+    const bare = await stopRecordingBarePages(page);
+    expect(bare).toEqual([]);
+    await expect(shownPage(page, 16)).not.toHaveClass(/invisible/);
+    await expect(shownPage(page, 17)).not.toHaveClass(/invisible/);
+  });
+});
+
+test("covers a neighbour that failed to load with the page colour as a burst of turns slides it past", async ({
+  page,
+}) => {
+  await openBookWith(
+    page,
+    { pageTurn: "slide" },
+    { pageFails: (index) => index + 1 === 13 },
+  );
+  await recordBarePages(page);
+
+  await page.keyboard.press("ArrowLeft");
+  await framesPassed(page);
+  await page.keyboard.press("ArrowLeft");
+  await expectDrawnAtRest(page, 12);
+
+  const bare = await stopRecordingBarePages(page);
+  expect(bare).toEqual([]);
+});
 
 test("turns to a page that never arrives, showing it loading, and on past it", async ({
   page,
