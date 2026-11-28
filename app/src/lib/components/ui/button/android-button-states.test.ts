@@ -254,7 +254,7 @@ for (const [size, radius] of Object.entries(RESTING_RADIUS)) {
   });
 }
 
-test("morphs a pressed Android button's corners on the kit's spring while navigation moves", async () => {
+test("morphs a pressed Android button's corners in the kit's spring time while navigation moves", async () => {
   const moving = await renderButton("android", "light", { variant: "primary" });
 
   const durations = getComputedStyle(moving).transitionDuration.split(", ");

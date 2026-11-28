@@ -1382,7 +1382,7 @@
     color, background-color, border-color, opacity, border-radius;
   transition-timing-function:
     var(--ease-out), var(--ease-out), var(--ease-out), var(--ease-out),
-    var(--ease-morph);
+    var(--ease-emphasized);
   transition-duration: 0s;
 
   @media (prefers-reduced-motion: no-preference) {

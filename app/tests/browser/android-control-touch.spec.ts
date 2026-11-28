@@ -19,9 +19,9 @@ const SEGMENT_END = "20px";
 const PRESSED = "8px";
 const LARGE_PRESSED = "12px";
 const KIT_SPRING_SECONDS = "0.383s";
+const MORPH_MS = 383;
 const SAMPLED_FRAMES = 60;
-const OVERSHOOT_SHARE = 0.1;
-const LARGEST_FRAME_SHARE = 0.4;
+const STEEPEST_RATE_SHARE = 5;
 const CLOSE = 0.05;
 const ACCENT_CONTAINER = "rgb(180, 240, 203)";
 const STILL_EVERY_GROUP = "navigation sheets reader loading";
@@ -120,16 +120,22 @@ function thumbOf(control: Locator): Promise<Thumb> {
 
 type Corner = "borderStartStartRadius" | "borderStartEndRadius";
 
+interface Frame {
+  readonly at: number;
+  readonly radius: number;
+}
+
 async function startSampling(control: Locator, corner: Corner): Promise<void> {
   await control.evaluate(
     (element, { side, frames }) => {
-      const radii: number[] = [];
-      const sample = (): void => {
+      const sampled: string[] = [];
+      const sample = (at: number): void => {
         const box = element.getBoundingClientRect();
         const drawn = Number.parseFloat(getComputedStyle(element)[side]);
-        radii.push(Math.min(drawn, box.height / 2, box.width / 2));
-        element.setAttribute("data-radii", radii.join(","));
-        if (radii.length < frames) {
+        const radius = Math.min(drawn, box.height / 2, box.width / 2);
+        sampled.push(`${String(at)}:${String(radius)}`);
+        element.setAttribute("data-frames", sampled.join(","));
+        if (sampled.length < frames) {
           requestAnimationFrame(sample);
         }
       };
@@ -139,50 +145,47 @@ async function startSampling(control: Locator, corner: Corner): Promise<void> {
   );
 }
 
-async function sampledRadii(control: Locator): Promise<number[]> {
-  const read = (): Promise<number[]> =>
+async function sampledFrames(control: Locator): Promise<Frame[]> {
+  const read = (): Promise<Frame[]> =>
     control.evaluate((element) =>
-      (element.getAttribute("data-radii") ?? "")
+      (element.getAttribute("data-frames") ?? "")
         .split(",")
-        .filter((radius) => radius !== "")
-        .map(Number),
+        .filter((frame) => frame !== "")
+        .map((frame) => {
+          const [at, radius] = frame.split(":").map(Number);
+          return { at: at ?? Number.NaN, radius: radius ?? Number.NaN };
+        }),
     );
   await expect.poll(async () => (await read()).length).toBe(SAMPLED_FRAMES);
   return read();
 }
 
-function turnOf(radii: readonly number[], isTightening: boolean): number {
-  const furthest = isTightening ? Math.min(...radii) : Math.max(...radii);
-  return radii.indexOf(furthest);
+function ratesOf(frames: readonly Frame[]): number[] {
+  return frames.slice(1).map(({ at, radius }, index) => {
+    const before = frames[index] ?? { at, radius };
+    return (radius - before.radius) / (at - before.at);
+  });
 }
 
-function stepsOf(radii: readonly number[]): number[] {
-  return radii.slice(1).map((radius, index) => radius - (radii[index] ?? 0));
-}
-
-function expectMorph(radii: readonly number[], from: number, to: number) {
-  const change = Math.abs(to - from);
-  const isTightening = to < from;
-  const direction = isTightening ? -1 : 1;
-  const turn = turnOf(radii, isTightening);
-  const steps = stepsOf(radii);
+function expectMorph(frames: readonly Frame[], from: number, to: number) {
+  const radii = frames.map(({ radius }) => radius);
+  const lowest = Math.min(from, to) - CLOSE;
+  const highest = Math.max(from, to) + CLOSE;
+  const direction = Math.sign(to - from);
+  const steepestRate = (STEEPEST_RATE_SHARE * Math.abs(to - from)) / MORPH_MS;
+  const steps = radii
+    .slice(1)
+    .map((radius, index) => radius - (radii[index] ?? 0));
 
   expect(radii[0]).toBeCloseTo(from, 1);
   expect(radii.at(-1)).toBeCloseTo(to, 1);
-  expect(Math.min(...radii)).toBeGreaterThan(0);
-  expect(Math.min(...radii)).toBeGreaterThanOrEqual(
-    Math.min(from, to) - OVERSHOOT_SHARE * change - CLOSE,
+  expect(radii.filter((radius) => radius < lowest || radius > highest)).toEqual(
+    [],
   );
-  expect(Math.max(...radii)).toBeLessThanOrEqual(Math.max(from, to) + CLOSE);
-  expect(Math.max(...steps.map(Math.abs))).toBeLessThanOrEqual(
-    LARGEST_FRAME_SHARE * change,
-  );
-  expect(steps.slice(0, turn).every((step) => step * direction >= -CLOSE)).toBe(
-    true,
-  );
-  expect(steps.slice(turn).every((step) => step * direction <= CLOSE)).toBe(
-    true,
-  );
+  expect(steps.filter((step) => step * direction < -CLOSE)).toEqual([]);
+  expect(
+    ratesOf(frames).filter((rate) => Math.abs(rate) > steepestRate),
+  ).toEqual([]);
 }
 
 async function paintedColourAt(page: Page, at: Point): Promise<string> {
@@ -255,10 +258,10 @@ async function expectMorphUnderHeldPointer(
   await keepFromActing(control);
   await startSampling(control, corner);
   await holdPointerOn(page, control);
-  const pressing = await sampledRadii(control);
+  const pressing = await sampledFrames(control);
   await startSampling(control, corner);
   await page.mouse.up();
-  const releasing = await sampledRadii(control);
+  const releasing = await sampledFrames(control);
 
   expectMorph(pressing, resting, held);
   expectMorph(releasing, held, resting);
@@ -498,6 +501,34 @@ test.describe("Android's controls", { tag: "@native" }, () => {
         )
         .toEqual([RESTING, "none"]);
     });
+
+    test("morphs a held outlined button's corners smoothly from 20 to 8 and back, frame by frame", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES_ID}`);
+      const mark = page.getByRole("button", { name: /^Mark .+ read$/ });
+      await expect(mark).toBeVisible();
+
+      await expectMorphUnderHeldPointer(page, mark, {
+        corner: "borderStartStartRadius",
+        resting: 20,
+        held: 8,
+      });
+    });
+
+    test("morphs a held standard icon button's corners smoothly from 20 to 8 and back, frame by frame", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES_ID}`);
+      const find = page.getByRole("button", { name: "Find a book" });
+      await expect(find).toBeVisible();
+
+      await expectMorphUnderHeldPointer(page, find, {
+        corner: "borderStartStartRadius",
+        resting: 20,
+        held: 8,
+      });
+    });
   });
 
   test("morphs a held large button's corners smoothly from 28 to 12 and back, frame by frame", async ({
@@ -539,6 +570,22 @@ test.describe("Android's controls", { tag: "@native" }, () => {
     });
   });
 
+  test("morphs a held chosen middle segment's corners smoothly from 20 to 8 and back, frame by frame", async ({
+    page,
+  }) => {
+    const sheet = await openLibrarySheet(page, "Sort and filter");
+    const middle = readStateRadios(sheet).nth(1);
+    await tap(page, middle);
+    await expect(middle).toBeChecked();
+    await settle(middle);
+
+    await expectMorphUnderHeldPointer(page, middle, {
+      corner: "borderStartStartRadius",
+      resting: 20,
+      held: 8,
+    });
+  });
+
   test("tightens a held button's corners at once when every animation group is turned off", async ({
     page,
   }) => {
@@ -554,7 +601,7 @@ test.describe("Android's controls", { tag: "@native" }, () => {
     expect(durations.split(", ").at(-1)).toBe("0s");
   });
 
-  test("morphs a held button's corners on the kit's spring, and not at all under reduced motion", async ({
+  test("morphs a held button's corners in the kit's spring time, and not at all under reduced motion", async ({
     page,
   }) => {
     const show = showButton(await openLibrarySheet(page, "Sort and filter"));
