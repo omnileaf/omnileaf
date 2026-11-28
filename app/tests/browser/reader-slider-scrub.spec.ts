@@ -17,9 +17,8 @@ import {
 
 const LONG_BOOK_PAGES = 200;
 const STEPS_PER_SWEEP = 40;
-const SWEEPS_BACK_AND_FORTH = 10;
-const FINGER_STEPS_PER_SWEEP = 20;
-const FINGER_SWEEPS_BACK_AND_FORTH = 2;
+const SCRUB_STEPS_PER_SWEEP = 20;
+const SCRUB_SWEEPS_BACK_AND_FORTH = 2;
 const PAUSE_AHEAD_MS = 1000;
 const MOST_PAGES_ASKED = 12;
 const MOST_THUMBNAILS_ASKED = 24;
@@ -85,8 +84,8 @@ async function scrubWithMouse(page: Page, track: Track): Promise<void> {
   await holdThePageClock(page);
   await page.mouse.move(track.grip.x, track.grip.y);
   await page.mouse.down();
-  for (const to of sweepsOf(track, SWEEPS_BACK_AND_FORTH)) {
-    await page.mouse.move(to.x, to.y, { steps: STEPS_PER_SWEEP });
+  for (const to of sweepsOf(track, SCRUB_SWEEPS_BACK_AND_FORTH)) {
+    await page.mouse.move(to.x, to.y, { steps: SCRUB_STEPS_PER_SWEEP });
   }
   await page.clock.resume();
 }
@@ -110,9 +109,9 @@ async function scrubWithFinger(
   await holdThePageClock(page);
   await touchAt(session, "touchStart", track.grip);
   let from = track.grip;
-  for (const to of sweepsOf(track, FINGER_SWEEPS_BACK_AND_FORTH)) {
-    for (let step = 1; step <= FINGER_STEPS_PER_SWEEP; step += 1) {
-      const share = step / FINGER_STEPS_PER_SWEEP;
+  for (const to of sweepsOf(track, SCRUB_SWEEPS_BACK_AND_FORTH)) {
+    for (let step = 1; step <= SCRUB_STEPS_PER_SWEEP; step += 1) {
+      const share = step / SCRUB_STEPS_PER_SWEEP;
       await touchAt(session, "touchMove", {
         x: from.x + (to.x - from.x) * share,
         y: from.y + (to.y - from.y) * share,
