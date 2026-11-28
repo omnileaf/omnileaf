@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from "svelte";
+  import { on } from "svelte/events";
 
   import { beforeNavigate } from "$app/navigation";
   import type { ResolvedPathname } from "$app/types";
@@ -73,6 +74,7 @@
   let area: HTMLElement | undefined = $state();
   let bar: HTMLElement | undefined = $state();
   let topBar: HTMLElement | undefined = $state();
+  let pickedCount = $state<HTMLElement | null>(null);
   let isPickingAll = $state(false);
   let lastPickedCount = 0;
 
@@ -85,6 +87,10 @@
   });
 
   $effect(() => {
+    pickedCount?.focus();
+  });
+
+  $effect(() => {
     const report = onPickedCount;
     report?.(pickedBooks.length > 0 ? pickedBooks.length : undefined);
     return () => {
@@ -93,12 +99,16 @@
   });
   let focusedTile: string | undefined;
 
-  function noteFocusedBook({ target }: FocusEvent): void {
+  function noteTile({ target }: Event): void {
     const cover =
       target instanceof Element
         ? target.closest<HTMLElement>("[data-pick-key]")
         : null;
     focusedTile = cover?.dataset.pickKey ?? focusedTile;
+  }
+
+  function notesTouchedTile(element: HTMLElement): () => void {
+    return on(element, "pointerdown", noteTile);
   }
 
   function isFocusHereOrLost(): boolean {
@@ -226,7 +236,8 @@
   bind:this={area}
   data-picking={isAndroidPhonePicking || undefined}
   class="contents"
-  onfocusin={noteFocusedBook}
+  onfocusin={noteTile}
+  {@attach notesTouchedTile}
 >
   <div class="relative" {@attach dragSelect.attach}>
     <SectionCovers {...covers} {tiles} {selection} />
@@ -237,6 +248,7 @@
   {#if isAndroidPhonePicking}
     <PickingTopBar
       bind:element={topBar}
+      bind:countElement={pickedCount}
       picking={ANDROID_PICKING}
       look={ANDROID_PICKING.overTopBar}
       count={selection.count}

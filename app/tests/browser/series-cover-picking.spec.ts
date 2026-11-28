@@ -1,16 +1,20 @@
-import type { Locator, Page } from "@playwright/test";
+import type { CDPSession, Locator, Page } from "@playwright/test";
 
 import {
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   selectByLongPress,
   test,
   tokenColour,
 } from "./fixtures.ts";
+import { touch } from "./library-frames.ts";
 import { SectionShelf, volumes } from "./series-sections-shelf.ts";
 import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const PICKED_COVER_OPACITY = "0.76";
+const FINGER_ID = 1;
+const LONGEST_PRESS_MS = 800;
 
 let shelf = new SectionShelf([]);
 
@@ -60,9 +64,38 @@ function navigation(page: Page): Locator {
   return page.getByRole("navigation", { name: "Main" });
 }
 
+function coverLink(page: Page, index: number): Locator {
+  return cover(page, index).getByRole("link").first();
+}
+
+function pickedCount(page: Page): Locator {
+  return contextualBar(page).getByRole("heading", { level: 2 });
+}
+
 async function holdFirstCover(page: Page): Promise<void> {
   await openSeries(page);
   await selectByLongPress(page, cover(page, 0));
+}
+
+async function holdByFinger(page: Page, target: Locator): Promise<CDPSession> {
+  const session = await page.context().newCDPSession(page);
+  const box = await boxOf(target);
+  const finger = {
+    id: FINGER_ID,
+    x: box.x + box.width / 2,
+    y: box.y + box.height / 2,
+  };
+  await page.clock.install();
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [finger],
+  });
+  await page.clock.runFor(LONGEST_PRESS_MS);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  return session;
 }
 
 test.describe(
@@ -187,6 +220,106 @@ test.describe(
       for (const box of await covers(page).getByRole("checkbox").all()) {
         await expect(box).toBeChecked();
       }
+    });
+
+    test("moves focus to the count, which says it, once a cover is held", async ({
+      page,
+    }) => {
+      await holdFirstCover(page);
+
+      await expect(pickedCount(page)).toBeFocused();
+      await expect(pickedCount(page)).toHaveText("1 selected");
+      await expect(pickedCount(page)).toHaveAttribute("aria-live", "polite");
+    });
+
+    test("says the count once after Select all", async ({ page }) => {
+      await holdFirstCover(page);
+
+      await contextualBar(page)
+        .getByRole("button", { name: "Select all" })
+        .click();
+
+      await expect(pickedCount(page)).toHaveText("3 selected");
+      await expect(pickedCount(page)).toHaveAttribute("aria-live", "polite");
+      await expect(page.getByRole("main").getByRole("status")).toHaveText("");
+    });
+
+    test("starts picking from a cover held by a finger", async ({
+      page,
+      browserName,
+    }) => {
+      test.skip(browserName !== "chromium", "touch through DevTools");
+      await openSeries(page);
+
+      await holdByFinger(page, coverLink(page, 0));
+
+      await expect(pickBox(page, "Volume 1")).toBeChecked();
+      await expect(pickBox(page, "Volume 2")).not.toBeChecked();
+      await expect(pickedCount(page)).toHaveText("1 selected");
+    });
+
+    test("adds a second cover tapped by a finger", async ({
+      page,
+      browserName,
+    }) => {
+      test.skip(browserName !== "chromium", "touch through DevTools");
+      await openSeries(page);
+      const session = await holdByFinger(page, coverLink(page, 0));
+
+      await touch(session, pickBox(page, "Volume 3"));
+
+      await expect(pickBox(page, "Volume 1")).toBeChecked();
+      await expect(pickBox(page, "Volume 3")).toBeChecked();
+      await expect(pickedCount(page)).toHaveText("2 selected");
+    });
+
+    test("ends picking on Escape from a keyboard", async ({ page }) => {
+      await holdFirstCover(page);
+
+      await page.keyboard.press("Escape");
+
+      await expect(pickBox(page, "Volume 1")).toHaveCount(0);
+      await expect(contextualBar(page)).toHaveCount(0);
+      await expect(navigation(page)).toBeVisible();
+    });
+
+    test("puts focus back on the held cover once picking is closed", async ({
+      page,
+    }) => {
+      await holdFirstCover(page);
+
+      await contextualBar(page)
+        .getByRole("button", { name: "Clear the selection" })
+        .click();
+
+      await expect(coverLink(page, 0)).toBeFocused();
+    });
+
+    test("puts focus on the cover last unticked once none is left", async ({
+      page,
+    }) => {
+      await holdFirstCover(page);
+      await pickBox(page, "Volume 3").click();
+      await pickBox(page, "Volume 1").click();
+
+      await pickBox(page, "Volume 3").click();
+
+      await expect(contextualBar(page)).toHaveCount(0);
+      await expect(coverLink(page, 2)).toBeFocused();
+    });
+
+    test("puts focus on the cover last picked once marking ends picking", async ({
+      page,
+    }) => {
+      await holdFirstCover(page);
+      await pickBox(page, "Volume 2").click();
+
+      await pickedActions(page)
+        .getByRole("button", { name: "Mark read" })
+        .click();
+
+      await expect(contextualBar(page)).toHaveCount(0);
+      await expect(coverLink(page, 1)).toBeFocused();
     });
 
     test("marks the picked books read from the docked toolbar and ends picking", async ({
