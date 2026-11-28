@@ -239,7 +239,7 @@
       bind:element={topBar}
       picking={ANDROID_PICKING}
       look={ANDROID_PICKING.overTopBar}
-      count={pickedBooks.length}
+      count={selection.count}
       {countId}
       {isPickingAll}
       isAllPicked={false}
@@ -256,7 +256,7 @@
     <PickingToolbar
       bind:element={bar}
       picking={ANDROID_PICKING}
-      count={pickedBooks.length}
+      count={selection.count}
       onMark={(read: ReadMark) => {
         void mark(read);
       }}

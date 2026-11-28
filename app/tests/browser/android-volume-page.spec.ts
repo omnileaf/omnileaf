@@ -460,7 +460,7 @@ test.describe(
       await expect(
         page
           .locator("[data-picking-bar]")
-          .getByRole("heading", { name: "4 selected" }),
+          .getByRole("heading", { name: "1 selected" }),
       ).toBeVisible();
       await picked.getByRole("button", { name: "Mark read" }).click();
 
