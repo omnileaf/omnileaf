@@ -1,6 +1,8 @@
 import type { Attachment } from "svelte/attachments";
 import { on } from "svelte/events";
 
+export const DOCKED_BAR_TOAST_ROOM = "--docked-bar-toast-room";
+
 export function makesToastRoom(property: string): Attachment<HTMLElement> {
   return (element) => {
     const root = document.documentElement;
