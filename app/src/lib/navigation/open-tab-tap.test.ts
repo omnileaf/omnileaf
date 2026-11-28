@@ -12,24 +12,14 @@ test("does nothing while the setting is off, wherever the page is", () => {
   expect(tap).toBe("nothing");
 });
 
-test("scrolls a scrolled page back to its top first", () => {
+test("goes to the section's first page from a scrolled page inside it", () => {
   const tap = openTabTap({
     isTurnedOn: true,
     isScrolled: true,
     isOnFirstPage: false,
   });
 
-  expect(tap).toBe("scrollToTop");
-});
-
-test("scrolls the scrolled first page to its top", () => {
-  const tap = openTabTap({
-    isTurnedOn: true,
-    isScrolled: true,
-    isOnFirstPage: true,
-  });
-
-  expect(tap).toBe("scrollToTop");
+  expect(tap).toBe("firstPage");
 });
 
 test("goes to the section's first page from the top of a page inside it", () => {
@@ -40,6 +30,16 @@ test("goes to the section's first page from the top of a page inside it", () => 
   });
 
   expect(tap).toBe("firstPage");
+});
+
+test("scrolls the scrolled first page to its top", () => {
+  const tap = openTabTap({
+    isTurnedOn: true,
+    isScrolled: true,
+    isOnFirstPage: true,
+  });
+
+  expect(tap).toBe("scrollToTop");
 });
 
 test("does nothing at the top of the section's first page", () => {

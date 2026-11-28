@@ -14,8 +14,8 @@ export function openTabTap({
   if (!isTurnedOn) {
     return "nothing";
   }
-  if (isScrolled) {
-    return "scrollToTop";
+  if (!isOnFirstPage) {
+    return "firstPage";
   }
-  return isOnFirstPage ? "nothing" : "firstPage";
+  return isScrolled ? "scrollToTop" : "nothing";
 }
