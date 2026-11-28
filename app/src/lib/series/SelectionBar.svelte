@@ -8,8 +8,8 @@
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { ReadMark } from "#lib/ipc/bindings.ts";
-  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPointer } from "#lib/page/platform.ts";
+  import { EXPANDED_QUERY, FINE_POINTER_QUERY } from "#lib/page/breakpoints.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import SelectionToolbar from "#lib/page/SelectionToolbar.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -41,7 +41,7 @@
   } = $props();
 
   const isWide = new MediaQuery(EXPANDED_QUERY);
-  const hintsKeys = isPointer(currentPlatform());
+  const hasFinePointer = new MediaQuery(FINE_POINTER_QUERY);
   const isInTitleBar = $derived(
     currentPlatform() === "macos" && isWide.current,
   );
@@ -158,7 +158,7 @@
     <Tooltip
       label={m.series_clear_selection()}
       type="button"
-      aria-label={hintsKeys
+      aria-label={hasFinePointer.current
         ? m.series_clear_selection_with_key({ key: m.series_escape_key() })
         : m.series_clear_selection()}
       aria-keyshortcuts="Escape"
@@ -170,7 +170,7 @@
           look="bar-icon"
           class="px-sm text-muted block-pointer-target"
         >
-          {#if hintsKeys}
+          {#if hasFinePointer.current}
             <Kbd>{m.series_escape_key()}</Kbd>
           {/if}
           <X size={ICON_SIZE} aria-hidden="true" />

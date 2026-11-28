@@ -1,17 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
-import {
-  DEFAULT_BACKEND,
-  expect,
-  selectByLongPress,
-  test,
-} from "./fixtures.ts";
-import { sampleSeries } from "./series-catalog.ts";
+import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { SectionShelf, volumes } from "./series-sections-shelf.ts";
 import { SERIES_ID } from "./series-shelf.ts";
 
-const LIBRARY = sampleSeries(3);
-const TABLET = { width: 820, height: 1180 };
 const shelf = new SectionShelf(volumes(1, 2));
 
 test.use({
@@ -20,60 +12,77 @@ test.use({
     seriesOverview: (id) => shelf.backend().seriesOverview(id),
     seriesBooks: (id, listing, after) =>
       shelf.backend().seriesBooks(id, listing, after),
-    librarySeries: () => ({ series: LIBRARY, next: null }),
-    librarySeriesCount: () => LIBRARY.length,
   },
 });
 
-function shownKeyCaps(page: Page): Locator {
-  return page.locator("kbd:visible");
+function selectionBar(page: Page): Locator {
+  return page.getByRole("group", { name: "Selected books" });
 }
 
-async function holdFirstOf(page: Page, list: Locator): Promise<void> {
-  await expect(list.getByRole("listitem").first()).toBeVisible();
-  await selectByLongPress(page, list.getByRole("listitem").first());
-  await expect(page.getByText(/1 (selected|book)/u).first()).toBeVisible();
+function escapeKeyCap(page: Page): Locator {
+  return selectionBar(page).locator("kbd:visible");
 }
 
-test.describe("key caps on Android and iOS", { tag: "@native" }, () => {
-  test.beforeEach(({ platform }) => {
-    test.skip(
-      platform !== "android" && platform !== "ios",
-      "no keyboard to hint at",
-    );
+async function pickFirstCover(page: Page): Promise<void> {
+  await page.goto(`/series/${SERIES_ID}`);
+  const first = page
+    .getByRole("list", { name: "Volumes" })
+    .getByRole("listitem")
+    .first()
+    .getByRole("link")
+    .first();
+  await first.focus();
+  await page.keyboard.press("Space");
+  await expect(selectionBar(page)).toBeVisible();
+}
+
+test.describe("the Escape key cap in a series' selection bar", () => {
+  test.use({
+    platform: async ({ isMobile }, use) => {
+      await use(isMobile ? "ios" : "linux");
+    },
   });
 
-  test("shows no key cap while a series' covers are picked", async ({
-    page,
-  }) => {
-    await page.goto(`/series/${SERIES_ID}`);
+  test.describe("with only touch", () => {
+    test.use({ hasTouch: true });
 
-    await holdFirstOf(page, page.getByRole("list", { name: "Volumes" }));
+    test("shows no key cap", async ({ page }) => {
+      await pickFirstCover(page);
 
-    await expect(shownKeyCaps(page)).toHaveCount(0);
+      await expect(escapeKeyCap(page)).toHaveCount(0);
+      await expect(
+        selectionBar(page).getByRole("button", {
+          name: "Clear the selection",
+          exact: true,
+        }),
+      ).toBeVisible();
+    });
   });
 
-  test("shows no key cap while the library's series are picked", async ({
-    page,
-  }) => {
-    await page.goto("/");
+  test.describe("with a mouse or trackpad", () => {
+    test.use({ hasTouch: false });
 
-    await holdFirstOf(page, page.getByRole("list", { name: "Series" }));
+    test("shows the Esc key cap", async ({ page }) => {
+      await pickFirstCover(page);
 
-    await expect(shownKeyCaps(page)).toHaveCount(0);
-  });
+      await expect(escapeKeyCap(page)).toHaveText("Esc");
+    });
 
-  test.describe("on a tablet", () => {
-    test.use({ viewport: TABLET });
-
-    test("shows no key cap while a series' covers are picked", async ({
+    test("drops the key cap once only touch is left", async ({
       page,
+      browserName,
     }) => {
-      await page.goto(`/series/${SERIES_ID}`);
+      test.skip(browserName !== "chromium", "touch through DevTools");
+      await pickFirstCover(page);
+      await expect(escapeKeyCap(page)).toHaveText("Esc");
+      const session = await page.context().newCDPSession(page);
 
-      await holdFirstOf(page, page.getByRole("list", { name: "Volumes" }));
+      await session.send("Emulation.setTouchEmulationEnabled", {
+        enabled: true,
+        maxTouchPoints: 1,
+      });
 
-      await expect(shownKeyCaps(page)).toHaveCount(0);
+      await expect(escapeKeyCap(page)).toHaveCount(0);
     });
   });
 });
