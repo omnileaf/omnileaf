@@ -109,7 +109,9 @@ test("greys out My pace on Android when the series has no pace to follow", async
   const myPace = page.getByRole("radio", { name: /^My pace/ });
 
   await expect.element(myPace).toBeDisabled();
-  expect(getComputedStyle(asElement(myPace.element())).opacity).toBe("0.5");
+  const greyed = getComputedStyle(asElement(myPace.element()));
+  expect(greyed.backgroundColor).toBe("rgba(44, 53, 46, 0.1)");
+  expect(greyed.color).toBe("rgba(44, 53, 46, 0.38)");
   const radios = Array.from(
     asElement(myPace.element()).parentElement?.children ?? [],
   );

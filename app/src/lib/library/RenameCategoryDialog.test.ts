@@ -30,6 +30,15 @@ function renameButton() {
   return page.getByRole("button", { name: "Rename", exact: true });
 }
 
+function colourOf(value: string): string {
+  const probe = document.createElement("span");
+  probe.style.color = value;
+  document.body.append(probe);
+  const colour = getComputedStyle(probe).color;
+  probe.remove();
+  return colour;
+}
+
 test("opens on the category's name under Rename category", async () => {
   followCorePlatform("linux");
   await showFor("Plan to read");
@@ -112,6 +121,19 @@ test("greys out Rename on an Android phone while the name is refused", async () 
   await expect
     .poll(() => getComputedStyle(renameButton().element()).color)
     .not.toBe(offered);
+});
+
+test("greys out Rename on an Android phone in the kit's disabled label colour while the name is refused", async () => {
+  await page.viewport(390, 844);
+  followCorePlatform("android");
+  await showFor("Plan to read");
+  const kitDisabled = colourOf("var(--native-color-on-control-disabled)");
+
+  await nameField().fill("Manga");
+
+  await expect
+    .poll(() => getComputedStyle(renameButton().element()).color)
+    .toBe(kitDisabled);
 });
 
 test("shows the core's refusal of a name the dialog's own check lets through", async () => {

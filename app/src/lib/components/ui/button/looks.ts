@@ -3,6 +3,7 @@ import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { hasNativeLook, isPhone } from "#lib/page/platform.ts";
 import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
 
+import { androidButtonStates, isStandardIconButton } from "./android-button.ts";
 import { macosButtonClasses } from "./macos-button.ts";
 import { windowsButtonClasses } from "./windows-button.ts";
 
@@ -69,7 +70,7 @@ const WINDOWS_VARIANT_OF: Partial<Record<ButtonLook, ButtonVariant>> = {
   "confirm-cancel": "secondary",
 };
 
-const NATIVE_BUTTON = `native-target inline-flex items-center justify-center gap-sm rounded-native-button font-native-button transition-control ${FOCUS_RING}`;
+const NATIVE_BUTTON = `native-target inline-flex items-center justify-center gap-sm rounded-native-button font-native-button ${FOCUS_RING}`;
 
 const NATIVE_SIZES = {
   small:
@@ -102,6 +103,9 @@ const NATIVE_VARIANTS = {
     "bg-native-button-destructive text-native-on-button-destructive not-disabled:not-aria-disabled:hover:tint-native-button-destructive-hover not-disabled:not-aria-disabled:active:tint-native-button-destructive-pressed",
 } satisfies Record<ButtonVariant, string>;
 
+const NATIVE_STANDARD_ICON =
+  "bg-transparent text-native-on-icon-button-plain not-disabled:not-aria-disabled:hover:tint-native-icon-button-plain-hover not-disabled:not-aria-disabled:active:tint-native-icon-button-plain-pressed";
+
 const DESKTOP_VARIANTS = {
   primary: BUTTON_LOOKS["dialog-primary"],
   secondary: BUTTON_LOOKS["dialog-secondary"],
@@ -131,7 +135,14 @@ export function variantClasses(
       : DESKTOP_VARIANTS[variant];
   }
   const shape = isIconOnly ? NATIVE_ICON_ONLY[size] : "";
-  return `${NATIVE_BUTTON} ${NATIVE_SIZES[size]} ${shape} ${NATIVE_VARIANTS[variant]}`;
+  const colours = isStandardIconButton(variant, isIconOnly)
+    ? NATIVE_STANDARD_ICON
+    : NATIVE_VARIANTS[variant];
+  const states =
+    platform === "android"
+      ? androidButtonStates(variant, size, isIconOnly)
+      : "transition-control";
+  return `${NATIVE_BUTTON} ${NATIVE_SIZES[size]} ${shape} ${colours} ${states}`;
 }
 
 export function buttonClasses(

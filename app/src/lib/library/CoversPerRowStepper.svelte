@@ -16,9 +16,9 @@
   const ICON_SIZE = 18;
   const ANDROID_ICON_SIZE = 24;
   const ANDROID_STEP =
-    "relative flex items-center justify-center rounded-full bg-native-accent-soft text-foreground transition-control block-native-button inline-native-button before:absolute before:-inset-xs before:content-[''] enabled:active:rounded-native-segment disabled:opacity-40";
+    "relative flex items-center justify-center rounded-[calc(var(--spacing-native-button)/2)] bg-native-accent-soft text-native-on-button-secondary transition-shape block-native-button inline-native-button before:absolute before:-inset-xs before:content-[''] enabled:active:rounded-android-sm enabled:active:tint-native-button-secondary-pressed focus-visible:focus-ring focus-visible:tint-native-button-secondary-pressed disabled:bg-native-control-disabled disabled:text-native-on-control-disabled";
   const ANDROID_COUNT =
-    "text-center tabular-nums text-native-button-large/native-button-large font-native-button-large tracking-native-button-large min-inline-xl";
+    "text-center tabular-nums text-native-button-large/native-button-large font-native-button-large tracking-native-button-large min-inline-2xl";
 
   const RANGE_LABELS = {
     phone: m.library_covers_per_row_range_phone,

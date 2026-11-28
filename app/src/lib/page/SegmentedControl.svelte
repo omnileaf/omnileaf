@@ -3,6 +3,7 @@
   import type { Component, Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { cn } from "#lib/components/cn.ts";
   import {
     RadioGroup,
     RadioGroupItem,
@@ -24,6 +25,7 @@
     readonly describedBy?: string | undefined;
     readonly size?: Size;
     readonly isFullWidth?: boolean;
+    readonly hugsLabels?: boolean;
     readonly isAtRowEnd?: boolean;
     readonly isSetupRow?: boolean;
     readonly hasWindowsLook?: boolean;
@@ -73,10 +75,38 @@
       "bg-native-segment-fill font-native-segment text-native-on-segment",
   };
 
+  const ANDROID_SEGMENT = {
+    motion: "transition-shape",
+    pressed:
+      "active:rounded-android-sm first-of-type:active:rounded-s-native-segment-end last-of-type:active:rounded-e-native-segment-end",
+    pillPressed: "active:rounded-android-sm",
+    focus:
+      "focus-visible:outline-(length:--focus-ring-width) focus-visible:outline-(color:--focus-ring-color) focus-visible:outline-offset-(--focus-ring-offset)",
+    disabled:
+      "data-disabled:bg-native-control-disabled data-disabled:text-native-on-control-disabled",
+    chosenLayer:
+      "active:tint-native-segment-selected-pressed focus-visible:tint-native-segment-selected-pressed",
+    unchosenLayer:
+      "active:tint-native-segment-pressed focus-visible:tint-native-segment-pressed",
+  };
+
+  const SHARED_SEGMENT = {
+    motion: "transition-control",
+    disabled: "data-disabled:opacity-50",
+  };
+
+  const HUGGING = {
+    track: "inline-fit",
+    segment: "flex-auto",
+    face: "px-native-segment-hugging-inline",
+  };
+
   const PILL_ROWS = {
     track: "gap-xs",
     segment: "rounded-full",
   };
+
+  const ANDROID_PILL_ROW = "rounded-[calc(var(--spacing-touch-target)/2)]";
 
   const ANDROID_PHONE_SMALL_FACE =
     "max-medium:gap-sm max-medium:px-lg max-medium:text-native-segment max-medium:leading-native-segment max-medium:tracking-native-segment";
@@ -115,6 +145,7 @@
     describedBy,
     size = "regular",
     isFullWidth = false,
+    hugsLabels = false,
     isAtRowEnd = false,
     isSetupRow = false,
     hasWindowsLook = false,
@@ -131,6 +162,8 @@
   const look = $derived(LOOKS[size]);
   const platform = currentPlatform();
   const isNative = hasNativeLook(platform);
+  const isAndroid = platform === "android";
+  const segmentLook = isAndroid ? ANDROID_SEGMENT : SHARED_SEGMENT;
   const isMacos = platform === "macos";
   const isMacosSmall = $derived(isMacos && size === "small");
   const usesNativeTokens = isNative || isMacos;
@@ -149,14 +182,20 @@
     if (platform === "android" && size === "small") {
       return `${look.face} ${ANDROID_PHONE_SMALL_FACE}`;
     }
-    return usesNativeTokens && size === "regular"
-      ? NATIVE_LOOK.face
-      : look.face;
+    if (usesNativeTokens && size === "regular") {
+      return hugsLabels
+        ? `${NATIVE_LOOK.face} ${HUGGING.face}`
+        : NATIVE_LOOK.face;
+    }
+    return look.face;
   });
 
   function onRowOf(): string {
     if (hasEqualMacosColumns) {
       return EQUAL_COLUMNS.segment;
+    }
+    if (hugsLabels) {
+      return HUGGING.segment;
     }
     return isMacosSmall ? "flex-auto" : look.onRow;
   }
@@ -233,6 +272,7 @@
         ? WINDOWS_LOOK.track
         : ["bg-chip", look.track],
     !isFullWidth && look.capped,
+    hugsLabels && HUGGING.track,
     isAtRowEnd && [
       "shrink-0",
       hasLineOfItsOwn && "grow",
@@ -249,7 +289,13 @@
         : undefined}
       disabled={disabledOptions.includes(option)}
       class={[
-        "relative flex items-center justify-center transition-control data-disabled:pointer-events-none data-disabled:opacity-50",
+        "relative flex items-center justify-center data-disabled:pointer-events-none",
+        segmentLook.motion,
+        segmentLook.disabled,
+        isAndroid && [
+          isPillRows ? ANDROID_SEGMENT.pillPressed : ANDROID_SEGMENT.pressed,
+          ANDROID_SEGMENT.focus,
+        ],
         isNative
           ? "native-target"
           : "before:absolute before:inset-x-none before:-inset-y-xs",
@@ -279,7 +325,11 @@
               ? "bg-raised font-semibold text-foreground shadow-raised"
               : "font-medium text-foreground hover:bg-hover",
         isMacosSmall && MACOS_SMALL.corners,
-        isPillRows && PILL_ROWS.segment,
+        isAndroid &&
+          (chosen === option
+            ? ANDROID_SEGMENT.chosenLayer
+            : ANDROID_SEGMENT.unchosenLayer),
+        isPillRows && (isAndroid ? ANDROID_PILL_ROW : PILL_ROWS.segment),
         segmentClass,
       ]}
     >
@@ -298,12 +348,12 @@
   >
     {#each options as option (option)}
       <span
-        class={[
+        class={cn(
           "flex flex-none items-center",
           face,
           isMacosSmall && MACOS_SMALL.segment,
           segmentClass,
-        ]}
+        )}
       >
         <SegmentFace
           label={labels[option]()}

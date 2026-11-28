@@ -894,10 +894,7 @@ test.describe(
         expect(
           sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
         ).toBeCloseTo(SETTING_END, 0);
-        await expect(fewer).toHaveCSS(
-          "border-top-left-radius",
-          "3.35544e+07px",
-        );
+        await expect(fewer).toHaveCSS("border-top-left-radius", "20px");
         await expect(fewer).toHaveCSS(
           "background-color",
           await tokenColour(page, "--native-color-accent-soft"),

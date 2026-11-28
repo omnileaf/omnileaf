@@ -12,6 +12,7 @@
   --transition-duration-spin: var(--native-duration-spin);
   --transition-duration-spin-slow: var(--native-duration-spin-slow);
   --transition-duration-band: var(--native-duration-band);
+  --transition-duration-morph: var(--native-duration-morph);
   --ease-out: var(--native-ease-out);
   --ease-emphasized: var(--native-ease-emphasized);
   --ease-glass: var(--native-ease-glass);
@@ -73,12 +74,17 @@
   --color-native-switch-off-border: var(--native-color-switch-off-border);
   --color-native-switch-thumb: var(--native-color-switch-thumb);
   --color-native-switch-thumb-off: var(--native-color-switch-thumb-off);
+  --color-native-switch-thumb-pressed-off: var(--native-color-switch-thumb-pressed-off);
+  --color-native-switch-thumb-pressed: var(--native-color-switch-thumb-pressed);
+  --color-native-switch-halo: var(--native-color-switch-halo);
+  --color-native-switch-halo-on: var(--native-color-switch-halo-on);
   --spacing-native-switch-length: var(--native-spacing-switch-length);
   --spacing-native-switch-thickness: var(--native-spacing-switch-thickness);
   --spacing-native-switch-knob: var(--native-spacing-switch-knob);
   --spacing-native-switch-knob-length: var(--native-spacing-switch-knob-length);
   --spacing-native-switch-knob-on: var(--native-spacing-switch-knob-on);
   --spacing-native-switch-knob-on-length: var(--native-spacing-switch-knob-on-length);
+  --spacing-native-switch-knob-pressed: var(--native-spacing-switch-knob-pressed);
   --spacing-native-switch-inset: var(--native-spacing-switch-inset);
   --spacing-native-switch-inset-on: var(--native-spacing-switch-inset-on);
   --color-native-segmented-track: var(--native-color-segmented-track);
@@ -86,10 +92,13 @@
   --color-native-on-segment: var(--native-color-on-segment);
   --color-native-segment-selected: var(--native-color-segment-selected);
   --color-native-on-segment-selected: var(--native-color-on-segment-selected);
+  --color-native-segment-pressed: var(--native-color-segment-pressed);
+  --color-native-segment-selected-pressed: var(--native-color-segment-selected-pressed);
   --spacing-native-segmented-inset: var(--native-spacing-segmented-inset);
   --spacing-native-segmented-gap: var(--native-spacing-segmented-gap);
   --spacing-native-segment: var(--native-spacing-segment);
   --spacing-native-segment-inline: var(--native-spacing-segment-inline);
+  --spacing-native-segment-hugging-inline: var(--native-spacing-segment-hugging-inline);
   --radius-native-segmented: var(--native-radius-segmented);
   --radius-native-segment: var(--native-radius-segment);
   --radius-native-segment-end: var(--native-radius-segment-end);
@@ -176,6 +185,11 @@
   --color-native-on-button-disabled: var(--native-color-on-button-disabled);
   --color-native-button-plain-hover: var(--native-color-button-plain-hover);
   --color-native-button-plain-pressed: var(--native-color-button-plain-pressed);
+  --color-native-on-icon-button-plain: var(--native-color-on-icon-button-plain);
+  --color-native-icon-button-plain-hover: var(--native-color-icon-button-plain-hover);
+  --color-native-icon-button-plain-pressed: var(--native-color-icon-button-plain-pressed);
+  --color-native-control-disabled: var(--native-color-control-disabled);
+  --color-native-on-control-disabled: var(--native-color-on-control-disabled);
   --color-native-button-destructive: var(--native-color-button-destructive);
   --color-native-on-button-destructive: var(--native-color-on-button-destructive);
   --color-native-button-destructive-hover: var(--native-color-button-destructive-hover);
@@ -194,6 +208,8 @@
   --spacing-native-slider-thumb-core: var(--native-spacing-slider-thumb-core);
   --spacing-native-slider-thumb-core-hover: var(--native-spacing-slider-thumb-core-hover);
   --spacing-native-button-large-inline: var(--native-spacing-button-large-inline);
+  --spacing-native-button-icon: var(--native-spacing-button-icon);
+  --spacing-native-button-large-icon: var(--native-spacing-button-large-icon);
   --text-native-button-large: var(--native-text-button-large);
   --leading-native-button-large: var(--native-leading-button-large);
   --tracking-native-button-large: var(--native-tracking-button-large);
@@ -637,6 +653,7 @@
   :root[data-platform] [data-theme] {
     --native-duration-move: 0ms;
     --native-duration-slide: 0ms;
+    --native-duration-morph: 0ms;
     --native-duration-sheet-in: 0ms;
     --native-duration-sheet-out: 0ms;
     --native-duration-tooltip: 0ms;

@@ -21,6 +21,11 @@ interface VariantLook {
   readonly edge: string;
 }
 
+const CAPSULES: Record<"ios" | "android", string> = {
+  ios: "999px",
+  android: "20px",
+};
+
 const TARGETS: Record<"ios" | "android", string> = {
   ios: "44px",
   android: "48px",
@@ -67,7 +72,7 @@ const VARIANTS: Record<
     },
     outline: {
       fill: TRANSPARENT,
-      text: "rgb(50, 106, 77)",
+      text: "rgb(88, 97, 90)",
       edge: "rgb(115, 125, 117)",
     },
     plain: { fill: TRANSPARENT, text: "rgb(50, 106, 77)", edge: TRANSPARENT },
@@ -122,7 +127,7 @@ for (const platform of NATIVE) {
       expect(style.backgroundColor).toBe(look.fill);
       expect(style.color).toBe(look.text);
       expect(visibleEdge(style)).toBe(look.edge);
-      expect(style.borderTopLeftRadius).toBe("999px");
+      expect(style.borderTopLeftRadius).toBe(CAPSULES[platform]);
     });
   }
 

@@ -59,6 +59,25 @@ const SAMPLES = [
   })),
 ].flatMap((sample) => THEMES.map((theme) => ({ ...sample, theme })));
 
+const KIT_CONTROL_COLOURS = [
+  "switch-thumb-pressed",
+  "switch-thumb-pressed-off",
+  "switch-halo",
+  "switch-halo-on",
+  "segment-pressed",
+  "segment-selected-pressed",
+  "on-icon-button-plain",
+  "icon-button-plain-hover",
+  "icon-button-plain-pressed",
+  "control-disabled",
+  "on-control-disabled",
+] as const;
+
+const WALLPAPER_KEYS = [
+  "android-light-colours-wallpaper",
+  "android-dark-colours-wallpaper",
+] as const;
+
 const MARKS: readonly Pair[] = [
   ["button-outline-edge", "card"],
   ["switch-off-border", "card"],
@@ -128,3 +147,27 @@ test("takes each theme's wallpaper colours only from that theme", () => {
 
   expect(crossed).toEqual([]);
 });
+
+test("gives every pressed and disabled kit control colour a wallpaper value in both themes", () => {
+  const missing = KIT_CONTROL_COLOURS.flatMap((name) => {
+    const token = source.tokens.find(
+      (candidate) => candidate.kind === "color" && candidate.name === name,
+    );
+    return WALLPAPER_KEYS.filter(
+      (key) => token === undefined || !Object.hasOwn(token.value, key),
+    ).map((key) => `${name} ${key}`);
+  });
+
+  expect(missing).toEqual([]);
+});
+
+test.each(THEMES)(
+  "draws a held switched-on switch's thumb from the wallpaper in %s",
+  async (theme) => {
+    await showWallpaper(theme, BLUE_WALLPAPER);
+
+    expect(resolvedColour("--native-color-switch-thumb-pressed", "color")).toBe(
+      resolvedColour(`--android-wallpaper-${theme}-inverse-primary`, "color"),
+    );
+  },
+);
