@@ -1034,6 +1034,8 @@
   --native-color-switch-thumb: var(--android-wallpaper-light-on-primary);
   --native-color-switch-thumb-off: var(--android-wallpaper-light-outline);
   --native-color-switch-thumb-pressed-off: var(--android-wallpaper-light-on-surface-variant);
+  --native-color-switch-thumb-pressed: var(--android-wallpaper-light-inverse-primary);
+  --native-color-switch-halo: color-mix(in srgb, var(--android-wallpaper-light-on-surface) 10%, transparent);
   --native-color-switch-halo-on: color-mix(in srgb, var(--android-wallpaper-light-primary) 12%, transparent);
   --native-color-segment-fill: var(--android-wallpaper-light-surface-container);
   --native-color-on-segment: var(--android-wallpaper-light-on-surface-variant);
@@ -1056,6 +1058,8 @@
   --native-color-on-icon-button-plain: var(--android-wallpaper-light-on-surface-variant);
   --native-color-icon-button-plain-hover: color-mix(in srgb, var(--android-wallpaper-light-on-surface-variant) 8%, transparent);
   --native-color-icon-button-plain-pressed: color-mix(in srgb, var(--android-wallpaper-light-on-surface-variant) 10%, transparent);
+  --native-color-control-disabled: color-mix(in srgb, var(--android-wallpaper-light-on-surface) 10%, transparent);
+  --native-color-on-control-disabled: color-mix(in srgb, var(--android-wallpaper-light-on-surface) 38%, transparent);
   --native-color-on-top-bar: var(--android-wallpaper-light-on-surface);
   --native-color-top-bar-scrolled: var(--android-wallpaper-light-surface-container);
   --native-color-on-bar-button: var(--android-wallpaper-light-on-surface-variant);
@@ -1105,6 +1109,8 @@
   --native-color-switch-thumb: var(--android-wallpaper-dark-on-primary);
   --native-color-switch-thumb-off: var(--android-wallpaper-dark-outline);
   --native-color-switch-thumb-pressed-off: var(--android-wallpaper-dark-on-surface-variant);
+  --native-color-switch-thumb-pressed: var(--android-wallpaper-dark-inverse-primary);
+  --native-color-switch-halo: color-mix(in srgb, var(--android-wallpaper-dark-on-surface) 10%, transparent);
   --native-color-switch-halo-on: color-mix(in srgb, var(--android-wallpaper-dark-primary) 12%, transparent);
   --native-color-segment-fill: var(--android-wallpaper-dark-surface-container);
   --native-color-on-segment: var(--android-wallpaper-dark-on-surface-variant);
@@ -1127,6 +1133,8 @@
   --native-color-on-icon-button-plain: var(--android-wallpaper-dark-on-surface-variant);
   --native-color-icon-button-plain-hover: color-mix(in srgb, var(--android-wallpaper-dark-on-surface-variant) 8%, transparent);
   --native-color-icon-button-plain-pressed: color-mix(in srgb, var(--android-wallpaper-dark-on-surface-variant) 10%, transparent);
+  --native-color-control-disabled: color-mix(in srgb, var(--android-wallpaper-dark-on-surface) 10%, transparent);
+  --native-color-on-control-disabled: color-mix(in srgb, var(--android-wallpaper-dark-on-surface) 38%, transparent);
   --native-color-on-top-bar: var(--android-wallpaper-dark-on-surface);
   --native-color-top-bar-scrolled: var(--android-wallpaper-dark-surface-container);
   --native-color-on-bar-button: var(--android-wallpaper-dark-on-surface-variant);
