@@ -14,11 +14,11 @@ const PRESSED_SHAPE = {
 
 const LABEL_ICON = {
   small:
-    "[&>svg]:block-native-button-icon [&>svg]:inline-native-button-icon [&>[data-icon]]:block-native-button-icon [&>[data-icon]]:inline-native-button-icon",
+    "[&>svg:not([data-slot=spinner])]:block-native-button-icon [&>svg:not([data-slot=spinner])]:inline-native-button-icon [&>[data-icon]]:block-native-button-icon [&>[data-icon]]:inline-native-button-icon",
   regular:
-    "[&>svg]:block-native-button-icon [&>svg]:inline-native-button-icon [&>[data-icon]]:block-native-button-icon [&>[data-icon]]:inline-native-button-icon",
+    "[&>svg:not([data-slot=spinner])]:block-native-button-icon [&>svg:not([data-slot=spinner])]:inline-native-button-icon [&>[data-icon]]:block-native-button-icon [&>[data-icon]]:inline-native-button-icon",
   large:
-    "[&>svg]:block-native-button-large-icon [&>svg]:inline-native-button-large-icon [&>[data-icon]]:block-native-button-large-icon [&>[data-icon]]:inline-native-button-large-icon",
+    "[&>svg:not([data-slot=spinner])]:block-native-button-large-icon [&>svg:not([data-slot=spinner])]:inline-native-button-large-icon [&>[data-icon]]:block-native-button-large-icon [&>[data-icon]]:inline-native-button-large-icon",
 } satisfies Record<ButtonSize, string>;
 
 const DISABLED_LABEL = "disabled:text-native-on-control-disabled";

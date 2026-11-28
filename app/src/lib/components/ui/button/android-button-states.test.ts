@@ -274,3 +274,21 @@ test("holds a pressed Android button's corners still when navigation animations 
 
   expect(durations.at(-1)).toBe("0s");
 });
+
+const SPINNER_SIZE = 18;
+
+for (const size of Object.keys(RESTING_RADIUS)) {
+  test(`keeps a busy ${size} Android button's spinner at its own size`, async () => {
+    const button = await renderButton("android", "light", {
+      variant: "primary",
+      size,
+      onClickPromise: () => new Promise<void>(() => undefined),
+    });
+
+    button.click();
+    await expect.poll(() => button.getAttribute("aria-busy")).toBe("true");
+    const spinner = button.querySelector("[data-slot=spinner]");
+
+    expect(spinner?.getBoundingClientRect().width).toBe(SPINNER_SIZE);
+  });
+}
