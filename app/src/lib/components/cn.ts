@@ -1063,7 +1063,6 @@ export const TOKEN_THEME = {
     "emphasized",
     "flyout",
     "glass",
-    "morph",
     "out",
     "pane",
     "sheet-in",

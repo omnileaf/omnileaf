@@ -13,7 +13,6 @@
   --transition-duration-spin-slow: var(--native-duration-spin-slow);
   --transition-duration-band: var(--native-duration-band);
   --transition-duration-morph: var(--native-duration-morph);
-  --ease-morph: var(--native-ease-morph);
   --ease-out: var(--native-ease-out);
   --ease-emphasized: var(--native-ease-emphasized);
   --ease-glass: var(--native-ease-glass);
