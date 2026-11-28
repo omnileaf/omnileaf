@@ -3,6 +3,7 @@
   import type { Component, Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { cn } from "#lib/components/cn.ts";
   import {
     RadioGroup,
     RadioGroupItem,
@@ -347,12 +348,12 @@
   >
     {#each options as option (option)}
       <span
-        class={[
+        class={cn(
           "flex flex-none items-center",
           face,
           isMacosSmall && MACOS_SMALL.segment,
           segmentClass,
-        ]}
+        )}
       >
         <SegmentFace
           label={labels[option]()}

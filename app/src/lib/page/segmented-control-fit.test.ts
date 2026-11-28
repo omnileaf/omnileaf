@@ -240,3 +240,26 @@ test("hands the whole line back once a wrapped group at its row's end fits besid
     asElement(row.firstElementChild ?? row).getBoundingClientRect().bottom,
   );
 });
+
+test("moves Android's label-hugging segments off one row once their drawn labels no longer fit it", async () => {
+  followCorePlatform("android");
+  await page.viewport(ANDROID_PHONE.width, ANDROID_PHONE.height);
+  const heading = document.createElement("h2");
+  heading.id = "show-heading";
+  heading.textContent = "Show";
+  document.body.append(heading);
+  const screen = await render(SegmentedControl<Option>, {
+    options: OPTIONS,
+    labels: LABELS,
+    chosen: "all",
+    labelledBy: "show-heading",
+    hugsLabels: true,
+    class: "max-inline-full",
+    onChoose: () => undefined,
+  });
+  const widths = NAMES.map(ownWidth);
+
+  screen.container.style.inlineSize = `${String(roomFor(widths) - SPARE * 2)}px`;
+
+  await expect.poll(() => rows().length).toBeGreaterThan(1);
+});
