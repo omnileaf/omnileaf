@@ -586,16 +586,42 @@
     return image.complete && image.naturalWidth > 0;
   }
 
-  /** Marks the page ready once its pixels are decoded, and also when the browser refuses `decode()` on an image that has loaded, which it still paints. */
-  async function decode(image: HTMLImageElement, index: number): Promise<void> {
+  /** Chromium and WebKit refuse `decode()` once the image's source changes, so a refusal after a change, or after the image left the page, belongs to an older ask. */
+  function isOvertaken(
+    image: HTMLImageElement,
+    source: string | null,
+  ): boolean {
+    return !image.isConnected || image.getAttribute("src") !== source;
+  }
+
+  async function decodes(image: HTMLImageElement): Promise<boolean> {
     try {
       await image.decode();
+      return true;
     } catch {
-      if (!isLoaded(image)) {
-        return;
-      }
+      return false;
     }
-    if (!image.isConnected) {
+  }
+
+  async function decodesWithinTwoTries(
+    image: HTMLImageElement,
+    source: string | null,
+  ): Promise<boolean> {
+    if (await decodes(image)) {
+      return true;
+    }
+    return !isOvertaken(image, source) && decodes(image);
+  }
+
+  /** Marks the page ready once its pixels are decoded, and failed once the image it still shows refuses to decode twice. */
+  async function decode(image: HTMLImageElement, index: number): Promise<void> {
+    const source = image.getAttribute("src");
+    const isDecoded = await decodesWithinTwoTries(image, source);
+    if (isOvertaken(image, source)) {
+      return;
+    }
+    if (!isDecoded) {
+      failed.add(index);
       return;
     }
     decoded.add(index);

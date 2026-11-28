@@ -6,6 +6,7 @@ declare global {
     omnileafRecordingBarePages?: boolean;
     omnileafLateDecodes?: Record<string, number>;
     omnileafRefusedDecodes?: Set<string>;
+    omnileafStaleDecodes?: Set<string>;
     omnileafPendingDecodes?: Set<string>;
     omnileafDecodedAt?: Record<string, number>;
     omnileafMovedAt?: number | undefined;
@@ -29,6 +30,11 @@ export async function letDecodesRunLate(page: Page): Promise<void> {
     HTMLImageElement.prototype.decode = async function late(
       this: HTMLImageElement,
     ): Promise<void> {
+      if (window.omnileafStaleDecodes?.delete(this.alt) === true) {
+        const decoding = decode.call(this);
+        this.src = `${this.src.split("#")[0] ?? this.src}#moved`;
+        return decoding;
+      }
       if (window.omnileafRefusedDecodes?.has(this.alt) === true) {
         throw new DOMException(
           "The source image cannot be decoded.",
@@ -77,6 +83,15 @@ export async function refuseDecodes(
 ): Promise<void> {
   await page.addInitScript((alts) => {
     window.omnileafRefusedDecodes = new Set(alts);
+  }, numbers.map(pageAlt));
+}
+
+export async function moveSourcesMidDecode(
+  page: Page,
+  numbers: readonly number[],
+): Promise<void> {
+  await page.addInitScript((alts) => {
+    window.omnileafStaleDecodes = new Set(alts);
   }, numbers.map(pageAlt));
 }
 

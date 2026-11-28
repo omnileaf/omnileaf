@@ -33,6 +33,7 @@ import {
   decodeLate,
   firstMotionAt,
   letDecodesRunLate,
+  moveSourcesMidDecode,
   recordBarePages,
   recordFirstMotion,
   recordSpinners,
@@ -1030,11 +1031,11 @@ async function expectDrawnAtRest(page: Page, number: number): Promise<void> {
   await expect.poll(() => pageDrawnAtRest(page)).toBe(number);
 }
 
-test("covers pages whose decode is refused and then draws them, through a burst of turns back", async ({
+test("covers pages whose decode a new source overtakes and then draws them, through a burst of turns back", async ({
   page,
 }) => {
   await letDecodesRunLate(page);
-  await refuseDecodes(page, [13, 12, 11]);
+  await moveSourcesMidDecode(page, [13, 12, 11]);
   await openBookWith(page, { pageTurn: "slide" });
   await recordBarePages(page);
 
@@ -1049,11 +1050,11 @@ test("covers pages whose decode is refused and then draws them, through a burst 
   await expectDrawnAtRest(page, 11);
 });
 
-test("covers pages whose decode is refused and then draws them, through a slide caught mid-way", async ({
+test("covers pages whose decode a new source overtakes and then draws them, through a slide caught mid-way", async ({
   page,
 }) => {
   await letDecodesRunLate(page);
-  await refuseDecodes(page, [15, 16]);
+  await moveSourcesMidDecode(page, [15, 16]);
   await openBookWith(page, { pageTurn: "slide" });
   await recordBarePages(page);
 
@@ -1069,11 +1070,11 @@ test("covers pages whose decode is refused and then draws them, through a slide 
 });
 
 test.describe("two pages at a time", () => {
-  test("covers a pair whose decode is refused and then draws both pages", async ({
+  test("covers a pair whose decode a new source overtakes and then draws both pages", async ({
     page,
   }) => {
     await letDecodesRunLate(page);
-    await refuseDecodes(page, [16, 17]);
+    await moveSourcesMidDecode(page, [16, 17]);
     await openBookWith(page, { pageTurn: "slide", layout: "two" });
     await expect(shownPage(page, 15)).toBeVisible();
     await recordBarePages(page);
@@ -1103,6 +1104,25 @@ test("covers a neighbour that failed to load with the page colour as a burst of 
   await framesPassed(page);
   await page.keyboard.press("ArrowLeft");
   await expectDrawnAtRest(page, 12);
+
+  const bare = await stopRecordingBarePages(page);
+  expect(bare).toEqual([]);
+});
+
+test("shows a page that never decodes as one that couldn't be shown, covering it while it slides", async ({
+  page,
+}) => {
+  await letDecodesRunLate(page);
+  await refuseDecodes(page, [13, 12]);
+  await openBookWith(page, { pageTurn: "slide" });
+  await recordBarePages(page);
+
+  await page.keyboard.press("ArrowLeft");
+  await framesPassed(page);
+  await page.keyboard.press("ArrowLeft");
+  await expectOnPage(page, 12);
+  await expect(page.getByText("This page couldn't be shown.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
 
   const bare = await stopRecordingBarePages(page);
   expect(bare).toEqual([]);
