@@ -44,7 +44,7 @@ export const ANDROID_PICKING = {
   title: "",
   toolbar: `fixed inset-x-none inset-be-none z-tab-bar ps-safe-start pbe-safe-bottom ${DOCKED_BAR}`,
   toolbarRow: `flex ${DOCKED_ROW}`,
-  action: "flex-1 flex-col gap-2xs min-inline-none disabled:text-faint",
+  action: "flex-1 flex-col gap-2xs min-inline-none",
   isIconOnly: false,
   isDocked: true,
   overTopBar: `fixed inset-bs-none inset-x-none z-series-bar flex flex-wrap items-center gap-sm ps-series-bar-start pe-series-bar-end pbs-series-bar-top pbe-sm ${NATIVE_TOP_BAR.scrolled}`,
