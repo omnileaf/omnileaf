@@ -1108,6 +1108,108 @@ test("covers a neighbour that failed to load with the page colour as a burst of 
   expect(bare).toEqual([]);
 });
 
+test.describe("two pages at a time", () => {
+  test("says which page of the pair couldn't be shown and asks for that page again", async ({
+    page,
+  }) => {
+    let asksForPage17 = 0;
+    await openBookWith(
+      page,
+      { pageTurn: "slide", layout: "two" },
+      {
+        pageFails: (index) => {
+          if (index + 1 !== 17) {
+            return false;
+          }
+          asksForPage17 += 1;
+          return true;
+        },
+      },
+    );
+    await expect(shownPage(page, 15)).toBeVisible();
+
+    await page.keyboard.press("ArrowRight");
+    await expectOnPage(page, 16);
+    await expect(page.getByText(/^Page 17 may be damaged\./)).toBeVisible();
+    const asked = asksForPage17;
+    await page.getByRole("button", { name: "Try again" }).click();
+
+    await expect.poll(() => asksForPage17).toBeGreaterThan(asked);
+  });
+});
+
+const LOADING_AT_REST = [
+  { pages: "a page", layout: "one", missing: [15], says: 15 },
+  { pages: "the first page of a pair", layout: "two", missing: [16], says: 16 },
+  {
+    pages: "the second page of a pair",
+    layout: "two",
+    missing: [17],
+    says: 17,
+  },
+  { pages: "both pages of a pair", layout: "two", missing: [16, 17], says: 16 },
+] as const;
+
+const DIRECTIONS = [
+  { direction: "leftToRight", next: "ArrowRight" },
+  { direction: "rightToLeft", next: "ArrowLeft" },
+] as const;
+
+const PAUSE_AHEAD_MS = 1000;
+const SPINNER_DELAY_MS = 100;
+
+for (const { direction, next } of DIRECTIONS) {
+  test.describe(`a book read ${direction}`, () => {
+    test.use({
+      backend: {
+        ...readerBackend(DEFAULT_BACKEND, OPENING),
+        openBook: () => ({
+          ...readerBook(OPENING),
+          readingDirection: direction,
+        }),
+      },
+    });
+
+    for (const { pages, layout, missing, says } of LOADING_AT_REST) {
+      test(`says once that ${pages} still on its way is loading, only after the spinner's delay`, async ({
+        page,
+      }) => {
+        const neverArriving = new Set<number>(missing);
+        await openBookWith(
+          page,
+          { layout },
+          {
+            pageArrives: (index) =>
+              neverArriving.has(index + 1)
+                ? new Promise<void>(() => undefined)
+                : Promise.resolve(),
+          },
+        );
+        await page.clock.install();
+        await page.clock.pauseAt(
+          (await page.evaluate(() => Date.now())) + PAUSE_AHEAD_MS,
+        );
+        const labels = page
+          .getByRole("main")
+          .getByText(/^Loading page \d+$/)
+          .filter({ visible: true });
+
+        await page.keyboard.press(next);
+        await expectOnPage(page, layout === "two" ? 16 : 15);
+        await expect(labels).toHaveCount(0);
+        await page.clock.runFor(SPINNER_DELAY_MS - 1);
+        await expect(labels).toHaveCount(0);
+        await page.clock.runFor(1);
+
+        await expect(labels).toHaveText([`Loading page ${String(says)}`]);
+        await expect(
+          page.getByRole("main").locator("[data-page-loading] > *"),
+        ).toHaveCount(0);
+      });
+    }
+  });
+}
+
 test("turns to a page that never arrives, showing it loading, and on past it", async ({
   page,
 }) => {

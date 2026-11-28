@@ -237,7 +237,9 @@
     thumb.letGo();
   });
   const isShownReady = $derived(isReady(shown));
-  const isShownFailed = $derived(failed.has(shown));
+  const loadingInSpread = $derived(spread.find((index) => !isReady(index)));
+  const failedInSpread = $derived(spread.find((index) => failed.has(index)));
+  const isSpreadFailed = $derived(failedInSpread !== undefined);
   const isAtRest = $derived(flight === undefined && slide === 0);
   const isOnAPage = $derived(position >= 0 && position < spreads.length);
   const isSpreadSettled = $derived(
@@ -634,6 +636,11 @@
   $effect(() => {
     if (isShownReady) {
       untrack(onShownReady);
+    }
+  });
+
+  $effect(() => {
+    if (loadingInSpread === undefined) {
       isSlow = false;
       return;
     }
@@ -775,15 +782,15 @@
     >
       {@render overlay()}
       <svelte:element
-        this={isShownFailed ? "section" : "div"}
-        aria-labelledby={isShownFailed ? `${id}-problem` : undefined}
+        this={isSpreadFailed ? "section" : "div"}
+        aria-labelledby={isSpreadFailed ? `${id}-problem` : undefined}
         class="pointer-events-none absolute inset-none flex flex-col items-center justify-center gap-lg px-xl"
       >
         <div
           role="status"
           class="flex flex-col items-center gap-sm text-center max-inline-page-problem"
         >
-          {#if isShownFailed}
+          {#if failedInSpread !== undefined}
             <EmptyMedia>
               <ImageOff size={PROBLEM_ICON_SIZE} aria-hidden="true" />
             </EmptyMedia>
@@ -795,21 +802,23 @@
             </EmptyTitle>
             <EmptyDescription class="text-small">
               {m.reader_page_failed_body({
-                page: shown + 1,
+                page: failedInSpread + 1,
                 title: bookTitle,
               })}
             </EmptyDescription>
-          {:else if isSlow && isAtRest && isOnAPage}
-            <PageLoading label={m.reader_page_loading({ page: shown + 1 })} />
+          {:else if isSlow && isAtRest && isOnAPage && loadingInSpread !== undefined}
+            <PageLoading
+              label={m.reader_page_loading({ page: loadingInSpread + 1 })}
+            />
           {/if}
         </div>
-        {#if isShownFailed}
+        {#if failedInSpread !== undefined}
           <div class="pointer-events-auto flex flex-wrap justify-center gap-sm">
             <button
               type="button"
               class="flex items-center gap-sm rounded-shadcn-button border border-border bg-card px-lg text-body font-medium transition-control min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button"
               onclick={() => {
-                tryAgain(shown);
+                tryAgain(failedInSpread);
               }}
             >
               <RefreshCw size={BUTTON_ICON_SIZE} aria-hidden="true" />
