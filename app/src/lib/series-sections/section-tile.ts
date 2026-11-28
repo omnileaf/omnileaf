@@ -1,10 +1,18 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
+import {
+  ANDROID_CAPTIONED_PICKED_TILE,
+  ANDROID_PICKED_CAPTION,
+  ANDROID_PICKED_COVER,
+  ANDROID_PICKED_TILE,
+  PICKED_COVER_RING,
+} from "#lib/library/cover-tile.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { phoneOf } from "#lib/page/platform.ts";
 
 export interface SectionTileLook {
   readonly link: string;
   readonly cover: string;
+  readonly pickedCover: string;
   readonly readMark: string;
   readonly readCheckSize: number;
   readonly gap: string;
@@ -24,6 +32,7 @@ const MISSING_RUN_BOX =
 const SHADCN_TILE: SectionTileLook = {
   link: `${TILE_LINK} rounded-cover`,
   cover: `${COVER_BOX} rounded-cover border border-cover-edge`,
+  pickedCover: PICKED_COVER_RING,
   readMark: `${READ_MARK_CIRCLE} inset-e-read-mark-inset inset-bs-read-mark-inset ring-2 ring-background`,
   readCheckSize: 14,
   gap: `${MISSING_RUN_BOX} rounded-cover border-muted`,
@@ -32,14 +41,14 @@ const SHADCN_TILE: SectionTileLook = {
 };
 
 const ANDROID_TILE: SectionTileLook = {
-  link: `${TILE_LINK} rounded-native-cover`,
+  link: `${TILE_LINK} rounded-native-cover ${ANDROID_PICKED_TILE} ${ANDROID_CAPTIONED_PICKED_TILE}`,
   cover: `${COVER_BOX} rounded-native-cover`,
+  pickedCover: ANDROID_PICKED_COVER,
   readMark: `${READ_MARK_CIRCLE} inset-s-xs inset-bs-xs`,
   readCheckSize: 16,
   gap: `${MISSING_RUN_BOX} rounded-native-cover border-native-gap-edge`,
-  title:
-    "truncate text-native-tile-title/native-tile-title font-native-tile-title tracking-native-tile-title",
-  meta: "truncate text-native-tile-meta/native-tile-meta font-native-tile-meta tracking-native-tile-meta text-muted",
+  title: `truncate text-native-tile-title/native-tile-title font-native-tile-title tracking-native-tile-title ${ANDROID_PICKED_CAPTION}`,
+  meta: `truncate text-native-tile-meta/native-tile-meta font-native-tile-meta tracking-native-tile-meta text-muted ${ANDROID_PICKED_CAPTION}`,
 };
 
 const SECTION_TILE_LOOKS = {
