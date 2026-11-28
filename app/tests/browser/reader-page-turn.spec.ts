@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 import {
   DEFAULT_BACKEND,
   expect,
+  framesPassed,
   pixelAt,
   pixelOf,
   screenshotPixels,
@@ -19,20 +20,24 @@ import {
   PAGE_HEIGHT,
   PAGE_WIDTH,
   pageDrawnAtRest,
+  pageIndexOf,
   pinchTo,
   PREVIOUS_BOOK,
   readerBackend,
   readerBook,
   servePages,
 } from "./reader-book.ts";
+import { fakeProtocolRoute } from "./fake-backend.ts";
 import {
   decodedAt,
   decodeLate,
   firstMotionAt,
   letDecodesRunLate,
+  moveSourcesMidDecode,
   recordBarePages,
   recordFirstMotion,
   recordSpinners,
+  refuseDecodes,
   stopRecordingBarePages,
   stopRecordingSpinners,
 } from "./reader-paint.ts";
@@ -80,12 +85,13 @@ test.use({ backend: readerBackend(DEFAULT_BACKEND, OPENING) });
 interface Opening {
   readonly stored?: Record<string, string>;
   readonly pageArrives?: (index: number) => Promise<void>;
+  readonly pageFails?: (index: number) => boolean;
 }
 
 async function openBookWith(
   page: Page,
   look: object,
-  { stored = {}, pageArrives }: Opening = {},
+  { stored = {}, pageArrives, pageFails }: Opening = {},
 ): Promise<void> {
   await page.addInitScript(
     ({ key, value, guides, entries }) => {
@@ -108,6 +114,14 @@ async function openBookWith(
     page,
     pageArrives === undefined ? undefined : (_, index) => pageArrives(index),
   );
+  if (pageFails !== undefined) {
+    await page.route(fakeProtocolRoute("omni"), async (route) => {
+      const index = pageIndexOf(route.request().url());
+      await (index !== undefined && pageFails(index)
+        ? route.abort()
+        : route.fallback());
+    });
+  }
   await page.goto(`/read/${BOOK_ID}`);
   await expect(
     page.getByRole("heading", { level: 1, name: BOOK_TITLE }),
@@ -927,6 +941,294 @@ test("brings a page dragged into view in on its fill with no spinner when it dec
   await page.mouse.up();
   expect(spinning).toBe(0);
 });
+
+const BURSTS_ONTO_PAGES_ON_THEIR_WAY = [
+  {
+    way: "back",
+    keys: ["ArrowLeft", "ArrowLeft", "ArrowLeft"],
+    restsOn: 11,
+  },
+  {
+    way: "forward",
+    keys: ["ArrowRight", "ArrowRight", "ArrowRight"],
+    restsOn: 17,
+  },
+  {
+    way: "back and forth",
+    keys: ["ArrowRight", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight"],
+    restsOn: 15,
+  },
+] as const;
+
+for (const { way, keys, restsOn } of BURSTS_ONTO_PAGES_ON_THEIR_WAY) {
+  test(`covers each page on screen with the page or its loading fill through a burst of turns ${way} onto a page still on its way`, async ({
+    page,
+  }) => {
+    const neverArriving = new Set<number>(
+      BURSTS_ONTO_PAGES_ON_THEIR_WAY.map((burst) => burst.restsOn),
+    );
+    await openBookWith(
+      page,
+      { pageTurn: "slide" },
+      {
+        pageArrives: (index) =>
+          neverArriving.has(index + 1)
+            ? new Promise<void>(() => undefined)
+            : Promise.resolve(),
+      },
+    );
+    await recordBarePages(page);
+
+    for (const key of keys) {
+      await page.keyboard.press(key);
+    }
+    await expectOnPage(page, restsOn);
+    await expect(
+      page
+        .getByRole("main")
+        .getByRole("status")
+        .filter({ hasText: `Loading page ${String(restsOn)}` }),
+    ).toBeVisible();
+    await framesPassed(page);
+
+    const bare = await stopRecordingBarePages(page);
+    expect(bare).toEqual([]);
+  });
+}
+
+test("shows one spinner and one label for a pair still on its way at rest", async ({
+  page,
+}) => {
+  const pair = new Set([16, 17]);
+  await openBookWith(
+    page,
+    { pageTurn: "slide", layout: "two" },
+    {
+      pageArrives: (index) =>
+        pair.has(index + 1)
+          ? new Promise<void>(() => undefined)
+          : Promise.resolve(),
+    },
+  );
+  await expect(shownPage(page, 15)).toBeVisible();
+
+  await page.keyboard.press("ArrowRight");
+
+  await expectOnPage(page, 16);
+  await expect(
+    page
+      .getByRole("main")
+      .getByRole("status")
+      .filter({ hasText: "Loading page 16" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("main").locator("[data-page-loading] > *"),
+  ).toHaveCount(0);
+});
+
+async function expectDrawnAtRest(page: Page, number: number): Promise<void> {
+  await expectOnPage(page, number);
+  await expect.poll(() => pageDrawnAtRest(page)).toBe(number);
+}
+
+test("covers pages whose decode a new source overtakes and then draws them, through a burst of turns back", async ({
+  page,
+}) => {
+  await letDecodesRunLate(page);
+  await moveSourcesMidDecode(page, [13, 12, 11]);
+  await openBookWith(page, { pageTurn: "slide" });
+  await recordBarePages(page);
+
+  for (const key of ["ArrowLeft", "ArrowLeft", "ArrowLeft"]) {
+    await page.keyboard.press(key);
+  }
+  await expectOnPage(page, 11);
+  await framesPassed(page);
+
+  const bare = await stopRecordingBarePages(page);
+  expect(bare).toEqual([]);
+  await expectDrawnAtRest(page, 11);
+});
+
+test("covers pages whose decode a new source overtakes and then draws them, through a slide caught mid-way", async ({
+  page,
+}) => {
+  await letDecodesRunLate(page);
+  await moveSourcesMidDecode(page, [15, 16]);
+  await openBookWith(page, { pageTurn: "slide" });
+  await recordBarePages(page);
+
+  await page.keyboard.press("ArrowRight");
+  await framesPassed(page);
+  await page.keyboard.press("ArrowRight");
+  await expectOnPage(page, 16);
+  await framesPassed(page);
+
+  const bare = await stopRecordingBarePages(page);
+  expect(bare).toEqual([]);
+  await expectDrawnAtRest(page, 16);
+});
+
+test.describe("two pages at a time", () => {
+  test("covers a pair whose decode a new source overtakes and then draws both pages", async ({
+    page,
+  }) => {
+    await letDecodesRunLate(page);
+    await moveSourcesMidDecode(page, [16, 17]);
+    await openBookWith(page, { pageTurn: "slide", layout: "two" });
+    await expect(shownPage(page, 15)).toBeVisible();
+    await recordBarePages(page);
+
+    await page.keyboard.press("ArrowRight");
+    await expectOnPage(page, 16);
+    await framesPassed(page);
+
+    const bare = await stopRecordingBarePages(page);
+    expect(bare).toEqual([]);
+    await expect(shownPage(page, 16)).not.toHaveClass(/invisible/);
+    await expect(shownPage(page, 17)).not.toHaveClass(/invisible/);
+  });
+});
+
+test("covers a neighbour that failed to load with the page colour as a burst of turns slides it past", async ({
+  page,
+}) => {
+  await openBookWith(
+    page,
+    { pageTurn: "slide" },
+    { pageFails: (index) => index + 1 === 13 },
+  );
+  await recordBarePages(page);
+
+  await page.keyboard.press("ArrowLeft");
+  await framesPassed(page);
+  await page.keyboard.press("ArrowLeft");
+  await expectDrawnAtRest(page, 12);
+
+  const bare = await stopRecordingBarePages(page);
+  expect(bare).toEqual([]);
+});
+
+test("shows a page that never decodes as one that couldn't be shown, covering it while it slides", async ({
+  page,
+}) => {
+  await letDecodesRunLate(page);
+  await refuseDecodes(page, [13, 12]);
+  await openBookWith(page, { pageTurn: "slide" });
+  await recordBarePages(page);
+
+  await page.keyboard.press("ArrowLeft");
+  await framesPassed(page);
+  await page.keyboard.press("ArrowLeft");
+  await expectOnPage(page, 12);
+  await expect(page.getByText("This page couldn't be shown.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+
+  const bare = await stopRecordingBarePages(page);
+  expect(bare).toEqual([]);
+});
+
+test.describe("two pages at a time", () => {
+  test("says which page of the pair couldn't be shown and asks for that page again", async ({
+    page,
+  }) => {
+    let asksForPage17 = 0;
+    await openBookWith(
+      page,
+      { pageTurn: "slide", layout: "two" },
+      {
+        pageFails: (index) => {
+          if (index + 1 !== 17) {
+            return false;
+          }
+          asksForPage17 += 1;
+          return true;
+        },
+      },
+    );
+    await expect(shownPage(page, 15)).toBeVisible();
+
+    await page.keyboard.press("ArrowRight");
+    await expectOnPage(page, 16);
+    await expect(page.getByText(/^Page 17 may be damaged\./)).toBeVisible();
+    const asked = asksForPage17;
+    await page.getByRole("button", { name: "Try again" }).click();
+
+    await expect.poll(() => asksForPage17).toBeGreaterThan(asked);
+  });
+});
+
+const LOADING_AT_REST = [
+  { pages: "a page", layout: "one", missing: [15], says: 15 },
+  { pages: "the first page of a pair", layout: "two", missing: [16], says: 16 },
+  {
+    pages: "the second page of a pair",
+    layout: "two",
+    missing: [17],
+    says: 17,
+  },
+  { pages: "both pages of a pair", layout: "two", missing: [16, 17], says: 16 },
+] as const;
+
+const DIRECTIONS = [
+  { direction: "leftToRight", next: "ArrowRight" },
+  { direction: "rightToLeft", next: "ArrowLeft" },
+] as const;
+
+const PAUSE_AHEAD_MS = 1000;
+const SPINNER_DELAY_MS = 100;
+
+for (const { direction, next } of DIRECTIONS) {
+  test.describe(`a book read ${direction}`, () => {
+    test.use({
+      backend: {
+        ...readerBackend(DEFAULT_BACKEND, OPENING),
+        openBook: () => ({
+          ...readerBook(OPENING),
+          readingDirection: direction,
+        }),
+      },
+    });
+
+    for (const { pages, layout, missing, says } of LOADING_AT_REST) {
+      test(`says once that ${pages} still on its way is loading, only after the spinner's delay`, async ({
+        page,
+      }) => {
+        const neverArriving = new Set<number>(missing);
+        await openBookWith(
+          page,
+          { layout },
+          {
+            pageArrives: (index) =>
+              neverArriving.has(index + 1)
+                ? new Promise<void>(() => undefined)
+                : Promise.resolve(),
+          },
+        );
+        await page.clock.install();
+        await page.clock.pauseAt(
+          (await page.evaluate(() => Date.now())) + PAUSE_AHEAD_MS,
+        );
+        const labels = page
+          .getByRole("main")
+          .getByText(/^Loading page \d+$/)
+          .filter({ visible: true });
+
+        await page.keyboard.press(next);
+        await expectOnPage(page, layout === "two" ? 16 : 15);
+        await expect(labels).toHaveCount(0);
+        await page.clock.runFor(SPINNER_DELAY_MS - 1);
+        await expect(labels).toHaveCount(0);
+        await page.clock.runFor(1);
+
+        await expect(labels).toHaveText([`Loading page ${String(says)}`]);
+        await expect(
+          page.getByRole("main").locator("[data-page-loading] > *"),
+        ).toHaveCount(0);
+      });
+    }
+  });
+}
 
 test("turns to a page that never arrives, showing it loading, and on past it", async ({
   page,

@@ -4,7 +4,13 @@ import {
   PAGES_LOADING_AT_ONCE,
   THUMBNAILS_LOADING_AT_ONCE,
 } from "../../src/lib/reader/page-requests.ts";
-import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  framesPassed,
+  test,
+} from "./fixtures.ts";
 import { type ReaderTraffic, servePagesSlowly } from "./page-traffic.ts";
 import {
   BOOK_ID,
@@ -17,7 +23,9 @@ import {
 
 const LONG_BOOK_PAGES = 200;
 const STEPS_PER_SWEEP = 40;
-const SWEEPS_BACK_AND_FORTH = 10;
+const SCRUB_STEPS_PER_SWEEP = 20;
+const SCRUB_SWEEPS_BACK_AND_FORTH = 2;
+const PAUSE_AHEAD_MS = 1000;
 const MOST_PAGES_ASKED = 12;
 const MOST_THUMBNAILS_ASKED = 24;
 const INSIDE_THE_TRACK_PX = 1;
@@ -65,18 +73,32 @@ async function downTrack(locator: Locator): Promise<Track> {
   };
 }
 
-function sweepsOf(track: Track): Point[] {
-  return Array.from({ length: SWEEPS_BACK_AND_FORTH + 1 }, (_, sweep) =>
+function sweepsOf(track: Track, sweeps: number): Point[] {
+  return Array.from({ length: sweeps + 1 }, (_, sweep) =>
     sweep % 2 === 0 ? track.end : track.start,
   );
 }
 
+async function letThePageClockRun(page: Page): Promise<void> {
+  await page.clock.resume();
+  await framesPassed(page);
+}
+
+async function holdThePageClock(page: Page): Promise<void> {
+  await page.clock.install();
+  await page.clock.pauseAt(
+    (await page.evaluate(() => Date.now())) + PAUSE_AHEAD_MS,
+  );
+}
+
 async function scrubWithMouse(page: Page, track: Track): Promise<void> {
+  await holdThePageClock(page);
   await page.mouse.move(track.grip.x, track.grip.y);
   await page.mouse.down();
-  for (const to of sweepsOf(track)) {
-    await page.mouse.move(to.x, to.y, { steps: STEPS_PER_SWEEP });
+  for (const to of sweepsOf(track, SCRUB_SWEEPS_BACK_AND_FORTH)) {
+    await page.mouse.move(to.x, to.y, { steps: SCRUB_STEPS_PER_SWEEP });
   }
+  await letThePageClockRun(page);
 }
 
 async function touchAt(
@@ -91,14 +113,16 @@ async function touchAt(
 }
 
 async function scrubWithFinger(
+  page: Page,
   session: CDPSession,
   track: Track,
 ): Promise<void> {
+  await holdThePageClock(page);
   await touchAt(session, "touchStart", track.grip);
   let from = track.grip;
-  for (const to of sweepsOf(track)) {
-    for (let step = 1; step <= STEPS_PER_SWEEP; step += 1) {
-      const share = step / STEPS_PER_SWEEP;
+  for (const to of sweepsOf(track, SCRUB_SWEEPS_BACK_AND_FORTH)) {
+    for (let step = 1; step <= SCRUB_STEPS_PER_SWEEP; step += 1) {
+      const share = step / SCRUB_STEPS_PER_SWEEP;
       await touchAt(session, "touchMove", {
         x: from.x + (to.x - from.x) * share,
         y: from.y + (to.y - from.y) * share,
@@ -106,6 +130,7 @@ async function scrubWithFinger(
     }
     from = to;
   }
+  await letThePageClockRun(page);
 }
 
 async function liftFinger(session: CDPSession): Promise<void> {
@@ -213,7 +238,7 @@ test.describe("scrubbing a long book's page slider", { tag: "@native" }, () => {
     const before = askedSoFar(traffic);
     const session = await page.context().newCDPSession(page);
 
-    await scrubWithFinger(session, await alongTrack(slider(page)));
+    await scrubWithFinger(page, session, await alongTrack(slider(page)));
 
     const reached = await pageUnderTheThumb(page);
     await liftFinger(session);

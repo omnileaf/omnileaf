@@ -237,7 +237,9 @@
     thumb.letGo();
   });
   const isShownReady = $derived(isReady(shown));
-  const isShownFailed = $derived(failed.has(shown));
+  const loadingInSpread = $derived(spread.find((index) => !isReady(index)));
+  const failedInSpread = $derived(spread.find((index) => failed.has(index)));
+  const isSpreadFailed = $derived(failedInSpread !== undefined);
   const isAtRest = $derived(flight === undefined && slide === 0);
   const isOnAPage = $derived(position >= 0 && position < spreads.length);
   const isSpreadSettled = $derived(
@@ -303,6 +305,10 @@
 
   function isReady(index: number): boolean {
     return isBlank || decodedInView.has(index) || failed.has(index);
+  }
+
+  function isLoadingSaidAtRest(index: number): boolean {
+    return isAtRest && spread.includes(index);
   }
 
   function showWhenSlow(content: HTMLElement): () => void {
@@ -576,17 +582,51 @@
     }
   }
 
-  /** Marks the page ready only once its pixels are decoded, so turning to it never waits on a decode. */
-  async function decode(image: HTMLImageElement, index: number): Promise<void> {
+  function isLoaded(image: HTMLImageElement): boolean {
+    return image.complete && image.naturalWidth > 0;
+  }
+
+  /** Chromium and WebKit refuse `decode()` once the image's source changes, so a refusal after a change, or after the image left the page, belongs to an older ask. */
+  function isOvertaken(
+    image: HTMLImageElement,
+    source: string | null,
+  ): boolean {
+    return !image.isConnected || image.getAttribute("src") !== source;
+  }
+
+  async function decodes(image: HTMLImageElement): Promise<boolean> {
     try {
       await image.decode();
-      decoded.add(index);
-      failed.delete(index);
-      if (imagesInView.has(image)) {
-        decodedInView.add(index);
-      }
+      return true;
     } catch {
+      return false;
+    }
+  }
+
+  async function decodesWithinTwoTries(
+    image: HTMLImageElement,
+    source: string | null,
+  ): Promise<boolean> {
+    if (await decodes(image)) {
+      return true;
+    }
+    return !isOvertaken(image, source) && decodes(image);
+  }
+
+  async function decode(image: HTMLImageElement, index: number): Promise<void> {
+    const source = image.getAttribute("src");
+    const isDecoded = await decodesWithinTwoTries(image, source);
+    if (isOvertaken(image, source)) {
+      return;
+    }
+    if (!isDecoded) {
       failed.add(index);
+      return;
+    }
+    decoded.add(index);
+    failed.delete(index);
+    if (imagesInView.has(image)) {
+      decodedInView.add(index);
     }
   }
 
@@ -603,7 +643,7 @@
         return;
       }
       imagesInView.add(image);
-      if (image.complete && image.naturalWidth > 0) {
+      if (isLoaded(image)) {
         void decode(image, index);
       }
       return () => {
@@ -621,6 +661,11 @@
   $effect(() => {
     if (isShownReady) {
       untrack(onShownReady);
+    }
+  });
+
+  $effect(() => {
+    if (loadingInSpread === undefined) {
       isSlow = false;
       return;
     }
@@ -681,7 +726,7 @@
                 isReversed
                   ? "first:me-auto last:ms-auto"
                   : "first:ms-auto last:me-auto",
-                decoded.has(index) && "bg-reader-page",
+                "bg-reader-page",
               ]}
               style:--page-inline="{size.width}px"
               style:--page-block="{size.height}px"
@@ -701,20 +746,22 @@
                   </span>
                 </div>
               {:else}
-                {#if isInView && !isReady(index) && !(isAtRest && index === shown)}
+                {#if isInView && !isReady(index)}
                   <div
                     data-page-loading
                     aria-hidden="true"
                     class="absolute inset-none bg-reader-page"
                   >
-                    <div
-                      {@attach showWhenSlow}
-                      class="absolute inset-none flex flex-col items-center justify-center gap-sm text-center"
-                    >
-                      <PageLoading
-                        label={m.reader_page_loading({ page: index + 1 })}
-                      />
-                    </div>
+                    {#if !isLoadingSaidAtRest(index)}
+                      <div
+                        {@attach showWhenSlow}
+                        class="absolute inset-none flex flex-col items-center justify-center gap-sm text-center"
+                      >
+                        <PageLoading
+                          label={m.reader_page_loading({ page: index + 1 })}
+                        />
+                      </div>
+                    {/if}
                   </div>
                 {/if}
                 <img
@@ -741,8 +788,10 @@
                       void decode(event.currentTarget, index);
                     }
                   }}
-                  onerror={() => {
-                    onFailure(index);
+                  onerror={(event) => {
+                    if (event.currentTarget.isConnected) {
+                      onFailure(index);
+                    }
                   }}
                 />
               {/if}
@@ -758,15 +807,15 @@
     >
       {@render overlay()}
       <svelte:element
-        this={isShownFailed ? "section" : "div"}
-        aria-labelledby={isShownFailed ? `${id}-problem` : undefined}
+        this={isSpreadFailed ? "section" : "div"}
+        aria-labelledby={isSpreadFailed ? `${id}-problem` : undefined}
         class="pointer-events-none absolute inset-none flex flex-col items-center justify-center gap-lg px-xl"
       >
         <div
           role="status"
           class="flex flex-col items-center gap-sm text-center max-inline-page-problem"
         >
-          {#if isShownFailed}
+          {#if failedInSpread !== undefined}
             <EmptyMedia>
               <ImageOff size={PROBLEM_ICON_SIZE} aria-hidden="true" />
             </EmptyMedia>
@@ -778,21 +827,23 @@
             </EmptyTitle>
             <EmptyDescription class="text-small">
               {m.reader_page_failed_body({
-                page: shown + 1,
+                page: failedInSpread + 1,
                 title: bookTitle,
               })}
             </EmptyDescription>
-          {:else if isSlow && isAtRest && isOnAPage}
-            <PageLoading label={m.reader_page_loading({ page: shown + 1 })} />
+          {:else if isSlow && isAtRest && isOnAPage && loadingInSpread !== undefined}
+            <PageLoading
+              label={m.reader_page_loading({ page: loadingInSpread + 1 })}
+            />
           {/if}
         </div>
-        {#if isShownFailed}
+        {#if failedInSpread !== undefined}
           <div class="pointer-events-auto flex flex-wrap justify-center gap-sm">
             <button
               type="button"
               class="flex items-center gap-sm rounded-shadcn-button border border-border bg-card px-lg text-body font-medium transition-control min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button"
               onclick={() => {
-                tryAgain(shown);
+                tryAgain(failedInSpread);
               }}
             >
               <RefreshCw size={BUTTON_ICON_SIZE} aria-hidden="true" />
