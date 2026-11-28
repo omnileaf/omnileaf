@@ -19,9 +19,7 @@ const SEGMENT_END = "20px";
 const PRESSED = "8px";
 const LARGE_PRESSED = "12px";
 const KIT_SPRING_SECONDS = "0.383s";
-const MORPH_MS = 383;
 const SAMPLED_FRAMES = 60;
-const STEEPEST_RATE_SHARE = 5;
 const CLOSE = 0.05;
 const ACCENT_CONTAINER = "rgb(180, 240, 203)";
 const STILL_EVERY_GROUP = "navigation sheets reader loading";
@@ -120,72 +118,108 @@ function thumbOf(control: Locator): Promise<Thumb> {
 
 type Corner = "borderStartStartRadius" | "borderStartEndRadius";
 
+type Measure = Corner | "thumbSize" | "thumbOffset";
+
 interface Frame {
-  readonly at: number;
-  readonly radius: number;
+  readonly value: number;
+  readonly progress: number | null;
 }
 
-async function startSampling(control: Locator, corner: Corner): Promise<void> {
+async function startSampling(
+  control: Locator,
+  measure: Measure,
+): Promise<void> {
   await control.evaluate(
-    (element, { side, frames }) => {
-      const sampled: string[] = [];
-      const sample = (at: number): void => {
-        const box = element.getBoundingClientRect();
-        const drawn = Number.parseFloat(getComputedStyle(element)[side]);
-        const radius = Math.min(drawn, box.height / 2, box.width / 2);
-        sampled.push(`${String(at)}:${String(radius)}`);
-        element.setAttribute("data-frames", sampled.join(","));
+    (element, { measured, frames }) => {
+      const TRANSITIONED = {
+        borderStartStartRadius: ["border-top-left-radius"],
+        borderStartEndRadius: ["border-top-right-radius"],
+        thumbSize: ["width", "inline-size"],
+        thumbOffset: ["width", "inline-size"],
+      } as const;
+      const isThumb = measured === "thumbSize" || measured === "thumbOffset";
+      const target = isThumb
+        ? element.querySelector("[data-switch-thumb]")
+        : element;
+      if (target === null) {
+        throw new Error("the switch has no thumb");
+      }
+      const valueOf = (): number => {
+        const box = target.getBoundingClientRect();
+        if (measured === "thumbSize") {
+          return box.width;
+        }
+        if (measured === "thumbOffset") {
+          const track = target.parentElement?.getBoundingClientRect();
+          return box.left - (track?.left ?? 0);
+        }
+        const drawn = Number.parseFloat(getComputedStyle(target)[measured]);
+        return Math.min(drawn, box.height / 2, box.width / 2);
+      };
+      const progressOf = (): number | null => {
+        const properties: readonly string[] = TRANSITIONED[measured];
+        const running = target
+          .getAnimations()
+          .find(
+            (animation) =>
+              animation instanceof CSSTransition &&
+              properties.includes(animation.transitionProperty),
+          );
+        return running?.effect?.getComputedTiming().progress ?? null;
+      };
+      const sampled: Frame[] = [];
+      const sample = (): void => {
+        sampled.push({ value: valueOf(), progress: progressOf() });
+        element.setAttribute("data-frames", JSON.stringify(sampled));
         if (sampled.length < frames) {
           requestAnimationFrame(sample);
         }
       };
       requestAnimationFrame(sample);
     },
-    { side: corner, frames: SAMPLED_FRAMES },
+    { measured: measure, frames: SAMPLED_FRAMES },
   );
 }
 
 async function sampledFrames(control: Locator): Promise<Frame[]> {
   const read = (): Promise<Frame[]> =>
-    control.evaluate((element) =>
-      (element.getAttribute("data-frames") ?? "")
-        .split(",")
-        .filter((frame) => frame !== "")
-        .map((frame) => {
-          const [at, radius] = frame.split(":").map(Number);
-          return { at: at ?? Number.NaN, radius: radius ?? Number.NaN };
-        }),
+    control.evaluate(
+      (element) =>
+        JSON.parse(element.getAttribute("data-frames") ?? "[]") as Frame[],
     );
   await expect.poll(async () => (await read()).length).toBe(SAMPLED_FRAMES);
   return read();
 }
 
-function ratesOf(frames: readonly Frame[]): number[] {
-  return frames.slice(1).map(({ at, radius }, index) => {
-    const before = frames[index] ?? { at, radius };
-    return (radius - before.radius) / (at - before.at);
-  });
+function offTheCurve(
+  frames: readonly Frame[],
+  from: number,
+  to: number,
+): Frame[] {
+  return frames.filter(({ value, progress }) =>
+    progress === null
+      ? Math.abs(value - from) > CLOSE && Math.abs(value - to) > CLOSE
+      : Math.abs(value - (from + (to - from) * progress)) > CLOSE,
+  );
 }
 
 function expectMorph(frames: readonly Frame[], from: number, to: number) {
-  const radii = frames.map(({ radius }) => radius);
+  const values = frames.map(({ value }) => value);
   const lowest = Math.min(from, to) - CLOSE;
   const highest = Math.max(from, to) + CLOSE;
   const direction = Math.sign(to - from);
-  const steepestRate = (STEEPEST_RATE_SHARE * Math.abs(to - from)) / MORPH_MS;
-  const steps = radii
+  const steps = values
     .slice(1)
-    .map((radius, index) => radius - (radii[index] ?? 0));
+    .map((value, index) => value - (values[index] ?? 0));
 
-  expect(radii[0]).toBeCloseTo(from, 1);
-  expect(radii.at(-1)).toBeCloseTo(to, 1);
-  expect(radii.filter((radius) => radius < lowest || radius > highest)).toEqual(
+  expect(values[0]).toBeCloseTo(from, 1);
+  expect(values.at(-1)).toBeCloseTo(to, 1);
+  expect(values.filter((value) => value < lowest || value > highest)).toEqual(
     [],
   );
   expect(steps.filter((step) => step * direction < -CLOSE)).toEqual([]);
-  expect(
-    ratesOf(frames).filter((rate) => Math.abs(rate) > steepestRate),
-  ).toEqual([]);
+  expect(frames.some(({ progress }) => progress !== null)).toBe(true);
+  expect(offTheCurve(frames, from, to)).toEqual([]);
 }
 
 async function paintedColourAt(page: Page, at: Point): Promise<string> {
