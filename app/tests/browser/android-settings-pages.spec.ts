@@ -35,7 +35,7 @@ const PAGE_STARTS: readonly PageStart[] = [
   },
   {
     route: "/settings/reading",
-    first: (page) => page.getByText(/Used for every series/),
+    first: (page) => page.getByText(/^For every series, unless changed/),
   },
   {
     route: "/settings/general/language",
@@ -63,7 +63,7 @@ const PAGE_STARTS: readonly PageStart[] = [
   },
   {
     route: "/settings/advanced/animations",
-    first: (page) => page.getByText(/^With one off, those things appear/),
+    first: (page) => page.getByText(/^All four are on until you turn them off/),
   },
   {
     route: "/settings/privacy/screenshot-mode",

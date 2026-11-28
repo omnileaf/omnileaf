@@ -74,7 +74,7 @@ test("sets its cards 24px apart, the first 8px under the intro", async ({
 }) => {
   await page.goto("/settings/reading");
   const intro = await boxOf(
-    page.getByText("Used for every series, unless you change it"),
+    page.getByText("For every series, unless changed in the reader."),
   );
   const boxes = await Promise.all(cards(page).map((card) => boxOf(card)));
 

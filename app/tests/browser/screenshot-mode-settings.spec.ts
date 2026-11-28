@@ -253,7 +253,7 @@ test.describe("on a phone", () => {
     await expect(
       page.getByRole("region", { name: "Turn it on quickly" }),
     ).toHaveText(
-      /^Turn it on quickly\s*Long-press the Omnileaf icon\s*Screenshot mode, Continue reading and Search the library, from your home screen\.$/,
+      /^Turn it on quickly\s*Long-press the Omnileaf icon\s*Screenshot mode, Continue reading and Search the library\.$/,
     );
   });
 

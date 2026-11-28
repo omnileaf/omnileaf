@@ -273,7 +273,7 @@ test("lets an emptied title fall back to the file's, greyed in the field", async
 
   await expect(title).toHaveAttribute("placeholder", FILE_TITLE);
   await expect(title).toHaveAccessibleDescription(
-    `Left empty, the file’s title shows: “${FILE_TITLE}”`,
+    `Left empty, the file’s title shows: “${FILE_TITLE}”.`,
   );
   await expect(shown.getByText("Edited")).toHaveCount(0);
   await save(shown);

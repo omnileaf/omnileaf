@@ -19,7 +19,7 @@ import {
 const HINT =
   "Even when Omnileaf is closed. Android asks to allow notifications first.";
 const BLOCKED =
-  "Notifications are off in Android settings. Turn them on there.";
+  "Notifications for Omnileaf are off in Android settings. Turn them on there.";
 
 let status: UpdateStatus = {
   isAutomatic: true,

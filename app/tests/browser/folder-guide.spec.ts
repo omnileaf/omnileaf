@@ -51,7 +51,7 @@ test("says files are read where they are and never changed", async ({
 
   await expect(
     page.getByText(
-      "Omnileaf reads your files where they are and never changes them.",
+      "Omnileaf reads your files where they are and never moves or changes them.",
       { exact: false },
     ),
   ).toBeVisible();

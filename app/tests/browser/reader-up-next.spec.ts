@@ -942,7 +942,7 @@ test("turns Skip Up next on in Settings > Reader from up next's switch", async (
   await turnPastTheEnd(page);
 
   await expect(skipSwitch(page)).toHaveAccessibleDescription(
-    "Go straight to the next book.",
+    "From now on, go straight to the next book. Also in Settings › Reader.",
   );
   await skipSwitch(page).click();
   await expect(skipSwitch(page)).toBeChecked();

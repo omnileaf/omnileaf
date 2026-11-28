@@ -11,7 +11,7 @@ const HEADING_TO_CONTENT = 8;
 const CARD_BOTTOM = 6;
 const MONOSPACE = /monospace/;
 const INTRO =
-  "Omnileaf reads your files where they are and never changes them.";
+  "Omnileaf reads your files where they are and never moves or changes them.";
 
 async function openGuide(page: Page): Promise<void> {
   await page.goto("/settings/library/folders");
