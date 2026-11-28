@@ -74,12 +74,21 @@ function sweepsOf(track: Track, sweeps: number): Point[] {
   );
 }
 
+async function holdThePageClock(page: Page): Promise<void> {
+  await page.clock.install();
+  await page.clock.pauseAt(
+    (await page.evaluate(() => Date.now())) + PAUSE_AHEAD_MS,
+  );
+}
+
 async function scrubWithMouse(page: Page, track: Track): Promise<void> {
+  await holdThePageClock(page);
   await page.mouse.move(track.grip.x, track.grip.y);
   await page.mouse.down();
   for (const to of sweepsOf(track, SWEEPS_BACK_AND_FORTH)) {
     await page.mouse.move(to.x, to.y, { steps: STEPS_PER_SWEEP });
   }
+  await page.clock.resume();
 }
 
 async function touchAt(
@@ -98,10 +107,7 @@ async function scrubWithFinger(
   session: CDPSession,
   track: Track,
 ): Promise<void> {
-  await page.clock.install();
-  await page.clock.pauseAt(
-    (await page.evaluate(() => Date.now())) + PAUSE_AHEAD_MS,
-  );
+  await holdThePageClock(page);
   await touchAt(session, "touchStart", track.grip);
   let from = track.grip;
   for (const to of sweepsOf(track, FINGER_SWEEPS_BACK_AND_FORTH)) {
