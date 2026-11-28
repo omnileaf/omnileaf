@@ -107,7 +107,7 @@
   "general_time_24": "24-hour",
   "folder_guide_title": "How folders are read",
   "folder_guide_intro": "Omnileaf reads your files where they are and never changes them. Laid out like this, volumes and chapters come in order.",
-  "folder_guide_intro_desktop": "Omnileaf reads your files where they are and never moves, renames or changes them.",
+  "folder_guide_intro_desktop": "Omnileaf reads your files where they are and never changes them.",
   "folder_guide_example": "An example folder",
   "folder_guide_name": "Name",
   "folder_guide_read_as": "Omnileaf reads it as",
