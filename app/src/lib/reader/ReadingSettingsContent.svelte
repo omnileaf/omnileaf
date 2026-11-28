@@ -290,13 +290,11 @@
           onChoose={(turn: PageTurnStyle) => {
             settings.change("pageTurn", turn);
           }}
-        >
-          {#if look.pageTurn === "slide"}
-            <p class="col-span-full text-caption text-muted">
-              {m.reader_page_turn_help()}
-            </p>
-          {/if}
-        </SettingChoice>
+          note={look.pageTurn === "slide"
+            ? m.reader_page_turn_help()
+            : undefined}
+          noteClass="col-span-full text-caption text-muted"
+        />
       </div>
     </section>
     <fieldset data-slot="setting-row" class={content.section}>

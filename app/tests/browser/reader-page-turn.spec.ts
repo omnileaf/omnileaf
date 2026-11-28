@@ -1171,14 +1171,14 @@ test("chooses Slide under Pages in Reading settings, saying it follows your fing
 
   const pages = page.getByRole("region", { name: "Pages" });
   await expect(pages.getByRole("group", { name: "Tap zones" })).toBeVisible();
+  const pageTurn = pages.getByRole("group", { name: "Page turn" });
   await expect(pages.getByText(/follows your finger/i)).toHaveCount(0);
-  await pages
-    .getByRole("group", { name: "Page turn" })
-    .getByRole("radio", { name: "Slide" })
-    .click();
+  await expect(pageTurn).toHaveAccessibleDescription("");
+  await pageTurn.getByRole("radio", { name: "Slide" }).click();
   await expect(
     pages.getByText("Follows your finger.", { exact: true }),
   ).toBeVisible();
+  await expect(pageTurn).toHaveAccessibleDescription("Follows your finger.");
 
   await expect
     .poll(
@@ -1827,8 +1827,10 @@ test("names the series under Apply to only while This series is chosen", async (
 
   await applyTo.getByRole("radio", { name: "This series" }).click();
   await expect(settings.getByText(/^For .+ only\.$/)).toBeVisible();
+  await expect(applyTo).toHaveAccessibleDescription(/^For .+ only\.$/);
   await applyTo.getByRole("radio", { name: "All series" }).click();
 
   await expect(settings.getByText(/^For .+ only\.$/)).toHaveCount(0);
+  await expect(applyTo).toHaveAccessibleDescription("");
   await expect(settings.getByText(/^Changes here apply/)).toHaveCount(0);
 });

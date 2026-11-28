@@ -19,6 +19,8 @@
   let {
     label,
     hint,
+    note,
+    noteClass,
     choices,
     chosen,
     isStacked = false,
@@ -29,6 +31,8 @@
   }: {
     label: string;
     hint?: string;
+    note?: string | undefined;
+    noteClass?: string;
     choices: readonly ChoiceOption<Choice>[];
     chosen: Choice;
     isStacked?: boolean;
@@ -39,6 +43,8 @@
   } = $props();
 
   const id = $props.id();
+  const noteId = `${id}-note`;
+  const describedBy = $derived(note === undefined ? undefined : noteId);
   const isPills = $derived(control === "pills");
   const values = $derived(choices.map((choice) => choice.value));
   const labels = $derived(
@@ -81,12 +87,14 @@
       {chosen}
       disabledOptions={disabledValues}
       labelledBy={id}
+      {describedBy}
       isFullWidth
       {onChoose}
     />
   {:else}
     <ToggleGroup
       aria-labelledby={id}
+      aria-describedby={describedBy}
       class={[
         hint === undefined && !isInline && "inline-full",
         isInline && "inline-setting-control",
@@ -132,4 +140,7 @@
     </ToggleGroup>
   {/if}
   {@render children?.()}
+  {#if note !== undefined}
+    <p id={noteId} class={noteClass}>{note}</p>
+  {/if}
 </div>
