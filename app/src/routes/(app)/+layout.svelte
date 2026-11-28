@@ -25,7 +25,6 @@
   } from "#lib/navigation/tap-open-tab.svelte.ts";
   import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import { reportFailure } from "#lib/errors/report-failure.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { openTabTap } from "#lib/navigation/open-tab-tap.ts";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
@@ -104,12 +103,11 @@
   const sidebar = setSidebarSetting(sidebarSettingForDocument());
   const tapOpenTab = setTapOpenTabSetting(tapOpenTabSettingForDocument());
   const animations = getAnimationsSetting();
-  const androidPhone = new AndroidPhone();
 
   function tapOpenSection(event: MouseEvent): void {
     const main = document.querySelector("main");
     const tap = openTabTap({
-      isTurnedOn: tapOpenTab.isOn,
+      isTurnedOn: phone === "ios" || tapOpenTab.isOn,
       isScrolled: (main?.scrollTop ?? 0) > 0,
       isOnFirstPage: isSectionRoot(page.route.id),
     });
@@ -168,12 +166,12 @@
   );
 
   const width = new WindowWidth();
+  const phone = $derived(phoneOf(data.appInfo.platform, width.current));
   const isPaneCompact = new MediaQuery(
     paneFoldQuery(untrack(() => data.appInfo.platform)),
   );
   const isTabBarCollapsed = $derived(
-    page.route.id === SEARCH_ROUTE_ID &&
-      phoneOf(data.appInfo.platform, width.current) === "ios",
+    page.route.id === SEARCH_ROUTE_ID && phone === "ios",
   );
   const isTabBarAfterPage = $derived(
     isPhone(data.appInfo.platform, width.current),
@@ -193,8 +191,7 @@
     }
   });
   const isSearchViewOpen = $derived(
-    page.route.id === SEARCH_ROUTE_ID &&
-      phoneOf(data.appInfo.platform, width.current) === "android",
+    page.route.id === SEARCH_ROUTE_ID && phone === "android",
   );
   const wordingContext = $derived({
     usesStandIns: screenshotMode.isOn,
@@ -303,7 +300,7 @@
           <AppNavigation
             current={sectionOf(page.url.pathname)}
             isCollapsed={isTabBarCollapsed}
-            onOpenTabTap={androidPhone.isOn ? tapOpenSection : undefined}
+            onOpenTabTap={phone === undefined ? undefined : tapOpenSection}
             historyMoves={backGoesUp}
             attention={isPointer(data.appInfo.platform) &&
             needsAttention.problems.length > 0
