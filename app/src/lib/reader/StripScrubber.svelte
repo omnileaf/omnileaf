@@ -17,6 +17,7 @@
     position,
     onScrub,
     onSeek,
+    onSliderHeld,
   }: {
     progress: number;
     shown: number;
@@ -24,7 +25,12 @@
     position: string;
     onScrub: (along: number) => void;
     onSeek: (index: number) => void;
+    onSliderHeld: (isHeld: boolean) => void;
   } = $props();
+
+  function letGo(): void {
+    onSliderHeld(false);
+  }
 
   function step(key: string): number | undefined {
     if (key === "ArrowDown" || key === "ArrowRight" || key === "PageDown") {
@@ -58,6 +64,8 @@
   }
 </script>
 
+<svelte:window onpointerup={letGo} onpointercancel={letGo} />
+
 <div data-scrubber class={STRIP_SCRUBBER.root}>
   <Slider.Root
     type="single"
@@ -70,6 +78,10 @@
     thumbPositioning="exact"
     onValueChange={(value) => {
       onScrub(value / RESOLUTION);
+    }}
+    onValueCommit={letGo}
+    onpointerdown={() => {
+      onSliderHeld(true);
     }}
     class={STRIP_SCRUBBER.track}
     style={`--progress: ${String(progress)}`}

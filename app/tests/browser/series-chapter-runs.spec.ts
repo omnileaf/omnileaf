@@ -6,6 +6,7 @@ import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const CHAPTER_COUNT = 30;
 const LONG_PRESS_MS = 500;
+const SLOW_LOAD_MS = 400;
 const SCROLL_STEP_PX = 300;
 const LIST_HEADER_HEIGHT = 44;
 const LIST_HEADER_TOP = 16;
@@ -169,6 +170,22 @@ test.describe(
 
       await expect(sort(page)).toHaveAccessibleName("Sort: In order");
       await expect(bookLinks(page).first()).toContainText("chapter 01");
+    });
+
+    test("lets the app open afresh straight after a menu item is chosen, however slowly it loads", async ({
+      page,
+    }) => {
+      await page.route("**/", async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, SLOW_LOAD_MS));
+        await route.continue();
+      });
+      await openSeries(page);
+      await sort(page).click();
+
+      await page.getByRole("menuitemradio", { name: "In order" }).click();
+      await page.goto("/");
+
+      await expect(page).toHaveURL(/\/$/);
     });
 
     test("keeps In order once it is chosen, across a change of Show", async ({

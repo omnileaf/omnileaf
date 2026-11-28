@@ -15,7 +15,8 @@
 
   let {
     coversPerRow = DEFAULT_LIBRARY_VIEW.coversPerRow,
-  }: { coversPerRow?: CoversPerRow } = $props();
+    showsCount = true,
+  }: { coversPerRow?: CoversPerRow; showsCount?: boolean } = $props();
 
   const look = $derived(coverLook(coversPerRow));
   const captions = coverSkeletonLook(currentPlatform());
@@ -38,10 +39,14 @@
   {style}
 >
   {#each { length: count }, index (index)}
-    <div class="flex flex-col gap-sm">
+    <div class={captions.tile}>
       <Skeleton class="aspect-cover rounded-cover" />
-      <Skeleton class={[captions.title, "inline-4/5"]} />
-      <Skeleton class={[captions.meta, "inline-9/20"]} />
+      <div class={captions.caption}>
+        <Skeleton class={[captions.title, "inline-4/5"]} />
+        {#if showsCount}
+          <Skeleton class={[captions.meta, "inline-9/20"]} />
+        {/if}
+      </div>
     </div>
   {/each}
 </div>

@@ -201,3 +201,23 @@ test("keeps the number it holds while a refresh is pending, then holds the new o
 
   expect([held, series.count]).toEqual([24, 3]);
 });
+
+test("holds the count kept from before until counting again answers", async () => {
+  const answers: ((result: CountResult) => void)[] = [];
+  const series = new LibrarySeriesCount(
+    () =>
+      new Promise((resolve) => {
+        answers.push(resolve);
+      }),
+    ignoreFailure,
+    24,
+  );
+  const keptAtOnce = series.count;
+  const refreshed = series.refresh();
+  const keptWhileCounting = series.count;
+
+  answers[0]?.({ status: "ok", data: 25 });
+  await refreshed;
+
+  expect([keptAtOnce, keptWhileCounting, series.count]).toEqual([24, 24, 25]);
+});

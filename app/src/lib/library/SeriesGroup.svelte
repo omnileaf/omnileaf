@@ -7,12 +7,16 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { ROW_SUBTITLE_MUTED_TYPE } from "#lib/components/ui/item/looks.ts";
   import type { IpcError } from "#lib/ipc/bindings.ts";
+  import { sendingNewest } from "#lib/navigation/newest-call.ts";
+  import { whileNear } from "#lib/paging/in-view.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { itemsDrawnIn } from "#lib/virtual-grid/drawn-items.ts";
 
   import { AndroidPhone } from "./android-phone.svelte";
   import { creatorRoute } from "./creator-route";
   import CreatorHeadingLink from "./CreatorHeadingLink.svelte";
   import { librarySeriesList, type ListSeries } from "./library-series.svelte";
+  import type { KeepGroup, KeptGroup } from "./library-return";
   import SeriesCovers from "./SeriesCovers.svelte";
 
   type CountResult =
@@ -25,7 +29,10 @@
     listSeries,
     countSeries,
     listed,
+    libraryChanges,
     covers,
+    kept,
+    keeps,
   }: {
     name: string;
     creator?: string | undefined;
@@ -33,10 +40,13 @@
     listSeries: ListSeries;
     countSeries: () => Promise<CountResult>;
     listed: unknown;
+    libraryChanges: number;
     covers: Omit<
       ComponentProps<typeof SeriesCovers>,
       "series" | "isComplete" | "onNearEnd"
     >;
+    kept?: KeptGroup | undefined;
+    keeps?: ((keep: KeepGroup) => () => void) | undefined;
   } = $props();
 
   const ANDROID_HEAD = "flex items-center gap-sm pbs-lg pbe-lg -me-md";
@@ -48,25 +58,107 @@
   );
 
   const android = new AndroidPhone();
-  const list = librarySeriesList((after) => listSeries(after));
-  let count: number | undefined = $state();
+  const keptAtStart = untrack(() => kept);
+  const list = librarySeriesList(
+    (after) => listSeries(after),
+    keptAtStart?.series,
+  );
+  let count: number | undefined = $state(keptAtStart?.count);
   const headingId = $props.id();
+  let section: HTMLElement | undefined = $state();
+  let startsFromKept = keptAtStart !== undefined;
+
+  let changesRead = untrack(() => libraryChanges);
+  let countsAsked = 0;
+  let isNear = keptAtStart?.wasNear ?? false;
+  let isStale = false;
+  const isShown = $derived(
+    list.list.kind === "loaded" && list.list.items.length > 0,
+  );
+
+  function isSettledEmpty(): boolean {
+    return list.list.kind !== "loading" && !isShown;
+  }
+
+  async function recount(): Promise<void> {
+    countsAsked += 1;
+    const asked = countsAsked;
+    const result = await countSeries();
+    if (asked === countsAsked) {
+      count = result.status === "ok" ? result.data : undefined;
+    }
+  }
+
+  const reloadSoon = sendingNewest<undefined>(async () => {
+    await Promise.all([list.load(), recount()]);
+  });
+
+  function followNearness(isNowNear: boolean): void {
+    isNear = isNowNear;
+    if (isNear && isStale) {
+      isStale = false;
+      reloadSoon(undefined);
+    }
+  }
+
+  function keptNow(): KeptGroup | undefined {
+    const series = list.pagesThroughShown(
+      section === undefined ? 0 : itemsDrawnIn(section),
+    );
+    return series === undefined
+      ? undefined
+      : { series, count, wasNear: isNear };
+  }
+
+  $effect(() => keeps?.(keptNow));
 
   $effect(() => {
     if (listed === undefined) {
       return;
     }
     untrack(() => {
+      if (startsFromKept) {
+        startsFromKept = false;
+        readAgainOnceNear();
+        return;
+      }
+      isStale = false;
       void list.start();
-      void countSeries().then((result) => {
-        count = result.status === "ok" ? result.data : undefined;
-      });
+      void recount();
+    });
+  });
+
+  function readAgainOnceNear(): void {
+    if (isNear || isSettledEmpty()) {
+      reloadSoon(undefined);
+    } else {
+      isStale = true;
+    }
+  }
+
+  $effect(() => {
+    if (libraryChanges === changesRead) {
+      return;
+    }
+    changesRead = libraryChanges;
+    untrack(readAgainOnceNear);
+  });
+
+  $effect(() => {
+    if (!isSettledEmpty() || !isStale) {
+      return;
+    }
+    isStale = false;
+    untrack(() => {
+      reloadSoon(undefined);
     });
   });
 </script>
 
-{#if list.list.kind === "loaded" && list.list.items.length > 0}
+{#if list.list.kind === "loaded" && isShown}
   <section
+    bind:this={section}
+    {@attach whileNear(followNearness)}
     aria-labelledby={headingId}
     class={["flex flex-col", !android.isOn && "gap-md"]}
   >

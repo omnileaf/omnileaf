@@ -1,14 +1,17 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use omnileaf_db::catalog::{
-    SeriesLabelHoldings, StoredCategory, StoredTag, library_categories, library_tags,
-    series_labels as stored_series_labels,
+use omnileaf_db::{
+    catalog::{
+        SeriesLabelHoldings, StoredCategory, StoredTag, library_categories, library_tags,
+        series_labels as stored_series_labels,
+    },
+    store::CategoryRename as StoredRename,
 };
 
 use crate::{
     Library, LibraryError, SeriesId,
-    library_category::{CategoryId, LibraryCategory},
+    library_category::{CategoryId, CategoryRename, LibraryCategory},
 };
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Type)]
@@ -124,6 +127,48 @@ impl Library {
                 for name in changes.tags_added.iter().filter_map(|name| named(name)) {
                     let tag = writer.create_tag(name)?;
                     writer.set_tag_members(tag, &series, true)?;
+                }
+                Ok(())
+            })
+            .await?)
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn rename_library_category(
+        &self,
+        category: CategoryId,
+        to: String,
+    ) -> Result<CategoryRename, LibraryError> {
+        let Some(to) = named(&to).map(str::to_owned) else {
+            return Ok(CategoryRename::NameEmpty);
+        };
+        let Some(category) = category.stored() else {
+            return Ok(CategoryRename::Gone);
+        };
+        Ok(self
+            .store
+            .write(move |writer| {
+                if !writer.has_category(category)? {
+                    return Ok(CategoryRename::Gone);
+                }
+                Ok(match writer.rename_category(category, &to)? {
+                    StoredRename::Renamed => CategoryRename::Renamed,
+                    StoredRename::NameTaken => CategoryRename::NameTaken,
+                })
+            })
+            .await?)
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn remove_library_category(&self, category: CategoryId) -> Result<(), LibraryError> {
+        let Some(category) = category.stored() else {
+            return Ok(());
+        };
+        Ok(self
+            .store
+            .write(move |writer| {
+                if writer.has_category(category)? {
+                    writer.delete_category(category)?;
                 }
                 Ok(())
             })

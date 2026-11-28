@@ -56,6 +56,27 @@ fn mints_a_tag_id_apart_from_the_one_its_name_derives_and_from_those_of_other_st
 }
 
 #[test]
+fn mints_a_category_id_apart_from_the_one_its_name_derives_from_other_stamps_and_from_tags() {
+    let node = NodeId::from([0xa0; 16]);
+
+    let minted = CategoryId::minted("Sample Shelf", node, Hlc::from(5)).unwrap();
+    let later = CategoryId::minted("Sample Shelf", node, Hlc::from(6)).unwrap();
+
+    assert_ne!(minted, CategoryId::from_name("Sample Shelf").unwrap());
+    assert_ne!(minted, later);
+    assert_eq!(
+        minted,
+        CategoryId::minted("  SAMPLE shelf", node, Hlc::from(5)).unwrap()
+    );
+    assert_ne!(
+        minted.as_bytes(),
+        TagId::minted("Sample Shelf", node, Hlc::from(5))
+            .unwrap()
+            .as_bytes()
+    );
+}
+
+#[test]
 fn reads_no_membership_field_that_is_not_a_lowercase_hex_id() {
     let tag = TagId::from_name("Sample Tag").unwrap();
     let field = tag.membership_field();

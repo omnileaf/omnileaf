@@ -407,6 +407,41 @@ test("draws the Material alert on an Android phone, 28px round on the scrim", as
   );
 });
 
+test("draws Android's icon dialog with the icon centred above a centred title", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+  document.documentElement.dataset.platform = "android";
+  document.documentElement.dataset.theme = "light";
+  await render(ConfirmDialogHarness, { androidPhoneLook: "iconDialog" });
+  const alert = page
+    .getByRole("alertdialog", { name: "Delete downloads?" })
+    .element();
+  await expect.element(page.getByRole("alertdialog")).toBeVisible();
+
+  const icon = alert.querySelector("svg");
+  const title = page.getByRole("heading", { name: "Delete downloads?" });
+  const box = alert.getBoundingClientRect();
+  const iconBox = icon?.getBoundingClientRect();
+  expect(getComputedStyle(alert).borderTopLeftRadius).toBe("28px");
+  expect(iconBox?.width).toBeCloseTo(24, 0);
+  expect((iconBox?.left ?? 0) + (iconBox?.width ?? 0) / 2).toBeCloseTo(
+    box.left + box.width / 2,
+    0,
+  );
+  expect(iconBox?.bottom ?? 0).toBeLessThan(
+    title.element().getBoundingClientRect().top,
+  );
+  expect(getComputedStyle(title.element()).textAlign).toBe("center");
+});
+
+test("keeps the icon off an Android dialog that does not ask for it", async () => {
+  const alert = await openAlertOn("android", PHONE);
+
+  const badge = alert.querySelector("svg")?.parentElement;
+  expect(badge === null || badge === undefined || badge.offsetWidth === 0).toBe(
+    true,
+  );
+});
+
 test("drops an Android dialog in over 0.5s on the emphasized curve, moving and unfolding as well as fading", async () => {
   const dialog = await openAlertOn("android", DESKTOP_WINDOW);
 

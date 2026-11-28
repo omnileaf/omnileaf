@@ -50,8 +50,12 @@ export function holdScrollTop(screen: HTMLElement, top: number): () => void {
   });
 }
 
+const INERT = "[inert]";
+
 function isShown(link: HTMLAnchorElement): boolean {
-  return link.getBoundingClientRect().height > 0;
+  return (
+    link.getBoundingClientRect().height > 0 && link.closest(INERT) === null
+  );
 }
 
 function isPinned(link: HTMLAnchorElement, screen: HTMLElement): boolean {

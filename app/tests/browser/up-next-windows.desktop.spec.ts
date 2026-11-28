@@ -129,7 +129,9 @@ test.describe("up next on Windows", () => {
       }
 
       test("keeps the page margin at 24 beside the card", async ({ page }) => {
-        const scroller = upNextCard(page).locator("xpath=ancestor::section/..");
+        const scroller = upNextCard(page).locator(
+          "xpath=ancestor::section/../..",
+        );
 
         await expect(scroller).toHaveCSS("padding-inline-start", PAGE_MARGIN);
         await expect(scroller).toHaveCSS("padding-inline-end", PAGE_MARGIN);

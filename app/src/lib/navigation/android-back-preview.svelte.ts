@@ -40,7 +40,7 @@ export interface PreviewScheduler {
   readonly nextFrame: (run: () => void) => () => void;
 }
 
-const BROWSER_SCHEDULER: PreviewScheduler = {
+export const BROWSER_SCHEDULER: PreviewScheduler = {
   after: (ms, run) => {
     const timer = setTimeout(run, ms);
     return () => {

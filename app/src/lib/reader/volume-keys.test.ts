@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import type { IpcError, PageTurn } from "#lib/ipc/bindings.ts";
+import type { IpcError, VolumeKeyTurn } from "#lib/ipc/bindings.ts";
 
 import {
   hasVolumeKeys,
@@ -19,7 +19,7 @@ const NO_ACTIVITY: IpcError = {
 
 function fakeCommands(answers: { capture?: Answer; release?: Answer } = {}) {
   const sent: string[] = [];
-  let heard: (turn: PageTurn) => void = () => undefined;
+  let heard: (turn: VolumeKeyTurn) => void = () => undefined;
   const commands: VolumeKeyCommands = {
     capture: (onTurn) => {
       sent.push("capture");
@@ -31,7 +31,7 @@ function fakeCommands(answers: { capture?: Answer; release?: Answer } = {}) {
       return answers.release?.() ?? Promise.resolve(DONE);
     },
   };
-  const press = (turn: PageTurn) => {
+  const press = (turn: VolumeKeyTurn) => {
     heard(turn);
   };
   return { sent, commands, press };
@@ -55,17 +55,20 @@ test("turns pages with the volume keys only on Android", () => {
 
 test("hands each turn the keys send to the reader", async () => {
   const fake = fakeCommands();
-  const turns: PageTurn[] = [];
+  const turns: VolumeKeyTurn[] = [];
   new VolumeKeys(fake.commands).follow(
     (turn) => turns.push(turn),
     ignoreErrors,
   );
   await settled();
 
-  fake.press("next");
-  fake.press("previous");
+  fake.press({ turn: "next", press: "pressed" });
+  fake.press({ turn: "previous", press: "held" });
 
-  expect(turns).toEqual(["next", "previous"]);
+  expect(turns).toEqual([
+    { turn: "next", press: "pressed" },
+    { turn: "previous", press: "held" },
+  ]);
 });
 
 test("lets the keys go when the reader stops following them", async () => {

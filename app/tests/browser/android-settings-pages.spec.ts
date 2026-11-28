@@ -6,6 +6,8 @@ import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
 test.use({ backend: { ...DEFAULT_BACKEND, appLock: () => NEW_APP_LOCK } });
 
 const TITLE_BAR_HEIGHT = 44;
+const BAR_BACK_START = 8;
+const BAR_TITLE_START = 52;
 const GAP_AND_LINE_ABOVE_GROUP = 9;
 const PERMISSION_ROW_INSET = 12;
 
@@ -65,11 +67,6 @@ const PAGE_STARTS: readonly PageStart[] = [
     first: (page) => page.getByText(/^All four are on until you turn them off/),
   },
   {
-    route: "/settings/library/folders",
-    first: (page) =>
-      page.getByText(/^Omnileaf reads your files where they are/),
-  },
-  {
     route: "/settings/privacy/screenshot-mode",
     first: (page) => page.getByText(/^Swaps names and covers for stand-ins/),
   },
@@ -109,6 +106,20 @@ test.describe(
         expect(start.y - (title.y + title.height)).toBeCloseTo(0, 0);
       });
     }
+
+    test("sets a sub-page's back arrow 8px in and its bar title 52px in, as the top app bar does", async ({
+      page,
+    }) => {
+      await page.goto("/settings/library/tags");
+      const bar = page.locator("[data-title-bar]");
+      const back = await boxOf(
+        bar.getByRole("link", { name: "Back to Library" }),
+      );
+      const title = await boxOf(bar.getByText("Manage tags", { exact: true }));
+
+      expect(back.x).toBeCloseTo(BAR_BACK_START, 0);
+      expect(title.x).toBeCloseTo(BAR_TITLE_START, 0);
+    });
 
     test("starts General's first heading with no padding above it", async ({
       page,

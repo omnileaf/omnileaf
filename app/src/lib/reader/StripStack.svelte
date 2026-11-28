@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type Snippet, untrack } from "svelte";
+  import { onDestroy, type Snippet, untrack } from "svelte";
 
   import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import type { BookPage, PageCrop } from "#lib/ipc/bindings.ts";
@@ -8,10 +8,23 @@
 
   import { sizeOfPage, type StripPlace } from "#lib/reader/cropped-pages.ts";
   import type { Size } from "#lib/reader/page-fit.ts";
+  import { AskedImages } from "#lib/reader/asked-images.svelte.ts";
+  import { pageLoads } from "#lib/reader/image-loads.svelte.ts";
+  import { pagesByUrgency } from "#lib/reader/page-requests.ts";
+  import {
+    type Heading,
+    type PagesKept,
+    type PagesOnScreen,
+    pagesAroundScreen,
+  } from "#lib/reader/page-window.ts";
+  import { ThumbRest } from "#lib/reader/thumb-rest.svelte.ts";
 
   const UNSIZED_RATIO = "1 / 3";
   const SCREEN_SHARE = 0.8;
   const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+  const PAGES_LEADING = 3;
+  const PAGES_TRAILING = 1;
+  const ONLY_THE_SCREEN = { ahead: 0, behind: 0 };
 
   let {
     pages,
@@ -21,6 +34,7 @@
     marks,
     overlay,
     startAt,
+    isSliderHeld,
     progress = $bindable(0),
     onShown,
     onShownReady,
@@ -32,6 +46,7 @@
     marks: readonly number[];
     overlay: Snippet;
     startAt: StripPlace | undefined;
+    isSliderHeld: boolean;
     progress?: number;
     onShown: (index: number) => void;
     onShownReady: () => void;
@@ -53,7 +68,50 @@
   let unscrolled = 0;
   let scrollRange = $state(0);
   let track = $state<HTMLDivElement | null>(null);
-  let isDragging = false;
+  let isRailHeld = $state(false);
+  const isAnySliderHeld = $derived(isSliderHeld || isRailHeld);
+  const asked = new AskedImages(pageLoads);
+  const thumb = new ThumbRest();
+  let onScreen: PagesOnScreen = $state.raw(
+    untrack(() => ({ first: shown, last: shown })),
+  );
+  let heading: Heading = $state("forward");
+  let lastScrollTop = 0;
+  const wanted = $derived(pagesWanted());
+
+  function keptAround(towards: Heading): PagesKept {
+    return towards === "forward"
+      ? { ahead: PAGES_LEADING, behind: PAGES_TRAILING }
+      : { ahead: PAGES_TRAILING, behind: PAGES_LEADING };
+  }
+
+  function pagesWanted(): readonly number[] {
+    if (isAnySliderHeld && thumb.restingOn !== shown) {
+      return [];
+    }
+    const kept = isAnySliderHeld ? ONLY_THE_SCREEN : keptAround(heading);
+    return pagesByUrgency(
+      pagesAroundScreen(onScreen, pages.length, kept),
+      heading,
+    );
+  }
+
+  function followScreen(element: HTMLDivElement): void {
+    const top = element.scrollTop;
+    if (top !== lastScrollTop) {
+      heading = top > lastScrollTop ? "forward" : "back";
+      lastScrollTop = top;
+    }
+    const first = pageAt(top);
+    const last = pageAt(top + element.clientHeight - 1);
+    if (first !== onScreen.first || last !== onScreen.last) {
+      onScreen = { first, last };
+    }
+  }
+
+  function letGoOfRail(): void {
+    isRailHeld = false;
+  }
 
   function measure(): void {
     if (scroller === null) {
@@ -61,6 +119,7 @@
     }
     scrollRange = scroller.scrollHeight - scroller.clientHeight;
     progress = scrollRange > 0 ? scroller.scrollTop / scrollRange : 0;
+    followScreen(scroller);
   }
 
   function markAt(index: number): number {
@@ -113,7 +172,10 @@
         : 0;
     element.style.aspectRatio = ratioOf(page);
     if (shareAbove > 0) {
-      scroller.scrollTop += (element.offsetHeight - before) * shareAbove;
+      keepPlaceAt(
+        scroller,
+        scroller.scrollTop + (element.offsetHeight - before) * shareAbove,
+      );
     }
     measure();
   }
@@ -153,9 +215,16 @@
   function scrollToPlace(target: StripPlace): void {
     const element = pageElements[target.page];
     if (scroller !== null && element !== undefined) {
-      scroller.scrollTop =
-        element.offsetTop + element.offsetHeight * target.shareOfPage;
+      keepPlaceAt(
+        scroller,
+        element.offsetTop + element.offsetHeight * target.shareOfPage,
+      );
     }
+  }
+
+  function keepPlaceAt(element: HTMLDivElement, top: number): void {
+    element.scrollTop = top;
+    lastScrollTop = element.scrollTop;
   }
 
   function reportShown(): void {
@@ -254,6 +323,21 @@
   });
 
   $effect(() => {
+    const heldOn = isAnySliderHeld ? shown : undefined;
+    untrack(() => {
+      thumb.heldOn(heldOn);
+    });
+  });
+
+  $effect(() => {
+    asked.askFor(wanted);
+  });
+
+  onDestroy(() => {
+    thumb.letGo();
+  });
+
+  $effect(() => {
     if (spaceHeight > 0) {
       untrack(measure);
     }
@@ -291,9 +375,9 @@
           ></div>
         {:else}
           <img
-            src={omniUrl(page.path)}
+            {@attach asked.freshImage(index)}
+            {@attach asked.loadWhenAsked(index, omniUrl(page.path))}
             alt={m.reader_page({ page: index + 1 })}
-            loading="lazy"
             decoding="async"
             draggable="false"
             class="block select-none block-full inline-full"
@@ -320,18 +404,18 @@
   aria-hidden="true"
   class="absolute inset-e-md inset-bs-strip-rail-inset inset-be-strip-rail-inset hidden cursor-pointer inline-strip-rail-width desktop:block"
   onpointerdown={(event) => {
-    isDragging = true;
+    isRailHeld = true;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragTo(event);
   }}
   onpointermove={(event) => {
-    if (isDragging) {
+    if (isRailHeld) {
       dragTo(event);
     }
   }}
-  onpointerup={() => {
-    isDragging = false;
-  }}
+  onpointerup={letGoOfRail}
+  onpointercancel={letGoOfRail}
+  onlostpointercapture={letGoOfRail}
 >
   <div
     class="absolute inset-none mx-auto rounded-full bg-reader-grey inline-strip-rail-track"

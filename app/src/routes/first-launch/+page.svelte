@@ -2,7 +2,6 @@
   import { TriangleAlert } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
@@ -53,6 +52,7 @@
 
   import type { PageProps } from "./$types";
   import { whatsNewSeenForApp } from "#lib/whats-new/whats-new-seen.ts";
+  import { navigateTo } from "#lib/navigation/navigate-to.ts";
 
   let { data }: PageProps = $props();
 
@@ -126,11 +126,11 @@
   }
 
   function pushFirstLaunchState(state: typeof page.state): Promise<void> {
-    return goto(resolve(FIRST_LAUNCH_ROUTE), { shallow: true, state });
+    return navigateTo(resolve(FIRST_LAUNCH_ROUTE), { shallow: true, state });
   }
 
   function replaceFirstLaunchState(state: typeof page.state): Promise<void> {
-    return goto(resolve(FIRST_LAUNCH_ROUTE), {
+    return navigateTo(resolve(FIRST_LAUNCH_ROUTE), {
       shallow: true,
       replace: true,
       state,
@@ -271,7 +271,7 @@
       });
     isLeaving = true;
     await dropStepEntries();
-    await goto(resolve(SECTION_ROUTE_IDS.library), {
+    await navigateTo(resolve(SECTION_ROUTE_IDS.library), {
       replace: true,
       refreshAll: true,
     });

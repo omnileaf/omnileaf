@@ -20,6 +20,7 @@
     hasTopTabBar,
     isPhone,
   } from "#lib/page/platform.ts";
+  import { watchScrolled } from "#lib/page/scrolled.ts";
   import { watchTitleUnderBar } from "#lib/page/title-under-bar.ts";
   import {
     ANDROID_PINNED_BAR,
@@ -31,12 +32,17 @@
   import { barChip } from "#lib/series/series-chip.ts";
 
   import { showsSectionsBeside } from "./panes.ts";
-  import type { ParentPage } from "./sections";
+  import type { AndroidTitle, ParentPage } from "./sections";
 
   let {
     title,
     parent = { route: "/(app)/settings", title: m.settings_title() },
-  }: { title: string; parent?: ParentPage } = $props();
+    androidTitle = "large",
+  }: {
+    title: string;
+    parent?: ParentPage;
+    androidTitle?: AndroidTitle;
+  } = $props();
 
   const ARROW_SIZE = 24;
   const PHONE_CHEVRON_SIZE = 22;
@@ -70,12 +76,19 @@
   const hasAndroidTopBar = $derived(
     platform === "android" && !showsSectionsBeside(width.current),
   );
+  const isTitleInBar = $derived(androidTitle === "in-bar");
   let barHeight = $state(0);
   let isTitleUnderBar = $state(false);
 
   $effect(() => {
     if (!hasAndroidTopBar || barHeight === 0) {
       return;
+    }
+    const main = document.querySelector("main");
+    if (isTitleInBar && main !== null) {
+      return watchScrolled(main, (isScrolled) => {
+        isTitleUnderBar = isScrolled;
+      });
     }
     return watchTitleUnderBar(barHeight, (isUnder) => {
       isTitleUnderBar = isUnder;
@@ -189,6 +202,7 @@
     data-title-bar
     class={cn(
       ANDROID_PINNED_BAR,
+      "ps-xs",
       NATIVE_TOP_BAR.edge,
       isTitleUnderBar ? NATIVE_TOP_BAR.scrolled : "border-transparent",
     )}
@@ -200,26 +214,40 @@
           href={resolve(parent.route)}
           data-back-link
           aria-label={backLabel}
-          class="native-target ms-xs flex shrink-0 items-center justify-center rounded-full text-native-on-top-bar block-native-button inline-native-button hover:bg-hover active:bg-pressed"
+          class="native-target mx-xs flex shrink-0 items-center justify-center rounded-full text-native-on-top-bar block-native-button inline-native-button hover:bg-hover active:bg-pressed"
         >
           <Icon name="arrow-left" size={ARROW_SIZE} class="rtl:-scale-x-100" />
         </a>
       {/snippet}
     </Tooltip>
-    <span
-      aria-hidden="true"
-      class={[
-        "pointer-events-none flex-1 truncate ps-xs pe-sm min-inline-none motion-safe:transition-opacity motion-safe:duration-fade",
-        NATIVE_TOP_BAR.barTitle,
-        isTitleUnderBar ? "opacity-100" : "opacity-0",
-      ]}
-    >
-      {title}
-    </span>
+    {#if isTitleInBar}
+      <h1
+        tabindex="-1"
+        class={[
+          "flex-1 truncate ps-xs pe-sm min-inline-none",
+          NATIVE_TOP_BAR.barTitle,
+        ]}
+      >
+        {title}
+      </h1>
+    {:else}
+      <span
+        aria-hidden="true"
+        class={[
+          "pointer-events-none flex-1 truncate ps-xs pe-sm min-inline-none motion-safe:transition-opacity motion-safe:duration-fade",
+          NATIVE_TOP_BAR.barTitle,
+          isTitleUnderBar ? "opacity-100" : "opacity-0",
+        ]}
+      >
+        {title}
+      </span>
+    {/if}
   </header>
-  <h1 tabindex="-1" class={["pbe-md wrap-anywhere", PHONE_TITLE]}>
-    {title}
-  </h1>
+  {#if !isTitleInBar}
+    <h1 tabindex="-1" class={["pbe-md wrap-anywhere", PHONE_TITLE]}>
+      {title}
+    </h1>
+  {/if}
 {:else if !hasTitleBar}
   <header
     class="flex flex-col items-start touch:max-medium:-mbs-sm touch:medium:max-expanded:-mbs-lg desktop:max-medium:-mbs-md"

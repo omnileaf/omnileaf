@@ -5,6 +5,7 @@
   } from "bits-ui";
 
   import { cn } from "#lib/components/cn.ts";
+  import { closesOnBack } from "#lib/navigation/overlay-back.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
   import { menuLook } from "../menu-look.ts";
@@ -23,6 +24,7 @@
 <ContextMenuPrimitive.Portal {to}>
   <ContextMenuPrimitive.Content
     bind:ref
+    {@attach closesOnBack}
     collisionPadding={SCREEN_EDGE_GAP_PX}
     class={cn(
       "z-dialog flex flex-col rounded-menu border border-menu-edge bg-menu p-menu-pad text-foreground fade-motion shadow-menu backdrop-blur-menu duration-flyout ease-flyout android:medium:px-none android:medium:py-sm",
