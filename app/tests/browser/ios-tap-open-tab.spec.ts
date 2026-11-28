@@ -1,8 +1,9 @@
 import type { JSHandle, Page } from "@playwright/test";
 
-import { expect, settle, test } from "./fixtures.ts";
+import { expect, test } from "./fixtures.ts";
 import { sampleLibraryOn } from "./screens.ts";
 import {
+  historyMovesDuring,
   historyPlaceOf,
   libraryShown,
   mainOf,
@@ -109,9 +110,9 @@ test.describe("tapping the open tab on an iPhone", { tag: "@native" }, () => {
     await libraryShown(page);
     const before = await historyPlaceOf(page);
 
-    await tapTab(page, "Library");
-    await settle(page.getByRole("navigation", { name: "Main" }));
+    const moves = await historyMovesDuring(page, () => tapTab(page, "Library"));
 
+    expect(moves).toEqual([]);
     expect(await historyPlaceOf(page)).toEqual(before);
     expect(await mainOf(page).evaluate((main) => main.scrollTop)).toBe(0);
   });
@@ -122,12 +123,14 @@ test.describe("tapping the open tab on an iPhone", { tag: "@native" }, () => {
     await libraryShown(page);
     await scrollLibraryDown(page);
     const before = await historyPlaceOf(page);
+    const asked = await scrollMovesAskedOf(page);
 
     const tops = await scrollTopsAfterTheTap(page, () =>
       tapTab(page, "Library"),
     );
 
     expect(tops).toEqual([0]);
+    expect(await asked.jsonValue()).toEqual(["auto"]);
     expect(await historyPlaceOf(page)).toEqual(before);
   });
 });

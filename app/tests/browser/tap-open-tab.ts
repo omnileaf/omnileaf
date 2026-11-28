@@ -115,3 +115,46 @@ export function placeAfterAPlainBack(
 ): HistoryPlace {
   return { ...to, length: from.length };
 }
+
+const FRAMES_FOR_A_LATE_MOVE = 30;
+
+export async function historyMovesDuring(
+  page: Page,
+  act: () => Promise<void>,
+): Promise<string[]> {
+  const moves = await page.evaluateHandle(() => {
+    const seen: string[] = [];
+    for (const name of ["pushState", "replaceState", "go", "back"] as const) {
+      const original = history[name].bind(history);
+      Object.defineProperty(history, name, {
+        configurable: true,
+        value: (...args: Parameters<typeof original>) => {
+          seen.push(name);
+          Reflect.apply(original, history, args);
+        },
+      });
+    }
+    addEventListener("popstate", () => {
+      seen.push("popstate");
+    });
+    return seen;
+  });
+  await act();
+  await page.evaluate(
+    (frames) =>
+      new Promise<void>((done) => {
+        let left = frames;
+        const wait = () => {
+          left -= 1;
+          if (left <= 0) {
+            done();
+            return;
+          }
+          requestAnimationFrame(wait);
+        };
+        requestAnimationFrame(wait);
+      }),
+    FRAMES_FOR_A_LATE_MOVE,
+  );
+  return moves.jsonValue();
+}
