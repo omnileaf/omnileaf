@@ -156,6 +156,7 @@ for (const theme of THEMES) {
       variant: "primary",
     });
 
+    await userEvent.unhover(button);
     await userEvent.tab();
     await expect.element(button).toHaveFocus();
     const style = getComputedStyle(button);
@@ -174,6 +175,7 @@ for (const theme of THEMES) {
       variant: "outline",
     });
 
+    await userEvent.unhover(button);
     await userEvent.tab();
     await expect.element(button).toHaveFocus();
 
@@ -215,6 +217,7 @@ test("keeps an iOS disabled button, outlined label, focus and icon as they were"
 test("keeps an iOS outlined button's accent label and an unlayered focus", async () => {
   const button = await renderButton("ios", "light", { variant: "outline" });
 
+  await userEvent.unhover(button);
   await userEvent.tab();
   await expect.element(button).toHaveFocus();
   const style = getComputedStyle(button);
