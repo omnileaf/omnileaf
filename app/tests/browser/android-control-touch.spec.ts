@@ -342,6 +342,13 @@ async function expectThumbUnderHeldPointer(
   expectMorph(offset.releasing, heldOffset, restingOffset);
 }
 
+async function disable(control: Locator): Promise<void> {
+  await control.evaluate((element) => {
+    element.setAttribute("disabled", "");
+    element.setAttribute("data-disabled", "");
+  });
+}
+
 function readStateRadios(sheet: Locator): Locator {
   return sheet
     .getByRole("radiogroup", { name: "Read state" })
@@ -397,6 +404,74 @@ test.describe("Android's controls", { tag: "@native" }, () => {
       await holdPointerOn(page, show);
 
       expect((await shapeOf(show)).startStart).toBe(LARGE_RESTING);
+      await page.mouse.up();
+    });
+
+    test("keeps a disabled button's corners and lays nothing over it", async ({
+      page,
+    }) => {
+      const show = showButton(await openLibrarySheet(page, "Sort and filter"));
+      await disable(show);
+
+      await holdPointerOn(page, show);
+
+      expect(await shapeOf(show)).toEqual({
+        startStart: LARGE_RESTING,
+        startEnd: LARGE_RESTING,
+        layer: "none",
+      });
+      await page.mouse.up();
+    });
+
+    test("keeps a disabled segment's corners and lays nothing over it", async ({
+      page,
+    }) => {
+      const sheet = await openLibrarySheet(page, "Sort and filter");
+      const first = readStateRadios(sheet).first();
+      await disable(first);
+
+      await holdPointerOn(page, first);
+
+      expect(await shapeOf(first)).toEqual({
+        startStart: SEGMENT_END,
+        startEnd: RESTING,
+        layer: "none",
+      });
+      await page.mouse.up();
+    });
+
+    test("keeps a disabled stepper button's corners and lays nothing over it", async ({
+      page,
+    }) => {
+      const sheet = await openLibrarySheet(page, "View options");
+      await sheet.getByRole("radio", { name: "Choose" }).click();
+      const fewer = sheet.getByRole("button", {
+        name: "Fewer covers per row",
+      });
+      await disable(fewer);
+
+      await holdPointerOn(page, fewer);
+
+      expect(await shapeOf(fewer)).toEqual({
+        startStart: RESTING,
+        startEnd: RESTING,
+        layer: "none",
+      });
+      await page.mouse.up();
+    });
+
+    test("keeps a disabled switch's thumb and state circle", async ({
+      page,
+    }) => {
+      const sheet = await openLibrarySheet(page, "View options");
+      const language = sheet.getByRole("switch", { name: "Language" });
+      await disable(language);
+      const resting = await thumbOf(language);
+
+      await holdPointerOn(page, language);
+
+      expect(await thumbOf(language)).toEqual(resting);
+      expect(resting.halo).toBe("rgba(0, 0, 0, 0)");
       await page.mouse.up();
     });
 
@@ -531,6 +606,25 @@ test.describe("Android's controls", { tag: "@native" }, () => {
         ...new FakeShelf([{ state: "notStarted" }]).backend(),
         appInfo: () => fakeAppInfo("android"),
       },
+    });
+
+    test("keeps a disabled standard icon button's corners and lays nothing over it under a held pointer", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.goto(`/series/${SERIES_ID}`);
+      const find = page.getByRole("button", { name: "Find a book" });
+      await expect(find).toBeVisible();
+      await disable(find);
+
+      await holdPointerOn(page, find);
+
+      expect(await shapeOf(find)).toEqual({
+        startStart: RESTING,
+        startEnd: RESTING,
+        layer: "none",
+      });
+      await page.mouse.up();
     });
 
     test("tightens a standard icon button to 8 over the muted colour under a held pointer", async ({
