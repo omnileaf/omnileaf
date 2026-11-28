@@ -59,7 +59,7 @@ const COUNT_BADGE_ON_COVER = `${BADGE_PLACEMENT} ring-1 ring-background forced-c
 
 const BADGE_GEOMETRY = `${COUNT_BADGE_ON_COVER} px-badge-inline min-block-xl min-inline-xl`;
 
-const ANDROID_PICKED_CAPTION =
+export const ANDROID_PICKED_CAPTION =
   "max-medium:in-aria-checked:px-xs max-medium:in-aria-checked:text-native-on-cover-accent";
 
 const ANDROID_TILE_TITLE = `max-medium:text-native-tile-title/native-tile-title! max-medium:font-native-tile-title! max-medium:tracking-native-tile-title! ${ANDROID_PICKED_CAPTION}`;
@@ -156,10 +156,13 @@ const NATIVE_TILE = {
 
 const ANDROID_COVER = `${NATIVE_TILE.cover} max-medium:border-0`;
 
-const ANDROID_PICKED_COVER = `${NO_PICKED_RING_ON_PHONES} max-medium:scale-92 max-medium:opacity-76`;
+export const ANDROID_PICKED_COVER = `${NO_PICKED_RING_ON_PHONES} max-medium:scale-92 max-medium:opacity-76`;
 
-const ANDROID_PICKED_TILE =
+export const ANDROID_PICKED_TILE =
   "max-medium:relative max-medium:isolate max-medium:aria-checked:before:absolute max-medium:aria-checked:before:inset-none max-medium:aria-checked:before:z-behind max-medium:aria-checked:before:rounded-native-picked-tile max-medium:aria-checked:before:bg-native-cover-accent";
+
+export const ANDROID_CAPTIONED_PICKED_TILE =
+  "max-medium:aria-checked:before:-inset-be-xs";
 
 const NATIVE_DOWNLOADED =
   "max-medium:block-native-downloaded-mark max-medium:inline-native-downloaded-mark";
@@ -275,7 +278,7 @@ const COVER_TILE_LOOKS = {
     ...NATIVE_TILE,
     cover: ANDROID_COVER,
     link: ANDROID_PICKED_TILE,
-    captionedLink: "max-medium:aria-checked:before:-inset-be-xs",
+    captionedLink: ANDROID_CAPTIONED_PICKED_TILE,
     pickedRing: ANDROID_PICKED_COVER,
     title: ANDROID_TILE_TITLE,
     compactTitle: ANDROID_COMPACT_TITLE,

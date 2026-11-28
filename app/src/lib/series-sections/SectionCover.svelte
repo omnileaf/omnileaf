@@ -3,7 +3,6 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { SeriesBook } from "#lib/ipc/bindings.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
-  import { PICKED_COVER_RING } from "#lib/library/cover-tile.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import PickableLink from "#lib/library/PickableLink.svelte";
   import SelectionMark from "#lib/library/SelectionMark.svelte";
@@ -21,12 +20,14 @@
     cover,
     look,
     selection,
+    marksPicks,
     order,
   }: {
     book: SeriesBook;
     cover: ShownCover;
     look: SectionTileLook;
     selection: Selection<PickKey> | undefined;
+    marksPicks: boolean;
     order: () => readonly PickKey[];
   } = $props();
 
@@ -49,10 +50,12 @@
     data-book-link
     class={look.link}
   >
-    <span class={[look.cover, isPicked && PICKED_COVER_RING]}>
+    <span class={[look.cover, isPicked && look.pickedCover]}>
       <CoverImage {cover} {coverUrl} />
       {#if isSelecting}
-        <SelectionMark isOn={isPicked} />
+        {#if marksPicks}
+          <SelectionMark isOn={isPicked} />
+        {/if}
       {:else if book.reading.state === "read"}
         <span data-read-mark aria-hidden="true" class={look.readMark}>
           <Icon name="check" size={look.readCheckSize} />

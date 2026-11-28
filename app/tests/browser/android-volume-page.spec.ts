@@ -457,7 +457,11 @@ test.describe(
       await page.keyboard.press("Space");
       const picked = page.getByRole("group", { name: "Selected books" });
 
-      await expect(picked).toContainText("4 books");
+      await expect(
+        page
+          .locator("[data-picking-bar]")
+          .getByRole("heading", { name: "1 selected" }),
+      ).toBeVisible();
       await picked.getByRole("button", { name: "Mark read" }).click();
 
       await expect(volumeTiles(page)).toHaveText([

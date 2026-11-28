@@ -4,7 +4,6 @@
   import { Progress } from "#lib/components/ui/progress/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
-  import { PICKED_COVER_RING } from "#lib/library/cover-tile.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import PickableLink from "#lib/library/PickableLink.svelte";
   import SelectionMark from "#lib/library/SelectionMark.svelte";
@@ -23,6 +22,7 @@
     cover,
     look,
     selection,
+    marksPicks,
     order,
   }: {
     tile: Extract<SectionTile, { kind: "volume" }>;
@@ -30,6 +30,7 @@
     cover: ShownCover;
     look: SectionTileLook;
     selection: Selection<PickKey> | undefined;
+    marksPicks: boolean;
     order: () => readonly PickKey[];
   } = $props();
 
@@ -59,10 +60,12 @@
     data-volume-link
     class={look.link}
   >
-    <span class={[look.cover, isPicked && PICKED_COVER_RING]}>
+    <span class={[look.cover, isPicked && look.pickedCover]}>
       <CoverImage {cover} {coverUrl} />
       {#if isSelecting}
-        <SelectionMark isOn={isPicked} />
+        {#if marksPicks}
+          <SelectionMark isOn={isPicked} />
+        {/if}
       {:else if isRead}
         <span data-read-mark aria-hidden="true" class={look.readMark}>
           <Icon name="check" size={look.readCheckSize} />
