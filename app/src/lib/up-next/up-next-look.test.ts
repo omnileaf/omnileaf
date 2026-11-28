@@ -15,8 +15,8 @@ const SYSTEM_BARS_PX = 24;
 const BACK_ARROW_SIZE = 24;
 const BOARD = {
   back: { x: 8, y: 36, width: 40, height: 40 },
-  headingTop: 174,
-  seriesEndHeadingTop: 246,
+  headingTop: 182,
+  seriesEndHeadingTop: 256,
   blockGap: 24,
   cardInset: 20,
   buttonIcon: 20,
